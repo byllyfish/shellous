@@ -1,0 +1,141 @@
+"Unit tests for the Command class."
+
+import pytest
+from shellous import context
+
+
+@pytest.fixture
+def sh():
+    return context()
+
+
+def test_invalid(sh):
+    "Calling sh() with 0 arguments is invalid."
+    with pytest.raises(ValueError, match="Command must include program name"):
+        cmd = sh()
+
+
+def test_args(sh):
+    "Test command args coercion."
+    cmd = sh("echo", "a", 2)
+    assert cmd.args == ("echo", "a", "2")
+
+
+def test_name(sh):
+    "Test command's name property."
+    cmd = sh("echo", "a")
+    assert cmd.name == "echo"
+
+
+def test_apply_concat(sh):
+    "You can apply an arglist to an existing command."
+    cmd = sh("echo", "-n")
+    cmd2 = cmd("a", "b")
+    assert cmd2.args == ("echo", "-n", "a", "b")
+
+
+def test_apply_noop(sh):
+    "It's a noop to apply an empty arglist to a command."
+    cmd = sh("echo")
+    assert cmd() is cmd
+    assert cmd()() is cmd
+
+
+def test_str(sh):
+    "Command can be coerced to string."
+    cmd = sh("echo", "-n", "a b")
+    assert str(cmd) == "echo -n 'a b'"
+
+
+def test_str_env(sh):
+    "Command can be coerced to string that includes env details."
+    cmd = sh("echo", "-n", "a b").env(NOOP=1)
+    assert str(cmd) == "NOOP=1 echo -n 'a b'"
+
+
+def test_repr(sh):
+    "Command supplies a __repr__ implementation."
+    cmd = sh("echo", "-n", "a b")
+    assert repr(cmd).startswith(
+        "Command(context=Context(env=None, encoding='utf-8'), args=('echo', '-n', 'a b'), options="
+    )
+
+
+def test_non_existant(sh):
+    "Commands can be created with a bogus program name."
+    cmd = sh("/bogus/zzz")
+    assert cmd.args == ("/bogus/zzz",)
+
+
+def test_noexpand_glob(sh):
+    "Glob * is not supported."
+    cmd = sh("echo", "*")
+    assert cmd.args == ("echo", "*")
+
+
+def test_noexpand_variable(sh):
+    "Expanding environment variables is not supported."
+    cmd = sh("echo", "$PATH")
+    assert cmd.args == ("echo", "$PATH")
+
+
+def test_tuple_arg(sh):
+    "Command may include tuple arguments."
+    cmd = sh("echo", ("-n", "arg1", "arg2"))
+    assert cmd.args == ("echo", "-n", "arg1", "arg2")
+
+
+def test_nested_list_arg(sh):
+    "Test a command that includes nested lists in its arguments."
+    cmd = sh(
+        "echo",
+        ["-n", ["arg1"]],
+        list(range(1, 4)),
+        [1 + 3j],
+    )
+    assert cmd.args == ("echo", "-n", "arg1", "1", "2", "3", "(1+3j)")
+
+
+def test_none_arg(sh):
+    "Test passing None as an argument."
+    with pytest.raises(TypeError):
+        cmd = sh("echo", None)
+
+
+def test_command_as_arg(sh):
+    """Test passing a command as an argument to another command.
+
+    This syntax is reserved for process substitution. The default is to
+    read from the process stdout (mode='r'). The alternative is to write to
+    the process stdin (mode='w'). We will need an option to disable process
+    substitution for commands like 'sudo' where we want to insert the
+    command's arguments."""
+    with pytest.raises(NotImplementedError, match="reserved"):
+        # same as `cat <(ls)`
+        cmd = sh("cat", sh("ls"))
+
+
+def test_ellipsis_as_arg(sh):
+    """Test passing Ellipsis as an argument.
+
+    This syntax is reserved for argument insertion."""
+    with pytest.raises(NotImplementedError, match="reserved"):
+        cmd = sh("ls", ..., "some_file")
+
+
+def test_dict_arg(sh):
+    """Test passing a dictionary as an argument.
+
+    This syntax is reserved for dict args feature.
+    """
+    with pytest.raises(NotImplementedError, match="reserved"):
+        cmd = sh("echo", dict(a="b"))
+
+
+def test_set_arg(sh):
+    """Test passing a set as an argument.
+
+    This syntax is reserved.
+    """
+    with pytest.raises(NotImplementedError, match="reserved"):
+        cmd = sh("echo", {0})

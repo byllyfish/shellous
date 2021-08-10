@@ -1,0 +1,432 @@
+"Unit tests for shellous module."
+
+import asyncio
+import io
+import os
+import sys
+
+import pytest
+from shellous import (
+    CAPTURE,
+    DEVNULL,
+    INHERIT,
+    STDOUT,
+    PipeResult,
+    Result,
+    ResultError,
+    context,
+)
+
+pytestmark = pytest.mark.asyncio
+
+
+@pytest.fixture
+def sh():
+    return context()
+
+
+async def yield_time():
+    """Yield time to clean up before pytest closes event loop.
+
+    Without this, I randomly see "RuntimeError: Event loop is closed" when
+    "asyncio/base_subprocess.py", line 126, in __del__ tries to self.close().
+    I think pytest closes the event loop immediately after the test without
+    waiting for everything to shutdown"""
+
+    await asyncio.sleep(0.00001)
+
+
+async def test_python(sh):
+    "Test running the python executable."
+    result = await sh(sys.executable, "-c", "print('test1')")
+    assert result == "test1\n"
+
+
+async def test_echo(sh):
+    "Test running the echo command."
+    result = await sh("echo", "-n", "foo")
+    assert result == "foo"
+
+
+async def test_echo_bytes():
+    "Test running the echo command with bytes output."
+    sh = context(encoding=None)
+    result = await sh("echo", "-n", "foo")
+    assert result == b"foo"
+
+
+async def test_echo_with_result():
+    "Test running the echo command using the Result object."
+    sh = context()
+    result = await sh("echo", "-n", "foo").set(return_result=True)
+    assert result == Result(
+        output_bytes=b"foo",
+        exit_code=0,
+        cancelled=False,
+        encoding="utf-8",
+        extra=None,
+    )
+    assert result.output == "foo"
+
+
+async def test_which(sh):
+    "Test running the `which` command."
+    result = await sh("which", "echo")
+    assert result == "/bin/echo\n"
+
+
+async def test_context_env():
+    "Test running the env command with a custom environment context."
+    env = {
+        "PATH": "/bin:/usr/bin",
+    }
+    sh = context(env=env)
+    result = await sh("env")
+    assert result == "PATH=/bin:/usr/bin\n"
+
+
+async def test_default_env(sh):
+    "Test running the env command with an augmented default environment."
+    result = await sh("env").env(MORE="less")
+    assert "MORE=less" in result.split("\n")
+
+
+async def test_augmented_env():
+    "Test running the env command with an augmented custom environment."
+    env = {
+        "PATH": "/bin:/usr/bin",
+    }
+    sh = context(env=env)
+    result = await sh("env").env(MORE="less")
+    assert result == "PATH=/bin:/usr/bin\nMORE=less\n"
+
+
+async def test_custom_echo_func(sh):
+    "Test defining a custom echo function."
+
+    def excited(*args):
+        return sh("echo", "-n", *(args + ("!!",)))
+
+    result = await excited("x", "z")
+    assert result == "x z !!"
+
+
+async def test_custom_echo_shorthand(sh):
+    "Test defining an echo function that always passes -n (shorthand)."
+    echo = sh("echo", "-n")
+    result = await echo("x", "y")
+    assert result == "x y"
+
+
+async def test_missing_executable(sh):
+    "Test invoking a non-existant command raises a FileNotFoundError."
+    with pytest.raises(FileNotFoundError):
+        await sh("/bin/does_not_exist")
+
+
+async def test_task(sh):
+    "Test converting an awaitable command into an asyncio Task object."
+    task = sh("echo", "***").task()
+    assert task.get_name().startswith("echo-")
+    result = await task
+    assert result == "***\n"
+
+
+async def test_task_cancel(sh):
+    "Test that we can cancel a running command task."
+    task = sh("sleep", "5").task()
+    await asyncio.sleep(0.1)
+
+    # Cancel task and wait for it to exit.
+    task.cancel()
+    with pytest.raises(ResultError):  # FIXME: no exception expected?
+        await task
+
+    await yield_time()
+
+
+async def test_timeout_fail(sh):
+    "Test that an awaitable command can be called with a timeout."
+    with pytest.raises(ResultError) as exc_info:
+        await asyncio.wait_for(sh("sleep", "5"), 0.1)
+
+    assert exc_info.type is ResultError
+    assert exc_info.value.command == sh("sleep", "5")
+    assert exc_info.value.result == Result(
+        output_bytes=None,
+        exit_code=-9,
+        cancelled=True,
+        encoding="utf-8",
+        extra=None,
+    )
+
+
+async def test_timeout_okay(sh):
+    "Test awaitable command that doesn't timeout."
+    result = await asyncio.wait_for(sh("echo", "jjj"), 1.0)
+    assert result == "jjj\n"
+
+
+async def test_input(sh):
+    "Test calling a command with input string."
+    tr = sh("tr", "[:lower:]", "[:upper:]")
+    result = await tr.stdin("some input")
+    assert result == "SOME INPUT"
+
+
+async def test_input_bytes(sh):
+    "Test calling a command with input bytes, and encoding is utf-8."
+    tr = sh("tr", "[:lower:]", "[:upper:]")
+    result = await tr.stdin(b"some input")
+    assert result == "SOME INPUT"
+
+
+async def test_input_wrong_encoding():
+    "Test calling a command with input string, but bytes encoding expected."
+    sh = context(encoding=None)
+    tr = sh("tr", "[:lower:]", "[:upper:]")
+    with pytest.raises(TypeError, match="input must be bytes"):
+        await tr.stdin("some input")
+    result = await tr.stdin(b"here be bytes")
+    assert result == b"HERE BE BYTES"
+
+
+async def test_exit_code_error(sh):
+    "Test calling a command that returns a non-zero exit status."
+    with pytest.raises(ResultError, match="false"):
+        await sh("false")
+
+
+async def test_redirect_output_path(sh, tmp_path):
+    "Test redirecting command output to a PathLike object."
+    out = tmp_path / "test_redirect_output_path"
+
+    # Erase and write to file.
+    result = await sh("echo", "test", 1, 2, 3).stdout(out)
+    assert result is None
+    assert out.read_bytes() == b"test 1 2 3\n"
+
+    # Append to the above file.
+    result = await sh("echo", ".1.").stdout(out, append=True)
+    assert result is None
+    assert out.read_bytes() == b"test 1 2 3\n.1.\n"
+
+
+async def test_redirect_output_str(sh, tmp_path):
+    "Test redirecting command output to a filename string."
+    out = tmp_path / "test_redirect_output_str"
+
+    # Erase and write to file.
+    result = await sh("echo", "test", 4, 5, 6).stdout(str(out))
+    assert result is None
+    assert out.read_bytes() == b"test 4 5 6\n"
+
+    # Append to the above file.
+    result = await sh("echo", ".2.").stdout(str(out), append=True)
+    assert result is None
+    assert out.read_bytes() == b"test 4 5 6\n.2.\n"
+
+
+async def test_redirect_output_file(sh, tmp_path):
+    "Test redirecting command output to a File-like object."
+    out = tmp_path / "test_redirect_output_file"
+
+    with open(out, "w") as fp:
+        result = await sh("echo", "123").stdout(fp)
+        assert result is None
+
+    assert out.read_bytes() == b"123\n"
+
+
+# @pytest.mark.skip("not implemented yet")
+async def test_redirect_output_stringio(sh):
+    "Test redirecting command output to a StringIO buffer."
+    buf = io.StringIO()
+    result = await sh("echo", "456").stdout(buf)
+    assert result is None
+    assert buf.getvalue() == "456\n"
+
+
+async def test_redirect_output_devnull(sh):
+    "Test redirecting command output to /dev/null."
+    result = await sh("echo", "789").stdout(DEVNULL)
+    assert result is None
+
+
+async def test_redirect_output_stdout(sh):
+    "Test redirecting command output to STDOUT (bad file descriptor)."
+    with pytest.raises(OSError, match="Bad file descriptor"):
+        await sh("echo", "789").stdout(STDOUT)
+
+
+async def test_redirect_output_none(sh):
+    "Test redirecting command output to None (same as DEVNULL)."
+    result = await sh("echo", "789").stdout(None)
+    assert result is None
+
+
+async def test_redirect_output_capture(sh):
+    "Test redirecting command output to None (same as DEVNULL)."
+    result = await sh("echo", "789").stdout(CAPTURE)
+    assert result == "789\n"
+
+
+async def test_redirect_output_inherit(sh, capfd):
+    "Test redirecting command output to None (same as DEVNULL)."
+    result = await sh("echo", "789").stdout(INHERIT)
+    assert result is None
+    assert capfd.readouterr() == ("789\n", "")
+
+
+async def test_redirect_input_path(sh, tmp_path):
+    "Test redirecting input to a Path like object."
+    data_file = tmp_path / "test_redirect_input_path"
+    data_file.write_text("here is some text")
+    result = await sh("wc", "-c").stdin(data_file)
+    assert result.lstrip() == "17\n"
+
+
+@pytest.fixture
+def python_script():
+    script = r"""import sys
+sys.stdout.write("hi ")
+sys.stdout.write("stdout\n")
+sys.stdout.flush()
+sys.stderr.write("hi stderr\n")
+sys.stdout.write("goodbye!")
+"""
+    sh = context()
+    return sh(sys.executable, "-").stdin(script)
+
+
+async def test_redirection(python_script, capfd):
+    "Test redirection options with both stdout and stderr output."
+    err = io.StringIO()
+    result = await python_script().stderr(err)
+    assert result == "hi stdout\ngoodbye!"
+    assert err.getvalue() == "hi stderr\n"
+    assert capfd.readouterr() == ("", "")
+
+
+async def test_redirect_output_to_devnull(python_script, capfd):
+    "Test redirection options with both stdout and stderr output."
+    result = await python_script.stdout(DEVNULL)
+    assert result is None
+    assert capfd.readouterr() == ("", "")
+
+
+async def test_redirect_output_to_inherit(python_script, capfd):
+    "Test redirection options with both stdout and stderr output."
+    result = await python_script.stdout(INHERIT)
+    assert result is None
+    assert capfd.readouterr() == ("hi stdout\ngoodbye!", "")
+
+
+async def test_redirect_error_to_stdout(python_script, capfd):
+    "Test redirection options with both stdout and stderr output."
+    result = await python_script.stderr(STDOUT)
+    assert result == "hi stdout\nhi stderr\ngoodbye!"
+    assert capfd.readouterr() == ("", "")
+
+
+async def test_redirect_error_to_inherit(python_script, capfd):
+    "Test redirection options with both stdout and stderr output."
+    result = await python_script.stderr(INHERIT)
+    assert result == "hi stdout\ngoodbye!"
+    assert capfd.readouterr() == ("", "hi stderr\n")
+
+
+async def test_redirect_error_to_devnull(python_script, capfd):
+    "Test redirection options with both stdout and stderr output."
+    result = await python_script.stderr(DEVNULL)
+    assert result == "hi stdout\ngoodbye!"
+    assert capfd.readouterr() == ("", "")
+
+
+async def test_redirect_error_to_capture(python_script):
+    "Test redirection options with both stdout and stderr output."
+    with pytest.raises(ValueError, match="CAPTURE only supported for 'async with'"):
+        result = await python_script.stderr(CAPTURE)
+
+
+async def test_async_context_manager(sh):
+    "Use `async with` to read/write bytes incrementally."
+    tr = sh("tr", "[:lower:]", "[:upper:]").stderr(DEVNULL)
+
+    async with tr.runner() as (stdin, stdout, stderr):
+        assert stderr is None
+
+        # N.B. We won't deadlock writing/reading a single byte.
+        stdin.write(b"a")
+        stdin.close()
+        result = await stdout.read()
+
+    assert result == b"A"
+
+
+async def test_async_iteration(sh):
+    "Use `async for` to read stdout line by line."
+    echo = sh("echo", "-n", "line1\n", "line2\n", "line3").stderr(DEVNULL)
+    result = [line async for line in echo]
+    assert result == ["line1\n", " line2\n", " line3"]
+
+
+async def test_manually_created_pipeline(sh):
+    "You can create a pipeline manually using input redirection and os.pipe()."
+    (r, w) = os.pipe()
+    echo = sh("echo", "-n", "abc").stdout(w, close=True)
+    tr = sh("tr", "[:lower:]", "[:upper:]").stdin(r, close=True)
+    result = await asyncio.gather(tr, echo)
+    assert result == ["ABC", None]
+
+
+async def test_pipeline(sh):
+    "Test a simple pipeline."
+    pipe = sh("echo", "-n", "xyz") | sh("tr", "[:lower:]", "[:upper:]")
+    result = await pipe
+    assert result == "XYZ"
+
+
+async def test_pipeline_with_result(sh):
+    "Test a simple pipeline with `return_result` set to True."
+    echo = sh("echo", "-n", "xyz")
+    tr = sh("tr", "[:lower:]", "[:upper:]").set(return_result=True)
+    result = await (echo | tr)
+    assert result == Result(
+        output_bytes=b"XYZ",
+        exit_code=0,
+        cancelled=False,
+        encoding="utf-8",
+        extra=(
+            PipeResult(
+                exit_code=0,
+                cancelled=False,
+            ),
+        ),
+    )
+
+
+async def test_pipeline_single_cmd(sh):
+    "Test a single command pipeline."
+    tr = sh("tr", "[:lower:]", "[:upper:]")
+    result = await ("abc" | tr)
+    assert result == "ABC"
+
+
+async def test_pipeline_invalid_cmd(sh):
+    pipe = sh(" non_existant ", "xyz") | sh("tr", "[:lower:]", "[:upper:]")
+    with pytest.raises(FileNotFoundError, match="' non_existant '"):
+        result = await pipe
+
+    await yield_time()
+
+
+async def test_allowed_exit_codes(sh):
+    "Test `allows_exit_codes` option."
+    cmd = (
+        sh("cat", "/tmp/__does_not_exist__")
+        .stderr(STDOUT)
+        .set(allowed_exit_codes={0, 1})
+    )
+    result = await cmd
+    assert result == "cat: /tmp/__does_not_exist__: No such file or directory\n"
