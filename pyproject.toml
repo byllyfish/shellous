@@ -17,3 +17,6 @@ black = {version = "^21.7b0", allow-prereleases = true}
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.pylint.'BASIC']
+good-names = ['i,j,k,ex,_,n']

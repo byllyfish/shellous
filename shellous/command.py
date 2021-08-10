@@ -107,14 +107,14 @@ class Command:
         "Returns the name of the program being run."
         return self.args[0]
 
-    def stdin(self, input, *, close=False):
+    def stdin(self, input_, *, close=False):
         "Pass `input` to command's standard input."
-        if input is None:
-            input = Redirect.DEVNULL
+        if input_ is None:
+            input_ = Redirect.DEVNULL
 
         new_options = dataclasses.replace(
             self.options,
-            input=input,
+            input=input_,
             input_close=close,
         )
         return Command(self.context, self.args, new_options)

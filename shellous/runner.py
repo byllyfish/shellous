@@ -76,24 +76,24 @@ class RunOptions:
         "Make sure those file descriptors are cleaned up."
         self.close_fds()
 
-    def _setup_input(self, input, close, encoding):
+    def _setup_input(self, input_, close, encoding):
         "Set up process input."
         stdin = asyncio.subprocess.PIPE
         input_bytes = None
 
-        if input is None or isinstance(input, bytes):
-            input_bytes = input
-        elif isinstance(input, os.PathLike):
-            stdin = open(input, "rb")
+        if input_ is None or isinstance(input_, bytes):
+            input_bytes = input_
+        elif isinstance(input_, os.PathLike):
+            stdin = open(input_, "rb")
             self.open_fds.append(stdin)
-        elif isinstance(input, int):  # file descriptor
-            stdin = input
+        elif isinstance(input_, int):  # file descriptor
+            stdin = input_
             if close:
                 self.open_fds.append(stdin)
         else:
             if encoding is None:
                 raise TypeError("when encoding is None, input must be bytes")
-            input_bytes = input.encode(encoding)
+            input_bytes = input_.encode(encoding)
 
         return stdin, input_bytes
 
@@ -300,11 +300,11 @@ async def run_pipe(pipe):
         cmds = list(pipe.commands)
 
         for i in range(n - 1):
-            (r, w) = os.pipe()
-            open_fds.extend((r, w))
+            (read_fd, write_fd) = os.pipe()
+            open_fds.extend((read_fd, write_fd))
 
-            cmds[i] = cmds[i].stdout(w, close=True)
-            cmds[i + 1] = cmds[i + 1].stdin(r, close=True)
+            cmds[i] = cmds[i].stdout(write_fd, close=True)
+            cmds[i + 1] = cmds[i + 1].stdin(read_fd, close=True)
 
         for i in range(n):
             cmds[i] = cmds[i].set(return_result=True)

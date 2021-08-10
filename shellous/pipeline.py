@@ -25,11 +25,11 @@ class Pipeline:
         "Return last command's options."
         return self.commands[-1].options
 
-    def stdin(self, input):
+    def stdin(self, input_):
         "Set stdin on the first command of the pipeline."
         if not self.commands:
             raise ValueError("invalid pipeline")
-        new_first = self.commands[0].stdin(input)
+        new_first = self.commands[0].stdin(input_)
         new_commands = (new_first,) + self.commands[1:]
         return dataclasses.replace(self, commands=new_commands)
 
