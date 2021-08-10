@@ -71,8 +71,8 @@ async def test_echo_with_result():
 
 async def test_which(sh):
     "Test running the `which` command."
-    result = await sh("which", "echo")
-    assert result == "/bin/echo\n"
+    result = await sh("which", "cat")
+    assert result in {"/usr/bin/cat\n", "/bin/cat\n"}
 
 
 async def test_context_env():
