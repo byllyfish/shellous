@@ -13,7 +13,7 @@ def sh():
 
 def test_empty_pipeline(sh):
     with pytest.raises(ValueError, match="must include at least one command"):
-        pipe = pipeline()
+        pipeline()
 
 
 def test_pipeline_cmd(sh):
@@ -33,17 +33,17 @@ def test_pipeline(sh):
 
 def test_pipeline_unsupported_rhs(sh):
     with pytest.raises(TypeError, match=r"unsupported operand type\(s\) for \|"):
-        pipe = pipeline(sh("echo")) | 43
+        pipeline(sh("echo")) | 43
 
 
 def test_pipeline_unsupported_lhs(sh):
     with pytest.raises(TypeError, match=r"unsupported operand type\(s\) for \|"):
-        pipe = 44 | pipeline(sh("echo"))
+        _ = 44 | pipeline(sh("echo"))
 
 
 def test_pipeline_unsupported_rhs_append(sh):
     with pytest.raises(TypeError, match=r"unsupported operand type\(s\) for >>"):
-        pipe = pipeline(sh("echo")) >> 43
+        _ = pipeline(sh("echo")) >> 43
 
 
 def test_pipeline_input(sh):

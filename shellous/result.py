@@ -11,10 +11,12 @@ class ResultError(Exception):
 
     @property
     def result(self):
+        "Return the `Result` object."
         return self.args[0]
 
     @property
     def command(self):
+        "Return the `Command` object."
         return self.args[1]
 
 
@@ -43,6 +45,7 @@ class PipeResult:
 
     @staticmethod
     def from_result(result):
+        "Construct a `PipeResult` from a `Result`."
         return PipeResult(result.exit_code, result.cancelled)
 
 

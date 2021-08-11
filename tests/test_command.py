@@ -12,7 +12,7 @@ def sh():
 def test_invalid(sh):
     "Calling sh() with 0 arguments is invalid."
     with pytest.raises(ValueError, match="Command must include program name"):
-        cmd = sh()
+        sh()
 
 
 def test_args(sh):
@@ -99,7 +99,7 @@ def test_nested_list_arg(sh):
 def test_none_arg(sh):
     "Test passing None as an argument."
     with pytest.raises(TypeError):
-        cmd = sh("echo", None)
+        sh("echo", None)
 
 
 def test_command_as_arg(sh):
@@ -112,7 +112,7 @@ def test_command_as_arg(sh):
     command's arguments."""
     with pytest.raises(NotImplementedError, match="reserved"):
         # same as `cat <(ls)`
-        cmd = sh("cat", sh("ls"))
+        sh("cat", sh("ls"))
 
 
 def test_ellipsis_as_arg(sh):
@@ -120,7 +120,7 @@ def test_ellipsis_as_arg(sh):
 
     This syntax is reserved for argument insertion."""
     with pytest.raises(NotImplementedError, match="reserved"):
-        cmd = sh("ls", ..., "some_file")
+        sh("ls", ..., "some_file")
 
 
 def test_dict_arg(sh):
@@ -129,7 +129,7 @@ def test_dict_arg(sh):
     This syntax is reserved for dict args feature.
     """
     with pytest.raises(NotImplementedError, match="reserved"):
-        cmd = sh("echo", dict(a="b"))
+        sh("echo", dict(a="b"))
 
 
 def test_set_arg(sh):
@@ -138,4 +138,4 @@ def test_set_arg(sh):
     This syntax is reserved.
     """
     with pytest.raises(NotImplementedError, match="reserved"):
-        cmd = sh("echo", {0})
+        sh("echo", {0})
