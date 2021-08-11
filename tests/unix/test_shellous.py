@@ -1,4 +1,4 @@
-"Unit tests for shellous module."
+"Unit tests for shellous module (Linux and MacOS)."
 
 import asyncio
 import io
@@ -17,7 +17,11 @@ from shellous import (
     context,
 )
 
-pytestmark = pytest.mark.asyncio
+unix_only = pytest.mark.skipif(
+    sys.platform == "win32", reason="Supported on Linux and MacOS only"
+)
+
+pytestmark = [pytest.mark.asyncio, unix_only]
 
 
 @pytest.fixture
@@ -29,7 +33,7 @@ def sh():
 async def yield_time():
     """Yield time to clean up before pytest closes event loop.
     Sometimes needed to clean up properly after cancelled tasks."""
-    yield  # run test...
+    yield
     await asyncio.sleep(0.00001)
 
 
