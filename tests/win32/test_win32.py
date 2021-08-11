@@ -5,11 +5,8 @@ import sys
 import pytest
 from shellous import context
 
-unix_only = pytest.mark.skipif(
-    sys.platform != "win32", reason="Supported on Windows only"
-)
-
-pytestmark = [pytest.mark.asyncio, unix_only]
+win32_only = pytest.mark.skipif(sys.platform != "win32", reason="Windows only")
+pytestmark = [pytest.mark.asyncio, win32_only]
 
 
 @pytest.fixture

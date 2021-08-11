@@ -17,10 +17,7 @@ from shellous import (
     context,
 )
 
-unix_only = pytest.mark.skipif(
-    sys.platform == "win32", reason="Supported on Linux and MacOS only"
-)
-
+unix_only = pytest.mark.skipif(sys.platform == "win32", reason="Unix only")
 pytestmark = [pytest.mark.asyncio, unix_only]
 
 
