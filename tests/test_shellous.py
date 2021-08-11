@@ -346,7 +346,7 @@ async def test_redirect_error_to_devnull(python_script, capfd):
 async def test_redirect_error_to_capture(python_script):
     "Test redirection options with both stdout and stderr output."
     with pytest.raises(ValueError, match="CAPTURE only supported for 'async with'"):
-        result = await python_script.stderr(CAPTURE)
+        await python_script.stderr(CAPTURE)
 
 
 async def test_async_context_manager(sh):
@@ -416,7 +416,7 @@ async def test_pipeline_single_cmd(sh):
 async def test_pipeline_invalid_cmd(sh):
     pipe = sh(" non_existant ", "xyz") | sh("tr", "[:lower:]", "[:upper:]")
     with pytest.raises(FileNotFoundError, match="' non_existant '"):
-        result = await pipe
+        await pipe
 
     await yield_time()
 
