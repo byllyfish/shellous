@@ -59,7 +59,7 @@ def pipeline(*commands):
 
 
 @dataclass(frozen=True)
-class Options:
+class Options:  # pylint: disable=too-many-instance-attributes
     "Concrete class for per-command options."
 
     env: Optional[dict[str, str]] = None

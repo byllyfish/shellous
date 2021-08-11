@@ -319,14 +319,11 @@ async def run_pipe(pipe):
 
 
 async def run_pipe_iter(_pipe):
-    pass
+    "Run a pipeline and iterate over standard output."
+    return NotImplemented
 
 
-def trace():
-    "Return a list of every Runner object in flight."
-
-
-def log_exception(func):
+def _log_exception(func):
     @functools.wraps(func)
     async def _wrapper(*args, **kwargs):
         try:
@@ -338,7 +335,7 @@ def log_exception(func):
     return _wrapper
 
 
-@log_exception
+@_log_exception
 async def _feed_writer(input_bytes, stream):
     if input_bytes:
         stream.write(input_bytes)
@@ -349,7 +346,7 @@ async def _feed_writer(input_bytes, stream):
     stream.close()
 
 
-@log_exception
+@_log_exception
 async def _copy_sync(source, dest, encoding):
     # Collect partial reads into a BytesIO.
     buf = io.BytesIO()
