@@ -163,3 +163,11 @@ def test_pipeline_vs_command(sh):
     assert cmd1 != cmd2
     assert isinstance(cmd1, Command)
     assert isinstance(cmd2, Pipeline)
+
+
+def test_pipeline_call(sh):
+    "You cannot call a pipeline with 1 or more arguments."
+    pipe = sh("echo") | sh("grep")
+    assert pipe() is pipe  # no args is okay
+    with pytest.raises(TypeError):
+        pipe("foo")
