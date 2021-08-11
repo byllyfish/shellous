@@ -28,7 +28,7 @@ async def test_python(sh):
     assert result == "test1\r\n"
 
 
-async def test_echo(sh):
+async def test_echo(echo):
     "Test running the echo command."
     result = await echo("foo")
     assert result == "foo\r\n"
