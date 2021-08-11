@@ -1,4 +1,4 @@
-"Unit tests for shellous module."
+"Unit tests for shellous module (Linux and MacOS)."
 
 import asyncio
 import io
@@ -17,7 +17,11 @@ from shellous import (
     context,
 )
 
-pytestmark = pytest.mark.asyncio
+unix_only = pytest.mark.skipif(
+    sys.platform == "win32", reason="Supported on Linux and MacOS only"
+)
+
+pytestmark = [pytest.mark.asyncio, unix_only]
 
 
 @pytest.fixture
@@ -25,14 +29,11 @@ def sh():
     return context()
 
 
+@pytest.fixture
 async def yield_time():
     """Yield time to clean up before pytest closes event loop.
-
-    Without this, I randomly see "RuntimeError: Event loop is closed" when
-    "asyncio/base_subprocess.py", line 126, in __del__ tries to self.close().
-    I think pytest closes the event loop immediately after the test without
-    waiting for everything to shutdown"""
-
+    Sometimes needed to clean up properly after cancelled tasks."""
+    yield
     await asyncio.sleep(0.00001)
 
 
@@ -132,7 +133,7 @@ async def test_task(sh):
     assert result == "***\n"
 
 
-async def test_task_cancel(sh):
+async def test_task_cancel(sh, yield_time):
     "Test that we can cancel a running command task."
     task = sh("sleep", "5").task()
     await asyncio.sleep(0.1)
@@ -141,8 +142,6 @@ async def test_task_cancel(sh):
     task.cancel()
     with pytest.raises(ResultError):  # FIXME: no exception expected?
         await task
-
-    await yield_time()
 
 
 async def test_timeout_fail(sh):
@@ -238,7 +237,6 @@ async def test_redirect_output_file(sh, tmp_path):
     assert out.read_bytes() == b"123\n"
 
 
-# @pytest.mark.skip("not implemented yet")
 async def test_redirect_output_stringio(sh):
     "Test redirecting command output to a StringIO buffer."
     buf = io.StringIO()
@@ -288,7 +286,8 @@ async def test_redirect_input_path(sh, tmp_path):
 
 @pytest.fixture
 def python_script():
-    script = r"""import sys
+    script = r"""
+import sys
 sys.stdout.write("hi ")
 sys.stdout.write("stdout\n")
 sys.stdout.flush()
@@ -413,12 +412,10 @@ async def test_pipeline_single_cmd(sh):
     assert result == "ABC"
 
 
-async def test_pipeline_invalid_cmd(sh):
+async def test_pipeline_invalid_cmd(sh, yield_time):
     pipe = sh(" non_existant ", "xyz") | sh("tr", "[:lower:]", "[:upper:]")
     with pytest.raises(FileNotFoundError, match="' non_existant '"):
         await pipe
-
-    await yield_time()
 
 
 async def test_allowed_exit_codes(sh):

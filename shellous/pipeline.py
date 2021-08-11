@@ -51,6 +51,11 @@ class Pipeline:
             )
         raise TypeError("unsupported type")
 
+    def __call__(self, *args):
+        if len(args) > 0:
+            raise TypeError("Calling pipeline with 1 or more arguments.")
+        return self
+
     def __or__(self, rhs):
         if isinstance(rhs, (Command, Pipeline)):
             return self._add(rhs)
