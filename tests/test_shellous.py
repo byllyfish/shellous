@@ -81,3 +81,9 @@ async def test_sleep(sleep_cmd):
 async def test_env(env_cmd):
     result = await env_cmd()
     assert "SHELLOUS_CMD=env\n" in result
+
+
+async def test_pipeline(echo_cmd, cat_cmd):
+    pipe = echo_cmd("xyz") | cat_cmd()
+    result = await pipe()
+    assert result == "xyz"

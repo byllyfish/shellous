@@ -383,6 +383,13 @@ async def test_pipeline(sh):
     assert result == "XYZ"
 
 
+async def test_pipeline_with_env(sh):
+    "Test a simple pipeline with an augmented environment."
+    pipe = sh("echo", "-n", "xyz").env(FOO=1) | sh("tr", "[:lower:]", "[:upper:]")
+    result = await pipe
+    assert result == "XYZ"
+
+
 async def test_pipeline_with_result(sh):
     "Test a simple pipeline with `return_result` set to True."
     echo = sh("echo", "-n", "xyz")

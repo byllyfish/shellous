@@ -313,7 +313,12 @@ async def run_pipe(pipe):
         _close_fds(open_fds)
         raise
 
-    results = await asyncio.gather(*cmds)
+    # Even though cmd is `Awaitable`, we explicitly create a task for each
+    # cmd because internally `gather` relies on an `arg_to_fut` mapping
+    # which will be confused if two cmd's are "equal".
+    tasks = [cmd.task() for cmd in cmds]
+
+    results = await asyncio.gather(*tasks)
 
     return make_result(pipe, results)
 
