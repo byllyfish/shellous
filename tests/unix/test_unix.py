@@ -48,7 +48,7 @@ async def test_echo(sh):
 
 async def test_echo_bytes():
     "Test running the echo command with bytes output."
-    sh = context(encoding=None)
+    sh = context().set(encoding=None)
     result = await sh("echo", "-n", "foo")
     assert result == b"foo"
 
@@ -78,7 +78,7 @@ async def test_context_env():
     env = {
         "PATH": "/bin:/usr/bin",
     }
-    sh = context(env=env)
+    sh = context().env(**env).set(inherit_env=False)
     result = await sh("env")
     assert result == "PATH=/bin:/usr/bin\n"
 
@@ -94,9 +94,15 @@ async def test_augmented_env():
     env = {
         "PATH": "/bin:/usr/bin",
     }
-    sh = context(env=env)
+    sh = context().env(**env).set(inherit_env=False)
     result = await sh("env").env(MORE="less")
     assert result == "PATH=/bin:/usr/bin\nMORE=less\n"
+
+
+async def test_empty_env(sh):
+    "Test running the env command with an empty environment."
+    result = await sh("/usr/bin/env").set(inherit_env=False)
+    assert result == ""
 
 
 async def test_custom_echo_func(sh):
@@ -179,7 +185,7 @@ async def test_input_bytes(sh):
 
 async def test_input_wrong_encoding():
     "Test calling a command with input string, but bytes encoding expected."
-    sh = context(encoding=None)
+    sh = context().set(encoding=None)
     tr = sh("tr", "[:lower:]", "[:upper:]")
     with pytest.raises(TypeError, match="input must be bytes"):
         await tr.stdin("some input")
