@@ -123,7 +123,7 @@ class Context:
         new_options = self.options.set_env(kwds)
         return Context(new_options)
 
-    def set(
+    def set(  # pylint: disable=unused-argument
         self,
         *,
         inherit_env=_UNSET,
@@ -181,7 +181,7 @@ class Command:
     """
 
     args: Any
-    options: Options = None
+    options: Options
 
     def __post_init__(self):
         "Validate the command."
@@ -213,7 +213,7 @@ class Command:
         new_options = self.options.set_env(kwds)
         return Command(self.args, new_options)
 
-    def set(
+    def set(  # pylint: disable=unused-argument
         self,
         *,
         inherit_env=_UNSET,
