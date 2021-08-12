@@ -18,7 +18,7 @@ _UNSET = object()
 class Options:  # pylint: disable=too-many-instance-attributes
     "Concrete class for per-command options."
 
-    context: "Context" = field(compare=False, default=None, repr=False)
+    context: "Context" = field(compare=False, repr=False)
     env: Optional[dict[str, str]] = None
     inherit_env: bool = True
     input: Any = b""
