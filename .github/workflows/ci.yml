@@ -31,20 +31,24 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip poetry
+        # Install poetry and use it to install dependencies.
+        python -m pip install poetry
         python -m poetry install --no-root --no-interaction
     - name: Lint
       run: |
+        # Run flake8 and pylint.
         # stop the build if there are Python syntax errors or undefined names
-        $POETRY_RUN flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        echo "flake8 preflight:" `$POETRY_RUN flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics`
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-        $POETRY_RUN flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+        echo "flake8 syntax check:" `$POETRY_RUN flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics`
         $POETRY_RUN pylint -v -r y -f colorized --fail-under 9.5 shellous
     - name: Run Tests
       run: |
-        $POETRY_RUN python -m pytest -v
+        # Run pytest.
+        $POETRY_RUN python -m pytest -v --color=yes
     - name: Run Code Coverage (Linux only)
       if: matrix.os == 'ubuntu-latest'
       run: |
-        $POETRY_RUN coverage run --source shellous -m pytest -v
+        # Run coverage and upload report to codecov.
+        $POETRY_RUN coverage run --source shellous -m pytest
         $POETRY_RUN codecov
