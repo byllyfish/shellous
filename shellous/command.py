@@ -103,6 +103,21 @@ class Context:
             # Initialize `context` in Options to `self`.
             object.__setattr__(self, "options", Options(self))
 
+    def stdin(self, input_, *, close=False):
+        "Return new context with updated `input` settings."
+        new_options = self.options.set_stdin(input_, close)
+        return Context(new_options)
+
+    def stdout(self, output, *, append=False, close=False):
+        "Return new context with updated `output` settings."
+        new_options = self.options.set_stdout(output, append, close)
+        return Context(new_options)
+
+    def stderr(self, error, *, append=False, close=False):
+        "Return new context with updated `error` settings."
+        new_options = self.options.set_stderr(error, append, close)
+        return Context(new_options)
+
     def env(self, **kwds):
         """Return new context with augmented environment."""
         new_options = self.options.set_env(kwds)

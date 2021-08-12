@@ -46,16 +46,14 @@ async def test_echo(sh):
     assert result == "foo"
 
 
-async def test_echo_bytes():
+async def test_echo_bytes(sh):
     "Test running the echo command with bytes output."
-    sh = context().set(encoding=None)
-    result = await sh("echo", "-n", "foo")
+    result = await sh("echo", "-n", "foo").set(encoding=None)
     assert result == b"foo"
 
 
-async def test_echo_with_result():
+async def test_echo_with_result(sh):
     "Test running the echo command using the Result object."
-    sh = context()
     result = await sh("echo", "-n", "foo").set(return_result=True)
     assert result == Result(
         output_bytes=b"foo",
@@ -73,12 +71,12 @@ async def test_which(sh):
     assert result in {"/usr/bin/cat\n", "/bin/cat\n"}
 
 
-async def test_context_env():
+async def test_context_env(sh):
     "Test running the env command with a custom environment context."
     env = {
         "PATH": "/bin:/usr/bin",
     }
-    sh = context().env(**env).set(inherit_env=False)
+    sh = sh.env(**env).set(inherit_env=False)
     result = await sh("env")
     assert result == "PATH=/bin:/usr/bin\n"
 
@@ -89,12 +87,12 @@ async def test_default_env(sh):
     assert "MORE=less" in result.split("\n")
 
 
-async def test_augmented_env():
+async def test_augmented_env(sh):
     "Test running the env command with an augmented custom environment."
     env = {
         "PATH": "/bin:/usr/bin",
     }
-    sh = context().env(**env).set(inherit_env=False)
+    sh = sh.env(**env).set(inherit_env=False)
     result = await sh("env").env(MORE="less")
     assert result == "PATH=/bin:/usr/bin\nMORE=less\n"
 
@@ -183,9 +181,9 @@ async def test_input_bytes(sh):
     assert result == "SOME INPUT"
 
 
-async def test_input_wrong_encoding():
+async def test_input_wrong_encoding(sh):
     "Test calling a command with input string, but bytes encoding expected."
-    sh = context().set(encoding=None)
+    sh = sh.set(encoding=None)
     tr = sh("tr", "[:lower:]", "[:upper:]")
     with pytest.raises(TypeError, match="input must be bytes"):
         await tr.stdin("some input")
@@ -430,10 +428,7 @@ async def test_pipeline_invalid_cmd(sh, yield_time):
 
 async def test_allowed_exit_codes(sh):
     "Test `allows_exit_codes` option."
-    cmd = (
-        sh("cat", "/tmp/__does_not_exist__")
-        .stderr(STDOUT)
-        .set(allowed_exit_codes={0, 1})
-    )
+    sh = sh.stderr(STDOUT).set(allowed_exit_codes={1})
+    cmd = sh("cat", "/tmp/__does_not_exist__")
     result = await cmd
     assert result == "cat: /tmp/__does_not_exist__: No such file or directory\n"
