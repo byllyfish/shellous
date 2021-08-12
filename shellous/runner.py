@@ -28,7 +28,7 @@ class RunOptions:
 
     def __init__(self, command):
         self.command = command
-        self.encoding = None
+        self.encoding = command.options.encoding
         self.open_fds = []
         self.input_bytes = None
         self.args = None
@@ -39,11 +39,10 @@ class RunOptions:
         _close_fds(self.open_fds)
 
     def __enter__(self):
-        context = self.command.context
         options = self.command.options
 
         stdin, input_bytes = self._setup_input(
-            options.input, options.input_close, context.encoding
+            options.input, options.input_close, self.encoding
         )
 
         stdout = self._setup_output(
@@ -60,14 +59,13 @@ class RunOptions:
             sys.stderr,
         )
 
-        self.encoding = context.encoding
         self.input_bytes = input_bytes
         self.args = self.command.args
         self.kwd_args = {
             "stdin": stdin,
             "stdout": stdout,
             "stderr": stderr,
-            "env": options.merge_env(context.env),
+            "env": options.merge_env(),
         }
 
         return self

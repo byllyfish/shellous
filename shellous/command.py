@@ -3,7 +3,7 @@
 import asyncio
 import dataclasses
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Optional
 
 from shellous.runner import Runner, run, run_iter
@@ -15,14 +15,129 @@ _UNSET = object()
 
 
 @dataclass(frozen=True)
+class Options:  # pylint: disable=too-many-instance-attributes
+    "Concrete class for per-command options."
+
+    context: "Context" = field(compare=False, repr=False)
+    env: Optional[dict[str, str]] = None
+    inherit_env: bool = True
+    input: Any = b""
+    input_close: bool = False
+    output: Any = Redirect.CAPTURE
+    output_append: bool = False
+    output_close: bool = False
+    error: Any = Redirect.DEVNULL
+    error_append: bool = False
+    error_close: bool = False
+    encoding: Optional[str] = "utf-8"
+    return_result: bool = False
+    allowed_exit_codes: Optional[set] = None
+
+    def merge_env(self):
+        "Return our `env` merged with the global environment."
+        if self.inherit_env:
+            if not self.env:
+                return None
+            return os.environ | self.env
+
+        if self.env:
+            return self.env
+        return {}
+
+    def set_stdin(self, input_, close):
+        "Return new options with `input` configured."
+        if input_ is None:
+            input_ = Redirect.DEVNULL
+
+        return dataclasses.replace(
+            self,
+            input=input_,
+            input_close=close,
+        )
+
+    def set_stdout(self, output, append, close):
+        "Return new options with `output` configured."
+        if output is None:
+            output = Redirect.DEVNULL
+
+        return dataclasses.replace(
+            self,
+            output=output,
+            output_append=append,
+            output_close=close,
+        )
+
+    def set_stderr(self, error, append, close):
+        "Return new options with `error` configured."
+        if error is None:
+            error = Redirect.DEVNULL
+
+        return dataclasses.replace(
+            self,
+            error=error,
+            error_append=append,
+            error_close=close,
+        )
+
+    def set_env(self, env):
+        "Return new options with augmented environment."
+        current = self.env or {}
+        updates = {str(k): str(v) for k, v in env.items()}
+        new_env = current | updates
+        return dataclasses.replace(self, env=new_env)
+
+    def set(self, kwds):
+        "Return new options with given properties updated."
+        kwds = {key: value for key, value in kwds.items() if value is not _UNSET}
+        return dataclasses.replace(self, **kwds)
+
+
+@dataclass(frozen=True)
 class Context:
     """Concrete class for an immutable execution context."""
 
-    env: Optional[dict[str, str]]
-    encoding: Optional[str]
+    options: Options = None
+
+    def __post_init__(self):
+        if self.options is None:
+            # Initialize `context` in Options to `self`.
+            object.__setattr__(self, "options", Options(self))
+
+    def stdin(self, input_, *, close=False):
+        "Return new context with updated `input` settings."
+        new_options = self.options.set_stdin(input_, close)
+        return Context(new_options)
+
+    def stdout(self, output, *, append=False, close=False):
+        "Return new context with updated `output` settings."
+        new_options = self.options.set_stdout(output, append, close)
+        return Context(new_options)
+
+    def stderr(self, error, *, append=False, close=False):
+        "Return new context with updated `error` settings."
+        new_options = self.options.set_stderr(error, append, close)
+        return Context(new_options)
+
+    def env(self, **kwds):
+        """Return new context with augmented environment."""
+        new_options = self.options.set_env(kwds)
+        return Context(new_options)
+
+    def set(  # pylint: disable=unused-argument
+        self,
+        *,
+        inherit_env=_UNSET,
+        encoding=_UNSET,
+        return_result=_UNSET,
+        allowed_exit_codes=_UNSET,
+    ):
+        "Return new context with custom options set."
+        kwargs = locals()
+        del kwargs["self"]
+        return Context(self.options.set(kwargs))
 
     def __call__(self, *command):
-        return Command(self, self._coerce(command))
+        return Command(self._coerce(command), self.options)
 
     def _coerce(self, command):
         """Flatten lists and coerce arguments to string.
@@ -46,9 +161,9 @@ class Context:
         return tuple(result)
 
 
-def context(*, env=None, encoding="utf-8") -> Context:
+def context() -> Context:
     "Construct a new execution context."
-    return Context(env, encoding)
+    return Context()
 
 
 def pipeline(*commands):
@@ -59,43 +174,14 @@ def pipeline(*commands):
 
 
 @dataclass(frozen=True)
-class Options:  # pylint: disable=too-many-instance-attributes
-    "Concrete class for per-command options."
-
-    env: Optional[dict[str, str]] = None
-    input: Any = b""
-    input_close: bool = False
-    output: Any = Redirect.CAPTURE
-    output_append: bool = False
-    output_close: bool = False
-    error: Any = Redirect.DEVNULL
-    error_append: bool = False
-    error_close: bool = False
-    return_result: bool = False
-    allowed_exit_codes: Optional[set] = None
-
-    def merge_env(self, context_env):
-        "Return our `env` merged with the global environment."
-        if not self.env:
-            return context_env
-        if context_env is not None:
-            return context_env | self.env
-        return os.environ | self.env
-
-
-_DEFAULT_OPTIONS = Options()
-
-
-@dataclass(frozen=True)
 class Command:
     """Concrete class for a command.
 
     A Command instance is lightweight and immutable.
     """
 
-    context: Context
     args: Any
-    options: Options = _DEFAULT_OPTIONS
+    options: Options
 
     def __post_init__(self):
         "Validate the command."
@@ -109,60 +195,36 @@ class Command:
 
     def stdin(self, input_, *, close=False):
         "Pass `input` to command's standard input."
-        if input_ is None:
-            input_ = Redirect.DEVNULL
-
-        new_options = dataclasses.replace(
-            self.options,
-            input=input_,
-            input_close=close,
-        )
-        return Command(self.context, self.args, new_options)
+        new_options = self.options.set_stdin(input_, close)
+        return Command(self.args, new_options)
 
     def stdout(self, output, *, append=False, close=False):
         "Redirect standard output to `output`."
-        if output is None:
-            output = Redirect.DEVNULL
-
-        new_options = dataclasses.replace(
-            self.options,
-            output=output,
-            output_append=append,
-            output_close=close,
-        )
-        return Command(self.context, self.args, new_options)
+        new_options = self.options.set_stdout(output, append, close)
+        return Command(self.args, new_options)
 
     def stderr(self, error, *, append=False, close=False):
         "Redirect standard error to `error`."
-        if error is None:
-            error = Redirect.DEVNULL
-
-        new_options = dataclasses.replace(
-            self.options,
-            error=error,
-            error_append=append,
-            error_close=close,
-        )
-        return Command(self.context, self.args, new_options)
+        new_options = self.options.set_stderr(error, append, close)
+        return Command(self.args, new_options)
 
     def env(self, **kwds):
         """Return new command with augmented environment."""
-        options = self.options
-        current = options.env or {}
-        updates = {k: str(v) for k, v in kwds.items()}
-        new_env = current | updates
-        new_options = dataclasses.replace(options, env=new_env)
-        return Command(self.context, self.args, new_options)
+        new_options = self.options.set_env(kwds)
+        return Command(self.args, new_options)
 
-    def set(self, *, return_result=_UNSET, allowed_exit_codes=_UNSET):
+    def set(  # pylint: disable=unused-argument
+        self,
+        *,
+        inherit_env=_UNSET,
+        encoding=_UNSET,
+        return_result=_UNSET,
+        allowed_exit_codes=_UNSET,
+    ):
         "Return new command with custom options set."
-        kwds = dict(
-            return_result=return_result,
-            allowed_exit_codes=allowed_exit_codes,
-        )
-        kwds = {key: value for key, value in kwds.items() if value is not _UNSET}
-        new_options = dataclasses.replace(self.options, **kwds)
-        return Command(self.context, self.args, new_options)
+        kwargs = locals()
+        del kwargs["self"]
+        return Command(self.args, self.options.set(kwargs))
 
     def task(self):
         "Wrap the command in a new asyncio task."
@@ -196,8 +258,7 @@ class Command:
         if not args:
             return self
         return Command(
-            self.context,
-            self.args + self.context._coerce(args),
+            self.args + self.options.context._coerce(args),
             self.options,
         )
 

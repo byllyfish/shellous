@@ -56,9 +56,7 @@ def test_str_env(sh):
 def test_repr(sh):
     "Command supplies a __repr__ implementation."
     cmd = sh("echo", "-n", "a b")
-    assert repr(cmd).startswith(
-        "Command(context=Context(env=None, encoding='utf-8'), args=('echo', '-n', 'a b'), options="
-    )
+    assert repr(cmd).startswith("Command(args=('echo', '-n', 'a b'), options=Options(")
 
 
 def test_non_existant(sh):
