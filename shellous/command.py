@@ -150,7 +150,8 @@ class Command:
         options = self.options
         current = options.env or {}
         updates = {k: str(v) for k, v in kwds.items()}
-        new_options = dataclasses.replace(options, env=current | updates)
+        new_env = current | updates
+        new_options = dataclasses.replace(options, env=new_env)
         return Command(self.context, self.args, new_options)
 
     def set(self, *, return_result=_UNSET, allowed_exit_codes=_UNSET):

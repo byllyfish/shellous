@@ -139,3 +139,16 @@ def test_set_arg(sh):
     """
     with pytest.raises(NotImplementedError, match="reserved"):
         sh("echo", {0})
+
+
+@pytest.mark.skip("FIXME")
+def test_hash_eq(sh):
+    "Test that a command is hashable."
+    cmd1 = sh("echo").env(FOO=1)
+    cmd2 = sh("echo").env(FOO=1)
+    assert hash(cmd1) is not None
+    assert hash(cmd1) == hash(cmd2)
+    assert cmd1 == cmd2
+
+    cmd3 = sh("echo").env(FOO=2)
+    assert cmd3 != cmd1

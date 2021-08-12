@@ -17,10 +17,7 @@ from shellous import (
     context,
 )
 
-unix_only = pytest.mark.skipif(
-    sys.platform == "win32", reason="Supported on Linux and MacOS only"
-)
-
+unix_only = pytest.mark.skipif(sys.platform == "win32", reason="Unix only")
 pytestmark = [pytest.mark.asyncio, unix_only]
 
 
@@ -382,6 +379,13 @@ async def test_manually_created_pipeline(sh):
 async def test_pipeline(sh):
     "Test a simple pipeline."
     pipe = sh("echo", "-n", "xyz") | sh("tr", "[:lower:]", "[:upper:]")
+    result = await pipe
+    assert result == "XYZ"
+
+
+async def test_pipeline_with_env(sh):
+    "Test a simple pipeline with an augmented environment."
+    pipe = sh("echo", "-n", "xyz").env(FOO=1) | sh("tr", "[:lower:]", "[:upper:]")
     result = await pipe
     assert result == "XYZ"
 
