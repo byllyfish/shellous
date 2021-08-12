@@ -6,8 +6,6 @@ name: CI
 on:
   push:
     branches: [ "*" ]
-  pull_request:
-    branches: [ main ]
 
 jobs:
   build:
@@ -41,6 +39,7 @@ jobs:
         $POETRY_RUN flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
         $POETRY_RUN flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+        $POETRY_RUN pylint -v -r y -f colorized --fail-under 9.5 shellous
     - name: Run Tests
       run: |
         $POETRY_RUN python -m pytest -v
