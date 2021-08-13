@@ -80,7 +80,10 @@ The "right" pipe operator `|` is syntactic sugar for calling `stdout`. The follo
 result = await (sh("echo", "abc") | Path("some_file"))
 ```
 
-### Example for Append
+### Append
+
+The `stdout()` and `stderr()` methods also take an optional `append` parameter. Setting `append=True` forces
+shellous to open the specified files in append-only mode.
 
 ```python
 result = await sh("echo", "abc").stdout(Path("some_file"), append=True)
@@ -95,8 +98,9 @@ result = await (sh("echo", "abc") >> Path("some_file"))
 
 ### Stderr
 
-There is no syntactic sugar for calling `stderr()`. You should consider calling the `stderr()` method on your
-**context** object; this will affect all commands created from it.
+There is no syntactic sugar for calling the `stderr()` method. 
+
+Consider calling `stderr()` on your **context** object; this will affect all commands created from it.
 
 ### Close
 
