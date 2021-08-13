@@ -46,6 +46,8 @@ jobs:
       run: |
         # Run pytest.
         $POETRY_RUN python -m pytest -v --color=yes
+      env:
+        PYTHONASYNCIODEBUG: "1"
     - name: Run Code Coverage (Linux only)
       if: matrix.os == 'ubuntu-latest'
       run: |

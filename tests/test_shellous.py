@@ -119,7 +119,7 @@ async def test_echo_exit_code(echo_cmd):
     assert result.output == "abc"
 
 
-@pytest.mark.xfail
+@pytest.mark.xfail(reason="FIXME")
 async def test_echo_cancel(echo_cmd):
     "When a command is cancelled, we should see partial output."
 
@@ -138,7 +138,7 @@ async def test_echo_cancel(echo_cmd):
     assert exc_info.value.command is cmd
 
 
-@pytest.mark.xfail
+@pytest.mark.xfail(reason="FIXME")
 async def test_echo_cancel_stringio(echo_cmd):
     "When a command is cancelled, we should see partial output."
 

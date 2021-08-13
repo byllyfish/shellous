@@ -139,7 +139,7 @@ def test_set_arg(sh):
         sh("echo", {0})
 
 
-@pytest.mark.xfail
+@pytest.mark.xfail(reason="FIXME")
 def test_hash_eq(sh):
     "Test that a command is hashable."
     cmd1 = sh("echo").env(FOO=1)

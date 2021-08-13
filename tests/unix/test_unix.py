@@ -17,7 +17,7 @@ from shellous import (
     context,
 )
 
-unix_only = pytest.mark.skipif(sys.platform == "win32", reason="Unix only")
+unix_only = pytest.mark.skipif(sys.platform == "win32", reason="Unix")
 pytestmark = [pytest.mark.asyncio, unix_only]
 
 
@@ -329,7 +329,7 @@ async def test_redirect_error_to_stdout(python_script, capfd):
     assert capfd.readouterr() == ("", "")
 
 
-@pytest.mark.xfail
+@pytest.mark.xfail(reason="FIXME")
 async def test_redirect_just_error_to_stdout(python_script, capfd):
     "Test redirection options with stderr output."
     result = await python_script.stdout(DEVNULL).stderr(STDOUT)
@@ -351,7 +351,7 @@ async def test_redirect_error_to_devnull(python_script, capfd):
     assert capfd.readouterr() == ("", "")
 
 
-@pytest.mark.xfail
+@pytest.mark.xfail(reason="FIXME")
 async def test_redirect_error_to_capture(python_script):
     "Test using CAPTURE when not using `async with`."
     with pytest.raises(ValueError, match="CAPTURE only supported for 'async with'"):
@@ -466,7 +466,7 @@ async def test_pipeline_async_context_manager(sh):
     assert result == b"A"
 
 
-@pytest.mark.xfail
+@pytest.mark.xfail(reason="FIXME")
 async def test_gather_same_cmd(sh):
     """Test passing the same cmd to gather().
 
