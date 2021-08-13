@@ -351,8 +351,9 @@ async def test_redirect_error_to_devnull(python_script, capfd):
     assert capfd.readouterr() == ("", "")
 
 
+@pytest.mark.xfail
 async def test_redirect_error_to_capture(python_script):
-    "Test redirection options with both stdout and stderr output."
+    "Test using CAPTURE when not using `async with`."
     with pytest.raises(ValueError, match="CAPTURE only supported for 'async with'"):
         await python_script.stderr(CAPTURE)
 
@@ -465,7 +466,7 @@ async def test_pipeline_async_context_manager(sh):
     assert result == b"A"
 
 
-@pytest.mark.skip("FIXME")
+@pytest.mark.xfail
 async def test_gather_same_cmd(sh):
     """Test passing the same cmd to gather().
 

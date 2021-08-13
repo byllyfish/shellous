@@ -168,6 +168,7 @@ def context() -> Context:
 
 def pipeline(*commands):
     "Construct a new Pipeline object."
+    # pylint: disable=import-outside-toplevel,cyclic-import
     from shellous.pipeline import Pipeline
 
     return Pipeline(commands)
@@ -192,6 +193,14 @@ class Command:
     def name(self) -> str:
         "Returns the name of the program being run."
         return self.args[0]
+
+    @property
+    def capturing(self) -> bool:
+        "Return true if the stdin or stderr are set to CAPTURE."
+        return (
+            self.options.input == Redirect.CAPTURE
+            or self.options.error == Redirect.CAPTURE
+        )
 
     def stdin(self, input_, *, close=False):
         "Pass `input` to command's standard input."
@@ -226,10 +235,10 @@ class Command:
         del kwargs["self"]
         return Command(self.args, self.options.set(kwargs))
 
-    def task(self, *, streams_future=None):
+    def task(self, *, _streams_future=None):
         "Wrap the command in a new asyncio task."
         return asyncio.create_task(
-            run(self, streams_future),
+            run(self, _streams_future=_streams_future),
             name=f"{self.name}-{id(self)}",
         )
 

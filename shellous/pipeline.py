@@ -8,6 +8,7 @@ from typing import Any
 
 from shellous.command import Command
 from shellous.runner import PipeRunner, run_pipe, run_pipe_iter
+from shellous.util import Redirect
 
 
 @dataclass(frozen=True)
@@ -20,6 +21,19 @@ class Pipeline:
         "Validate the pipeline."
         if len(self.commands) == 0:
             raise ValueError("Pipeline must include at least one command")
+
+    @property
+    def name(self):
+        "Return the name of the pipeline."
+        return "|".join(cmd.name for cmd in self.commands)
+
+    @property
+    def captured(self):
+        "Return true if stdin or stderr streams are captured."
+        return (
+            self.commands[0].options.input == Redirect.CAPTURE
+            or self.commands[-1].options.error == Redirect.CAPTURE
+        )
 
     @property
     def options(self):

@@ -16,7 +16,7 @@ LOGGER = logging.getLogger(__name__)
 class RunOptions:
     """RunOptions is context manager to assist in running a command.
 
-    This class set up low-level I/O redirection and helps close open file
+    This class sets up low-level I/O redirection and helps close open file
     descriptors.
 
     ```
@@ -277,6 +277,9 @@ class PipeRunner:
     """
 
     def __init__(self, pipe, *, capturing=False):
+        """`capturing=True` indicates we are within an `async with` block and
+        client needs to access `stdin` and `stderr` streams.
+        """
         self.pipe = pipe
         self.cancelled = False
         self.tasks = None
@@ -286,6 +289,7 @@ class PipeRunner:
         self.encoding = pipe.commands[-1].options.encoding
 
     def make_result(self):
+        "Return `Result` object for PipeRunner."
         return make_result(self.pipe, self.results)
 
     async def __aenter__(self):
@@ -296,37 +300,10 @@ class PipeRunner:
         stderr = None
 
         try:
-            cmds = list(self.pipe.commands)
-
-            n = len(cmds)
-            for i in range(n - 1):
-                (read_fd, write_fd) = os.pipe()
-                open_fds.extend((read_fd, write_fd))
-
-                cmds[i] = cmds[i].stdout(write_fd, close=True)
-                cmds[i + 1] = cmds[i + 1].stdin(read_fd, close=True)
-
-            for i in range(n):
-                cmds[i] = cmds[i].set(return_result=True)
+            cmds = self._setup_pipeline(open_fds)
 
             if self.capturing:
-                # When capturing, we need the first and last commands in the
-                # pipe to signal when they are ready. We also need to signal
-                # them back when we are done.
-
-                loop = asyncio.get_event_loop()
-                first_fut = loop.create_future()
-                last_fut = loop.create_future()
-                first_task = cmds[0].task(streams_future=first_fut)
-                last_task = cmds[-1].task(streams_future=last_fut)
-
-                middle_tasks = [cmd.task() for cmd in cmds[1:-1]]
-                self.tasks = [first_task] + middle_tasks + [last_task]
-                # self.done_futures = (first_fut[1], last_fut[1])
-
-                first_ready, last_ready = await asyncio.gather(first_fut, last_fut)
-                stdin, stdout, stderr = (first_ready[0], last_ready[1], last_ready[2])
-
+                stdin, stdout, stderr = await self._setup_capturing(cmds)
             else:
                 self.tasks = [cmd.task() for cmd in cmds]
 
@@ -350,23 +327,62 @@ class PipeRunner:
 
         self.results = await asyncio.gather(*self.tasks)
 
+    def _setup_pipeline(self, open_fds):
+        """Return the pipeline stitched together with pipe fd's.
 
-async def run(command, streams_future=None):
+        Each created open file descriptor is added to `open_fds` so it can
+        be closed if there's an exception later.
+        """
+        cmds = list(self.pipe.commands)
+
+        cmd_count = len(cmds)
+        for i in range(cmd_count - 1):
+            (read_fd, write_fd) = os.pipe()
+            open_fds.extend((read_fd, write_fd))
+
+            cmds[i] = cmds[i].stdout(write_fd, close=True)
+            cmds[i + 1] = cmds[i + 1].stdin(read_fd, close=True)
+
+        for i in range(cmd_count):
+            cmds[i] = cmds[i].set(return_result=True)
+
+        return cmds
+
+    async def _setup_capturing(self, cmds):
+        """Set up capturing and return (stdin, stdout, stderr) streams."""
+
+        loop = asyncio.get_event_loop()
+        first_fut = loop.create_future()
+        last_fut = loop.create_future()
+        first_task = cmds[0].task(_streams_future=first_fut)
+        last_task = cmds[-1].task(_streams_future=last_fut)
+
+        middle_tasks = [cmd.task() for cmd in cmds[1:-1]]
+        self.tasks = [first_task] + middle_tasks + [last_task]
+
+        # When capturing, we need the first and last commands in the
+        # pipe to signal when they are ready.
+        first_ready, last_ready = await asyncio.gather(first_fut, last_fut)
+        stdin, stdout, stderr = (first_ready[0], last_ready[1], last_ready[2])
+
+        return (stdin, stdout, stderr)
+
+
+async def run(command, *, _streams_future=None):
     "Run a command."
-    output_bytes = None
+    assert _streams_future is not None or not command.capturing
 
+    output_bytes = None
     runner = Runner(command)
     async with runner as (stdin, stdout, stderr):
-        if streams_future is not None:
-            streams_future.set_result((stdin, stdout, stderr))
-            # await streams_future[1]
+        if _streams_future is not None:
+            # Return streams to caller in another task.
+            _streams_future.set_result((stdin, stdout, stderr))
 
         else:
-            if stderr is not None:
-                raise ValueError("CAPTURE only supported for 'async with'")
-
-            # if stdin is not None:
-            #    runner.add_task(_feed_writer(runner.options.input_bytes, stdin))
+            # Read the output here and return it.
+            assert stdin is None
+            assert stderr is None
 
             if stdout is not None:
                 output_bytes = await stdout.read()
@@ -376,13 +392,12 @@ async def run(command, streams_future=None):
 
 async def run_iter(command):
     "Run a command and iterate over output."
+    assert not command.capturing
+
     runner = Runner(command)
     async with runner as (stdin, stdout, stderr):
-        if stderr is not None:
-            raise ValueError("CAPTURE only supported for 'async with'")
-
-        # if stdin is not None:
-        #    runner.add_task(_feed_writer(runner.options.input_bytes, stdin))
+        assert stdin is None
+        assert stderr is None
 
         encoding = runner.options.encoding
         async for line in stdout:
@@ -394,8 +409,8 @@ async def run_iter(command):
 async def run_pipe(pipe):
     "Run a pipeline"
 
-    n = len(pipe.commands)
-    if n == 1:
+    cmd_count = len(pipe.commands)
+    if cmd_count == 1:
         return await run(pipe.commands[0])
 
     runner = PipeRunner(pipe)
@@ -408,10 +423,8 @@ async def run_pipe_iter(pipe):
     "Run a pipeline and iterate over standard output."
     runner = PipeRunner(pipe, capturing=True)
     async with runner as (stdin, stdout, stderr):
-        if stderr is not None:
-            raise ValueError("CAPTURE only supported for 'async with'")
-        if stdin is not None:
-            raise ValueError("CAPTURE only supported for 'async with'")
+        assert stdin is None
+        assert stderr is None
 
         encoding = runner.encoding
         async for line in stdout:

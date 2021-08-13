@@ -19,6 +19,3 @@ flake8 = "^3.9.2"
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
-
-[tool.pylint.'BASIC']
-good-names = ['i,j,k,ex,_,n']
