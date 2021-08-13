@@ -27,9 +27,9 @@ pass for `arg`.
 | bytes | Read input from bytes object. |
 | *file object*<sup>1</sup> | Read input from open file object. |
 | int | Read input from existing file descriptor. |
-| CAPTURE | Read input from the empty string. |
 | DEVNULL | Read input from `/dev/null`. |
 | INHERIT  | Read input from existing `sys.stdin`. |
+| CAPTURE | Used with async context manager API only. |
 
 ### Example
 
@@ -62,7 +62,7 @@ instead, set the `append` keyword argument to True. The behavior  depends on the
 | bytes | Write output to file path specified by bytes object. | Open file for append
 | *file object*<sup>1</sup> | Write output to open file object. | Ignored
 | int | Write output to existing file descriptor. | Ignored
-| CAPTURE | Return output as result. | Ignored
+| CAPTURE | Return standard output. Used with async context manager API. | Ignored
 | DEVNULL | Write output to `/dev/null`. | Ignored
 | INHERIT  | Write output to existing `sys.stdout` or `sys.stderr`. | Ignored
 | STDOUT | Redirect stderr to same place as stdout. | Ignored
@@ -110,7 +110,7 @@ file descriptors passed as `int`. It closes them immediately after starting the 
 Default Settings
 ----------------
 
-- Standard input is read from the empty string (CAPTURE).
+- Standard input is read from the empty string.
 - Standard out is captured by the program and returned (CAPTURE).
 - Standard error is discarded (DEVNULL).
 

@@ -226,10 +226,10 @@ class Command:
         del kwargs["self"]
         return Command(self.args, self.options.set(kwargs))
 
-    def task(self):
+    def task(self, *, streams_future=None):
         "Wrap the command in a new asyncio task."
         return asyncio.create_task(
-            run(self),
+            run(self, streams_future),
             name=f"{self.name}-{id(self)}",
         )
 

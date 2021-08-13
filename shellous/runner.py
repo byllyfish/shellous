@@ -76,14 +76,24 @@ class RunOptions:
 
     def _setup_input(self, input_, close, encoding):
         "Set up process input."
+        assert input_ is not None
+
         stdin = asyncio.subprocess.PIPE
         input_bytes = None
 
-        if input_ is None or isinstance(input_, bytes):
+        if isinstance(input_, bytes):
             input_bytes = input_
         elif isinstance(input_, os.PathLike):
             stdin = open(input_, "rb")
             self.open_fds.append(stdin)
+        elif isinstance(input_, Redirect) and input_.is_custom():
+            # Custom support for Redirect constants.
+            if input_ == Redirect.INHERIT:
+                stdin = sys.stdin
+            else:
+                # CAPTURE uses stdin == PIPE.
+                assert input_ == Redirect.CAPTURE
+                assert stdin == asyncio.subprocess.PIPE
         elif isinstance(input_, int):  # file descriptor
             stdin = input_
             if close:
@@ -97,34 +107,35 @@ class RunOptions:
 
     def _setup_output(self, output, append, close, sys_stream):
         "Set up process output. Used for both stdout and stderr."
+        assert output is not None
+
         stdout = asyncio.subprocess.PIPE
 
-        if output is not None:
-            if isinstance(output, (str, bytes, os.PathLike)):
-                mode = "ab" if append else "wb"
-                # FIXME: we really just need the file descriptor...
-                stdout = open(output, mode=mode)
-                self.open_fds.append(stdout)
-            elif isinstance(output, Redirect) and output.is_custom():
-                # Custom support for Redirect constants.
-                if output == Redirect.INHERIT:
-                    stdout = sys_stream
-                else:
-                    # CAPTURE uses stdout == PIPE.
-                    assert output == Redirect.CAPTURE
-                    assert stdout == asyncio.subprocess.PIPE
-            elif isinstance(output, int):
-                # File descriptor or magic constant (e.g. DEVNULL).
-                stdout = output
-                if close:
-                    self.open_fds.append(stdout)
-            elif isinstance(output, io.StringIO):
-                pass
-            elif isinstance(output, io.IOBase):
-                # Client-managed File-like object.
-                stdout = output
+        if isinstance(output, (str, bytes, os.PathLike)):
+            mode = "ab" if append else "wb"
+            # FIXME: we really just need the file descriptor...
+            stdout = open(output, mode=mode)
+            self.open_fds.append(stdout)
+        elif isinstance(output, Redirect) and output.is_custom():
+            # Custom support for Redirect constants.
+            if output == Redirect.INHERIT:
+                stdout = sys_stream
             else:
-                raise TypeError(f"unsupported type: {output!r}")
+                # CAPTURE uses stdout == PIPE.
+                assert output == Redirect.CAPTURE
+                assert stdout == asyncio.subprocess.PIPE
+        elif isinstance(output, int):
+            # File descriptor or magic constant (e.g. DEVNULL).
+            stdout = output
+            if close:
+                self.open_fds.append(stdout)
+        elif isinstance(output, io.StringIO):
+            pass
+        elif isinstance(output, io.IOBase):
+            # Client-managed File-like object.
+            stdout = output
+        else:
+            raise TypeError(f"unsupported type: {output!r}")
 
         return stdout
 
@@ -201,6 +212,11 @@ class Runner:
                 self.add_task(_copy_sync(stdout, output, opts.encoding))
                 stdout = None
 
+        if stdin is not None:
+            if opts.input_bytes is not None:
+                self.add_task(_feed_writer(opts.input_bytes, stdin))
+                stdin = None
+
         return (stdin, stdout, stderr)
 
     async def __aexit__(self, _exc_type, exc_value, _exc_tb):
@@ -251,20 +267,109 @@ class Runner:
         return f"<Runner cancelled={self.cancelled}{arginfo}{procinfo}{taskinfo}>"
 
 
-async def run(command):
+class PipeRunner:
+    """PipeRunner is an asynchronous context manager that runs a pipeline.
+
+    runner = PipeRunner(pipe)
+    async with runner as (stdin, stdout, stderr):
+        # process stdin, stdout, stderr (if not None)
+    # Do something with finished `runner`.
+    """
+
+    def __init__(self, pipe, *, capturing=False):
+        self.pipe = pipe
+        self.cancelled = False
+        self.tasks = None
+        self.results = None
+        self.done_futures = []
+        self.capturing = capturing
+        self.encoding = pipe.commands[-1].options.encoding
+
+    def make_result(self):
+        return make_result(self.pipe, self.results)
+
+    async def __aenter__(self):
+        "Set up redirections and launch pipeline."
+        open_fds = []
+        stdin = None
+        stdout = None
+        stderr = None
+
+        try:
+            cmds = list(self.pipe.commands)
+
+            n = len(cmds)
+            for i in range(n - 1):
+                (read_fd, write_fd) = os.pipe()
+                open_fds.extend((read_fd, write_fd))
+
+                cmds[i] = cmds[i].stdout(write_fd, close=True)
+                cmds[i + 1] = cmds[i + 1].stdin(read_fd, close=True)
+
+            for i in range(n):
+                cmds[i] = cmds[i].set(return_result=True)
+
+            if self.capturing:
+                # When capturing, we need the first and last commands in the
+                # pipe to signal when they are ready. We also need to signal
+                # them back when we are done.
+
+                loop = asyncio.get_event_loop()
+                first_fut = loop.create_future()
+                last_fut = loop.create_future()
+                first_task = cmds[0].task(streams_future=first_fut)
+                last_task = cmds[-1].task(streams_future=last_fut)
+
+                middle_tasks = [cmd.task() for cmd in cmds[1:-1]]
+                self.tasks = [first_task] + middle_tasks + [last_task]
+                # self.done_futures = (first_fut[1], last_fut[1])
+
+                first_ready, last_ready = await asyncio.gather(first_fut, last_fut)
+                stdin, stdout, stderr = (first_ready[0], last_ready[1], last_ready[2])
+
+            else:
+                self.tasks = [cmd.task() for cmd in cmds]
+
+        except Exception:
+            _close_fds(open_fds)
+            raise
+
+        return (stdin, stdout, stderr)
+
+    async def __aexit__(self, _exc_type, exc_value, _exc_tb):
+        "Wait for pipeline to exit and handle cancellation."
+
+        # FIXME: Handle exceptions...
+        if exc_value and not isinstance(exc_value, asyncio.CancelledError):
+            print(exc_value)
+            return False
+
+        # Signal the first and last task that we are done.
+        for fut in self.done_futures:
+            fut.set_result(None)
+
+        self.results = await asyncio.gather(*self.tasks)
+
+
+async def run(command, streams_future=None):
     "Run a command."
     output_bytes = None
 
     runner = Runner(command)
     async with runner as (stdin, stdout, stderr):
-        if stderr is not None:
-            raise ValueError("CAPTURE only supported for 'async with'")
+        if streams_future is not None:
+            streams_future.set_result((stdin, stdout, stderr))
+            # await streams_future[1]
 
-        if stdin is not None:
-            runner.add_task(_feed_writer(runner.options.input_bytes, stdin))
+        else:
+            if stderr is not None:
+                raise ValueError("CAPTURE only supported for 'async with'")
 
-        if stdout is not None:
-            output_bytes = await stdout.read()
+            # if stdin is not None:
+            #    runner.add_task(_feed_writer(runner.options.input_bytes, stdin))
+
+            if stdout is not None:
+                output_bytes = await stdout.read()
 
     return runner.make_result(output_bytes)
 
@@ -276,8 +381,8 @@ async def run_iter(command):
         if stderr is not None:
             raise ValueError("CAPTURE only supported for 'async with'")
 
-        if stdin is not None:
-            runner.add_task(_feed_writer(runner.options.input_bytes, stdin))
+        # if stdin is not None:
+        #    runner.add_task(_feed_writer(runner.options.input_bytes, stdin))
 
         encoding = runner.options.encoding
         async for line in stdout:
@@ -293,37 +398,26 @@ async def run_pipe(pipe):
     if n == 1:
         return await run(pipe.commands[0])
 
-    open_fds = []
-    try:
-        cmds = list(pipe.commands)
-
-        for i in range(n - 1):
-            (read_fd, write_fd) = os.pipe()
-            open_fds.extend((read_fd, write_fd))
-
-            cmds[i] = cmds[i].stdout(write_fd, close=True)
-            cmds[i + 1] = cmds[i + 1].stdin(read_fd, close=True)
-
-        for i in range(n):
-            cmds[i] = cmds[i].set(return_result=True)
-
-    except Exception:
-        _close_fds(open_fds)
-        raise
-
-    # Even though cmd is `Awaitable`, we explicitly create a task for each
-    # cmd because internally `gather` relies on an `arg_to_fut` mapping
-    # which will be confused if two cmd's are "equal".
-    tasks = [cmd.task() for cmd in cmds]
-
-    results = await asyncio.gather(*tasks)
-
-    return make_result(pipe, results)
+    runner = PipeRunner(pipe)
+    async with runner:
+        pass
+    return runner.make_result()
 
 
-async def run_pipe_iter(_pipe):
+async def run_pipe_iter(pipe):
     "Run a pipeline and iterate over standard output."
-    return NotImplemented
+    runner = PipeRunner(pipe, capturing=True)
+    async with runner as (stdin, stdout, stderr):
+        if stderr is not None:
+            raise ValueError("CAPTURE only supported for 'async with'")
+        if stdin is not None:
+            raise ValueError("CAPTURE only supported for 'async with'")
+
+        encoding = runner.encoding
+        async for line in stdout:
+            yield decode(line, encoding)
+
+    runner.make_result()
 
 
 def _log_exception(func):

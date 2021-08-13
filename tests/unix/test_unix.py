@@ -329,6 +329,14 @@ async def test_redirect_error_to_stdout(python_script, capfd):
     assert capfd.readouterr() == ("", "")
 
 
+@pytest.mark.xfail
+async def test_redirect_just_error_to_stdout(python_script, capfd):
+    "Test redirection options with stderr output."
+    result = await python_script.stdout(DEVNULL).stderr(STDOUT)
+    assert result == "hi stderr\n"
+    assert capfd.readouterr() == ("", "")
+
+
 async def test_redirect_error_to_inherit(python_script, capfd):
     "Test redirection options with both stdout and stderr output."
     result = await python_script.stderr(INHERIT)
@@ -351,7 +359,7 @@ async def test_redirect_error_to_capture(python_script):
 
 async def test_async_context_manager(sh):
     "Use `async with` to read/write bytes incrementally."
-    tr = sh("tr", "[:lower:]", "[:upper:]").stderr(DEVNULL)
+    tr = sh("tr", "[:lower:]", "[:upper:]").stdin(CAPTURE)
 
     async with tr.runner() as (stdin, stdout, stderr):
         assert stderr is None
@@ -432,3 +440,38 @@ async def test_allowed_exit_codes(sh):
     cmd = sh("cat", "/tmp/__does_not_exist__")
     result = await cmd
     assert result == "cat: /tmp/__does_not_exist__: No such file or directory\n"
+
+
+async def test_pipeline_async_iteration(sh):
+    "Use `async for` to read stdout line by line."
+    echo = sh("echo", "-n", "line1\n", "line2\n", "line3")
+    cat = sh("cat")
+    result = [line async for line in (echo | cat)]
+    assert result == ["line1\n", " line2\n", " line3"]
+
+
+async def test_pipeline_async_context_manager(sh):
+    "Use `async with` to read/write bytes incrementally."
+    tr = sh("tr", "[:lower:]", "[:upper:]")
+    pipe = (tr | sh("cat")).stdin(CAPTURE)
+    async with pipe.runner() as (stdin, stdout, stderr):
+        assert stderr is None
+
+        # N.B. We won't deadlock writing/reading a single byte.
+        stdin.write(b"a")
+        stdin.close()
+        result = await stdout.read()
+
+    assert result == b"A"
+
+
+@pytest.mark.skip("FIXME")
+async def test_gather_same_cmd(sh):
+    """Test passing the same cmd to gather().
+
+    Internally, gather's implementation uses an `arg_to_fut` mapping.
+    Because our awaitables are identical, this assumption doesn't work...
+    """
+    cmd = sh(sys.executable, "-c", "import secrets; print(secrets.randbits(31))")
+    results = await asyncio.gather(cmd, cmd)
+    assert results[0] != results[1]
