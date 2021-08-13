@@ -10,6 +10,11 @@ from shellous import INHERIT, Result, ResultError, context
 pytestmark = pytest.mark.asyncio
 
 
+def test_debug_mode(event_loop):
+    "Tests should be running on a loop with asyncio debug mode set."
+    assert event_loop.get_debug()
+
+
 @pytest.fixture
 def python_script():
     """Create a python script that can be used in tests.

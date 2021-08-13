@@ -15,6 +15,7 @@ mypy = "^0.910"
 black = {version = "^21.7b0", allow-prereleases = true}
 codecov = "^2.1.12"
 flake8 = "^3.9.2"
+pytest-dotenv = "^0.5.2"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -22,3 +23,4 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.pytest.ini_options]
 filterwarnings = ["default"]
+env_files = ["tests/tests.env"]
