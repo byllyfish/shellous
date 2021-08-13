@@ -24,6 +24,12 @@ Benefits
 - Easily capture output or redirect stdin, stdout and stderr to files.
 - Easily construct pipes.
 
+Requirements
+------------
+
+- Requires Python 3.9 or later.
+- Runs on Linux, MacOS and Windows.
+
 Basic Usage
 -----------
 
@@ -119,6 +125,8 @@ To redirect stdin using a file's contents, use a `Path` object from `pathlib`.
 '  137968\n'
 ```
 
+[More on redirection...](docs/redirection.md)
+
 Redirecting Standard Output
 ---------------------------
 
@@ -140,6 +148,8 @@ To redirect standard output with append, use the `>>` operator.
 >>> output_file.read_bytes()
 b'abc\ndef\n'
 ```
+
+[More on redirection...](docs/redirection.md)
 
 Redirecting Standard Error
 --------------------------
@@ -167,6 +177,7 @@ Traceback (most recent call last):
 shellous.result.ResultError: (Result(output_bytes=b'', exit_code=1, cancelled=False, ...
 ```
 
+[More on redirection...](docs/redirection.md)
 
 Pipelines
 ---------
