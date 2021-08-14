@@ -39,6 +39,20 @@ class RunOptions:
         _close_fds(self.open_fds)
 
     def __enter__(self):
+        "Set up I/O redirections."
+        try:
+            self._setup()
+            return self
+        except Exception as ex:
+            LOGGER.warning("RunOptions.__enter__ %r ex=%r", self.command.name, ex)
+            raise
+
+    def __exit__(self, *exc):
+        "Make sure those file descriptors are cleaned up."
+        self.close_fds()
+
+    def _setup(self):
+        "Set up I/O redirections."
         options = self.command.options
 
         stdin, input_bytes = self._setup_input(
@@ -67,12 +81,6 @@ class RunOptions:
             "stderr": stderr,
             "env": options.merge_env(),
         }
-
-        return self
-
-    def __exit__(self, *exc):
-        "Make sure those file descriptors are cleaned up."
-        self.close_fds()
 
     def _setup_input(self, input_, close, encoding):
         "Set up process input."
@@ -157,6 +165,11 @@ class Runner:
         self.proc = None
         self.tasks = []
 
+    @property
+    def name(self):
+        "Return name of process to run."
+        return self.options.command.name
+
     def make_result(self, output_bytes):
         "Check process exit code and raise a ResultError if necessary."
         code = self.proc.returncode
@@ -177,18 +190,37 @@ class Runner:
         task = asyncio.create_task(coro, name=str(self.options.command))
         self.tasks.append(task)
 
-    async def wait(self):
+    async def wait(self, *, kill=False):
         "Wait for background I/O tasks and process to finish."
-        if self.tasks:
-            tasks = self.tasks
-            self.tasks = []
-            await asyncio.gather(*tasks)
-        await self.proc.wait()
+        if not self.proc:
+            return
+
+        if kill:
+            LOGGER.info("Logger.wait killing process %r", self.proc)
+            self.proc.kill()
+
+        try:
+            if self.tasks:
+                tasks = self.tasks
+                self.tasks = []
+                await asyncio.gather(*tasks)
+            await self.proc.wait()
+        except Exception as ex:
+            LOGGER.error("Logger.wait exception %r", ex)
+            raise
 
     async def __aenter__(self):
         "Set up redirections and launch subprocess."
-        LOGGER.info("Runner.__aenter__ %r", self.options.command.name)
+        LOGGER.info("Runner.__aenter__ %r", self.name)
+        try:
+            return await self._setup()
+        except Exception as ex:
+            LOGGER.warning("Runner.__aenter__ %r ex=%r", self.name, ex)
+            await self.wait(kill=True)
+            raise
 
+    async def _setup(self):
+        "Set up redirections and launch subprocess."
         with self.options as opts:
             self.proc = await asyncio.create_subprocess_exec(
                 *opts.args,
@@ -224,37 +256,31 @@ class Runner:
         "Wait for process to exit and handle cancellation."
         LOGGER.info(
             "Runner.__aexit__ %r exc_value=%r proc=%r returncode=%r",
-            self.options.command.name,
+            self.name,
             exc_value,
             self.proc,
             self.proc.returncode if self.proc else "n/a",
         )
 
-        suppress = False  # set True if exc should be suppressed
+        try:
+            if exc_value is not None:
+                return await self._cleanup(exc_value)
+            return await self.wait()
+        except Exception as ex:
+            LOGGER.warning("Runner.__aexit__ %r ex=%r", self.name, ex)
+            raise
 
-        if exc_value is None:
-            await self.wait()
+    async def _cleanup(self, exc_value):
+        "Clean up when there is an exception."
 
-        # Check for exceptions that should NEVER be suppressed or delayed.
+        # We only suppress CancelledError.
         if not isinstance(exc_value, asyncio.CancelledError):
-            return suppress
+            await self.wait(kill=True)
+            return False
 
-        # Check for cancellation.
-        if isinstance(exc_value, asyncio.CancelledError):
-            self.cancelled = True
-            suppress = True
-            self.proc.kill()
-
-        # Wait here for process exit just in case context manager's inner code
-        # does not. We also need to wait after sending a kill if cancelling...
-
-        # FIXME: This can be cancelled or raise an exception. TEST!
-        # Also, we need a timeout if self.cancelled is True.
-        for task in self.tasks:
-            assert task.done()
-        await self.wait()
-
-        return suppress
+        self.cancelled = True
+        await self.wait(kill=True)
+        return True
 
     def __repr__(self):
         "Return compact representation of Runner instance."
@@ -380,20 +406,29 @@ def _log_cmd(func):
     async def _wrapper(*args, **kwargs):
         try:
             LOGGER.info("enter %s(%r)", func.__name__, args[0].name)
-            return await func(*args, **kwargs)
+            result = await func(*args, **kwargs)
+            LOGGER.info("exit %s(%r)", func.__name__, args[0].name)
+            return result
         except ResultError as ex:
-            LOGGER.info("result error: %r", ex.result)
+            LOGGER.info(
+                "exit %s(%r) error: %r",
+                func.__name__,
+                args[0].name,
+                ex.result,
+            )
             raise
         except Exception as ex:
-            LOGGER.info("exception %s(%r) %r", func.__name__, args[0].name, ex)
+            LOGGER.warning(
+                "exit %s(%r) exception %r",
+                func.__name__,
+                args[0].name,
+                ex,
+            )
             raise
-        finally:
-            LOGGER.info("exit %s(%r)", func.__name__, args[0].name)
 
     return _wrapper
 
 
-@_log_cmd
 async def run(command, *, _streams_future=None):
     "Run a command."
     assert _streams_future is not None or not command.capturing
