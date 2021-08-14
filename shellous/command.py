@@ -191,8 +191,14 @@ class Command:
 
     @property
     def name(self) -> str:
-        "Returns the name of the program being run."
-        return self.args[0]
+        """Returns the name of the program being run.
+
+        Names longer than 31 characters are truncated.
+        """
+        name = self.args[0]
+        if len(name) > 31:
+            return f"...{name[-31:]}"
+        return name
 
     @property
     def capturing(self) -> bool:

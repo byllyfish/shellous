@@ -27,6 +27,12 @@ def test_name(sh):
     assert cmd.name == "echo"
 
 
+def test_name_long(sh):
+    "Test command's name property with long name."
+    cmd = sh("/venv-123456789/name_longer_than_many_names")
+    assert cmd.name == "...789/name_longer_than_many_names"
+
+
 def test_apply_concat(sh):
     "You can apply an arglist to an existing command."
     cmd = sh("echo", "-n")
