@@ -21,6 +21,11 @@ def test_pipeline_cmd(sh):
     assert pipe.commands == (sh("cmd1"), sh("cmd2"))
 
 
+def test_pipeline_name(sh):
+    pipe = pipeline(sh("cmd1"), sh("cmd2"))
+    assert pipe.name == "cmd1|cmd2"
+
+
 def test_pipeline_cmd_append(sh):
     pipe = pipeline(sh("cmd1").stdin("a"), sh("cmd2").stdout("b", append=True))
     assert pipe.commands == (sh("cmd1").stdin("a"), sh("cmd2").stdout("b", append=True))

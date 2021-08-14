@@ -211,11 +211,11 @@ class Runner:
 
     async def __aenter__(self):
         "Set up redirections and launch subprocess."
-        LOGGER.info("Runner.__aenter__ %r", self.name)
+        LOGGER.info("Runner enter %r", self.name)
         try:
             return await self._setup()
         except Exception as ex:
-            LOGGER.warning("Runner.__aenter__ %r ex=%r", self.name, ex)
+            LOGGER.warning("Runner enter %r ex=%r", self.name, ex)
             await self.wait(kill=True)
             raise
 
@@ -255,7 +255,7 @@ class Runner:
     async def __aexit__(self, _exc_type, exc_value, _exc_tb):
         "Wait for process to exit and handle cancellation."
         LOGGER.info(
-            "Runner.__aexit__ %r exc_value=%r proc=%r returncode=%r",
+            "Runner exit %r exc_value=%r proc=%r exit_code=%r",
             self.name,
             exc_value,
             self.proc,
@@ -265,22 +265,19 @@ class Runner:
         try:
             if exc_value is not None:
                 return await self._cleanup(exc_value)
-            return await self.wait()
+            await self.wait()
         except Exception as ex:
-            LOGGER.warning("Runner.__aexit__ %r ex=%r", self.name, ex)
+            LOGGER.warning("Runner exit %r ex=%r", self.name, ex)
             raise
 
     async def _cleanup(self, exc_value):
-        "Clean up when there is an exception."
+        "Clean up when there is an exception. Return true to suppress exception."
 
         # We only suppress CancelledError.
-        if not isinstance(exc_value, asyncio.CancelledError):
-            await self.wait(kill=True)
-            return False
-
-        self.cancelled = True
+        self.cancelled = isinstance(exc_value, asyncio.CancelledError)
         await self.wait(kill=True)
-        return True
+
+        return self.cancelled
 
     def __repr__(self):
         "Return compact representation of Runner instance."
@@ -317,22 +314,68 @@ class PipeRunner:
         self.cancelled = False
         self.tasks = None
         self.results = None
-        self.done_futures = []
         self.capturing = capturing
         self.encoding = pipe.commands[-1].options.encoding
+
+    @property
+    def name(self):
+        "Return name of the pipeline."
+        return self.pipe.name
 
     def make_result(self):
         "Return `Result` object for PipeRunner."
         return make_result(self.pipe, self.results)
 
+    async def wait(self, *, kill=False):
+        "Wait for pipeline to finish."
+        assert self.results is None
+        assert self.tasks is not None
+
+        if kill:
+            for task in self.tasks:
+                task.cancel()
+
+        self.results = await asyncio.gather(*self.tasks)
+
     async def __aenter__(self):
         "Set up redirections and launch pipeline."
-        open_fds = []
-        stdin = None
-        stdout = None
-        stderr = None
+        LOGGER.info("Pipeline enter %r", self.name)
+        try:
+            return await self._setup()
+        except Exception as ex:
+            LOGGER.warning("PipeRunner enter %r ex=%r", self.name, ex)
+            await self.wait(kill=True)  # FIXME
+            raise
+
+    async def __aexit__(self, _exc_type, exc_value, _exc_tb):
+        "Wait for pipeline to exit and handle cancellation."
+        LOGGER.info("PipeRunner exit %r exc_value=%r", self.name, exc_value)
 
         try:
+            if exc_value is not None:
+                return await self._cleanup(exc_value)
+            await self.wait()
+        except Exception as ex:
+            LOGGER.warning("PipeRunner exit %r ex=%r", self.name, ex)
+            raise
+
+    async def _cleanup(self, exc_value):
+        "Clean up when there is an exception."
+
+        self.cancelled = isinstance(exc_value, asyncio.CancelledError)
+        await self.wait(kill=True)
+
+        return self.cancelled
+
+    async def _setup(self):
+        "Set up redirection and launch pipeline."
+        open_fds = []
+
+        try:
+            stdin = None
+            stdout = None
+            stderr = None
+
             cmds = self._setup_pipeline(open_fds)
 
             if self.capturing:
@@ -340,25 +383,11 @@ class PipeRunner:
             else:
                 self.tasks = [cmd.task() for cmd in cmds]
 
+            return (stdin, stdout, stderr)
+
         except Exception:
             _close_fds(open_fds)
             raise
-
-        return (stdin, stdout, stderr)
-
-    async def __aexit__(self, _exc_type, exc_value, _exc_tb):
-        "Wait for pipeline to exit and handle cancellation."
-
-        # FIXME: Handle exceptions...
-        if exc_value and not isinstance(exc_value, asyncio.CancelledError):
-            print(exc_value)
-            return False
-
-        # Signal the first and last task that we are done.
-        for fut in self.done_futures:
-            fut.set_result(None)
-
-        self.results = await asyncio.gather(*self.tasks)
 
     def _setup_pipeline(self, open_fds):
         """Return the pipeline stitched together with pipe fd's.
