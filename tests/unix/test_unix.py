@@ -26,14 +26,6 @@ def sh():
     return context()
 
 
-@pytest.fixture
-async def yield_time():
-    """Yield time to clean up before pytest closes event loop.
-    Sometimes needed to clean up properly after cancelled tasks."""
-    yield
-    await asyncio.sleep(0.00001)
-
-
 async def test_python(sh):
     "Test running the python executable."
     result = await sh(sys.executable, "-c", "print('test1')")

@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "shellous"
 version = "0.1.0"
-description = "Shellous is a ..."
+description = "shellous is an asyncio library that provides a concise API for running subprocesses."
 authors = ["Bill Fisher <william.w.fisher@gmail.com>"]
 
 [tool.poetry.dependencies]
