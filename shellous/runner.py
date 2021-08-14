@@ -254,13 +254,6 @@ class Runner:
 
     async def __aexit__(self, _exc_type, exc_value, _exc_tb):
         "Wait for process to exit and handle cancellation."
-        LOGGER.info(
-            "Runner exit %r exc_value=%r proc=%r exit_code=%r",
-            self.name,
-            exc_value,
-            self.proc,
-            self.proc.returncode if self.proc else "n/a",
-        )
 
         try:
             if exc_value is not None:
@@ -269,6 +262,14 @@ class Runner:
         except Exception as ex:
             LOGGER.warning("Runner exit %r ex=%r", self.name, ex)
             raise
+        finally:
+            LOGGER.info(
+                "Runner exit %r exc_value=%r proc=%r exit_code=%r",
+                self.name,
+                exc_value,
+                self.proc,
+                self.proc.returncode if self.proc else "n/a",
+            )
 
     async def _cleanup(self, exc_value):
         "Clean up when there is an exception. Return true to suppress exception."
@@ -349,7 +350,6 @@ class PipeRunner:
 
     async def __aexit__(self, _exc_type, exc_value, _exc_tb):
         "Wait for pipeline to exit and handle cancellation."
-        LOGGER.info("PipeRunner exit %r exc_value=%r", self.name, exc_value)
 
         try:
             if exc_value is not None:
@@ -358,6 +358,8 @@ class PipeRunner:
         except Exception as ex:
             LOGGER.warning("PipeRunner exit %r ex=%r", self.name, ex)
             raise
+        finally:
+            LOGGER.info("PipeRunner exit %r exc_value=%r", self.name, exc_value)
 
     async def _cleanup(self, exc_value):
         "Clean up when there is an exception."
