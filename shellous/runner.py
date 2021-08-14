@@ -7,7 +7,7 @@ import logging
 import os
 import sys
 
-from shellous.result import Result, make_result
+from shellous.result import Result, ResultError, make_result
 from shellous.util import Redirect, decode
 
 LOGGER = logging.getLogger(__name__)
@@ -187,12 +187,13 @@ class Runner:
 
     async def __aenter__(self):
         "Set up redirections and launch subprocess."
+        LOGGER.info("Runner.__aenter__ %r", self.options.command.name)
+
         with self.options as opts:
             self.proc = await asyncio.create_subprocess_exec(
                 *opts.args,
                 **opts.kwd_args,
             )
-            LOGGER.info("Runner.aenter %r", self)
 
         stdin = self.proc.stdin
         stdout = self.proc.stdout
@@ -221,7 +222,13 @@ class Runner:
 
     async def __aexit__(self, _exc_type, exc_value, _exc_tb):
         "Wait for process to exit and handle cancellation."
-        LOGGER.info("Runner.aexit %r exc_value=%r", self, exc_value)
+        LOGGER.info(
+            "Runner.__aexit__ %r exc_value=%r proc=%r returncode=%r",
+            self.options.command.name,
+            exc_value,
+            self.proc,
+            self.proc.returncode if self.proc else "n/a",
+        )
 
         suppress = False  # set True if exc should be suppressed
 
@@ -368,6 +375,25 @@ class PipeRunner:
         return (stdin, stdout, stderr)
 
 
+def _log_cmd(func):
+    @functools.wraps(func)
+    async def _wrapper(*args, **kwargs):
+        try:
+            LOGGER.info("enter %s(%r)", func.__name__, args[0].name)
+            return await func(*args, **kwargs)
+        except ResultError as ex:
+            LOGGER.info("result error: %r", ex.result)
+            raise
+        except Exception as ex:
+            LOGGER.info("exception %s(%r) %r", func.__name__, args[0].name, ex)
+            raise
+        finally:
+            LOGGER.info("exit %s(%r)", func.__name__, args[0].name)
+
+    return _wrapper
+
+
+@_log_cmd
 async def run(command, *, _streams_future=None):
     "Run a command."
     assert _streams_future is not None or not command.capturing
