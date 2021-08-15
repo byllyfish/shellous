@@ -10,6 +10,11 @@ from shellous import INHERIT, Result, ResultError, context
 pytestmark = pytest.mark.asyncio
 
 
+def test_debug_mode(event_loop):
+    "Tests should be running on a loop with asyncio debug mode set."
+    assert event_loop.get_debug()
+
+
 @pytest.fixture
 def python_script():
     """Create a python script that can be used in tests.
@@ -119,7 +124,7 @@ async def test_echo_exit_code(echo_cmd):
     assert result.output == "abc"
 
 
-@pytest.mark.skip("FIXME")
+@pytest.mark.xfail(reason="FIXME")
 async def test_echo_cancel(echo_cmd):
     "When a command is cancelled, we should see partial output."
 
@@ -138,7 +143,7 @@ async def test_echo_cancel(echo_cmd):
     assert exc_info.value.command is cmd
 
 
-@pytest.mark.skip("FIXME")
+@pytest.mark.xfail(reason="FIXME", run=False)
 async def test_echo_cancel_stringio(echo_cmd):
     "When a command is cancelled, we should see partial output."
 

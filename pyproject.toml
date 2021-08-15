@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "shellous"
 version = "0.1.0"
-description = "Shellous is a ..."
+description = "shellous is an asyncio library that provides a concise API for running subprocesses."
 authors = ["Bill Fisher <william.w.fisher@gmail.com>"]
 
 [tool.poetry.dependencies]
@@ -15,10 +15,13 @@ mypy = "^0.910"
 black = {version = "^21.7b0", allow-prereleases = true}
 codecov = "^2.1.12"
 flake8 = "^3.9.2"
+pytest-dotenv = "^0.5.2"
+pytest-randomly = "^3.10.1"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
-[tool.pylint.'BASIC']
-good-names = ['i,j,k,ex,_,n']
+[tool.pytest.ini_options]
+filterwarnings = ["default"]
+env_files = ["tests/tests.env"]

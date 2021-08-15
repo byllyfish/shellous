@@ -7,7 +7,7 @@ import logging
 import os
 import sys
 
-from shellous.result import Result, make_result
+from shellous.result import Result, ResultError, make_result
 from shellous.util import Redirect, decode
 
 LOGGER = logging.getLogger(__name__)
@@ -16,7 +16,7 @@ LOGGER = logging.getLogger(__name__)
 class RunOptions:
     """RunOptions is context manager to assist in running a command.
 
-    This class set up low-level I/O redirection and helps close open file
+    This class sets up low-level I/O redirection and helps close open file
     descriptors.
 
     ```
@@ -39,6 +39,20 @@ class RunOptions:
         _close_fds(self.open_fds)
 
     def __enter__(self):
+        "Set up I/O redirections."
+        try:
+            self._setup()
+            return self
+        except Exception as ex:
+            LOGGER.warning("RunOptions.__enter__ %r ex=%r", self.command.name, ex)
+            raise
+
+    def __exit__(self, *exc):
+        "Make sure those file descriptors are cleaned up."
+        self.close_fds()
+
+    def _setup(self):
+        "Set up I/O redirections."
         options = self.command.options
 
         stdin, input_bytes = self._setup_input(
@@ -68,22 +82,26 @@ class RunOptions:
             "env": options.merge_env(),
         }
 
-        return self
-
-    def __exit__(self, *exc):
-        "Make sure those file descriptors are cleaned up."
-        self.close_fds()
-
     def _setup_input(self, input_, close, encoding):
         "Set up process input."
+        assert input_ is not None
+
         stdin = asyncio.subprocess.PIPE
         input_bytes = None
 
-        if input_ is None or isinstance(input_, bytes):
+        if isinstance(input_, bytes):
             input_bytes = input_
         elif isinstance(input_, os.PathLike):
             stdin = open(input_, "rb")
             self.open_fds.append(stdin)
+        elif isinstance(input_, Redirect) and input_.is_custom():
+            # Custom support for Redirect constants.
+            if input_ == Redirect.INHERIT:
+                stdin = sys.stdin
+            else:
+                # CAPTURE uses stdin == PIPE.
+                assert input_ == Redirect.CAPTURE
+                assert stdin == asyncio.subprocess.PIPE
         elif isinstance(input_, int):  # file descriptor
             stdin = input_
             if close:
@@ -97,34 +115,35 @@ class RunOptions:
 
     def _setup_output(self, output, append, close, sys_stream):
         "Set up process output. Used for both stdout and stderr."
+        assert output is not None
+
         stdout = asyncio.subprocess.PIPE
 
-        if output is not None:
-            if isinstance(output, (str, bytes, os.PathLike)):
-                mode = "ab" if append else "wb"
-                # FIXME: we really just need the file descriptor...
-                stdout = open(output, mode=mode)
-                self.open_fds.append(stdout)
-            elif isinstance(output, Redirect) and output.is_custom():
-                # Custom support for Redirect constants.
-                if output == Redirect.INHERIT:
-                    stdout = sys_stream
-                else:
-                    # CAPTURE uses stdout == PIPE.
-                    assert output == Redirect.CAPTURE
-                    assert stdout == asyncio.subprocess.PIPE
-            elif isinstance(output, int):
-                # File descriptor or magic constant (e.g. DEVNULL).
-                stdout = output
-                if close:
-                    self.open_fds.append(stdout)
-            elif isinstance(output, io.StringIO):
-                pass
-            elif isinstance(output, io.IOBase):
-                # Client-managed File-like object.
-                stdout = output
+        if isinstance(output, (str, bytes, os.PathLike)):
+            mode = "ab" if append else "wb"
+            # FIXME: we really just need the file descriptor...
+            stdout = open(output, mode=mode)
+            self.open_fds.append(stdout)
+        elif isinstance(output, Redirect) and output.is_custom():
+            # Custom support for Redirect constants.
+            if output == Redirect.INHERIT:
+                stdout = sys_stream
             else:
-                raise TypeError(f"unsupported type: {output!r}")
+                # CAPTURE uses stdout == PIPE.
+                assert output == Redirect.CAPTURE
+                assert stdout == asyncio.subprocess.PIPE
+        elif isinstance(output, int):
+            # File descriptor or magic constant (e.g. DEVNULL).
+            stdout = output
+            if close:
+                self.open_fds.append(stdout)
+        elif isinstance(output, io.StringIO):
+            pass
+        elif isinstance(output, io.IOBase):
+            # Client-managed File-like object.
+            stdout = output
+        else:
+            raise TypeError(f"unsupported type: {output!r}")
 
         return stdout
 
@@ -146,6 +165,11 @@ class Runner:
         self.proc = None
         self.tasks = []
 
+    @property
+    def name(self):
+        "Return name of process to run."
+        return self.options.command.name
+
     def make_result(self, output_bytes):
         "Check process exit code and raise a ResultError if necessary."
         code = self.proc.returncode
@@ -166,22 +190,43 @@ class Runner:
         task = asyncio.create_task(coro, name=str(self.options.command))
         self.tasks.append(task)
 
-    async def wait(self):
+    async def wait(self, *, kill=False):
         "Wait for background I/O tasks and process to finish."
-        if self.tasks:
-            tasks = self.tasks
-            self.tasks = []
-            await asyncio.gather(*tasks)
-        await self.proc.wait()
+        if not self.proc:
+            return
+
+        try:
+            if kill:
+                LOGGER.info("Logger.wait killing process %r", self.proc)
+                self.proc.kill()
+
+            if self.tasks:
+                tasks = self.tasks
+                self.tasks = []
+                await asyncio.gather(*tasks)
+            await self.proc.wait()
+
+        except Exception as ex:
+            LOGGER.error("Logger.wait ex=%r", ex)
+            raise
 
     async def __aenter__(self):
+        "Set up redirections and launch subprocess."
+        LOGGER.info("Runner enter %r", self.name)
+        try:
+            return await self._setup()
+        except Exception as ex:
+            LOGGER.warning("Runner enter %r ex=%r", self.name, ex)
+            await self.wait(kill=True)
+            raise
+
+    async def _setup(self):
         "Set up redirections and launch subprocess."
         with self.options as opts:
             self.proc = await asyncio.create_subprocess_exec(
                 *opts.args,
                 **opts.kwd_args,
             )
-            LOGGER.info("Runner.aenter %r", self)
 
         stdin = self.proc.stdin
         stdout = self.proc.stdout
@@ -201,37 +246,40 @@ class Runner:
                 self.add_task(_copy_sync(stdout, output, opts.encoding))
                 stdout = None
 
+        if stdin is not None:
+            if opts.input_bytes is not None:
+                self.add_task(_feed_writer(opts.input_bytes, stdin))
+                stdin = None
+
         return (stdin, stdout, stderr)
 
     async def __aexit__(self, _exc_type, exc_value, _exc_tb):
         "Wait for process to exit and handle cancellation."
-        LOGGER.info("Runner.aexit %r exc_value=%r", self, exc_value)
 
-        suppress = False  # set True if exc should be suppressed
-
-        if exc_value is None:
+        try:
+            if exc_value is not None:
+                return await self._cleanup(exc_value)
             await self.wait()
+        except Exception as ex:
+            LOGGER.warning("Runner exit %r ex=%r", self.name, ex)
+            raise
+        finally:
+            LOGGER.info(
+                "Runner exit %r exc_value=%r proc=%r exit_code=%r",
+                self.name,
+                exc_value,
+                self.proc,
+                self.proc.returncode if self.proc else "n/a",
+            )
 
-        # Check for exceptions that should NEVER be suppressed or delayed.
-        if not isinstance(exc_value, asyncio.CancelledError):
-            return suppress
+    async def _cleanup(self, exc_value):
+        "Clean up when there is an exception. Return true to suppress exception."
 
-        # Check for cancellation.
-        if isinstance(exc_value, asyncio.CancelledError):
-            self.cancelled = True
-            suppress = True
-            self.proc.kill()
+        # We only suppress CancelledError.
+        self.cancelled = isinstance(exc_value, asyncio.CancelledError)
+        await self.wait(kill=True)
 
-        # Wait here for process exit just in case context manager's inner code
-        # does not. We also need to wait after sending a kill if cancelling...
-
-        # FIXME: This can be cancelled or raise an exception. TEST!
-        # Also, we need a timeout if self.cancelled is True.
-        for task in self.tasks:
-            assert task.done()
-        await self.wait()
-
-        return suppress
+        return self.cancelled
 
     def __repr__(self):
         "Return compact representation of Runner instance."
@@ -251,33 +299,203 @@ class Runner:
         return f"<Runner cancelled={self.cancelled}{arginfo}{procinfo}{taskinfo}>"
 
 
-async def run(command):
-    "Run a command."
-    output_bytes = None
+class PipeRunner:
+    """PipeRunner is an asynchronous context manager that runs a pipeline.
 
+    runner = PipeRunner(pipe)
+    async with runner as (stdin, stdout, stderr):
+        # process stdin, stdout, stderr (if not None)
+    # Do something with finished `runner`.
+    """
+
+    def __init__(self, pipe, *, capturing=False):
+        """`capturing=True` indicates we are within an `async with` block and
+        client needs to access `stdin` and `stderr` streams.
+        """
+        self.pipe = pipe
+        self.cancelled = False
+        self.tasks = None
+        self.results = None
+        self.capturing = capturing
+        self.encoding = pipe.commands[-1].options.encoding
+
+    @property
+    def name(self):
+        "Return name of the pipeline."
+        return self.pipe.name
+
+    def make_result(self):
+        "Return `Result` object for PipeRunner."
+        return make_result(self.pipe, self.results)
+
+    async def wait(self, *, kill=False):
+        "Wait for pipeline to finish."
+        try:
+            assert self.results is None
+            assert self.tasks is not None
+
+            if kill:
+                for task in self.tasks:
+                    task.cancel()
+
+            self.results = await asyncio.gather(*self.tasks)
+
+        except Exception as ex:
+            LOGGER.warning("PipeRunner.wait ex=%r", ex)
+            raise
+
+    async def __aenter__(self):
+        "Set up redirections and launch pipeline."
+        LOGGER.info("Pipeline enter %r", self.name)
+        try:
+            return await self._setup()
+        except Exception as ex:
+            LOGGER.warning("PipeRunner enter %r ex=%r", self.name, ex)
+            await self.wait(kill=True)  # FIXME
+            raise
+
+    async def __aexit__(self, _exc_type, exc_value, _exc_tb):
+        "Wait for pipeline to exit and handle cancellation."
+
+        try:
+            if exc_value is not None:
+                return await self._cleanup(exc_value)
+            await self.wait()
+        except Exception as ex:
+            LOGGER.warning("PipeRunner exit %r ex=%r", self.name, ex)
+            raise
+        finally:
+            LOGGER.info("PipeRunner exit %r exc_value=%r", self.name, exc_value)
+
+    async def _cleanup(self, exc_value):
+        "Clean up when there is an exception."
+
+        self.cancelled = isinstance(exc_value, asyncio.CancelledError)
+        await self.wait(kill=True)
+
+        return self.cancelled
+
+    async def _setup(self):
+        "Set up redirection and launch pipeline."
+        open_fds = []
+
+        try:
+            stdin = None
+            stdout = None
+            stderr = None
+
+            cmds = self._setup_pipeline(open_fds)
+
+            if self.capturing:
+                stdin, stdout, stderr = await self._setup_capturing(cmds)
+            else:
+                self.tasks = [cmd.task() for cmd in cmds]
+
+            return (stdin, stdout, stderr)
+
+        except Exception:
+            _close_fds(open_fds)
+            raise
+
+    def _setup_pipeline(self, open_fds):
+        """Return the pipeline stitched together with pipe fd's.
+
+        Each created open file descriptor is added to `open_fds` so it can
+        be closed if there's an exception later.
+        """
+        cmds = list(self.pipe.commands)
+
+        cmd_count = len(cmds)
+        for i in range(cmd_count - 1):
+            (read_fd, write_fd) = os.pipe()
+            open_fds.extend((read_fd, write_fd))
+
+            cmds[i] = cmds[i].stdout(write_fd, close=True)
+            cmds[i + 1] = cmds[i + 1].stdin(read_fd, close=True)
+
+        for i in range(cmd_count):
+            cmds[i] = cmds[i].set(return_result=True)
+
+        return cmds
+
+    async def _setup_capturing(self, cmds):
+        """Set up capturing and return (stdin, stdout, stderr) streams."""
+
+        loop = asyncio.get_event_loop()
+        first_fut = loop.create_future()
+        last_fut = loop.create_future()
+        first_task = cmds[0].task(_streams_future=first_fut)
+        last_task = cmds[-1].task(_streams_future=last_fut)
+
+        middle_tasks = [cmd.task() for cmd in cmds[1:-1]]
+        self.tasks = [first_task] + middle_tasks + [last_task]
+
+        # When capturing, we need the first and last commands in the
+        # pipe to signal when they are ready.
+        first_ready, last_ready = await asyncio.gather(first_fut, last_fut)
+        stdin, stdout, stderr = (first_ready[0], last_ready[1], last_ready[2])
+
+        return (stdin, stdout, stderr)
+
+
+def _log_cmd(func):
+    @functools.wraps(func)
+    async def _wrapper(*args, **kwargs):
+        try:
+            LOGGER.info("enter %s(%r)", func.__name__, args[0].name)
+            result = await func(*args, **kwargs)
+            LOGGER.info("exit %s(%r)", func.__name__, args[0].name)
+            return result
+        except ResultError as ex:
+            LOGGER.info(
+                "exit %s(%r) error: %r",
+                func.__name__,
+                args[0].name,
+                ex.result,
+            )
+            raise
+        except Exception as ex:
+            LOGGER.warning(
+                "exit %s(%r) exception %r",
+                func.__name__,
+                args[0].name,
+                ex,
+            )
+            raise
+
+    return _wrapper
+
+
+async def run(command, *, _streams_future=None):
+    "Run a command."
+    assert _streams_future is not None or not command.capturing
+
+    output_bytes = None
     runner = Runner(command)
     async with runner as (stdin, stdout, stderr):
-        if stderr is not None:
-            raise ValueError("CAPTURE only supported for 'async with'")
+        if _streams_future is not None:
+            # Return streams to caller in another task.
+            _streams_future.set_result((stdin, stdout, stderr))
 
-        if stdin is not None:
-            runner.add_task(_feed_writer(runner.options.input_bytes, stdin))
+        else:
+            # Read the output here and return it.
+            assert stdin is None
+            assert stderr is None
 
-        if stdout is not None:
-            output_bytes = await stdout.read()
+            if stdout is not None:
+                output_bytes = await stdout.read()
 
     return runner.make_result(output_bytes)
 
 
 async def run_iter(command):
     "Run a command and iterate over output."
+    assert not command.capturing
+
     runner = Runner(command)
     async with runner as (stdin, stdout, stderr):
-        if stderr is not None:
-            raise ValueError("CAPTURE only supported for 'async with'")
-
-        if stdin is not None:
-            runner.add_task(_feed_writer(runner.options.input_bytes, stdin))
+        assert stdin is None
+        assert stderr is None
 
         encoding = runner.options.encoding
         async for line in stdout:
@@ -289,41 +507,28 @@ async def run_iter(command):
 async def run_pipe(pipe):
     "Run a pipeline"
 
-    n = len(pipe.commands)
-    if n == 1:
+    cmd_count = len(pipe.commands)
+    if cmd_count == 1:
         return await run(pipe.commands[0])
 
-    open_fds = []
-    try:
-        cmds = list(pipe.commands)
-
-        for i in range(n - 1):
-            (read_fd, write_fd) = os.pipe()
-            open_fds.extend((read_fd, write_fd))
-
-            cmds[i] = cmds[i].stdout(write_fd, close=True)
-            cmds[i + 1] = cmds[i + 1].stdin(read_fd, close=True)
-
-        for i in range(n):
-            cmds[i] = cmds[i].set(return_result=True)
-
-    except Exception:
-        _close_fds(open_fds)
-        raise
-
-    # Even though cmd is `Awaitable`, we explicitly create a task for each
-    # cmd because internally `gather` relies on an `arg_to_fut` mapping
-    # which will be confused if two cmd's are "equal".
-    tasks = [cmd.task() for cmd in cmds]
-
-    results = await asyncio.gather(*tasks)
-
-    return make_result(pipe, results)
+    runner = PipeRunner(pipe)
+    async with runner:
+        pass
+    return runner.make_result()
 
 
-async def run_pipe_iter(_pipe):
+async def run_pipe_iter(pipe):
     "Run a pipeline and iterate over standard output."
-    return NotImplemented
+    runner = PipeRunner(pipe, capturing=True)
+    async with runner as (stdin, stdout, stderr):
+        assert stdin is None
+        assert stderr is None
+
+        encoding = runner.encoding
+        async for line in stdout:
+            yield decode(line, encoding)
+
+    runner.make_result()
 
 
 def _log_exception(func):
