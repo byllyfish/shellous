@@ -16,6 +16,7 @@ from shellous import (
     ResultError,
     context,
 )
+from shellous.util import gather_collect
 
 unix_only = pytest.mark.skipif(sys.platform == "win32", reason="Unix")
 pytestmark = [pytest.mark.asyncio, unix_only]
@@ -179,6 +180,11 @@ async def test_input_wrong_encoding(sh):
     tr = sh("tr", "[:lower:]", "[:upper:]")
     with pytest.raises(TypeError, match="input must be bytes"):
         await tr.stdin("some input")
+
+
+async def test_input_none_encoding(sh):
+    "Test calling a command with input string, but bytes encoding expected."
+    tr = sh("tr", "[:lower:]", "[:upper:]").set(encoding=None)
     result = await tr.stdin(b"here be bytes")
     assert result == b"HERE BE BYTES"
 
@@ -321,10 +327,9 @@ async def test_redirect_error_to_stdout(python_script, capfd):
     assert capfd.readouterr() == ("", "")
 
 
-@pytest.mark.xfail(reason="FIXME")
-async def test_redirect_just_error_to_stdout(python_script, capfd):
+async def test_capture_error_only(python_script, capfd):
     "Test redirection options with stderr output."
-    result = await python_script.stdout(DEVNULL).stderr(STDOUT)
+    result = await python_script.stderr(CAPTURE).stdout(DEVNULL)
     assert result == "hi stderr\n"
     assert capfd.readouterr() == ("", "")
 
@@ -458,13 +463,11 @@ async def test_pipeline_async_context_manager(sh):
     assert result == b"A"
 
 
-@pytest.mark.xfail(reason="FIXME")
 async def test_gather_same_cmd(sh):
-    """Test passing the same cmd to gather().
+    """Test passing the same cmd to gather_collect().
 
-    Internally, gather's implementation uses an `arg_to_fut` mapping.
-    Because our awaitables are identical, this assumption doesn't work...
+    This test fails with `asyncio.gather`.
     """
     cmd = sh(sys.executable, "-c", "import secrets; print(secrets.randbits(31))")
-    results = await asyncio.gather(cmd, cmd)
+    results = await gather_collect(cmd, cmd)
     assert results[0] != results[1]

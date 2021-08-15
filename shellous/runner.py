@@ -477,11 +477,9 @@ async def run(command, *, _streams_future=None):
 
         else:
             # Read the output here and return it.
-            assert stdin is None
-            assert stderr is None
-
-            if stdout is not None:
-                output_bytes = await stdout.read()
+            stream = stdout or stderr
+            if stream:
+                output_bytes = await stream.read()
 
     return runner.make_result(output_bytes)
 
@@ -492,12 +490,11 @@ async def run_iter(command):
 
     runner = Runner(command)
     async with runner as (stdin, stdout, stderr):
-        assert stdin is None
-        assert stderr is None
-
         encoding = runner.options.encoding
-        async for line in stdout:
-            yield decode(line, encoding)
+        stream = stdout or stderr
+        if stream:
+            async for line in stream:
+                yield decode(line, encoding)
 
     runner.make_result(None)
 

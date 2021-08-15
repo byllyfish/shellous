@@ -202,10 +202,12 @@ class Command:
 
     @property
     def capturing(self) -> bool:
-        "Return true if the stdin or stderr are set to CAPTURE."
-        return (
-            self.options.input == Redirect.CAPTURE
-            or self.options.error == Redirect.CAPTURE
+        """Return true if the stdin is set to CAPTURE or more than one of
+        stdout, stderr is set to CAPTURE.
+        """
+        return self.options.input == Redirect.CAPTURE or (
+            self.options.output == Redirect.CAPTURE
+            and self.options.error == Redirect.CAPTURE
         )
 
     def stdin(self, input_, *, close=False):
