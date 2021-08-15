@@ -126,7 +126,7 @@ async def test_task(sh):
     assert result == "***\n"
 
 
-async def test_task_cancel(sh, yield_time):
+async def test_task_cancel(sh):
     "Test that we can cancel a running command task."
     task = sh("sleep", "5").task()
     await asyncio.sleep(0.1)
@@ -421,7 +421,7 @@ async def test_pipeline_single_cmd(sh):
     assert result == "ABC"
 
 
-async def test_pipeline_invalid_cmd(sh, yield_time):
+async def test_pipeline_invalid_cmd(sh):
     pipe = sh(" non_existant ", "xyz") | sh("tr", "[:lower:]", "[:upper:]")
     with pytest.raises(FileNotFoundError, match="' non_existant '"):
         await pipe

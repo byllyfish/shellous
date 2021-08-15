@@ -111,7 +111,7 @@ async def test_tr(tr_cmd):
     assert result == "ABC"
 
 
-async def test_pipeline(echo_cmd, cat_cmd, tr_cmd, yield_time_win32):
+async def test_pipeline(echo_cmd, cat_cmd, tr_cmd):
     pipe = echo_cmd("xyz") | cat_cmd() | tr_cmd()
     result = await pipe()
     assert result == "XYZ"
