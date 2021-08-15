@@ -30,3 +30,13 @@ async def test_gather_collect():
     # There should only be one task in this event loop.
     tasks = asyncio.all_tasks()
     assert len(tasks) == 1 and tasks.pop() is asyncio.current_task()
+
+
+async def test_gather_collect_cancel():
+    "Test the `gather_collect` function cancellation behavior."
+
+    async def _coro():
+        await asyncio.sleep(60.0)
+
+    with pytest.raises(asyncio.TimeoutError):
+        await asyncio.wait_for(gather_collect(_coro(), _coro()), 0.1)

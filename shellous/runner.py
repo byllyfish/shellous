@@ -3,14 +3,12 @@
 import asyncio
 import functools
 import io
-import logging
 import os
 import sys
 
+from shellous.log import LOGGER
 from shellous.result import Result, ResultError, make_result
 from shellous.util import Redirect, decode, gather_collect
-
-LOGGER = logging.getLogger(__name__)
 
 
 class RunOptions:
@@ -192,31 +190,45 @@ class Runner:
 
     async def wait(self, *, kill=False):
         "Wait for background I/O tasks and process to finish."
-        if not self.proc:
+        if self.proc is None:
+            LOGGER.info("Runner.wait %r never started", self.name)
             return
 
         try:
             if kill:
-                LOGGER.info("Logger.wait killing process %r", self.proc)
+                LOGGER.info("Runner.wait %r killing %r", self.name, self.proc)
                 self.proc.kill()
 
             if self.tasks:
                 await gather_collect(*self.tasks)
+
+        except asyncio.CancelledError as ex:
+            LOGGER.info("Runner.wait %r cancelled proc=%r", self.name, self.proc)
+            self.cancelled = True
+            if not kill:
+                self.proc.kill()
             await self.proc.wait()
 
         except Exception as ex:
-            LOGGER.error("Logger.wait ex=%r", ex)
+            LOGGER.warning("Runner.wait %r ex=%r", self.name, ex)
             raise
 
     async def __aenter__(self):
         "Set up redirections and launch subprocess."
-        LOGGER.info("Runner enter %r", self.name)
+        LOGGER.info("Runner entering %r", self.name)
         try:
             return await self._setup()
-        except Exception as ex:
+        except (Exception, asyncio.CancelledError) as ex:
             LOGGER.warning("Runner enter %r ex=%r", self.name, ex)
             await self.wait(kill=True)
             raise
+        finally:
+            LOGGER.info(
+                "Runner entered %r proc=%r ex=%r",
+                self.name,
+                self.proc,
+                sys.exc_info()[1],
+            )
 
     async def _setup(self):
         "Set up redirections and launch subprocess."
@@ -249,25 +261,28 @@ class Runner:
                 self.add_task(_feed_writer(opts.input_bytes, stdin))
                 stdin = None
 
+        self.add_task(self.proc.wait())
+
         return (stdin, stdout, stderr)
 
     async def __aexit__(self, _exc_type, exc_value, _exc_tb):
         "Wait for process to exit and handle cancellation."
 
+        LOGGER.info("Runner exiting %r exc_value=%r", self.name, exc_value)
         try:
             if exc_value is not None:
                 return await self._cleanup(exc_value)
             await self.wait()
-        except Exception as ex:
+        except (Exception, asyncio.CancelledError) as ex:
             LOGGER.warning("Runner exit %r ex=%r", self.name, ex)
             raise
         finally:
             LOGGER.info(
-                "Runner exit %r exc_value=%r proc=%r exit_code=%r",
+                "Runner exited %r proc=%r exit_code=%r ex=%r",
                 self.name,
-                exc_value,
                 self.proc,
                 self.proc.returncode if self.proc else "n/a",
+                sys.exc_info()[1],
             )
 
     async def _cleanup(self, exc_value):
@@ -333,6 +348,7 @@ class PipeRunner:
             assert self.tasks is not None
 
             if kill:
+                LOGGER.info("PipeRunner.wait killing pipe %r", self.name)
                 for task in self.tasks:
                     task.cancel()
 
@@ -344,26 +360,28 @@ class PipeRunner:
 
     async def __aenter__(self):
         "Set up redirections and launch pipeline."
-        LOGGER.info("Pipeline enter %r", self.name)
+        LOGGER.info("Pipeline entering %r", self.name)
         try:
             return await self._setup()
-        except Exception as ex:
+        except (Exception, asyncio.CancelledError) as ex:
             LOGGER.warning("PipeRunner enter %r ex=%r", self.name, ex)
             await self.wait(kill=True)  # FIXME
             raise
+        finally:
+            LOGGER.info("PipeRunner entered %r ex=%r", self.name, sys.exc_info()[1])
 
     async def __aexit__(self, _exc_type, exc_value, _exc_tb):
         "Wait for pipeline to exit and handle cancellation."
-
+        LOGGER.info("Pipeline exiting %r exc_value=%r", self.name, exc_value)
         try:
             if exc_value is not None:
                 return await self._cleanup(exc_value)
             await self.wait()
-        except Exception as ex:
+        except (Exception, asyncio.CancelledError) as ex:
             LOGGER.warning("PipeRunner exit %r ex=%r", self.name, ex)
             raise
         finally:
-            LOGGER.info("PipeRunner exit %r exc_value=%r", self.name, exc_value)
+            LOGGER.info("PipeRunner exited %r ex=%r", self.name, sys.exc_info()[1])
 
     async def _cleanup(self, exc_value):
         "Clean up when there is an exception."
@@ -391,7 +409,7 @@ class PipeRunner:
 
             return (stdin, stdout, stderr)
 
-        except Exception:
+        except (Exception, asyncio.CancelledError):
             _close_fds(open_fds)
             raise
 
@@ -452,7 +470,7 @@ def _log_cmd(func):
                 ex.result,
             )
             raise
-        except Exception as ex:
+        except (Exception, asyncio.CancelledError) as ex:
             LOGGER.warning(
                 "exit %s(%r) exception %r",
                 func.__name__,
@@ -466,7 +484,8 @@ def _log_cmd(func):
 
 async def run(command, *, _streams_future=None):
     "Run a command."
-    assert _streams_future is not None or not command.capturing
+    if not _streams_future and command.multiple_capture:
+        raise ValueError("multiple capture requires 'async with'")
 
     output_bytes = None
     runner = Runner(command)
@@ -486,10 +505,11 @@ async def run(command, *, _streams_future=None):
 
 async def run_iter(command):
     "Run a command and iterate over output."
-    assert not command.capturing
+    if command.multiple_capture:
+        raise ValueError("multiple capture requires 'async with'")
 
     runner = Runner(command)
-    async with runner as (stdin, stdout, stderr):
+    async with runner as (_stdin, stdout, stderr):
         encoding = runner.options.encoding
         stream = stdout or stderr
         if stream:
@@ -531,7 +551,7 @@ def _log_exception(func):
     async def _wrapper(*args, **kwargs):
         try:
             return await func(*args, **kwargs)
-        except Exception:
+        except (Exception, asyncio.CancelledError):
             LOGGER.exception("Task failed!")
             raise
 

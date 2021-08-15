@@ -4,6 +4,8 @@ import asyncio
 import enum
 from typing import Optional, Union
 
+from shellous.log import LOGGER
+
 
 class Redirect(enum.IntEnum):
     "Redirection constants."
@@ -37,7 +39,16 @@ async def gather_collect(*aws):
     """
 
     tasks = [asyncio.ensure_future(item) for item in aws]
-    done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_EXCEPTION)
+
+    try:
+        done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_EXCEPTION)
+    except asyncio.CancelledError:
+        LOGGER.warning("gather_collect cancelled")
+        # `asyncio.wait` does not cancel tasks when it is cancelled itself.
+        # Cancel all tasks here before re-raising the exception.
+        for task in tasks:
+            task.cancel()
+        raise
 
     if len(done) == len(tasks):
         return [task.result() for task in tasks]
@@ -45,7 +56,11 @@ async def gather_collect(*aws):
     for task in pending:
         task.cancel()
 
-    await asyncio.wait(pending, return_when=asyncio.ALL_COMPLETED)
+    try:
+        await asyncio.wait(pending, return_when=asyncio.ALL_COMPLETED)
+    except asyncio.CancelledError:
+        LOGGER.warning("gather_collect pending cleanup cancelled")
+        raise
 
     # Look for a task in `done` that wasn't cancelled, if there is one.
     failed = [task for task in done if not task.cancelled()]

@@ -201,7 +201,7 @@ class Command:
         return name
 
     @property
-    def capturing(self) -> bool:
+    def multiple_capture(self) -> bool:
         """Return true if the stdin is set to CAPTURE or more than one of
         stdout, stderr is set to CAPTURE.
         """

@@ -154,6 +154,21 @@ async def test_timeout_fail(sh):
     )
 
 
+async def test_timeout_fail_no_capturing(sh):
+    "Test that an awaitable command can be called with a timeout."
+    cmd = sh("sleep", "5").stdin(DEVNULL).stdout(DEVNULL)
+    with pytest.raises(ResultError) as exc_info:
+        await asyncio.wait_for(cmd, 0.1)
+
+    assert exc_info.value.result == Result(
+        output_bytes=None,
+        exit_code=-9,
+        cancelled=True,
+        encoding="utf-8",
+        extra=None,
+    )
+
+
 async def test_timeout_okay(sh):
     "Test awaitable command that doesn't timeout."
     result = await asyncio.wait_for(sh("echo", "jjj"), 1.0)
@@ -348,10 +363,9 @@ async def test_redirect_error_to_devnull(python_script, capfd):
     assert capfd.readouterr() == ("", "")
 
 
-@pytest.mark.xfail(reason="FIXME")
 async def test_redirect_error_to_capture(python_script):
     "Test using CAPTURE when not using `async with`."
-    with pytest.raises(ValueError, match="CAPTURE only supported for 'async with'"):
+    with pytest.raises(ValueError, match="multiple capture requires 'async with'"):
         await python_script.stderr(CAPTURE)
 
 
