@@ -195,18 +195,19 @@ class Runner:
         if not self.proc:
             return
 
-        if kill:
-            LOGGER.info("Logger.wait killing process %r", self.proc)
-            self.proc.kill()
-
         try:
+            if kill:
+                LOGGER.info("Logger.wait killing process %r", self.proc)
+                self.proc.kill()
+
             if self.tasks:
                 tasks = self.tasks
                 self.tasks = []
                 await asyncio.gather(*tasks)
             await self.proc.wait()
+
         except Exception as ex:
-            LOGGER.error("Logger.wait exception %r", ex)
+            LOGGER.error("Logger.wait ex=%r", ex)
             raise
 
     async def __aenter__(self):
@@ -329,14 +330,19 @@ class PipeRunner:
 
     async def wait(self, *, kill=False):
         "Wait for pipeline to finish."
-        assert self.results is None
-        assert self.tasks is not None
+        try:
+            assert self.results is None
+            assert self.tasks is not None
 
-        if kill:
-            for task in self.tasks:
-                task.cancel()
+            if kill:
+                for task in self.tasks:
+                    task.cancel()
 
-        self.results = await asyncio.gather(*self.tasks)
+            self.results = await asyncio.gather(*self.tasks)
+
+        except Exception as ex:
+            LOGGER.warning("PipeRunner.wait ex=%r", ex)
+            raise
 
     async def __aenter__(self):
         "Set up redirections and launch pipeline."
