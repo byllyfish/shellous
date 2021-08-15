@@ -8,7 +8,7 @@ import os
 import sys
 
 from shellous.result import Result, ResultError, make_result
-from shellous.util import Redirect, decode
+from shellous.util import Redirect, decode, gather_collect
 
 LOGGER = logging.getLogger(__name__)
 
@@ -201,9 +201,7 @@ class Runner:
                 self.proc.kill()
 
             if self.tasks:
-                tasks = self.tasks
-                self.tasks = []
-                await asyncio.gather(*tasks)
+                await gather_collect(*self.tasks)
             await self.proc.wait()
 
         except Exception as ex:
@@ -338,7 +336,7 @@ class PipeRunner:
                 for task in self.tasks:
                     task.cancel()
 
-            self.results = await asyncio.gather(*self.tasks)
+            self.results = await gather_collect(*self.tasks)
 
         except Exception as ex:
             LOGGER.warning("PipeRunner.wait ex=%r", ex)
@@ -432,7 +430,7 @@ class PipeRunner:
 
         # When capturing, we need the first and last commands in the
         # pipe to signal when they are ready.
-        first_ready, last_ready = await asyncio.gather(first_fut, last_fut)
+        first_ready, last_ready = await gather_collect(first_fut, last_fut)
         stdin, stdout, stderr = (first_ready[0], last_ready[1], last_ready[2])
 
         return (stdin, stdout, stderr)
