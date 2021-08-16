@@ -508,7 +508,7 @@ async def run(command, *, _streams_future=None):
                     output_bytes = await stream.read()
 
     except asyncio.CancelledError:
-        LOGGER.info("run %r cancelled", command.name)
+        LOGGER.info("run %r cancelled inside enter", command.name)
 
     return runner.make_result(output_bytes)
 

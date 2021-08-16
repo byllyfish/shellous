@@ -64,16 +64,14 @@ def make_result(command, result):
             raise other_ex[0]
 
         # Everything in result is now either a Result or ResultError.
-        last = result[-1]
-        if isinstance(last, ResultError):
-            last = last.result
+        key_result = _find_key_result(result)
 
         result = Result(
-            last.output_bytes,
-            last.exit_code,
-            last.cancelled,
-            last.encoding,
-            tuple(PipeResult.from_result(r) for r in result[0:-1]),
+            key_result.output_bytes,
+            key_result.exit_code,
+            key_result.cancelled,
+            key_result.encoding,
+            tuple(PipeResult.from_result(r) for r in result),
         )
 
     assert isinstance(result, Result)
@@ -85,3 +83,27 @@ def make_result(command, result):
     if command.options.return_result:
         return result
     return result.output
+
+
+def _find_key_result(result_list):
+    "Scan a result list and return the 'key' result."
+    acc = None
+    for item in result_list:
+        if isinstance(item, ResultError):
+            item = item.result
+        acc = _compare_result(acc, item)
+        # Return the first one with a non-zero exit code that isn't cancelled.
+        if (not acc.cancelled, acc.exit_code != 0) == (True, True):
+            return acc
+
+    return acc
+
+
+def _compare_result(acc, item):
+    if acc is None:
+        return item
+    acc_key = (not acc.cancelled, acc.exit_code != 0)
+    item_key = (not item.cancelled, acc.exit_code != 0)
+    if item_key >= acc_key:
+        return item
+    return acc

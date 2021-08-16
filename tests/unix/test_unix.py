@@ -445,6 +445,10 @@ async def test_pipeline_with_result(sh):
                 exit_code=0,
                 cancelled=False,
             ),
+            PipeResult(
+                exit_code=0,
+                cancelled=False,
+            ),
         ),
     )
 

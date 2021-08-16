@@ -54,6 +54,8 @@ async def gather_collect(*aws, return_exceptions=False):
         raise
 
     if len(done) == len(tasks):
+        if return_exceptions:
+            return [_to_result(task) for task in tasks]
         return [task.result() for task in tasks]
 
     LOGGER.info("gather_collect cancelling %d tasks", len(pending))
