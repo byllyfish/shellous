@@ -14,11 +14,6 @@ class ResultError(Exception):
         "Return the `Result` object."
         return self.args[0]
 
-    @property
-    def command(self):
-        "Return the `Command` object."
-        return self.args[1]
-
 
 @dataclass(frozen=True)
 class Result:
@@ -85,7 +80,7 @@ def make_result(command, result):
 
     allowed_exit_codes = command.options.allowed_exit_codes or {0}
     if result.exit_code not in allowed_exit_codes:
-        raise ResultError(result, command)
+        raise ResultError(result)
 
     if command.options.return_result:
         return result

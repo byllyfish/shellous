@@ -153,7 +153,6 @@ async def test_timeout_fail(sh):
         await asyncio.wait_for(sh("sleep", "5"), 0.1)
 
     assert exc_info.type is ResultError
-    assert exc_info.value.command == sh("sleep", "5")
     assert exc_info.value.result == Result(
         output_bytes=None,
         exit_code=-9,
@@ -215,8 +214,16 @@ async def test_input_none_encoding(sh):
 
 async def test_exit_code_error(sh):
     "Test calling a command that returns a non-zero exit status."
-    with pytest.raises(ResultError, match="false"):
+    with pytest.raises(ResultError) as exc_info:
         await sh("false")
+
+    assert exc_info.value.result == Result(
+        output_bytes=b"",
+        exit_code=1,
+        cancelled=False,
+        encoding="utf-8",
+        extra=None,
+    )
 
 
 async def test_redirect_output_path(sh, tmp_path):
