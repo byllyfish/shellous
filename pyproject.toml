@@ -6,6 +6,7 @@ authors = ["Bill Fisher <william.w.fisher@gmail.com>"]
 
 [tool.poetry.dependencies]
 python = "^3.9"
+immutables = "^0.16"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.4"
