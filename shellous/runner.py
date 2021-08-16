@@ -360,7 +360,7 @@ class PipeRunner:
 
     async def __aenter__(self):
         "Set up redirections and launch pipeline."
-        LOGGER.info("Pipeline entering %r", self.name)
+        LOGGER.info("PipeRunner entering %r", self.name)
         try:
             return await self._setup()
         except (Exception, asyncio.CancelledError) as ex:
@@ -372,7 +372,7 @@ class PipeRunner:
 
     async def __aexit__(self, _exc_type, exc_value, _exc_tb):
         "Wait for pipeline to exit and handle cancellation."
-        LOGGER.info("Pipeline exiting %r exc_value=%r", self.name, exc_value)
+        LOGGER.info("PipeRunner exiting %r exc_value=%r", self.name, exc_value)
         try:
             if exc_value is not None:
                 return await self._cleanup(exc_value)
