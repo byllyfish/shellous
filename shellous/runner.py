@@ -202,6 +202,8 @@ class Runner:
             if self.tasks:
                 await gather_collect(*self.tasks)
 
+            LOGGER.info("Runner.wait %r exit_code=%r", self.name, self.proc.returncode)
+
         except asyncio.CancelledError as ex:
             LOGGER.info("Runner.wait %r cancelled proc=%r", self.name, self.proc)
             self.cancelled = True
@@ -273,9 +275,6 @@ class Runner:
             if exc_value is not None:
                 return await self._cleanup(exc_value)
             await self.wait()
-        except (Exception, asyncio.CancelledError) as ex:
-            LOGGER.warning("Runner exit %r ex=%r", self.name, ex)
-            raise
         finally:
             LOGGER.info(
                 "Runner exited %r proc=%r exit_code=%r ex=%r",
