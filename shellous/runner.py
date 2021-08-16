@@ -204,7 +204,7 @@ class Runner:
 
             LOGGER.info("Runner.wait %r exit_code=%r", self.name, self.proc.returncode)
 
-        except asyncio.CancelledError as ex:
+        except asyncio.CancelledError:
             LOGGER.info("Runner.wait %r cancelled proc=%r", self.name, self.proc)
             self.cancelled = True
             if not kill:
