@@ -161,3 +161,11 @@ async def test_echo_cancel_stringio(echo_cmd):
         encoding="utf-8",
         extra=None,
     )
+
+
+async def test_pipe_error_cmd1(echo_cmd, tr_cmd):
+    "Test a pipe where the first command fails with an error."
+
+    echo_cmd = echo_cmd("abc").env(SHELLOUS_EXIT_CODE=3)
+    with pytest.raises(ResultError):
+        await (echo_cmd | tr_cmd)

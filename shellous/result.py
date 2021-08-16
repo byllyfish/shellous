@@ -46,14 +46,33 @@ class PipeResult:
     @staticmethod
     def from_result(result):
         "Construct a `PipeResult` from a `Result`."
+        if isinstance(result, ResultError):
+            result = result.result
         return PipeResult(result.exit_code, result.cancelled)
 
 
 def make_result(command, result):
-    "Convert list of results into a single pipe result."
+    """Convert list of results into a single pipe result.
+
+    `result` can be a list of Result, ResultError or another Exception.
+    """
 
     if isinstance(result, list):
+        # Check result list for other exceptions.
+        other_ex = [
+            ex
+            for ex in result
+            if isinstance(ex, Exception) and not isinstance(ex, ResultError)
+        ]
+        if other_ex:
+            # Re-raise other exception here.
+            raise other_ex[0]
+
+        # Everything in result is now either a Result or ResultError.
         last = result[-1]
+        if isinstance(last, ResultError):
+            last = last.result
+
         result = Result(
             last.output_bytes,
             last.exit_code,
@@ -61,6 +80,8 @@ def make_result(command, result):
             last.encoding,
             tuple(PipeResult.from_result(r) for r in result[0:-1]),
         )
+
+    assert isinstance(result, Result)
 
     allowed_exit_codes = command.options.allowed_exit_codes or {0}
     if result.exit_code not in allowed_exit_codes:

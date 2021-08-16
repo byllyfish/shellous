@@ -138,6 +138,15 @@ async def test_task_cancel(sh):
         await task
 
 
+async def test_task_immediate_cancel(sh):
+    "Test that we can cancel a running command task."
+    task = sh("sleep", "5").task()
+    task.cancel()
+
+    with pytest.raises(asyncio.CancelledError):
+        await task
+
+
 async def test_timeout_fail(sh):
     "Test that an awaitable command can be called with a timeout."
     with pytest.raises(ResultError) as exc_info:
@@ -440,8 +449,14 @@ async def test_pipeline_single_cmd(sh):
     assert result == "ABC"
 
 
-async def test_pipeline_invalid_cmd(sh):
+async def test_pipeline_invalid_cmd1(sh):
     pipe = sh(" non_existant ", "xyz") | sh("tr", "[:lower:]", "[:upper:]")
+    with pytest.raises(FileNotFoundError, match="' non_existant '"):
+        await pipe
+
+
+async def test_pipeline_invalid_cmd2(sh):
+    pipe = sh("echo", "abc") | sh(" non_existant ", "xyz")
     with pytest.raises(FileNotFoundError, match="' non_existant '"):
         await pipe
 
