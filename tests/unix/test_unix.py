@@ -138,13 +138,21 @@ async def test_task_cancel(sh):
         await task
 
 
+async def test_task_immediate_cancel(sh):
+    "Test that we can cancel a running command task."
+    task = sh("sleep", "5").task()
+    task.cancel()
+
+    with pytest.raises(asyncio.CancelledError):
+        await task
+
+
 async def test_timeout_fail(sh):
     "Test that an awaitable command can be called with a timeout."
     with pytest.raises(ResultError) as exc_info:
         await asyncio.wait_for(sh("sleep", "5"), 0.1)
 
     assert exc_info.type is ResultError
-    assert exc_info.value.command == sh("sleep", "5")
     assert exc_info.value.result == Result(
         output_bytes=None,
         exit_code=-9,
@@ -206,8 +214,16 @@ async def test_input_none_encoding(sh):
 
 async def test_exit_code_error(sh):
     "Test calling a command that returns a non-zero exit status."
-    with pytest.raises(ResultError, match="false"):
+    with pytest.raises(ResultError) as exc_info:
         await sh("false")
+
+    assert exc_info.value.result == Result(
+        output_bytes=b"",
+        exit_code=1,
+        cancelled=False,
+        encoding="utf-8",
+        extra=None,
+    )
 
 
 async def test_redirect_output_path(sh, tmp_path):
@@ -429,6 +445,10 @@ async def test_pipeline_with_result(sh):
                 exit_code=0,
                 cancelled=False,
             ),
+            PipeResult(
+                exit_code=0,
+                cancelled=False,
+            ),
         ),
     )
 
@@ -440,8 +460,14 @@ async def test_pipeline_single_cmd(sh):
     assert result == "ABC"
 
 
-async def test_pipeline_invalid_cmd(sh):
+async def test_pipeline_invalid_cmd1(sh):
     pipe = sh(" non_existant ", "xyz") | sh("tr", "[:lower:]", "[:upper:]")
+    with pytest.raises(FileNotFoundError, match="' non_existant '"):
+        await pipe
+
+
+async def test_pipeline_invalid_cmd2(sh):
+    pipe = sh("echo", "abc") | sh(" non_existant ", "xyz")
     with pytest.raises(FileNotFoundError, match="' non_existant '"):
         await pipe
 

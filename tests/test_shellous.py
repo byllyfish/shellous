@@ -5,7 +5,7 @@ import io
 import sys
 
 import pytest
-from shellous import INHERIT, Result, ResultError, context
+from shellous import INHERIT, PipeResult, Result, ResultError, context
 
 pytestmark = pytest.mark.asyncio
 
@@ -160,4 +160,44 @@ async def test_echo_cancel_stringio(echo_cmd):
         cancelled=True,
         encoding="utf-8",
         extra=None,
+    )
+
+
+async def test_pipe_error_cmd1(echo_cmd, tr_cmd):
+    "Test a pipe where the first command fails with an error."
+
+    echo_cmd = echo_cmd("abc").env(SHELLOUS_EXIT_CODE=3)
+    tr_cmd = tr_cmd.env(SHELLOUS_EXIT_SLEEP=2)
+
+    with pytest.raises(ResultError) as exc_info:
+        await (echo_cmd | tr_cmd)
+
+    assert exc_info.value.result == Result(
+        output_bytes=None,
+        exit_code=3,
+        cancelled=False,
+        encoding="utf-8",
+        extra=(
+            PipeResult(exit_code=3, cancelled=False),
+            PipeResult(exit_code=_CANCELLED_EXIT_CODE, cancelled=True),
+        ),
+    )
+
+
+async def test_pipe_error_cmd2(echo_cmd, tr_cmd):
+    "Test a pipe where the second command fails with an error."
+
+    tr_cmd = tr_cmd.env(SHELLOUS_EXIT_CODE=5)
+    with pytest.raises(ResultError) as exc_info:
+        await (echo_cmd("abc") | tr_cmd)
+
+    assert exc_info.value.result == Result(
+        output_bytes=b"ABC",
+        exit_code=5,
+        cancelled=False,
+        encoding="utf-8",
+        extra=(
+            PipeResult(exit_code=0, cancelled=False),
+            PipeResult(exit_code=5, cancelled=False),
+        ),
     )

@@ -170,8 +170,10 @@ class Runner:
 
     def make_result(self, output_bytes):
         "Check process exit code and raise a ResultError if necessary."
-        code = self.proc.returncode
-        assert code is not None
+        if self.proc:
+            code = self.proc.returncode
+        else:
+            code = None
 
         result = Result(
             output_bytes,
@@ -222,6 +224,7 @@ class Runner:
             return await self._setup()
         except (Exception, asyncio.CancelledError) as ex:
             LOGGER.warning("Runner enter %r ex=%r", self.name, ex)
+            self.cancelled = isinstance(ex, asyncio.CancelledError)
             await self.wait(kill=True)
             raise
         finally:
@@ -239,6 +242,8 @@ class Runner:
                 *opts.args,
                 **opts.kwd_args,
             )
+
+        LOGGER.info("Runner %r started proc=%r", self.name, self.proc)
 
         stdin = self.proc.stdin
         stdout = self.proc.stdout
@@ -351,9 +356,10 @@ class PipeRunner:
                 for task in self.tasks:
                     task.cancel()
 
-            self.results = await gather_collect(*self.tasks)
+            self.results = await gather_collect(*self.tasks, return_exceptions=True)
+            LOGGER.info("PipeRunner.wait results=%r", self.results)
 
-        except Exception as ex:
+        except (Exception, asyncio.CancelledError) as ex:
             LOGGER.warning("PipeRunner.wait ex=%r", ex)
             raise
 
@@ -488,16 +494,21 @@ async def run(command, *, _streams_future=None):
 
     output_bytes = None
     runner = Runner(command)
-    async with runner as (stdin, stdout, stderr):
-        if _streams_future is not None:
-            # Return streams to caller in another task.
-            _streams_future.set_result((stdin, stdout, stderr))
 
-        else:
-            # Read the output here and return it.
-            stream = stdout or stderr
-            if stream:
-                output_bytes = await stream.read()
+    try:
+        async with runner as (stdin, stdout, stderr):
+            if _streams_future is not None:
+                # Return streams to caller in another task.
+                _streams_future.set_result((stdin, stdout, stderr))
+
+            else:
+                # Read the output here and return it.
+                stream = stdout or stderr
+                if stream:
+                    output_bytes = await stream.read()
+
+    except asyncio.CancelledError:
+        LOGGER.info("run %r cancelled inside enter", command.name)
 
     return runner.make_result(output_bytes)
 

@@ -40,3 +40,24 @@ async def test_gather_collect_cancel():
 
     with pytest.raises(asyncio.TimeoutError):
         await asyncio.wait_for(gather_collect(_coro(), _coro()), 0.1)
+
+
+async def test_gather_collect_return_exceptions():
+    "Test the `gather_collect` function."
+
+    async def _coro1():
+        await asyncio.sleep(0.001)
+        raise ValueError(7)
+
+    async def _coro2():
+        try:
+            await asyncio.sleep(60.0)
+        except asyncio.CancelledError:
+            pass
+        return 99
+
+    result = await gather_collect(_coro1(), _coro2(), return_exceptions=True)
+
+    assert isinstance(result[0], ValueError)
+    assert result[0].args[0] == 7
+    assert result[1] == 99
