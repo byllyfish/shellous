@@ -6,6 +6,8 @@ import os
 from dataclasses import dataclass, field
 from typing import Any, Optional
 
+from immutables import Map as ImmutableDict
+
 from shellous.runner import Runner, run, run_iter
 from shellous.util import Redirect
 
@@ -19,7 +21,7 @@ class Options:  # pylint: disable=too-many-instance-attributes
     "Concrete class for per-command options."
 
     context: "Context" = field(compare=False, repr=False)
-    env: Optional[dict[str, str]] = None
+    env: Optional[ImmutableDict] = None
     inherit_env: bool = True
     input: Any = b""
     input_close: bool = False
@@ -81,9 +83,9 @@ class Options:  # pylint: disable=too-many-instance-attributes
 
     def set_env(self, env):
         "Return new options with augmented environment."
-        current = self.env or {}
+        current = self.env or ImmutableDict()
         updates = {str(k): str(v) for k, v in env.items()}
-        new_env = current | updates
+        new_env = current.update(**updates)
         return dataclasses.replace(self, env=new_env)
 
     def set(self, kwds):

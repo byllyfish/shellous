@@ -1,7 +1,9 @@
 "Unit tests for the Command class."
 
 import pytest
+from immutables import Map as ImmutableDict
 from shellous import context
+from shellous.command import Options
 
 
 @pytest.fixture
@@ -145,8 +147,7 @@ def test_set_arg(sh):
         sh("echo", {0})
 
 
-@pytest.mark.xfail(reason="FIXME")
-def test_hash_eq(sh):
+def test_command_hash_eq(sh):
     "Test that a command is hashable."
     cmd1 = sh("echo").env(FOO=1)
     cmd2 = sh("echo").env(FOO=1)
@@ -156,3 +157,57 @@ def test_hash_eq(sh):
 
     cmd3 = sh("echo").env(FOO=2)
     assert cmd3 != cmd1
+
+
+def test_command_env_init(sh):
+    "Test the environment handling of the Command class."
+    cmd1 = sh("echo")
+    assert cmd1.options.env is None
+
+    sh = sh.env(A=1)
+    cmd2 = sh("echo")
+    assert cmd2.options.env == ImmutableDict(A="1")
+
+    cmd3 = cmd2.env(B=2)
+    assert cmd3.options.env == ImmutableDict(A="1", B="2")
+
+
+def test_options_merge_env(sh):
+    "Test the internal Options class `merge_env` method."
+    opts1 = Options(sh)
+    opts2 = opts1.set_env(dict(A=1))
+    opts3 = opts2.set(dict(inherit_env=False))
+    assert opts3.context is sh
+
+    env1 = opts1.merge_env()
+    assert env1 is None
+
+    env2 = opts2.merge_env()
+    assert "PATH" in env2
+    assert env2["A"] == "1"
+
+    env3 = opts3.merge_env()
+    assert env3 == ImmutableDict(A="1")
+
+    sh2 = sh.env(B=2)
+    assert sh2 is not sh
+    assert sh2.options.env == ImmutableDict(B="2")
+
+    # Copying env from `Context` is done by `Command`...
+    opts4 = Options(sh2)
+    assert opts4.context is sh2
+    assert opts4.env is None
+
+
+def test_options_hash_eq(sh):
+    "Test that the internal Options class is hashable."
+    opts1 = Options(sh)
+    opts2 = opts1.set_env(dict(A=1))
+    opts3 = opts2.set(dict(inherit_env=False))
+
+    assert hash(opts1) is not None
+    assert hash(opts2) is not None
+    assert hash(opts3) is not None
+
+    assert opts1 != opts2
+    assert opts2 != opts3

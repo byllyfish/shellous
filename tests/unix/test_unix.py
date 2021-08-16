@@ -87,7 +87,10 @@ async def test_augmented_env(sh):
     }
     sh = sh.env(**env).set(inherit_env=False)
     result = await sh("env").env(MORE="less")
-    assert result == "PATH=/bin:/usr/bin\nMORE=less\n"
+    assert sorted(result.rstrip().split("\n")) == [
+        "MORE=less",
+        "PATH=/bin:/usr/bin",
+    ]
 
 
 async def test_empty_env(sh):
