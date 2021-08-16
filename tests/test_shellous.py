@@ -167,6 +167,8 @@ async def test_pipe_error_cmd1(echo_cmd, tr_cmd):
     "Test a pipe where the first command fails with an error."
 
     echo_cmd = echo_cmd("abc").env(SHELLOUS_EXIT_CODE=3)
+    tr_cmd = tr_cmd.env(SHELLOUS_EXIT_SLEEP=2)
+
     with pytest.raises(ResultError) as exc_info:
         await (echo_cmd | tr_cmd)
 

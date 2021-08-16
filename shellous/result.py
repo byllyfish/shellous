@@ -65,12 +65,13 @@ def make_result(command, result):
 
         # Everything in result is now either a Result or ResultError.
         key_result = _find_key_result(result)
+        last = _get_result(result[-1])
 
         result = Result(
-            key_result.output_bytes,
+            last.output_bytes,
             key_result.exit_code,
             key_result.cancelled,
-            key_result.encoding,
+            last.encoding,
             tuple(PipeResult.from_result(r) for r in result),
         )
 
@@ -89,8 +90,7 @@ def _find_key_result(result_list):
     "Scan a result list and return the 'key' result."
     acc = None
     for item in result_list:
-        if isinstance(item, ResultError):
-            item = item.result
+        item = _get_result(item)
         acc = _compare_result(acc, item)
         # Return the first one with a non-zero exit code that isn't cancelled.
         if (not acc.cancelled, acc.exit_code != 0) == (True, True):
@@ -107,3 +107,9 @@ def _compare_result(acc, item):
     if item_key >= acc_key:
         return item
     return acc
+
+
+def _get_result(item):
+    if isinstance(item, ResultError):
+        return item.result
+    return item
