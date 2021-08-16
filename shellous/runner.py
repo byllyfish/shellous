@@ -551,8 +551,11 @@ def _log_exception(func):
     async def _wrapper(*args, **kwargs):
         try:
             return await func(*args, **kwargs)
-        except (Exception, asyncio.CancelledError):
-            LOGGER.exception("Task failed!")
+        except asyncio.CancelledError:
+            LOGGER.info("Task cancelled!")
+            raise
+        except Exception as ex:
+            LOGGER.warning("Task ex=%r", ex)
             raise
 
     return _wrapper
