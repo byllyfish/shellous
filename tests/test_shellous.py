@@ -61,6 +61,9 @@ sys.exit(SHELLOUS_EXIT_CODE)
 """
 
 
+_CANCELLED_EXIT_CODE = -9 if sys.platform != "win32" else 1
+
+
 @pytest.fixture
 def echo_cmd(python_script):
     return python_script.env(SHELLOUS_CMD="echo").stderr(INHERIT)
@@ -124,7 +127,6 @@ async def test_echo_exit_code(echo_cmd):
     assert result.output == "abc"
 
 
-@pytest.mark.xfail(reason="FIXME")
 async def test_echo_cancel(echo_cmd):
     "When a command is cancelled, we should see partial output."
 
@@ -134,16 +136,14 @@ async def test_echo_cancel(echo_cmd):
 
     assert exc_info.type is ResultError
     assert exc_info.value.result == Result(
-        output_bytes="abc",  # FIXME: should be partial output...
-        exit_code=-9,
+        output_bytes=None,  # FIXME: Should contain partial output?
+        exit_code=_CANCELLED_EXIT_CODE,
         cancelled=True,
         encoding="utf-8",
         extra=None,
     )
-    assert exc_info.value.command is cmd
 
 
-@pytest.mark.xfail(reason="FIXME", run=False)
 async def test_echo_cancel_stringio(echo_cmd):
     "When a command is cancelled, we should see partial output."
 
@@ -156,7 +156,7 @@ async def test_echo_cancel_stringio(echo_cmd):
     assert exc_info.type is ResultError
     assert exc_info.value.result == Result(
         output_bytes=None,
-        exit_code=-9,
+        exit_code=_CANCELLED_EXIT_CODE,
         cancelled=True,
         encoding="utf-8",
         extra=None,

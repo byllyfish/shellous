@@ -4,6 +4,8 @@ import asyncio
 import enum
 from typing import Optional, Union
 
+from shellous.log import LOGGER
+
 
 class Redirect(enum.IntEnum):
     "Redirection constants."
@@ -26,3 +28,44 @@ def decode(data: Optional[bytes], encoding: Optional[str]) -> Union[str, bytes, 
         encoding, errors = encoding.split(maxsplit=1)
         return data.decode(encoding, errors)
     return data.decode(encoding)
+
+
+async def gather_collect(*aws):
+    """Run a bunch of awaitables as tasks and return the results.
+
+    Similar to `asyncio.gather` with one difference: If an awaitable raises
+    an exception, the other awaitables are cancelled and collected before
+    passing the exception to the client.
+    """
+
+    tasks = [asyncio.ensure_future(item) for item in aws]
+
+    try:
+        done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_EXCEPTION)
+    except asyncio.CancelledError:
+        LOGGER.warning("gather_collect cancelled")
+        # `asyncio.wait` does not cancel tasks when it is cancelled itself.
+        # Cancel all tasks here before re-raising the exception.
+        for task in tasks:
+            task.cancel()
+        raise
+
+    if len(done) == len(tasks):
+        return [task.result() for task in tasks]
+
+    for task in pending:
+        task.cancel()
+
+    try:
+        await asyncio.wait(pending, return_when=asyncio.ALL_COMPLETED)
+    except asyncio.CancelledError:
+        LOGGER.warning("gather_collect pending cleanup cancelled")
+        raise
+
+    # Look for a task in `done` that wasn't cancelled, if there is one.
+    failed = [task for task in done if not task.cancelled()]
+    if failed:
+        failed[0].result()
+
+    # Only choice is a task that was cancelled.
+    done.pop().result()
