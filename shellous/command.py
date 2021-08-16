@@ -219,11 +219,13 @@ class Command:
 
     def stdout(self, output, *, append=False, close=False):
         "Redirect standard output to `output`."
+        _check_args(output, append)
         new_options = self.options.set_stdout(output, append, close)
         return Command(self.args, new_options)
 
     def stderr(self, error, *, append=False, close=False):
         "Redirect standard error to `error`."
+        _check_args(error, append)
         new_options = self.options.set_stderr(error, append, close)
         return Command(self.args, new_options)
 
@@ -307,3 +309,11 @@ class Command:
     def __rshift__(self, rhs):
         "Right shift operator is used to build pipelines."
         return pipeline(self) >> rhs
+
+
+_SUPPORTS_APPEND = (str, bytes, os.PathLike)
+
+
+def _check_args(out, append):
+    if append and not isinstance(out, _SUPPORTS_APPEND):
+        raise TypeError(f"{type(out)} does not support append")

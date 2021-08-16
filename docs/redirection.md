@@ -29,7 +29,7 @@ pass for `arg`.
 | int | Read input from existing file descriptor. |
 | DEVNULL | Read input from `/dev/null`. |
 | INHERIT  | Read input from existing `sys.stdin`. |
-| CAPTURE | Used with async context manager API only. |
+| CAPTURE | See *Multiple Capture*. |
 
 ### Example
 
@@ -60,13 +60,12 @@ instead, set the `append` keyword argument to True. The behavior  depends on the
 | pathlib.Path | Write output to file path specified by `Path`. | Open file for append
 | str | Write output to file path specified by string object. | Open file for append
 | bytes | Write output to file path specified by bytes object. | Open file for append
-| *file object*<sup>1</sup> | Write output to open file object. | Ignored
-| int | Write output to existing file descriptor. | Ignored
-| CAPTURE | Return standard output. Used with async context manager API. | Ignored
-| DEVNULL | Write output to `/dev/null`. | Ignored
-| INHERIT  | Write output to existing `sys.stdout` or `sys.stderr`. | Ignored
-| STDOUT | Redirect stderr to same place as stdout. | Ignored
-| logging.Logger | Write each output line to `logger.error()`. | Ignored
+| *file object*<sup>1</sup> | Write output to open file object. | TypeError
+| int | Write output to existing file descriptor. | TypeError
+| CAPTURE | Return standard output or error. See *Multiple Capture*. | TypeError
+| DEVNULL | Write output to `/dev/null`. | TypeError
+| INHERIT  | Write output to existing `sys.stdout` or `sys.stderr`. | TypeError
+| STDOUT | Redirect stderr to same place as stdout. | TypeError
 
 ### Example
 
@@ -99,6 +98,12 @@ result = await (sh("echo", "abc") >> Path("some_file"))
 ### Stderr
 
 There is no syntactic sugar for calling the `stderr()` method. 
+
+If you redirect stdout to someplace else. you can set stderr to CAPTURE to return just the standard error.
+
+```python
+result = await sh("ls", "non-existant-file").stdout(DEVNULL).stderr(CAPTURE)
+```
 
 Consider calling `stderr()` on your **context** object; this will affect all commands created from it.
 

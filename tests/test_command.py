@@ -1,8 +1,10 @@
 "Unit tests for the Command class."
 
+from pathlib import Path
+
 import pytest
 from immutables import Map as ImmutableDict
-from shellous import context
+from shellous import DEVNULL, context
 from shellous.command import Options
 
 
@@ -211,3 +213,18 @@ def test_options_hash_eq(sh):
 
     assert opts1 != opts2
     assert opts2 != opts3
+
+
+def test_arg_checks_append(sh):
+    "Test that redirections with `append=True` use the allowed types."
+
+    echo = sh("echo")
+    echo.stdout("/tmp/tmp_test_file", append=True)
+    echo.stdout(b"/tmp/tmp_test_file", append=True)
+    echo.stdout(Path("/tmp/tmp_test_file"), append=True)
+
+    with pytest.raises(TypeError, match="append"):
+        echo.stdout(7, append=True)  # 7 is file descriptor
+
+    with pytest.raises(TypeError, match="append"):
+        echo.stdout(DEVNULL, append=True)
