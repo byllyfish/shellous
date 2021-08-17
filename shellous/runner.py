@@ -168,7 +168,7 @@ class Runner:
         "Return name of process to run."
         return self.options.command.name
 
-    def make_result(self, output_bytes):
+    def result(self, output_bytes=None):
         "Check process exit code and raise a ResultError if necessary."
         if self.proc:
             code = self.proc.returncode
@@ -341,7 +341,7 @@ class PipeRunner:
         "Return name of the pipeline."
         return self.pipe.name
 
-    def make_result(self):
+    def result(self):
         "Return `Result` object for PipeRunner."
         return make_result(self.pipe, self.results)
 
@@ -510,7 +510,7 @@ async def run(command, *, _streams_future=None):
     except asyncio.CancelledError:
         LOGGER.info("run %r cancelled inside enter", command.name)
 
-    return runner.make_result(output_bytes)
+    return runner.result(output_bytes)
 
 
 async def run_iter(command):
@@ -526,7 +526,7 @@ async def run_iter(command):
             async for line in stream:
                 yield decode(line, encoding)
 
-    runner.make_result(None)
+    runner.result()  # No return value; raises exception if needed
 
 
 async def run_pipe(pipe):
@@ -539,7 +539,7 @@ async def run_pipe(pipe):
     runner = PipeRunner(pipe)
     async with runner:
         pass
-    return runner.make_result()
+    return runner.result()
 
 
 async def run_pipe_iter(pipe):
@@ -553,7 +553,7 @@ async def run_pipe_iter(pipe):
         async for line in stdout:
             yield decode(line, encoding)
 
-    runner.make_result()
+    runner.result()  # Nno return value; raises exception if needed
 
 
 def _log_exception(func):

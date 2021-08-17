@@ -88,7 +88,7 @@ the `Result` object.
 >>> await sh("cat", "does_not_exist")
 Traceback (most recent call last):
   ...
-shellous.result.ResultError: (Result(output_bytes=b'', exit_code=1, cancelled=False, ...
+shellous.result.ResultError: Result(output_bytes=b'', exit_code=1, cancelled=False, encoding='utf-8', extra=None)
 ```
 
 To return a `Result` object instead of raising an exception, set the `allowed_exit_codes` option
@@ -176,7 +176,7 @@ option.
 cat: does_not_exist: No such file or directory
 Traceback (most recent call last):
   ...
-shellous.result.ResultError: (Result(output_bytes=b'', exit_code=1, cancelled=False, ...
+shellous.result.ResultError: Result(output_bytes=b'', exit_code=1, cancelled=False, encoding='utf-8', extra=None)
 ```
 
 [More on redirection...](docs/redirection.md)
