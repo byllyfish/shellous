@@ -1,8 +1,11 @@
 [tool.poetry]
 name = "shellous"
 version = "0.1.0"
-description = "shellous is an asyncio library that provides a concise API for running subprocesses."
+description = "shellous: Run Processes and Pipelines"
+license = "Apache-2.0"
 authors = ["Bill Fisher <william.w.fisher@gmail.com>"]
+readme = "README.md"
+homepage = "https://github.com/byllyfish/shellous"
 
 [tool.poetry.dependencies]
 python = "^3.9"
