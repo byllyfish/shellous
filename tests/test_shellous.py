@@ -225,3 +225,10 @@ async def test_redirect_stdout_stringio(echo_cmd):
     result = await echo_cmd("abc").stdout(buf)
     assert result is None
     assert buf.getvalue() == "abc"
+
+
+async def test_redirect_stdin_bytearray(cat_cmd):
+    "Test reading stdin from bytearray."
+    buf = bytearray("123", "utf-8")
+    result = await cat_cmd().stdin(buf)
+    assert result == "123"

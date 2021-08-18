@@ -87,7 +87,7 @@ class RunOptions:
         stdin = asyncio.subprocess.PIPE
         input_bytes = None
 
-        if isinstance(input_, bytes):
+        if isinstance(input_, (bytes, bytearray)):
             input_bytes = input_
         elif isinstance(input_, os.PathLike):
             stdin = open(input_, "rb")
