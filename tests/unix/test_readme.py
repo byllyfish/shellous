@@ -41,9 +41,9 @@ class Prompt:
         err = await task
 
         # Clean up the output to remove the prompt, then return as string.
-        buf = err + out
+        buf = (err + out).replace(b"\r\n", b"\n")
         assert buf.endswith(self.prompt_bytes)
-        buf = buf[0 : -len(self.prompt_bytes)].rstrip(b"\r\n")
+        buf = buf[0 : -len(self.prompt_bytes)].rstrip(b"\n")
 
         return buf.decode("utf-8")
 
