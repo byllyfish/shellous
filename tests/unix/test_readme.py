@@ -43,9 +43,7 @@ class Prompt:
         # Clean up the output to remove the prompt, then return as string.
         buf = err + out
         assert buf.endswith(self.prompt_bytes)
-        buf = buf[0 : -len(self.prompt_bytes)]
-        if buf.endswith(b"\n"):
-            buf = buf[0:-1]
+        buf = buf[0 : -len(self.prompt_bytes)].rstrip(b"\r\n")
 
         return buf.decode("utf-8")
 
