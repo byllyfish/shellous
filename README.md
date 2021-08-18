@@ -88,7 +88,7 @@ the `Result` object.
 >>> await sh("cat", "does_not_exist")
 Traceback (most recent call last):
   ...
-shellous.result.ResultError: (Result(output_bytes=b'', exit_code=1, cancelled=False, ...
+shellous.result.ResultError: Result(output_bytes=b'', exit_code=1, cancelled=False, encoding='utf-8', extra=None)
 ```
 
 To return a `Result` object instead of raising an exception, set the `allowed_exit_codes` option
@@ -122,9 +122,9 @@ To redirect stdin using a file's contents, use a `Path` object from `pathlib`.
 
 ```python-repl
 >>> from pathlib import Path
->>> cmd = Path("/usr/bin/wc") | sh("wc", "-c")
+>>> cmd = Path("README.md") | sh("wc", "-l")
 >>> await cmd
-'  137968\n'
+'     193\n'
 ```
 
 [More on redirection...](docs/redirection.md)
@@ -176,7 +176,7 @@ option.
 cat: does_not_exist: No such file or directory
 Traceback (most recent call last):
   ...
-shellous.result.ResultError: (Result(output_bytes=b'', exit_code=1, cancelled=False, ...
+shellous.result.ResultError: Result(output_bytes=b'', exit_code=1, cancelled=False, encoding='utf-8', extra=None)
 ```
 
 [More on redirection...](docs/redirection.md)
@@ -187,8 +187,7 @@ Pipelines
 You can create a pipeline by combining commands using the `|` operator.
 
 ```python-repl
->>> pipe = sh("echo", "abc") | sh("wc", "-c")
+>>> pipe = sh("ls") | sh("grep", "README")
 >>> await pipe
-'       4\n'
+'README.md\n'
 ```
-
