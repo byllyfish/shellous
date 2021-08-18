@@ -138,17 +138,28 @@ class Context:
         del kwargs["self"]
         return Context(self.options.set(kwargs))
 
-    def __call__(self, *command):
-        return Command(self._coerce(command), self.options)
+    def __call__(self, *args):
+        "Construct a new command."
+        return Command(self._coerce(args), self.options)
 
-    def _coerce(self, command):
+    def _apply(self, cmd, args):
+        """Apply arguments to an existing command.
+
+        This method may be overidden in a subclass.
+        """
+        return Command(
+            cmd.args + self._coerce(args),
+            cmd.options,
+        )
+
+    def _coerce(self, args):
         """Flatten lists and coerce arguments to string.
 
-        Behavior may be customizable in the future.
+        This method may be overidden in a subclass.
         """
         result = []
-        for arg in command:
-            if isinstance(arg, (str, bytes, os.PathLike)):
+        for arg in args:
+            if isinstance(arg, (str, bytes, bytearray, os.PathLike)):
                 result.append(arg)
             elif isinstance(arg, (list, tuple)):
                 result.extend(self._coerce(arg))
@@ -278,10 +289,7 @@ class Command:
         "Apply more arguments to the end of the command."
         if not args:
             return self
-        return Command(
-            self.args + self.options.context._coerce(args),
-            self.options,
-        )
+        return self.options.context._apply(self, args)
 
     def __str__(self):
         "Return string representation."

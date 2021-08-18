@@ -19,6 +19,12 @@ def test_invalid(sh):
         sh()
 
 
+def test_invalid_empty_args(sh):
+    "Calling sh() with 0 arguments is invalid."
+    with pytest.raises(ValueError, match="Command must include program name"):
+        sh([], ())
+
+
 def test_args(sh):
     "Test command args coercion."
     cmd = sh("echo", "a", 2)
@@ -147,6 +153,12 @@ def test_set_arg(sh):
     """
     with pytest.raises(NotImplementedError, match="reserved"):
         sh("echo", {0})
+
+
+def test_bytearray_arg(sh):
+    "Test passing a bytearray as an argument."
+    cmd = sh("echo", bytearray("abc", "utf-8"))
+    assert cmd.args == ("echo", b"abc")
 
 
 def test_command_hash_eq(sh):
