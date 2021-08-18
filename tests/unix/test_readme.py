@@ -15,10 +15,10 @@ _PROMPT = ">>> "
 class Prompt:
     "Utility class to help with an interactive prompt."
 
-    def __init__(self, stdin, stdout, stderr):
+    def __init__(self, stdin, stdout, errbuf):
         self.stdin = stdin
         self.stdout = stdout
-        self.stderr = stderr
+        self.errbuf = errbuf
         self.prompt_bytes = _PROMPT.encode("utf-8")
 
     async def prompt(self, input_text=""):
@@ -27,50 +27,39 @@ class Prompt:
             assert "\n" not in input_text
             self.stdin.write(input_text.encode("utf-8") + b"\n")
 
-        # Create task to read from stderr.
-        task = asyncio.create_task(self._read_stderr())
-
         # Drain our write to stdin, and wait for prompt from stdout.
         out, _ = await asyncio.gather(
             self.stdout.readuntil(self.prompt_bytes),
             self.stdin.drain(),
         )
 
-        # Cancel read on stderr and await its value.
-        task.cancel()
-        err = await task
+        # Combine stderr and stdout, then clear stderr.
+        buf = self.errbuf + out
+        self.errbuf.clear()
 
         # Clean up the output to remove the prompt, then return as string.
-        buf = (err + out).replace(b"\r\n", b"\n")
+        buf = buf.replace(b"\r\n", b"\n")
         assert buf.endswith(self.prompt_bytes)
         buf = buf[0 : -len(self.prompt_bytes)].rstrip(b"\n")
 
         return buf.decode("utf-8")
 
-    async def _read_stderr(self):
-        "Read data from stderr until cancelled or EOF."
-        bufs = []
-        try:
-            while not self.stderr.at_eof():
-                bufs.append(await self.stderr.read(1024))
-        except asyncio.CancelledError:
-            pass
-        return b"".join(bufs)
-
 
 async def run_asyncio_repl(cmds):
     "Helper function to run the asyncio REPL and feed it commands."
     sh = shellous.context()
+
+    errbuf = bytearray()
     repl = (
         sh(sys.executable, "-m", "asyncio")
         .stdin(shellous.CAPTURE)
-        .stderr(shellous.CAPTURE)
+        .stderr(errbuf)
         .set(return_result=True)
     )
 
     runner = repl.runner()
-    async with runner as (stdin, stdout, stderr):
-        p = Prompt(stdin, stdout, stderr)
+    async with runner as (stdin, stdout, _stderr):
+        p = Prompt(stdin, stdout, errbuf)
         await p.prompt()
 
         output = []
