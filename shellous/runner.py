@@ -135,7 +135,7 @@ class RunOptions:
             stdout = output
             if close:
                 self.open_fds.append(stdout)
-        elif isinstance(output, io.StringIO):
+        elif isinstance(output, (io.StringIO, io.BytesIO, bytearray)):
             pass
         elif isinstance(output, io.IOBase):
             # Client-managed File-like object.
@@ -251,17 +251,11 @@ class Runner:
 
         if stderr is not None:
             error = opts.command.options.error
-            if isinstance(error, io.StringIO):
-                # Set up task to redirect output to a StringIO.
-                self.add_task(_copy_sync(stderr, error, opts.encoding))
-                stderr = None
+            stderr = self._setup_output_sink(stderr, error, opts.encoding)
 
         if stdout is not None:
             output = opts.command.options.output
-            if isinstance(output, io.StringIO):
-                # Set up task to redirect output to a StringIO.
-                self.add_task(_copy_sync(stdout, output, opts.encoding))
-                stdout = None
+            stdout = self._setup_output_sink(stdout, output, opts.encoding)
 
         if stdin is not None:
             if opts.input_bytes is not None:
@@ -271,6 +265,19 @@ class Runner:
         self.add_task(self.proc.wait())
 
         return (stdin, stdout, stderr)
+
+    def _setup_output_sink(self, stream, sink, encoding):
+        "Set up a task to write to custom output sink."
+        if isinstance(sink, io.StringIO):
+            self.add_task(_copy_stringio(stream, sink, encoding))
+            stream = None
+        elif isinstance(sink, io.BytesIO):
+            self.add_task(_copy_bytesio(stream, sink))
+            stream = None
+        elif isinstance(sink, bytearray):
+            self.add_task(_copy_bytearray(stream, sink))
+            stream = None
+        return stream
 
     async def __aexit__(self, _exc_type, exc_value, _exc_tb):
         "Wait for process to exit and handle cancellation."
@@ -583,7 +590,7 @@ async def _feed_writer(input_bytes, stream):
 
 
 @_log_exception
-async def _copy_sync(source, dest, encoding):
+async def _copy_stringio(source, dest, encoding):
     # Collect partial reads into a BytesIO.
     buf = io.BytesIO()
     try:
@@ -596,6 +603,26 @@ async def _copy_sync(source, dest, encoding):
         # Only convert to string once all output is collected.
         # (What if utf-8 codepoint is split between reads?)
         dest.write(decode(buf.getvalue(), encoding))
+
+
+@_log_exception
+async def _copy_bytesio(source, dest):
+    # Collect partial reads into a BytesIO.
+    while True:
+        data = await source.read(1024)
+        if not data:
+            break
+        dest.write(data)
+
+
+@_log_exception
+async def _copy_bytearray(source, dest):
+    # Collect partial reads into a bytearray.
+    while True:
+        data = await source.read(1024)
+        if not data:
+            break
+        dest.extend(data)
 
 
 def _close_fds(open_fds):

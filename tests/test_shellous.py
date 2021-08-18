@@ -201,3 +201,27 @@ async def test_pipe_error_cmd2(echo_cmd, tr_cmd):
             PipeResult(exit_code=5, cancelled=False),
         ),
     )
+
+
+async def test_redirect_stdout_bytearray(echo_cmd):
+    "Test redirecting stdout to bytearray."
+    buf = bytearray()
+    result = await echo_cmd("abc").stdout(buf)
+    assert result is None
+    assert buf == b"abc"
+
+
+async def test_redirect_stdout_bytesio(echo_cmd):
+    "Test redirecting stdout to BytesIO."
+    buf = io.BytesIO()
+    result = await echo_cmd("abc").stdout(buf)
+    assert result is None
+    assert buf.getvalue() == b"abc"
+
+
+async def test_redirect_stdout_stringio(echo_cmd):
+    "Test redirecting stdout to StringIO."
+    buf = io.StringIO()
+    result = await echo_cmd("abc").stdout(buf)
+    assert result is None
+    assert buf.getvalue() == "abc"
