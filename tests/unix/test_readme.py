@@ -1,4 +1,4 @@
-"Test the asyncio REPL calls in the README."
+"Test the asyncio REPL calls in the README (MacOS only)."
 
 import asyncio
 import re
@@ -103,6 +103,7 @@ async def test_run_asyncio_repl():
     ]
 
 
+@pytest.mark.skipif(sys.platform != "darwin", reason="Darwin")
 async def test_readme():
     "Test that the REPL commands in the README.md file actually work."
 
