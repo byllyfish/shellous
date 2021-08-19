@@ -23,17 +23,9 @@ class Pipeline:
             raise ValueError("Pipeline must include at least one command")
 
     @property
-    def name(self):
+    def name(self) -> str:
         "Return the name of the pipeline."
         return "|".join(cmd.name for cmd in self.commands)
-
-    @property
-    def captured(self):
-        "Return true if stdin or stderr streams are captured."
-        return (
-            self.commands[0].options.input == Redirect.CAPTURE
-            or self.commands[-1].options.error == Redirect.CAPTURE
-        )
 
     @property
     def options(self):
@@ -70,7 +62,7 @@ class Pipeline:
         runner = cmd.runner()
         async with runner as (stdin, stdout, stderr):
             # do something with stdin, stdout, stderr
-        result = await runner.wait()
+        result = runner.result()
         ```
         """
         return PipeRunner(self, capturing=True)
@@ -86,9 +78,11 @@ class Pipeline:
         raise TypeError("unsupported type")
 
     def __call__(self, *args):
-        if len(args) > 0:
-            raise TypeError("Calling pipeline with 1 or more arguments.")
-        return self
+        if len(args) == 0:
+            return self
+        # Use context from first command.
+        context = self.commands[0].options.context
+        return context._pipe_apply(self, args)
 
     def __or__(self, rhs):
         if isinstance(rhs, (Command, Pipeline)):

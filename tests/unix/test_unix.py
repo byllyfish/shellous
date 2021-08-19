@@ -514,3 +514,83 @@ async def test_gather_same_cmd(sh):
     cmd = sh(sys.executable, "-c", "import secrets; print(secrets.randbits(31))")
     results = await gather_collect(cmd, cmd)
     assert results[0] != results[1]
+
+
+async def test_cancelled_antipattern(sh):
+    """Test the ResultError/cancellation anti-pattern.
+
+    Catching `ResultError` using try/except conceals the `CancelledError`
+    when you want to cancel the current task.
+    """
+
+    sleep_cmd = sh("sleep", 3600).set(return_result=True)
+
+    async def _subtask():
+        try:
+            result1 = await sleep_cmd
+        except ResultError as ex:
+            assert ex.result.cancelled
+            # First, CancelledError is lost!
+        result2 = await sleep_cmd
+
+    task = asyncio.create_task(_subtask())
+
+    # Wait for task to start, then inject a CancelledError.
+    await asyncio.sleep(0.01)
+    task.cancel()
+
+    # Catch ResultError from second sleep command. We have to use a timeout,
+    # otherwise we'd wait an hour for the 2nd sleep command to finish.
+    with pytest.raises(ResultError) as exc_info:
+        await asyncio.wait_for(task, timeout=0.1)
+
+    assert exc_info.value.result.cancelled
+
+
+async def test_cancelled_antipattern_fix(sh):
+    """Test the ResultError/cancellation anti-pattern fix.
+
+    Catching `ResultError` using try/except conceals the `CancelledError`
+    when you want to cancel the current task.
+
+    The fix is to call `ex.raise_cancel()` when you are done with the
+    `ResultError`.
+    """
+
+    sleep_cmd = sh("sleep", 3600).set(return_result=True)
+
+    async def _subtask():
+        try:
+            result1 = await sleep_cmd
+        except ResultError as ex:
+            assert ex.result.cancelled
+            ex.raise_cancel()  # Re-raises CancelledError when necessary
+
+        result2 = await sleep_cmd
+
+    task = asyncio.create_task(_subtask())
+
+    # Wait for task to start, then inject a CancelledError.
+    await asyncio.sleep(0.01)
+    task.cancel()
+
+    # Wait for task to report it is cancelled.
+    with pytest.raises(asyncio.CancelledError):
+        await task
+
+    assert task.cancelled
+
+
+async def test_multiple_capture(sh):
+    "Test the multiple capture example from the documentation."
+    cmd = sh("cat").stdin(CAPTURE)
+
+    runner = cmd.runner()
+    async with runner as (stdin, stdout, _stderr):
+        stdin.write(b"abc\n")
+        output, _ = await asyncio.gather(stdout.readline(), stdin.drain())
+
+        stdin.close()
+    result = runner.result(output)
+
+    assert result == "abc\n"

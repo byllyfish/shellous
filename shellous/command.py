@@ -142,20 +142,28 @@ class Context:
         "Construct a new command."
         return Command(self._coerce(args), self.options)
 
-    def _apply(self, cmd, args):
+    def _cmd_apply(self, cmd, args):
         """Apply arguments to an existing command.
 
-        This method may be overidden in a subclass.
+        This method is an extension point.
         """
         return Command(
             cmd.args + self._coerce(args),
             cmd.options,
         )
 
+    def _pipe_apply(self, _pipe, args):
+        """Apply arguments to an existing pipeline.
+
+        This method is an extension point.
+        """
+        assert len(args) > 0
+        raise TypeError("Calling pipeline with 1 or more arguments.")
+
     def _coerce(self, args):
         """Flatten lists and coerce arguments to string.
 
-        This method may be overidden in a subclass.
+        This method is an extension point.
         """
         result = []
         for arg in args:
@@ -289,7 +297,7 @@ class Command:
         "Apply more arguments to the end of the command."
         if not args:
             return self
-        return self.options.context._apply(self, args)
+        return self.options.context._cmd_apply(self, args)
 
     def __str__(self):
         "Return string representation."

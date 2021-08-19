@@ -153,7 +153,7 @@ class Runner:
     runner = Runner(cmd)
     async with runner as (stdin, stdout, stderr):
         # process stdin, stdout, stderr (if not None)
-    # Do something with finished `runner`.
+    result = runner.result()
     ```
     """
 
@@ -326,10 +326,12 @@ class Runner:
 class PipeRunner:
     """PipeRunner is an asynchronous context manager that runs a pipeline.
 
+    ```
     runner = PipeRunner(pipe)
     async with runner as (stdin, stdout, stderr):
         # process stdin, stdout, stderr (if not None)
-    # Do something with finished `runner`.
+    result = runner.result()
+    ```
     """
 
     def __init__(self, pipe, *, capturing=False):
