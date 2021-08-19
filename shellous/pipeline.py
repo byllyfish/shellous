@@ -59,9 +59,10 @@ class Pipeline:
         """Return a `Runner` to help run the process incrementally.
 
         ```
-        runner = cmd.runner()
+        runner = pipe.runner()
         async with runner as (stdin, stdout, stderr):
-            # do something with stdin, stdout, stderr
+            # do something with stdin, stdout, stderr...
+            # close stdin to signal we're done...
         result = runner.result()
         ```
         """

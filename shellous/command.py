@@ -279,8 +279,9 @@ class Command:
         ```
         runner = cmd.runner()
         async with runner as (stdin, stdout, stderr):
-            # do something with stdin, stdout, stderr
-        result = await runner.wait()
+            # do something with stdin, stdout, stderr...
+            # close stdin to signal we're done...
+        result = runner.result()
         ```
         """
         return Runner(self)

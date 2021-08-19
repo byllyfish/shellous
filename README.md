@@ -42,9 +42,8 @@ Start the asyncio REPL by typing `python3 -m asyncio`, and import the **shellous
 >>> import shellous
 ```
 
-Before we can do anything else, we need to create a **context**. This is our chance to customize
-settings like environment variables or text encoding. Store the context in a short variable
-name like `sh` because we'll be typing it a lot.
+Before we can do anything else, we need to create a **context**. Store the context in a 
+short variable name like `sh` because we'll be typing it a lot.
 
 ```python-repl
 >>> sh = shellous.context()
@@ -113,7 +112,7 @@ To redirect stdin using a file's contents, use a `Path` object from `pathlib`.
 >>> from pathlib import Path
 >>> cmd = Path("README.md") | sh("wc", "-l")
 >>> await cmd
-'     182\n'
+'     181\n'
 ```
 
 [More on redirection...](docs/redirection.md)
