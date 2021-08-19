@@ -5,7 +5,7 @@ import io
 import sys
 
 import pytest
-from shellous import INHERIT, PipeResult, Result, ResultError, context
+from shellous import CAPTURE, INHERIT, PipeResult, Result, ResultError, context
 
 pytestmark = pytest.mark.asyncio
 
@@ -232,3 +232,10 @@ async def test_redirect_stdin_bytearray(cat_cmd):
     buf = bytearray("123", "utf-8")
     result = await cat_cmd().stdin(buf)
     assert result == "123"
+
+
+async def test_pipe_redirect_stdin_capture(cat_cmd, tr_cmd):
+    "Test setting stdin on pipe to CAPTURE without using `async with`."
+    cmd = cat_cmd | tr_cmd
+    with pytest.raises(ValueError, match="multiple capture requires 'async with'"):
+        await cmd.stdin(CAPTURE)

@@ -24,7 +24,7 @@ pass for `arg`.
 | ----------- | --------------- |
 | pathlib.Path | Read input from file specified by `Path`. |
 | str | Read input from string object. |
-| bytes | Read input from bytes object. |
+| bytes, bytearray | Read input from bytes object. |
 | *file object*<sup>1</sup> | Read input from open file object. |
 | int | Read input from existing file descriptor. |
 | DEVNULL | Read input from `/dev/null`. |
@@ -60,6 +60,7 @@ instead, set the `append` keyword argument to True. The behavior  depends on the
 | pathlib.Path | Write output to file path specified by `Path`. | Open file for append
 | str | Write output to file path specified by string object. | Open file for append
 | bytes | Write output to file path specified by bytes object. | Open file for append
+| bytearray | Write output to mutable byte array. | TypeError
 | *file object*<sup>1</sup> | Write output to open file object. | TypeError
 | int | Write output to existing file descriptor. | TypeError
 | CAPTURE | Return standard output or error. See *Multiple Capture*. | TypeError

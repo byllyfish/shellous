@@ -11,14 +11,14 @@ from shellous.result import Result, ResultError, make_result
 from shellous.util import Redirect, decode, gather_collect
 
 
-class RunOptions:
-    """RunOptions is context manager to assist in running a command.
+class _RunOptions:
+    """_RunOptions is context manager to assist in running a command.
 
     This class sets up low-level I/O redirection and helps close open file
     descriptors.
 
     ```
-    with RunOptions(cmd) as options:
+    with _RunOptions(cmd) as options:
         proc = await create_subprocess_exec(*options.args, **options.kwd_args)
         # etc.
     ```
@@ -42,7 +42,7 @@ class RunOptions:
             self._setup()
             return self
         except Exception as ex:
-            LOGGER.warning("RunOptions.__enter__ %r ex=%r", self.command.name, ex)
+            LOGGER.warning("_RunOptions.__enter__ %r ex=%r", self.command.name, ex)
             raise
 
     def __exit__(self, *exc):
@@ -153,12 +153,12 @@ class Runner:
     runner = Runner(cmd)
     async with runner as (stdin, stdout, stderr):
         # process stdin, stdout, stderr (if not None)
-    # Do something with finished `runner`.
+    result = runner.result()
     ```
     """
 
     def __init__(self, command):
-        self.options = RunOptions(command)
+        self.options = _RunOptions(command)
         self.cancelled = False
         self.proc = None
         self.tasks = []
@@ -305,31 +305,16 @@ class Runner:
 
         return self.cancelled
 
-    def __repr__(self):
-        "Return compact representation of Runner instance."
-        arginfo = ""
-        procinfo = ""
-        taskinfo = ""
-
-        if self.options.args:
-            arginfo = f" args={self.options.args!r} kwd_args={self.options.kwd_args!r}"
-
-        if self.proc:
-            procinfo = f" pid={self.proc.pid} returncode={self.proc.returncode}"
-
-        if self.tasks:
-            taskinfo = f" tasks={self.tasks!r}"
-
-        return f"<Runner cancelled={self.cancelled}{arginfo}{procinfo}{taskinfo}>"
-
 
 class PipeRunner:
     """PipeRunner is an asynchronous context manager that runs a pipeline.
 
+    ```
     runner = PipeRunner(pipe)
     async with runner as (stdin, stdout, stderr):
         # process stdin, stdout, stderr (if not None)
-    # Do something with finished `runner`.
+    result = runner.result()
+    ```
     """
 
     def __init__(self, pipe, *, capturing=False):
@@ -521,7 +506,7 @@ async def run(command, *, _streams_future=None):
 
 
 async def run_iter(command):
-    "Run a command and iterate over output."
+    "Run a command and iterate over its output lines."
     if command.multiple_capture:
         raise ValueError("multiple capture requires 'async with'")
 
@@ -550,7 +535,7 @@ async def run_pipe(pipe):
 
 
 async def run_pipe_iter(pipe):
-    "Run a pipeline and iterate over standard output."
+    "Run a pipeline and iterate over its output lines."
     runner = PipeRunner(pipe, capturing=True)
     async with runner as (stdin, stdout, stderr):
         assert stdin is None
@@ -560,7 +545,7 @@ async def run_pipe_iter(pipe):
         async for line in stdout:
             yield decode(line, encoding)
 
-    runner.result()  # Nno return value; raises exception if needed
+    runner.result()  # No return value; raises exception if needed
 
 
 def _log_exception(func):

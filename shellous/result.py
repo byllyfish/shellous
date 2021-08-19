@@ -1,5 +1,6 @@
 "Implements support for Results."
 
+import asyncio
 from dataclasses import dataclass
 from typing import Any, Optional, Union
 
@@ -13,6 +14,11 @@ class ResultError(Exception):
     def result(self):
         "Return the `Result` object."
         return self.args[0]
+
+    def raise_cancel(self):
+        "Re-raise CancelledError if necessary."
+        if self.result.cancelled:
+            raise asyncio.CancelledError() from self
 
 
 @dataclass(frozen=True)

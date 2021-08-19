@@ -30,6 +30,7 @@ Requirements
 ------------
 
 - Requires Python 3.9 or later.
+- Requires an asyncio event loop.
 - Runs on Linux, MacOS and Windows.
 
 Basic Usage
@@ -41,9 +42,8 @@ Start the asyncio REPL by typing `python3 -m asyncio`, and import the **shellous
 >>> import shellous
 ```
 
-Before we can do anything else, we need to create a **context**. This is our chance to customize
-settings like environment variables or text encoding. Store the context in a short variable
-name like `sh` because we'll be typing it a lot.
+Before we can do anything else, we need to create a **context**. Store the context in a 
+short variable name like `sh` because we'll be typing it a lot.
 
 ```python-repl
 >>> sh = shellous.context()
@@ -66,6 +66,8 @@ to omit the newline. Note, `echo("abc")` is the same as `echo -n "abc"`.
 >>> await echo("abc")
 'abc'
 ```
+
+[More on commands...](docs/commands.md)
 
 Results and Exit Codes
 ----------------------
@@ -91,21 +93,7 @@ Traceback (most recent call last):
 shellous.result.ResultError: Result(output_bytes=b'', exit_code=1, cancelled=False, encoding='utf-8', extra=None)
 ```
 
-To return a `Result` object instead of raising an exception, set the `allowed_exit_codes` option
-together with the `return_result` option.
-
-```python-repl
->>> await sh("cat", "does_not_exist").set(return_result=True, allowed_exit_codes={0,1})
-Result(output_bytes=b'', exit_code=1, cancelled=False, encoding='utf-8', extra=None)
-```
-
-You can wire this into a `cat` command to do it automatically.
-
-```python-repl
->>> cat = sh("cat").set(return_result=True, allowed_exit_codes={0,1})
->>> await cat("does_not_exist")
-Result(output_bytes=b'', exit_code=1, cancelled=False, encoding='utf-8', extra=None)
-```
+[More on results...](docs/results.md)
 
 Redirecting Standard Input
 --------------------------
@@ -124,7 +112,7 @@ To redirect stdin using a file's contents, use a `Path` object from `pathlib`.
 >>> from pathlib import Path
 >>> cmd = Path("README.md") | sh("wc", "-l")
 >>> await cmd
-'     193\n'
+'     181\n'
 ```
 
 [More on redirection...](docs/redirection.md)
