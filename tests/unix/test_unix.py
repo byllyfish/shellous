@@ -600,8 +600,8 @@ async def test_multiple_capture(sh):
 async def test_cancel_timeout(sh):
     "Test the `cancel_timeout` setting."
     sleep = sh("nohup", "sleep").set(
-        cancel_timeout=0.1,
+        cancel_timeout=0.25,
         cancel_signal=signal.SIGHUP,
     )
     with pytest.raises(ResultError):
-        await asyncio.wait_for(sleep(5.0), 2.0)
+        await asyncio.wait_for(sleep(10.0), 0.25)

@@ -189,9 +189,13 @@ class Runner:
 
         return make_result(self.command, result)
 
-    def add_task(self, coro):
+    def add_task(self, coro, tag=None):
         "Add a background task."
-        task = asyncio.create_task(coro, name=str(self.command))
+        if tag:
+            task_name = f"{self.command.name}#{tag}"
+        else:
+            task_name = self.command.name
+        task = asyncio.create_task(coro, name=task_name)
         self.tasks.append(task)
 
     async def wait(self):
@@ -201,14 +205,13 @@ class Runner:
             return
 
         try:
-            if self.tasks:
-                await gather_collect(*self.tasks)
-
+            await gather_collect(*self.tasks)
             LOGGER.info("Runner.wait %r exit_code=%r", self.name, self.proc.returncode)
 
         except asyncio.CancelledError:
             LOGGER.info("Runner.wait %r cancelled proc=%r", self.name, self.proc)
             self.cancelled = True
+            self.tasks.clear()  # all tasks were cancelled
             await self.kill()
 
         except Exception as ex:
@@ -238,13 +241,9 @@ class Runner:
                 self.proc.send_signal(cancel_signal)
 
             if self.tasks:
-                LOGGER.warning(
-                    "Runner.kill cancel %d tasks: %r", len(self.tasks), self.tasks
-                )
-                for task in self.tasks:
-                    task.cancel()
-                # FIXME: always raises CancelledError?
                 await gather_collect(*self.tasks, timeout=cancel_timeout)
+            else:
+                await gather_collect(self.proc.wait(), timeout=cancel_timeout)
 
         except asyncio.CancelledError:
             LOGGER.warning("Runner.kill %r gather_collect cancelled", self.name)
@@ -261,7 +260,7 @@ class Runner:
 
     async def _kill_wait(self):
         "Wait for killed process to exit."
-        if not self.proc:
+        if not self.proc or self.proc.returncode is not None:
             return
 
         LOGGER.info("Runner._kill_wait %r killing proc=%r", self.name, self.proc)
@@ -288,6 +287,8 @@ class Runner:
 
     async def _setup(self):
         "Set up redirections and launch subprocess."
+        assert not self.tasks
+
         with self.options as opts:
             self.proc = await asyncio.create_subprocess_exec(
                 *opts.args,
@@ -295,6 +296,7 @@ class Runner:
             )
 
         LOGGER.info("Runner %r started proc=%r", self.name, self.proc)
+        self.add_task(self.proc.wait(), "proc.wait")
 
         stdin = self.proc.stdin
         stdout = self.proc.stdout
@@ -302,31 +304,29 @@ class Runner:
 
         if stderr is not None:
             error = opts.command.options.error
-            stderr = self._setup_output_sink(stderr, error, opts.encoding)
+            stderr = self._setup_output_sink(stderr, error, opts.encoding, "stderr")
 
         if stdout is not None:
             output = opts.command.options.output
-            stdout = self._setup_output_sink(stdout, output, opts.encoding)
+            stdout = self._setup_output_sink(stdout, output, opts.encoding, "stdout")
 
         if stdin is not None:
             if opts.input_bytes is not None:
-                self.add_task(_feed_writer(opts.input_bytes, stdin))
+                self.add_task(_feed_writer(opts.input_bytes, stdin), "stdin")
                 stdin = None
-
-        self.add_task(self.proc.wait())
 
         return (stdin, stdout, stderr)
 
-    def _setup_output_sink(self, stream, sink, encoding):
+    def _setup_output_sink(self, stream, sink, encoding, tag):
         "Set up a task to write to custom output sink."
         if isinstance(sink, io.StringIO):
-            self.add_task(_copy_stringio(stream, sink, encoding))
+            self.add_task(_copy_stringio(stream, sink, encoding), tag)
             stream = None
         elif isinstance(sink, io.BytesIO):
-            self.add_task(_copy_bytesio(stream, sink))
+            self.add_task(_copy_bytesio(stream, sink), tag)
             stream = None
         elif isinstance(sink, bytearray):
-            self.add_task(_copy_bytearray(stream, sink))
+            self.add_task(_copy_bytearray(stream, sink), tag)
             stream = None
         return stream
 
