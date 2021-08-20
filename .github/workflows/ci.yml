@@ -33,6 +33,9 @@ jobs:
       run: |
         # Install poetry and use it to install dependencies.
         python -m pip install poetry
+        if [ "${{ matrix.python-version }}" = "3.10-dev" ]; then
+            python -m poetry config experimental.new-installer false
+        fi
         python -m poetry install --no-root --no-interaction
     - name: Lint
       run: |
