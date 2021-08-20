@@ -55,3 +55,11 @@ jobs:
         # Run coverage and upload report to codecov.
         $POETRY_RUN coverage run --source shellous -m pytest
         $POETRY_RUN codecov
+    - name: Run Tests with uvloop (Linux only)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        # Run pytest under uvloop.
+        python -m pip install uvloop
+        $POETRY_RUN python -m pytest -vv --timeout=10 --color=yes --log-cli-level=INFO --log-cli-format="%(created).03f %(levelname)s %(message)s"
+      env:
+        SHELLOUS_TEST_UVLOOP: "1"
