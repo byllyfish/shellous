@@ -339,16 +339,16 @@ class Runner:
                 return await self._cleanup(exc_value)
             await self.wait()
         finally:
+            assert self.proc
             LOGGER.info(
                 "Runner exited %r proc=%r exit_code=%r ex=%r",
                 self.name,
                 self.proc,
-                self.proc.returncode if self.proc else "n/a",
+                self.proc.returncode,
                 sys.exc_info()[1],
             )
-            if self.proc and not self.proc._transport.is_closing():
-                LOGGER.warning("Auto-closing transport %r", self.proc._transport)
-                self.proc._transport.close()
+            # Make sure the transport is closed (for asyncio and uvloop).
+            self.proc._transport.close()
 
     async def _cleanup(self, exc_value):
         "Clean up when there is an exception. Return true to suppress exception."
