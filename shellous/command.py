@@ -46,13 +46,15 @@ class Options:  # pylint: disable=too-many-instance-attributes
             return os.environ | self.env
 
         if self.env:
-            return self.env
+            return dict(self.env)  # convert ImmutableDict to dict (uvloop)
         return {}
 
     def set_stdin(self, input_, close):
         "Return new options with `input` configured."
         if input_ is None:
             input_ = Redirect.DEVNULL
+        elif input_ == Redirect.STDOUT:
+            raise ValueError("STDOUT is only supported by stderr")
 
         return dataclasses.replace(
             self,
@@ -64,6 +66,8 @@ class Options:  # pylint: disable=too-many-instance-attributes
         "Return new options with `output` configured."
         if output is None:
             output = Redirect.DEVNULL
+        elif output == Redirect.STDOUT:
+            raise ValueError("STDOUT is only supported by stderr")
 
         return dataclasses.replace(
             self,

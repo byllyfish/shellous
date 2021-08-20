@@ -197,11 +197,12 @@ def test_options_merge_env(sh):
     assert env1 is None
 
     env2 = opts2.merge_env()
+    assert isinstance(env2, dict)
     assert "PATH" in env2
     assert env2["A"] == "1"
 
     env3 = opts3.merge_env()
-    assert env3 == ImmutableDict(A="1")
+    assert env3 == dict(A="1")
 
     sh2 = sh.env(B=2)
     assert sh2 is not sh
