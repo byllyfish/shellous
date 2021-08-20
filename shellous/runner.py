@@ -269,7 +269,7 @@ class Runner:
 
     async def __aenter__(self):
         "Set up redirections and launch subprocess."
-        LOGGER.info("Runner entering %r", self.name)
+        LOGGER.info("Runner entering %r (%s)", self.name, _sys_info())
         try:
             return await self._setup()
         except (Exception, asyncio.CancelledError) as ex:
@@ -681,3 +681,16 @@ def _close_fds(open_fds):
                 obj.close()
     finally:
         open_fds.clear()
+
+
+def _sys_info():
+    "Return system information for use in logging."
+    import platform
+
+    platform_vers = platform.platform(terse=True)
+    python_impl = platform.python_implementation()
+    python_vers = platform.python_version()
+    running_loop = asyncio.get_running_loop().__class__.__name__
+    child_watcher = asyncio.get_child_watcher().__class__.__name__
+
+    return f"{platform_vers} {python_impl} {python_vers} {running_loop} {child_watcher}"
