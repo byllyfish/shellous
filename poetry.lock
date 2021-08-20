@@ -371,6 +371,17 @@ importlib-metadata = {version = ">=3.6.0", markers = "python_version < \"3.10\""
 pytest = "*"
 
 [[package]]
+name = "pytest-timeout"
+version = "1.4.2"
+description = "py.test plugin to abort hanging tests"
+category = "dev"
+optional = false
+python-versions = "*"
+
+[package.dependencies]
+pytest = ">=3.6.0"
+
+[[package]]
 name = "python-dotenv"
 version = "0.19.0"
 description = "Read key-value pairs from a .env file and set them as environment variables"
@@ -467,7 +478,7 @@ testing = ["pytest (>=4.6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytes
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9"
-content-hash = "c50b2ab71b11cd1eca9e443ef58444ffe5c281ecf03959df0ef9b9a4af4b553b"
+content-hash = "6f890163c721e6508cbcc5ae471b656d7128a36a5a0b07a0d24a298f3ce2edb9"
 
 [metadata.files]
 appdirs = [
@@ -718,6 +729,10 @@ pytest-dotenv = [
 pytest-randomly = [
     {file = "pytest-randomly-3.10.1.tar.gz", hash = "sha256:d4ef5dbf27e542e6a4e4cec7a20ef3f1b906bce21fa340ca5657b5326ef23a64"},
     {file = "pytest_randomly-3.10.1-py3-none-any.whl", hash = "sha256:d28d490e3a743bdd64c5bc87c5fc182eac966ba6432c6bb6b224e32e76527e9e"},
+]
+pytest-timeout = [
+    {file = "pytest-timeout-1.4.2.tar.gz", hash = "sha256:20b3113cf6e4e80ce2d403b6fb56e9e1b871b510259206d40ff8d609f48bda76"},
+    {file = "pytest_timeout-1.4.2-py2.py3-none-any.whl", hash = "sha256:541d7aa19b9a6b4e475c759fd6073ef43d7cdc9a92d95644c260076eb257a063"},
 ]
 python-dotenv = [
     {file = "python-dotenv-0.19.0.tar.gz", hash = "sha256:f521bc2ac9a8e03c736f62911605c5d83970021e3fa95b37d769e2bbbe9b6172"},

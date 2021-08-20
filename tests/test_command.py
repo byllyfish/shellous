@@ -59,20 +59,20 @@ def test_apply_noop(sh):
 
 def test_str(sh):
     "Command can be coerced to string."
-    cmd = sh("echo", "-n", "a b")
-    assert str(cmd) == "echo -n 'a b'"
-
-
-def test_str_env(sh):
-    "Command can be coerced to string that includes env details."
-    cmd = sh("echo", "-n", "a b").env(NOOP=1)
-    assert str(cmd) == "NOOP=1 echo -n 'a b'"
+    cmd = sh("/bin/echo", "-n", "secret").env(SECRET=42)
+    assert str(cmd) == "/bin/echo"
 
 
 def test_repr(sh):
     "Command supplies a __repr__ implementation."
-    cmd = sh("echo", "-n", "a b")
-    assert repr(cmd).startswith("Command(args=('echo', '-n', 'a b'), options=Options(")
+    cmd = sh("echo", "-n", "secret_arg").env(SECRET=42)
+    result = repr(cmd)
+    assert result.startswith(
+        "Command(args=('echo', '-n', 'secret_arg'), options=Options("
+    )
+
+    # Env vars are not included in output for security reasons.
+    assert "SECRET" not in result
 
 
 def test_non_existant(sh):

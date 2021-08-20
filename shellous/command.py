@@ -3,6 +3,7 @@
 import asyncio
 import dataclasses
 import os
+import signal
 from dataclasses import dataclass, field
 from typing import Any, Optional
 
@@ -21,7 +22,7 @@ class Options:  # pylint: disable=too-many-instance-attributes
     "Concrete class for per-command options."
 
     context: "Context" = field(compare=False, repr=False)
-    env: Optional[ImmutableDict] = None
+    env: Optional[ImmutableDict] = field(default=None, repr=False)
     inherit_env: bool = True
     input: Any = b""
     input_close: bool = False
@@ -34,6 +35,8 @@ class Options:  # pylint: disable=too-many-instance-attributes
     encoding: Optional[str] = "utf-8"
     return_result: bool = False
     allowed_exit_codes: Optional[set] = None
+    cancel_timeout: float = 3.0
+    cancel_signal: Optional[Any] = signal.SIGTERM
 
     def merge_env(self):
         "Return our `env` merged with the global environment."
@@ -132,6 +135,8 @@ class Context:
         encoding=_UNSET,
         return_result=_UNSET,
         allowed_exit_codes=_UNSET,
+        cancel_timeout=_UNSET,
+        cancel_signal=_UNSET,
     ):
         "Return new context with custom options set."
         kwargs = locals()
@@ -216,7 +221,7 @@ class Command:
 
         Names longer than 31 characters are truncated.
         """
-        name = self.args[0]
+        name = str(self.args[0])
         if len(name) > 31:
             return f"...{name[-31:]}"
         return name
@@ -260,6 +265,8 @@ class Command:
         encoding=_UNSET,
         return_result=_UNSET,
         allowed_exit_codes=_UNSET,
+        cancel_timeout=_UNSET,
+        cancel_signal=_UNSET,
     ):
         "Return new command with custom options set."
         kwargs = locals()
@@ -301,19 +308,12 @@ class Command:
         return self.options.context._cmd_apply(self, args)
 
     def __str__(self):
-        "Return string representation."
+        """Return string representation for command.
 
-        def _quote(value):
-            value = str(value)
-            if " " in value:
-                return repr(value)
-            return value
-
-        cmd = " ".join(_quote(arg) for arg in self.args)
-        if self.options.env:
-            env = " ".join(f"{k}={_quote(v)}" for k, v in self.options.env.items())
-            return f"{env} {cmd}"
-        return cmd
+        Display the full name of the command only. Don't include arguments or
+        environment variables.
+        """
+        return str(self.args[0])
 
     def __or__(self, rhs):
         "Bitwise or operator is used to build pipelines."

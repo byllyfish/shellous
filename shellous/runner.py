@@ -166,7 +166,12 @@ class Runner:
     @property
     def name(self):
         "Return name of process to run."
-        return self.options.command.name
+        return self.command.name
+
+    @property
+    def command(self):
+        "Return the command being run."
+        return self.options.command
 
     def result(self, output_bytes=None):
         "Check process exit code and raise a ResultError if necessary."
@@ -182,50 +187,95 @@ class Runner:
             self.options.encoding,
         )
 
-        command = self.options.command
-        return make_result(command, result)
+        return make_result(self.command, result)
 
-    def add_task(self, coro):
+    def add_task(self, coro, tag=None):
         "Add a background task."
-        task = asyncio.create_task(coro, name=str(self.options.command))
+        if tag:
+            task_name = f"{self.command.name}#{tag}"
+        else:
+            task_name = self.command.name
+        task = asyncio.create_task(coro, name=task_name)
         self.tasks.append(task)
 
-    async def wait(self, *, kill=False):
-        "Wait for background I/O tasks and process to finish."
+    async def wait(self):
+        "Normal wait for background I/O tasks and process to finish."
         if self.proc is None:
             LOGGER.info("Runner.wait %r never started", self.name)
             return
 
         try:
-            if kill:
-                LOGGER.info("Runner.wait %r killing %r", self.name, self.proc)
-                self.proc.kill()
-
-            if self.tasks:
-                await gather_collect(*self.tasks)
-
+            await gather_collect(*self.tasks)
             LOGGER.info("Runner.wait %r exit_code=%r", self.name, self.proc.returncode)
 
         except asyncio.CancelledError:
             LOGGER.info("Runner.wait %r cancelled proc=%r", self.name, self.proc)
             self.cancelled = True
-            if not kill:
-                self.proc.kill()
-            await self.proc.wait()
+            self.tasks.clear()  # all tasks were cancelled
+            await self.kill()
 
         except Exception as ex:
             LOGGER.warning("Runner.wait %r ex=%r", self.name, ex)
             raise
 
+    async def kill(self):
+        "Kill process and wait for it to finish."
+        if self.proc is None:
+            LOGGER.info("Runner.kill %r never started", self.name)
+            return
+
+        cancel_timeout = self.command.options.cancel_timeout
+        cancel_signal = self.command.options.cancel_signal
+
+        try:
+            if cancel_signal is None:
+                LOGGER.info("Runner.kill %r killing proc=%r", self.name, self.proc)
+                self.proc.kill()
+            else:
+                LOGGER.info(
+                    "Runner.kill %r signalling proc=%r signal=%r",
+                    self.name,
+                    self.proc,
+                    cancel_signal,
+                )
+                self.proc.send_signal(cancel_signal)
+
+            if self.tasks:
+                await gather_collect(*self.tasks, timeout=cancel_timeout)
+            else:
+                await gather_collect(self.proc.wait(), timeout=cancel_timeout)
+
+        except asyncio.CancelledError:
+            LOGGER.warning("Runner.kill %r gather_collect cancelled", self.name)
+            await self._kill_wait()
+
+        except asyncio.TimeoutError:
+            LOGGER.warning("Runner.kill %r gather_collect timeout", self.name)
+            await self._kill_wait()
+
+        except Exception as ex:
+            LOGGER.warning("Runner.kill %r ex=%r", self.name, ex)
+            await self._kill_wait()
+            raise
+
+    async def _kill_wait(self):
+        "Wait for killed process to exit."
+        if not self.proc or self.proc.returncode is not None:
+            return
+
+        LOGGER.info("Runner._kill_wait %r killing proc=%r", self.name, self.proc)
+        self.proc.kill()
+        await self.proc.wait()  # FIXME: needs timeout...
+
     async def __aenter__(self):
         "Set up redirections and launch subprocess."
-        LOGGER.info("Runner entering %r", self.name)
+        LOGGER.info("Runner entering %r (%s)", self.name, _sys_info())
         try:
             return await self._setup()
         except (Exception, asyncio.CancelledError) as ex:
             LOGGER.warning("Runner enter %r ex=%r", self.name, ex)
             self.cancelled = isinstance(ex, asyncio.CancelledError)
-            await self.wait(kill=True)
+            await self.kill()
             raise
         finally:
             LOGGER.info(
@@ -237,6 +287,8 @@ class Runner:
 
     async def _setup(self):
         "Set up redirections and launch subprocess."
+        assert not self.tasks
+
         with self.options as opts:
             self.proc = await asyncio.create_subprocess_exec(
                 *opts.args,
@@ -244,6 +296,7 @@ class Runner:
             )
 
         LOGGER.info("Runner %r started proc=%r", self.name, self.proc)
+        self.add_task(self.proc.wait(), "proc.wait")
 
         stdin = self.proc.stdin
         stdout = self.proc.stdout
@@ -251,31 +304,29 @@ class Runner:
 
         if stderr is not None:
             error = opts.command.options.error
-            stderr = self._setup_output_sink(stderr, error, opts.encoding)
+            stderr = self._setup_output_sink(stderr, error, opts.encoding, "stderr")
 
         if stdout is not None:
             output = opts.command.options.output
-            stdout = self._setup_output_sink(stdout, output, opts.encoding)
+            stdout = self._setup_output_sink(stdout, output, opts.encoding, "stdout")
 
         if stdin is not None:
             if opts.input_bytes is not None:
-                self.add_task(_feed_writer(opts.input_bytes, stdin))
+                self.add_task(_feed_writer(opts.input_bytes, stdin), "stdin")
                 stdin = None
-
-        self.add_task(self.proc.wait())
 
         return (stdin, stdout, stderr)
 
-    def _setup_output_sink(self, stream, sink, encoding):
+    def _setup_output_sink(self, stream, sink, encoding, tag):
         "Set up a task to write to custom output sink."
         if isinstance(sink, io.StringIO):
-            self.add_task(_copy_stringio(stream, sink, encoding))
+            self.add_task(_copy_stringio(stream, sink, encoding), tag)
             stream = None
         elif isinstance(sink, io.BytesIO):
-            self.add_task(_copy_bytesio(stream, sink))
+            self.add_task(_copy_bytesio(stream, sink), tag)
             stream = None
         elif isinstance(sink, bytearray):
-            self.add_task(_copy_bytearray(stream, sink))
+            self.add_task(_copy_bytearray(stream, sink), tag)
             stream = None
         return stream
 
@@ -295,13 +346,16 @@ class Runner:
                 self.proc.returncode if self.proc else "n/a",
                 sys.exc_info()[1],
             )
+            if self.proc and not self.proc._transport.is_closing():
+                LOGGER.warning("Auto-closing transport %r", self.proc._transport)
+                self.proc._transport.close()
 
     async def _cleanup(self, exc_value):
         "Clean up when there is an exception. Return true to suppress exception."
 
         # We only suppress CancelledError.
         self.cancelled = isinstance(exc_value, asyncio.CancelledError)
-        await self.wait(kill=True)
+        await self.kill()
 
         return self.cancelled
 
@@ -406,7 +460,8 @@ class PipeRunner:
 
             return (stdin, stdout, stderr)
 
-        except (Exception, asyncio.CancelledError):
+        except (Exception, asyncio.CancelledError) as ex:
+            LOGGER.warning("Pipeline._setup failed with ex=%r", ex)
             _close_fds(open_fds)
             raise
 
@@ -566,12 +621,14 @@ def _log_exception(func):
 @_log_exception
 async def _feed_writer(input_bytes, stream):
     if input_bytes:
-        stream.write(input_bytes)
-    try:
-        await stream.drain()
-    except (BrokenPipeError, ConnectionResetError):
-        pass
+        try:
+            stream.write(input_bytes)
+            await stream.drain()
+        except (BrokenPipeError, ConnectionResetError) as ex:
+            LOGGER.info("_feed_writer ex=%r", ex)
+            pass
     stream.close()
+    await stream.wait_closed()  # May raise BrokenPipeError...
 
 
 @_log_exception
@@ -624,3 +681,24 @@ def _close_fds(open_fds):
                 obj.close()
     finally:
         open_fds.clear()
+
+
+def _sys_info():
+    "Return system information for use in logging."
+    import platform
+
+    platform_vers = platform.platform(terse=True)
+    python_impl = platform.python_implementation()
+    python_vers = platform.python_version()
+    running_loop = asyncio.get_running_loop().__class__.__name__
+
+    try:
+        # Child watcher is only implemented on Unix.
+        child_watcher = asyncio.get_child_watcher().__class__.__name__
+    except NotImplementedError:
+        child_watcher = None
+
+    info = f"{platform_vers} {python_impl} {python_vers} {running_loop}"
+    if child_watcher:
+        return f"{info} {child_watcher}"
+    return info

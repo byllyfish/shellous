@@ -10,19 +10,29 @@ from shellous import CAPTURE, INHERIT, PipeResult, Result, ResultError, context
 pytestmark = pytest.mark.asyncio
 
 
+# 4MB + 1: Much larger than necessary.
+# See https://github.com/python/cpython/blob/main/Lib/test/support/__init__.py
+PIPE_MAX_SIZE = 4 * 1024 * 1024 + 1
+
+
 def test_debug_mode(event_loop):
     "Tests should be running on a loop with asyncio debug mode set."
     assert event_loop.get_debug()
 
 
 @pytest.fixture
-def python_script():
+def sh():
+    "Create a default shellous context."
+    return context()
+
+
+@pytest.fixture
+def python_script(sh):
     """Create a python script that can be used in tests.
 
     The script behaves like common versions of `echo`, `cat`, `sleep` or `env`
     depending on environment variables.
     """
-    sh = context()
     return sh(sys.executable, "-c", _SCRIPT)
 
 
@@ -61,7 +71,7 @@ sys.exit(SHELLOUS_EXIT_CODE)
 """
 
 
-_CANCELLED_EXIT_CODE = -9 if sys.platform != "win32" else 1
+_CANCELLED_EXIT_CODE = -15 if sys.platform != "win32" else 1
 
 
 @pytest.fixture
@@ -239,3 +249,13 @@ async def test_pipe_redirect_stdin_capture(cat_cmd, tr_cmd):
     cmd = cat_cmd | tr_cmd
     with pytest.raises(ValueError, match="multiple capture requires 'async with'"):
         await cmd.stdin(CAPTURE)
+
+
+async def test_broken_pipe(sh):
+    "Test broken pipe error for large data passed to stdin."
+
+    data = b"b" * PIPE_MAX_SIZE
+    cmd = sh(sys.executable, "-c", "pass")
+
+    with pytest.raises(BrokenPipeError):
+        await cmd.stdin(data)

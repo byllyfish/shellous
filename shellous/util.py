@@ -30,16 +30,42 @@ def decode(data: Optional[bytes], encoding: Optional[str]) -> Union[str, bytes, 
     return data.decode(encoding)
 
 
-async def gather_collect(*aws, return_exceptions=False):
+async def gather_collect(*aws, timeout=None, return_exceptions=False):
     """Run a bunch of awaitables as tasks and return the results.
 
     Similar to `asyncio.gather` with one difference: If an awaitable raises
     an exception, the other awaitables are cancelled and collected before
-    passing the exception to the client.
+    passing the exception to the client. (Even if the awaitable raises a
+    CancelledError...)
+
+    Set `timeout` to specify a timeout in seconds. When the timeout expires,
+    all awaitables are cancelled and collected, then we raise a
+    `asyncio.TimeoutError`.
 
     When `return_exceptions` is True, this method will include exceptions in
     the list of results returned, including `asyncio.CancelError` exceptions.
     """
+    if timeout:
+        return await asyncio.wait_for(
+            _gather_collect(aws, return_exceptions),
+            timeout,
+        )
+    return await _gather_collect(aws, return_exceptions)
+
+
+async def _gather_collect(aws, return_exceptions=False):
+    """Helper function for gather_collect.
+
+    Similar to `asyncio.gather` with one difference: If an awaitable raises
+    an exception, the other awaitables are cancelled and collected before
+    passing the exception to the client. (Even if the awaitable raises a
+    CancelledError...)
+
+    When `return_exceptions` is True, this method will include exceptions in
+    the list of results returned, including `asyncio.CancelError` exceptions.
+    """
+
+    assert len(aws) > 0
 
     tasks = [asyncio.ensure_future(item) for item in aws]
 
@@ -47,10 +73,8 @@ async def gather_collect(*aws, return_exceptions=False):
         done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_EXCEPTION)
     except asyncio.CancelledError:
         LOGGER.warning("gather_collect itself cancelled")
-        # `asyncio.wait` does not cancel tasks when it is cancelled itself.
         # Cancel all tasks here before re-raising the exception.
-        for task in tasks:
-            task.cancel()
+        await _cancel_wait(tasks)
         raise
 
     if len(done) == len(tasks):
@@ -58,15 +82,8 @@ async def gather_collect(*aws, return_exceptions=False):
             return [_to_result(task) for task in tasks]
         return [task.result() for task in tasks]
 
-    LOGGER.info("gather_collect cancelling %d tasks", len(pending))
-    for task in pending:
-        task.cancel()
-
-    try:
-        await asyncio.wait(pending, return_when=asyncio.ALL_COMPLETED)
-    except asyncio.CancelledError:
-        LOGGER.warning("gather_collect pending cleanup cancelled")
-        raise
+    LOGGER.info("gather_collect cancelling %d of %d tasks", len(pending), len(tasks))
+    await _cancel_wait(pending)
 
     if return_exceptions:
         # Return list of exceptions in same order as original tasks.
@@ -78,7 +95,19 @@ async def gather_collect(*aws, return_exceptions=False):
         failed[0].result()
 
     # Only choice is a task that was cancelled.
+    LOGGER.warning("gather_collect - done task was cancelled!")
     done.pop().result()
+
+
+async def _cancel_wait(tasks):
+    "Cancel tasks and wait for them to finish."
+    try:
+        for task in tasks:
+            task.cancel()
+        await asyncio.wait(tasks, return_when=asyncio.ALL_COMPLETED)
+    except asyncio.CancelledError:
+        LOGGER.warning("gather_collect._cancel_collect cancelled itself?")
+        pass
 
 
 def _to_result(task):

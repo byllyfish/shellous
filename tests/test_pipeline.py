@@ -176,3 +176,26 @@ def test_pipeline_call(sh):
     assert pipe() is pipe  # no args is okay
     with pytest.raises(TypeError):
         pipe("foo")
+
+
+@pytest.mark.xfail(reason="FIXME")
+def test_invalid_pipeline_override_stdout(sh):
+    """A Pipeline should not override existing stdout redirections."""
+    echo = sh("echo").stdout("/tmp/tmp_file")
+    with pytest.raises(ValueError):
+        echo | sh("grep")
+
+
+@pytest.mark.xfail(reason="FIXME")
+def test_invalid_pipeline_override_stdin(sh):
+    """A Pipeline should not override existing stdin redirections."""
+    grep = sh("grep").stdin("/tmp/tmp_file")
+    with pytest.raises(ValueError):
+        sh("echo") | grep
+
+
+@pytest.mark.xfail(reason="FIXME")
+def test_invalid_pipeline_operators(sh):
+    "Test >> in the middle of a pipeline."
+    with pytest.raises(ValueError):
+        sh("echo") >> "/tmp/tmp_file" | sh("cat")
