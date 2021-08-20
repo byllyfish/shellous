@@ -346,6 +346,9 @@ class Runner:
                 self.proc.returncode if self.proc else "n/a",
                 sys.exc_info()[1],
             )
+            if self.proc and not self.proc._transport.is_closing():
+                LOGGER.warning("Auto-closing transport %r", self.proc._transport)
+                self.proc._transport.close()
 
     async def _cleanup(self, exc_value):
         "Clean up when there is an exception. Return true to suppress exception."

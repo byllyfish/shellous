@@ -607,3 +607,24 @@ async def test_cancel_timeout(sh):
     )
     with pytest.raises(ResultError):
         await asyncio.wait_for(sleep(10.0), 0.25)
+
+
+async def test_shell_cmd(sh):
+    "Test a shell command.  (https://bugs.python.org/issue43884)"
+    shell = sh("/bin/sh", "-c").set(
+        return_result=True,
+        allowed_exit_codes={0, _CANCELLED_EXIT_CODE},
+    )
+
+    task = shell("sleep 2 && echo done").task()
+    await asyncio.sleep(0.25)
+    task.cancel()
+
+    result = await task
+    assert result == Result(
+        output_bytes=None,
+        exit_code=_CANCELLED_EXIT_CODE,
+        cancelled=True,
+        encoding="utf-8",
+        extra=None,
+    )
