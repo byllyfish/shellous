@@ -61,7 +61,7 @@ sys.exit(SHELLOUS_EXIT_CODE)
 """
 
 
-_CANCELLED_EXIT_CODE = -9 if sys.platform != "win32" else 1
+_CANCELLED_EXIT_CODE = -15 if sys.platform != "win32" else 1
 
 
 @pytest.fixture

@@ -3,6 +3,7 @@
 import asyncio
 import dataclasses
 import os
+import signal
 from dataclasses import dataclass, field
 from typing import Any, Optional
 
@@ -35,7 +36,7 @@ class Options:  # pylint: disable=too-many-instance-attributes
     return_result: bool = False
     allowed_exit_codes: Optional[set] = None
     cancel_timeout: float = 3.0
-    cancel_signal: Optional[Any] = None
+    cancel_signal: Optional[Any] = signal.SIGTERM
 
     def merge_env(self):
         "Return our `env` merged with the global environment."
