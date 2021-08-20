@@ -61,3 +61,13 @@ async def test_gather_collect_return_exceptions():
     assert isinstance(result[0], ValueError)
     assert result[0].args[0] == 7
     assert result[1] == 99
+
+
+async def test_gather_collect_timeout():
+    "Test the `gather_collect` function with a timeout."
+
+    async def _coro():
+        await asyncio.sleep(60.0)
+
+    with pytest.raises(asyncio.TimeoutError):
+        await gather_collect(_coro(), _coro(), timeout=0.1)

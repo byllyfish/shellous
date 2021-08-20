@@ -31,12 +31,6 @@ def decode(data: Optional[bytes], encoding: Optional[str]) -> Union[str, bytes, 
 
 
 async def gather_collect(*aws, timeout=None, return_exceptions=False):
-    if timeout:
-        return await asyncio.wait_for(_gather_collect(aws, return_exceptions), timeout)
-    return await _gather_collect(aws, return_exceptions)
-
-
-async def _gather_collect(aws, return_exceptions=False):
     """Run a bunch of awaitables as tasks and return the results.
 
     Similar to `asyncio.gather` with one difference: If an awaitable raises
@@ -47,6 +41,25 @@ async def _gather_collect(aws, return_exceptions=False):
     Set `timeout` to specify a timeout in seconds. When the timeout expires,
     all awaitables are cancelled and collected, then we raise a
     `asyncio.TimeoutError`.
+
+    When `return_exceptions` is True, this method will include exceptions in
+    the list of results returned, including `asyncio.CancelError` exceptions.
+    """
+    if timeout:
+        return await asyncio.wait_for(
+            _gather_collect(aws, return_exceptions),
+            timeout,
+        )
+    return await _gather_collect(aws, return_exceptions)
+
+
+async def _gather_collect(aws, return_exceptions=False):
+    """Helper function for gather_collect.
+
+    Similar to `asyncio.gather` with one difference: If an awaitable raises
+    an exception, the other awaitables are cancelled and collected before
+    passing the exception to the client. (Even if the awaitable raises a
+    CancelledError...)
 
     When `return_exceptions` is True, this method will include exceptions in
     the list of results returned, including `asyncio.CancelError` exceptions.
@@ -69,7 +82,12 @@ async def _gather_collect(aws, return_exceptions=False):
             return [_to_result(task) for task in tasks]
         return [task.result() for task in tasks]
 
-    LOGGER.info("gather_collect cancelling %d tasks", len(pending))
+    LOGGER.info(
+        "gather_collect cancelling %d of %d tasks",
+        len(pending),
+        len(tasks),
+        stack_info=True,
+    )
     await _cancel_wait(pending)
 
     if return_exceptions:
