@@ -339,16 +339,16 @@ class Runner:
                 return await self._cleanup(exc_value)
             await self.wait()
         finally:
+            assert self.proc
             LOGGER.info(
                 "Runner exited %r proc=%r exit_code=%r ex=%r",
                 self.name,
                 self.proc,
-                self.proc.returncode if self.proc else "n/a",
+                self.proc.returncode,
                 sys.exc_info()[1],
             )
-            if self.proc and not self.proc._transport.is_closing():
-                LOGGER.warning("Auto-closing transport %r", self.proc._transport)
-                self.proc._transport.close()
+            # Make sure the transport is closed (for asyncio and uvloop).
+            self.proc._transport.close()
 
     async def _cleanup(self, exc_value):
         "Clean up when there is an exception. Return true to suppress exception."
@@ -690,7 +690,10 @@ def _sys_info():
     platform_vers = platform.platform(terse=True)
     python_impl = platform.python_implementation()
     python_vers = platform.python_version()
-    running_loop = asyncio.get_running_loop().__class__.__name__
+
+    # Include module name with name of loop class.
+    loop_cls = asyncio.get_running_loop().__class__
+    loop_name = f"{loop_cls.__module__}.{loop_cls.__name__}"
 
     try:
         # Child watcher is only implemented on Unix.
@@ -698,7 +701,7 @@ def _sys_info():
     except NotImplementedError:
         child_watcher = None
 
-    info = f"{platform_vers} {python_impl} {python_vers} {running_loop}"
+    info = f"{platform_vers} {python_impl} {python_vers} {loop_name}"
     if child_watcher:
         return f"{info} {child_watcher}"
     return info

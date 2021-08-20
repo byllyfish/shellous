@@ -1,8 +1,19 @@
 "Configure common fixtures for pytest."
 
 import asyncio
+import os
 
 import pytest
+
+if os.environ.get("SHELLOUS_TEST_UVLOOP"):
+    import uvloop
+
+    @pytest.fixture
+    def event_loop():
+        loop = uvloop.new_event_loop()
+        loop.set_debug(True)
+        yield loop
+        loop.close()
 
 
 @pytest.fixture(autouse=True)

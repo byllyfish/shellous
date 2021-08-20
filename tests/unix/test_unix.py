@@ -25,6 +25,11 @@ pytestmark = [pytest.mark.asyncio, unix_only]
 _CANCELLED_EXIT_CODE = -15
 
 
+def _is_uvloop():
+    "Return true if we're running under uvloop."
+    return os.environ.get("SHELLOUS_TEST_UVLOOP")
+
+
 @pytest.fixture
 def sh():
     return context()
@@ -96,6 +101,7 @@ async def test_augmented_env(sh):
     ]
 
 
+@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
 async def test_empty_env(sh):
     "Test running the env command with an empty environment."
     result = await sh("/usr/bin/env").set(inherit_env=False)
@@ -288,8 +294,8 @@ async def test_redirect_output_devnull(sh):
 
 
 async def test_redirect_output_stdout(sh):
-    "Test redirecting command output to STDOUT (bad file descriptor)."
-    with pytest.raises(OSError, match="Bad file descriptor"):
+    "Test redirecting command output to STDOUT."
+    with pytest.raises(ValueError, match="STDOUT is only supported by stderr"):
         await sh("echo", "789").stdout(STDOUT)
 
 
@@ -468,13 +474,15 @@ async def test_pipeline_single_cmd(sh):
 
 async def test_pipeline_invalid_cmd1(sh):
     pipe = sh(" non_existant ", "xyz") | sh("tr", "[:lower:]", "[:upper:]")
-    with pytest.raises(FileNotFoundError, match="' non_existant '"):
+    # uvloop's error message does not include filename.
+    with pytest.raises(FileNotFoundError):
         await pipe
 
 
 async def test_pipeline_invalid_cmd2(sh):
     pipe = sh("echo", "abc") | sh(" non_existant ", "xyz")
-    with pytest.raises(FileNotFoundError, match="' non_existant '"):
+    # uvloop's error message does not include filename.
+    with pytest.raises(FileNotFoundError):
         await pipe
 
 
