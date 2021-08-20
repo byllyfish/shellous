@@ -22,6 +22,7 @@ jobs:
 
     env:
       POETRY_RUN: "python -m poetry run"
+      POETRY_ADD: "python -m poetry add"
 
     steps:
     - uses: actions/checkout@v2
@@ -59,7 +60,7 @@ jobs:
       if: matrix.os == 'ubuntu-latest'
       run: |
         # Run pytest under uvloop.
-        python -m pip install uvloop
+        $POETRY_ADD uvloop
         $POETRY_RUN python -m pytest -vv --timeout=10 --color=yes --log-cli-level=INFO --log-cli-format="%(created).03f %(levelname)s %(message)s"
       env:
         SHELLOUS_TEST_UVLOOP: "1"
