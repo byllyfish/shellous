@@ -166,7 +166,12 @@ class Runner:
     @property
     def name(self):
         "Return name of process to run."
-        return self.options.command.name
+        return self.command.name
+
+    @property
+    def command(self):
+        "Return the command being run."
+        return self.options.command
 
     def result(self, output_bytes=None):
         "Check process exit code and raise a ResultError if necessary."
@@ -182,25 +187,20 @@ class Runner:
             self.options.encoding,
         )
 
-        command = self.options.command
-        return make_result(command, result)
+        return make_result(self.command, result)
 
     def add_task(self, coro):
         "Add a background task."
-        task = asyncio.create_task(coro, name=str(self.options.command))
+        task = asyncio.create_task(coro, name=str(self.command))
         self.tasks.append(task)
 
-    async def wait(self, *, kill=False):
-        "Wait for background I/O tasks and process to finish."
+    async def wait(self):
+        "Normal wait for background I/O tasks and process to finish."
         if self.proc is None:
             LOGGER.info("Runner.wait %r never started", self.name)
             return
 
         try:
-            if kill:
-                LOGGER.info("Runner.wait %r killing %r", self.name, self.proc)
-                self.proc.kill()
-
             if self.tasks:
                 await gather_collect(*self.tasks)
 
@@ -209,13 +209,64 @@ class Runner:
         except asyncio.CancelledError:
             LOGGER.info("Runner.wait %r cancelled proc=%r", self.name, self.proc)
             self.cancelled = True
-            if not kill:
-                self.proc.kill()
-            await self.proc.wait()
+            await self.kill()
 
         except Exception as ex:
             LOGGER.warning("Runner.wait %r ex=%r", self.name, ex)
             raise
+
+    async def kill(self):
+        "Kill process and wait for it to finish."
+        if self.proc is None:
+            LOGGER.info("Runner.kill %r never started", self.name)
+            return
+
+        cancel_timeout = self.command.options.cancel_timeout
+        cancel_signal = self.command.options.cancel_signal
+
+        try:
+            if cancel_signal is None:
+                LOGGER.info("Runner.kill %r killing proc=%r", self.name, self.proc)
+                self.proc.kill()
+            else:
+                LOGGER.info(
+                    "Runner.kill %r signalling proc=%r signal=%r",
+                    self.name,
+                    self.proc,
+                    cancel_signal,
+                )
+                self.proc.send_signal(cancel_signal)
+
+            if self.tasks:
+                LOGGER.warning(
+                    "Runner.kill cancel %d tasks: %r", len(self.tasks), self.tasks
+                )
+                for task in self.tasks:
+                    task.cancel()
+                # FIXME: always raises CancelledError?
+                await gather_collect(*self.tasks, timeout=cancel_timeout)
+
+        except asyncio.CancelledError:
+            LOGGER.warning("Runner.kill %r gather_collect cancelled", self.name)
+            await self._kill_wait()
+
+        except asyncio.TimeoutError:
+            LOGGER.warning("Runner.kill %r gather_collect timeout", self.name)
+            await self._kill_wait()
+
+        except Exception as ex:
+            LOGGER.warning("Runner.kill %r ex=%r", self.name, ex)
+            await self._kill_wait()
+            raise
+
+    async def _kill_wait(self):
+        "Wait for killed process to exit."
+        if not self.proc:
+            return
+
+        LOGGER.info("Runner._kill_wait %r killing proc=%r", self.name, self.proc)
+        self.proc.kill()
+        await self.proc.wait()  # FIXME: needs timeout...
 
     async def __aenter__(self):
         "Set up redirections and launch subprocess."
@@ -225,7 +276,7 @@ class Runner:
         except (Exception, asyncio.CancelledError) as ex:
             LOGGER.warning("Runner enter %r ex=%r", self.name, ex)
             self.cancelled = isinstance(ex, asyncio.CancelledError)
-            await self.wait(kill=True)
+            await self.kill()
             raise
         finally:
             LOGGER.info(
@@ -301,7 +352,7 @@ class Runner:
 
         # We only suppress CancelledError.
         self.cancelled = isinstance(exc_value, asyncio.CancelledError)
-        await self.wait(kill=True)
+        await self.kill()
 
         return self.cancelled
 

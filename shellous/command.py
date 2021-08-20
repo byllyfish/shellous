@@ -34,6 +34,8 @@ class Options:  # pylint: disable=too-many-instance-attributes
     encoding: Optional[str] = "utf-8"
     return_result: bool = False
     allowed_exit_codes: Optional[set] = None
+    cancel_timeout: float = 3.0
+    cancel_signal: Optional[Any] = None
 
     def merge_env(self):
         "Return our `env` merged with the global environment."
@@ -132,6 +134,8 @@ class Context:
         encoding=_UNSET,
         return_result=_UNSET,
         allowed_exit_codes=_UNSET,
+        cancel_timeout=_UNSET,
+        cancel_signal=_UNSET,
     ):
         "Return new context with custom options set."
         kwargs = locals()
@@ -260,6 +264,8 @@ class Command:
         encoding=_UNSET,
         return_result=_UNSET,
         allowed_exit_codes=_UNSET,
+        cancel_timeout=_UNSET,
+        cancel_signal=_UNSET,
     ):
         "Return new command with custom options set."
         kwargs = locals()

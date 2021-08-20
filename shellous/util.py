@@ -30,16 +30,23 @@ def decode(data: Optional[bytes], encoding: Optional[str]) -> Union[str, bytes, 
     return data.decode(encoding)
 
 
-async def gather_collect(*aws, return_exceptions=False):
+async def gather_collect(*aws, timeout=None, return_exceptions=False):
     """Run a bunch of awaitables as tasks and return the results.
 
     Similar to `asyncio.gather` with one difference: If an awaitable raises
     an exception, the other awaitables are cancelled and collected before
-    passing the exception to the client.
+    passing the exception to the client. (Even if the awaitable raises a
+    CancelledError...)
+
+    Set `timeout` to specify a timeout in seconds. When the timeout expires,
+    all awaitables are cancelled and collected, then we raise a
+    `asyncio.TimeoutError`.
 
     When `return_exceptions` is True, this method will include exceptions in
     the list of results returned, including `asyncio.CancelError` exceptions.
     """
+
+    assert len(aws) > 0
 
     tasks = [asyncio.ensure_future(item) for item in aws]
 
@@ -51,6 +58,7 @@ async def gather_collect(*aws, return_exceptions=False):
         # Cancel all tasks here before re-raising the exception.
         for task in tasks:
             task.cancel()
+        # TODO: Should tasks be collected here?
         raise
 
     if len(done) == len(tasks):
@@ -78,6 +86,7 @@ async def gather_collect(*aws, return_exceptions=False):
         failed[0].result()
 
     # Only choice is a task that was cancelled.
+    LOGGER.warning("gather_collect - done task was cancelled!")
     done.pop().result()
 
 

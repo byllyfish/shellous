@@ -45,7 +45,7 @@ jobs:
     - name: Run Tests
       run: |
         # Run pytest.
-        $POETRY_RUN python -m pytest -vv --color=yes --log-cli-level=INFO
+        $POETRY_RUN python -m pytest -vv --timeout=10 --color=yes --log-cli-level=INFO --log-cli-format="%(created).03f %(levelname)s %(message)s"
     - name: Run Code Coverage (Linux only)
       if: matrix.os == 'ubuntu-latest'
       run: |
