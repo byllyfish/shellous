@@ -457,7 +457,8 @@ class PipeRunner:
 
             return (stdin, stdout, stderr)
 
-        except (Exception, asyncio.CancelledError):
+        except (Exception, asyncio.CancelledError) as ex:
+            LOGGER.warning("Pipeline._setup failed with ex=%r", ex)
             _close_fds(open_fds)
             raise
 
