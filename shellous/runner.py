@@ -691,6 +691,14 @@ def _sys_info():
     python_impl = platform.python_implementation()
     python_vers = platform.python_version()
     running_loop = asyncio.get_running_loop().__class__.__name__
-    child_watcher = asyncio.get_child_watcher().__class__.__name__
 
-    return f"{platform_vers} {python_impl} {python_vers} {running_loop} {child_watcher}"
+    try:
+        # Child watcher is only implemented on Unix.
+        child_watcher = asyncio.get_child_watcher().__class__.__name__
+    except NotImplementedError:
+        child_watcher = None
+
+    info = f"{platform_vers} {python_impl} {python_vers} {running_loop}"
+    if child_watcher:
+        return f"{info} {child_watcher}"
+    return info
