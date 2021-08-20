@@ -618,12 +618,14 @@ def _log_exception(func):
 @_log_exception
 async def _feed_writer(input_bytes, stream):
     if input_bytes:
-        stream.write(input_bytes)
-    try:
-        await stream.drain()
-    except (BrokenPipeError, ConnectionResetError):
-        pass
+        try:
+            stream.write(input_bytes)
+            await stream.drain()
+        except (BrokenPipeError, ConnectionResetError) as ex:
+            LOGGER.info("_feed_writer ex=%r", ex)
+            pass
     stream.close()
+    await stream.wait_closed()  # May raise BrokenPipeError...
 
 
 @_log_exception
