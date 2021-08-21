@@ -55,6 +55,7 @@ async def run_asyncio_repl(cmds):
         .stdin(shellous.CAPTURE)
         .stderr(errbuf)
         .set(return_result=True, inherit_env=False)
+        .env(EMPTY_ENV=1)
     )
 
     runner = repl.runner()
