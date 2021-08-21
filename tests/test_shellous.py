@@ -1,6 +1,7 @@
 "Shellous cross-platform tests."
 
 import asyncio
+import hashlib
 import io
 import sys
 
@@ -33,7 +34,7 @@ def python_script(sh):
     The script behaves like common versions of `echo`, `cat`, `sleep` or `env`
     depending on environment variables.
     """
-    return sh(sys.executable, "-c", _SCRIPT)
+    return sh(sys.executable, "-c", _SCRIPT).stderr(INHERIT)
 
 
 # The script behaves differently depending on its environment vars.
@@ -60,6 +61,8 @@ elif SHELLOUS_CMD == "env":
 elif SHELLOUS_CMD == "tr":
   data = sys.stdin.buffer.read()
   sys.stdout.buffer.write(data.upper())
+elif SHELLOUS_CMD == "bulk":
+  sys.stdout.buffer.write(b"1234"*(1024*1024+1))
 else:
   raise NotImplementedError
 
@@ -76,27 +79,32 @@ _CANCELLED_EXIT_CODE = -15 if sys.platform != "win32" else 1
 
 @pytest.fixture
 def echo_cmd(python_script):
-    return python_script.env(SHELLOUS_CMD="echo").stderr(INHERIT)
+    return python_script.env(SHELLOUS_CMD="echo")
 
 
 @pytest.fixture
 def cat_cmd(python_script):
-    return python_script.env(SHELLOUS_CMD="cat").stderr(INHERIT)
+    return python_script.env(SHELLOUS_CMD="cat")
 
 
 @pytest.fixture
 def sleep_cmd(python_script):
-    return python_script.env(SHELLOUS_CMD="sleep").stderr(INHERIT)
+    return python_script.env(SHELLOUS_CMD="sleep")
 
 
 @pytest.fixture
 def env_cmd(python_script):
-    return python_script.env(SHELLOUS_CMD="env").stderr(INHERIT)
+    return python_script.env(SHELLOUS_CMD="env")
 
 
 @pytest.fixture
 def tr_cmd(python_script):
-    return python_script.env(SHELLOUS_CMD="tr").stderr(INHERIT)
+    return python_script.env(SHELLOUS_CMD="tr")
+
+
+@pytest.fixture
+def bulk_cmd(python_script):
+    return python_script.env(SHELLOUS_CMD="bulk")
 
 
 async def test_echo(echo_cmd):
@@ -122,6 +130,13 @@ async def test_env(env_cmd):
 async def test_tr(tr_cmd):
     result = await tr_cmd().stdin("abc")
     assert result == "ABC"
+
+
+async def test_bulk(bulk_cmd):
+    result = await bulk_cmd().set(encoding=None)
+    assert len(result) == 4 * (1024 * 1024 + 1)
+    hash = hashlib.sha256(result).hexdigest()
+    assert hash == "462d6c497b393d2c9e1584a7b4636592da837ef66cf4ff871dc937f3fe309459"
 
 
 async def test_pipeline(echo_cmd, cat_cmd, tr_cmd):
@@ -259,3 +274,10 @@ async def test_broken_pipe(sh):
 
     with pytest.raises(BrokenPipeError):
         await cmd.stdin(data)
+
+
+async def test_cat_large_data(cat_cmd):
+    "Test cat with large data."
+    data = "a" * PIPE_MAX_SIZE
+    result = await (data | cat_cmd)
+    assert result == data
