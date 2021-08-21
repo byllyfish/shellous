@@ -328,13 +328,16 @@ async def test_broken_pipe_in_failed_pipeline(cat_cmd, echo_cmd):
     with pytest.raises(ResultError) as exc_info:
         await (data | cat_cmd | echo("abc"))
 
-    assert exc_info.value.result == Result(
-        output_bytes=b"abc",
-        exit_code=7,
-        cancelled=False,
-        encoding="utf-8",
-        extra=(
-            PipeResult(exit_code=-15, cancelled=True),
-            PipeResult(exit_code=7, cancelled=False),
-        ),
+    result = exc_info.value.result
+    assert result.output_bytes == b"abc"
+    assert result.exit_code == 7
+    assert result.cancelled == False
+
+    # Depending on timing, the `cat_cmd` subcommand can return either
+    # _CANCELLED_EXIT_CODE or 1.
+
+    assert result.extra[0] in (
+        PipeResult(exit_code=_CANCELLED_EXIT_CODE, cancelled=True),
+        PipeResult(exit_code=1, cancelled=True),
     )
+    assert result.extra[1] == PipeResult(exit_code=7, cancelled=False)
