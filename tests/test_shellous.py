@@ -52,15 +52,18 @@ if SHELLOUS_CMD == "echo":
   sys.stdout.buffer.write(data)
 elif SHELLOUS_CMD == "cat":
   data = sys.stdin.buffer.read()
-  sys.stdout.buffer.write(data)
+  if data:
+    sys.stdout.buffer.write(data)
 elif SHELLOUS_CMD == "sleep":
   time.sleep(float(sys.argv[1]))
 elif SHELLOUS_CMD == "env":
   data = b''.join(f"{key}={value}\\n".encode('utf-8') for key, value in os.environ.items())
-  sys.stdout.buffer.write(data)
+  if data:
+    sys.stdout.buffer.write(data)
 elif SHELLOUS_CMD == "tr":
   data = sys.stdin.buffer.read()
-  sys.stdout.buffer.write(data.upper())
+  if data:
+    sys.stdout.buffer.write(data.upper())
 elif SHELLOUS_CMD == "bulk":
   sys.stdout.buffer.write(b"1234"*(1024*1024+1))
 else:
