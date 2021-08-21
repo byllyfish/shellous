@@ -1,6 +1,7 @@
 "Test the asyncio REPL calls in the README (MacOS only)."
 
 import asyncio
+import os
 import re
 import sys
 
@@ -54,7 +55,8 @@ async def run_asyncio_repl(cmds):
         sh(sys.executable, "-m", "asyncio")
         .stdin(shellous.CAPTURE)
         .stderr(errbuf)
-        .set(return_result=True)
+        .set(return_result=True, inherit_env=False)
+        .env(**_current_env())
     )
 
     runner = repl.runner()
@@ -149,3 +151,10 @@ def _separate_cmds_and_outputs(lines):
             output += f"{line}\n"
 
     yield (cmd, output.rstrip("\n"))
+
+
+def _current_env():
+    "Return dictionary of current environment minus PYTHONASYNCIODEBUG if set."
+    env = os.environ.copy()
+    env.pop("PYTHONASYNCIODEBUG", None)
+    return env

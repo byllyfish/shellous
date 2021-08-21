@@ -29,3 +29,9 @@ async def test_echo(echo):
     "Test running the echo command."
     result = await echo("foo")
     assert result == "foo\r\n"
+
+
+async def test_empty_env(sh):
+    "Test running a command with no environment at all."
+    with pytest.raises(OSError):
+        await sh(sys.executable, "-c", "pass").set(inherit_env=False)
