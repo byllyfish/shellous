@@ -267,8 +267,11 @@ async def test_pipe_redirect_stdin_capture(cat_cmd, tr_cmd):
 
 
 async def test_broken_pipe(sh):
-    "Test broken pipe error for large data passed to stdin."
+    """Test broken pipe error for large data passed to stdin.
 
+    We expect our process (Python) to fail with a broken pipe because `cmd`
+    doesn't read its standard input.
+    """
     data = b"b" * PIPE_MAX_SIZE
     cmd = sh(sys.executable, "-c", "pass")
 
@@ -276,8 +279,62 @@ async def test_broken_pipe(sh):
         await cmd.stdin(data)
 
 
+async def test_unread_stdin_unreported(sh):
+    """Test tiny data passed to stdin of process that doesn't read it."""
+    data = b"b" * 64
+    cmd = sh(sys.executable, "-c", "pass")
+
+    result = await cmd.stdin(data)
+    assert result == ""
+
+
 async def test_cat_large_data(cat_cmd):
     "Test cat with large data."
     data = "a" * PIPE_MAX_SIZE
     result = await (data | cat_cmd)
     assert result == data
+
+
+async def test_broken_pipe_in_pipeline(cat_cmd, echo_cmd):
+    """Test broken pipe error within a pipeline.
+
+    We expect `cat_cmd` to fail with a broken pipe because `echo`
+    doesn't read its standard input.
+    """
+    data = b"c" * PIPE_MAX_SIZE
+
+    err = bytearray()
+    with pytest.raises(ResultError) as exc_info:
+        await (data | cat_cmd.stderr(err) | echo_cmd("abc"))
+
+    assert exc_info.value.result == Result(
+        output_bytes=b"abc",
+        exit_code=1,
+        cancelled=False,
+        encoding="utf-8",
+        extra=(
+            PipeResult(exit_code=1, cancelled=False),
+            PipeResult(exit_code=0, cancelled=False),
+        ),
+    )
+    assert b"BrokenPipeError: [Errno 32] Broken pipe" in err
+
+
+async def test_broken_pipe_in_failed_pipeline(cat_cmd, echo_cmd):
+    "Test broken pipe error within a pipeline; last command fails."
+    data = b"c" * PIPE_MAX_SIZE
+    echo = echo_cmd.env(SHELLOUS_EXIT_CODE=7)
+
+    with pytest.raises(ResultError) as exc_info:
+        await (data | cat_cmd | echo("abc"))
+
+    assert exc_info.value.result == Result(
+        output_bytes=b"abc",
+        exit_code=7,
+        cancelled=False,
+        encoding="utf-8",
+        extra=(
+            PipeResult(exit_code=-15, cancelled=True),
+            PipeResult(exit_code=7, cancelled=False),
+        ),
+    )

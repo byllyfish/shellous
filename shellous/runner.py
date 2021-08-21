@@ -624,11 +624,20 @@ async def _feed_writer(input_bytes, stream):
         try:
             stream.write(input_bytes)
             await stream.drain()
+        except asyncio.CancelledError:
+            # FIXME: we may need to close stream here, and absorb a broken
+            # pipe error from `await stream.wait_closed()`
+            LOGGER.info("_feed_writer cancelled!")
+            raise
         except (BrokenPipeError, ConnectionResetError) as ex:
             LOGGER.info("_feed_writer ex=%r", ex)
             pass
     stream.close()
-    await stream.wait_closed()  # May raise BrokenPipeError...
+    try:
+        await stream.wait_closed()  # May raise BrokenPipeError...
+    except asyncio.CancelledError:
+        LOGGER.warning("_feed_writer wait_closed cancelled")
+        raise
 
 
 @_log_exception
