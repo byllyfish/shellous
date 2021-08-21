@@ -54,7 +54,7 @@ async def run_asyncio_repl(cmds):
         sh(sys.executable, "-m", "asyncio")
         .stdin(shellous.CAPTURE)
         .stderr(errbuf)
-        .set(return_result=True)
+        .set(return_result=True, inherit_env=False)
     )
 
     runner = repl.runner()
