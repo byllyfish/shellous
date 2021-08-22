@@ -162,6 +162,7 @@ class Runner:
         self.cancelled = False
         self.proc = None
         self.tasks = []
+        self.stdin = None
 
     @property
     def name(self):
@@ -308,6 +309,9 @@ class Runner:
         stdout = self.proc.stdout
         stderr = self.proc.stderr
 
+        # Keep track of stdin so we can close it later.
+        self.stdin = stdin
+
         if stderr is not None:
             error = opts.command.options.error
             stderr = self._setup_output_sink(stderr, error, opts.encoding, "stderr")
@@ -341,11 +345,8 @@ class Runner:
 
         LOGGER.info("Runner exiting %r exc_value=%r", self.name, exc_value)
         try:
-            if exc_value is not None:
-                return await self._cleanup(exc_value)
-            await self.wait()
+            await self._finish(exc_value)
         finally:
-            assert self.proc
             LOGGER.info(
                 "Runner exited %r proc=%r exit_code=%r ex=%r",
                 self.name,
@@ -353,8 +354,15 @@ class Runner:
                 self.proc.returncode,
                 sys.exc_info()[1],
             )
-            # Make sure the transport is closed (for asyncio and uvloop).
-            self.proc._transport.close()
+
+    async def _finish(self, exc_value):
+        "Finish the run. Return True only if `exc_value` should be suppressed."
+        try:
+            if exc_value is not None:
+                return await self._cleanup(exc_value)
+            await self.wait()
+        finally:
+            await self._close()
 
     async def _cleanup(self, exc_value):
         "Clean up when there is an exception. Return true to suppress exception."
@@ -364,6 +372,20 @@ class Runner:
         await self.kill()
 
         return self.cancelled
+
+    async def _close(self):
+        "Make sure that our resources are properly closed."
+        assert self.proc
+        assert self.proc.returncode is not None
+
+        # Make sure the transport is closed (for asyncio and uvloop).
+        self.proc._transport.close()
+
+        # Make sure that stdin is properly closed. `wait_closed` will raise
+        # a BrokenPipeError if not all input was properly written.
+        if self.stdin is not None:
+            self.stdin.close()
+            await self.stdin.wait_closed()
 
 
 class PipeRunner:
@@ -637,11 +659,6 @@ async def _feed_writer(input_bytes, stream):
             LOGGER.info("_feed_writer ex=%r", ex)
             pass
     stream.close()
-    try:
-        await stream.wait_closed()  # May raise BrokenPipeError...
-    except asyncio.CancelledError:
-        LOGGER.warning("_feed_writer wait_closed cancelled")
-        raise
 
 
 @_log_exception
