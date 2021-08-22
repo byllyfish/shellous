@@ -92,13 +92,13 @@ async def _gather_collect(aws, return_exceptions=False):
     # Retrieve any pending exceptions that cancellation may have triggered.
     _retrieve_exceptions(tasks)
 
-    # Look for a task in `done` that wasn't cancelled, if there is one.
-    failed = [task for task in done if not task.cancelled()]
+    # Look for a task in `done` that is finished, if there is one.
+    failed = [task for task in done if task.done()]
     if failed:
         failed[0].result()
 
-    # Look for a task in `pending` that wasn't cancelled, if there is one.
-    failed = [task for task in pending if not task.cancelled()]
+    # Look for a task in `pending` that is finished, if there is one.
+    failed = [task for task in pending if task.done()]
     if failed:
         failed[0].result()
 
