@@ -1,5 +1,6 @@
 # Python script used in `test_shellous.py`.
 
+import errno
 import os
 import sys
 import time
@@ -8,14 +9,25 @@ SHELLOUS_CMD = os.environ.get("SHELLOUS_CMD")
 SHELLOUS_EXIT_CODE = int(os.environ.get("SHELLOUS_EXIT_CODE") or 0)
 SHELLOUS_EXIT_SLEEP = int(os.environ.get("SHELLOUS_EXIT_SLEEP") or 0)
 
+
+def _write(data):
+    "Write data to stdout as bytes."
+    try:
+        if data:
+            sys.stdout.buffer.write(data)
+    except OSError as ex:
+        # Ignore "Invalid argument"
+        if ex.errno != errno.EINVAL:
+            raise
+
+
 if SHELLOUS_CMD == "echo":
     data = b" ".join(arg.encode("utf-8") for arg in sys.argv[1:])
-    sys.stdout.buffer.write(data)
+    _write(data)
 
 elif SHELLOUS_CMD == "cat":
     data = sys.stdin.buffer.read()
-    if data:
-        sys.stdout.buffer.write(data)
+    _write(data)
 
 elif SHELLOUS_CMD == "sleep":
     time.sleep(float(sys.argv[1]))
@@ -24,16 +36,14 @@ elif SHELLOUS_CMD == "env":
     data = b"".join(
         f"{key}={value}\n".encode("utf-8") for key, value in os.environ.items()
     )
-    if data:
-        sys.stdout.buffer.write(data)
+    _write(data)
 
 elif SHELLOUS_CMD == "tr":
     data = sys.stdin.buffer.read()
-    if data:
-        sys.stdout.buffer.write(data.upper())
+    _write(data.upper())
 
 elif SHELLOUS_CMD == "bulk":
-    sys.stdout.buffer.write(b"1234" * (1024 * 1024 + 1))
+    _write(b"1234" * (1024 * 1024 + 1))
 
 else:
     raise NotImplementedError
