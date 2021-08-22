@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 
 import pytest
-from shellous import CAPTURE, INHERIT, PipeResult, Result, ResultError, context
+from shellous import CAPTURE, DEVNULL, INHERIT, PipeResult, Result, ResultError, context
 
 pytestmark = pytest.mark.asyncio
 
@@ -279,6 +279,28 @@ async def test_broken_pipe_in_failed_pipeline(cat_cmd, echo_cmd):
 
     with pytest.raises(BrokenPipeError):
         await (data | cat_cmd | echo("abc"))
+
+
+async def test_broken_pipe_in_failed_pipeline_async_with(cat_cmd, echo_cmd):
+    "Test broken pipe error within a pipeline; last command fails."
+    data = b"c" * PIPE_MAX_SIZE
+    echo = echo_cmd.env(SHELLOUS_EXIT_CODE=7)
+
+    cmd = (data | cat_cmd | echo("abc")).stdin(CAPTURE).stdout(DEVNULL)
+    runner = cmd.runner()
+    async with runner as (stdin, _stdout, _stderr):
+        stdin.write(data)
+        try:
+            await stdin.drain()
+        except BrokenPipeError:
+            pass
+        finally:
+            stdin.close()
+
+    with pytest.raises(BrokenPipeError):
+        # Must retrieve BrokenPipeError from the `_stdin_closed` future.
+        stdin.close()  # redundant close here
+        await stdin.wait_closed()
 
 
 async def test_stdout_deadlock_antipattern(bulk_cmd):
