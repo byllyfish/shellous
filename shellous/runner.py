@@ -343,7 +343,12 @@ class Runner:
     async def __aexit__(self, _exc_type, exc_value, _exc_tb):
         "Wait for process to exit and handle cancellation."
 
-        LOGGER.info("Runner exiting %r exc_value=%r", self.name, exc_value)
+        LOGGER.info(
+            "Runner exiting %r proc=%r exc_value=%r",
+            self.name,
+            self.proc,
+            exc_value,
+        )
         try:
             await self._finish(exc_value)
         finally:

@@ -72,7 +72,7 @@ async def _gather_collect(aws, return_exceptions=False):
     try:
         done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_EXCEPTION)
     except asyncio.CancelledError:
-        LOGGER.warning("gather_collect itself cancelled")
+        LOGGER.warning("gather_collect ret_ex=%r itself cancelled", return_exceptions)
         done = set()
         pending = set(tasks)
 
@@ -82,7 +82,12 @@ async def _gather_collect(aws, return_exceptions=False):
         _retrieve_exceptions(tasks)
         return [task.result() for task in tasks]
 
-    LOGGER.info("gather_collect cancelling %d of %d tasks", len(pending), len(tasks))
+    LOGGER.info(
+        "gather_collect ret_ex=%r cancelling %d of %d tasks",
+        return_exceptions,
+        len(pending),
+        len(tasks),
+    )
     await _cancel_wait(pending)
 
     if return_exceptions:
@@ -104,7 +109,10 @@ async def _gather_collect(aws, return_exceptions=False):
 
     # Only choice is a task that was cancelled.
     LOGGER.warning(
-        "gather_collect - all tasks cancelled! done=%r pending=%r", done, pending
+        "gather_collect ret_ex=%r all tasks cancelled! done=%r pending=%r",
+        return_exceptions,
+        done,
+        pending,
     )
     raise asyncio.CancelledError()
 
@@ -118,7 +126,7 @@ async def _cancel_wait(tasks):
             tasks, timeout=1.0, return_when=asyncio.ALL_COMPLETED
         )
         if pending:
-            LOGGER.warning("gather_collect._cancel_wait pending=%r", pending)
+            LOGGER.error("gather_collect._cancel_wait pending=%r", pending)
     except asyncio.CancelledError:
         LOGGER.warning("gather_collect._cancel_wait cancelled itself?")
         pass
