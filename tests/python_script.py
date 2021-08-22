@@ -1,0 +1,45 @@
+# Python script used in `test_shellous.py`.
+
+import os
+import sys
+import time
+
+SHELLOUS_CMD = os.environ.get("SHELLOUS_CMD")
+SHELLOUS_EXIT_CODE = int(os.environ.get("SHELLOUS_EXIT_CODE") or 0)
+SHELLOUS_EXIT_SLEEP = int(os.environ.get("SHELLOUS_EXIT_SLEEP") or 0)
+
+if SHELLOUS_CMD == "echo":
+    data = b" ".join(arg.encode("utf-8") for arg in sys.argv[1:])
+    sys.stdout.buffer.write(data)
+
+elif SHELLOUS_CMD == "cat":
+    data = sys.stdin.buffer.read()
+    if data:
+        sys.stdout.buffer.write(data)
+
+elif SHELLOUS_CMD == "sleep":
+    time.sleep(float(sys.argv[1]))
+
+elif SHELLOUS_CMD == "env":
+    data = b"".join(
+        f"{key}={value}\n".encode("utf-8") for key, value in os.environ.items()
+    )
+    if data:
+        sys.stdout.buffer.write(data)
+
+elif SHELLOUS_CMD == "tr":
+    data = sys.stdin.buffer.read()
+    if data:
+        sys.stdout.buffer.write(data.upper())
+
+elif SHELLOUS_CMD == "bulk":
+    sys.stdout.buffer.write(b"1234" * (1024 * 1024 + 1))
+
+else:
+    raise NotImplementedError
+
+if SHELLOUS_EXIT_SLEEP:
+    sys.stdout.buffer.flush()
+    time.sleep(float(SHELLOUS_EXIT_SLEEP))
+
+sys.exit(SHELLOUS_EXIT_CODE)

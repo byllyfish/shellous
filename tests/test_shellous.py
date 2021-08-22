@@ -4,6 +4,7 @@ import asyncio
 import hashlib
 import io
 import sys
+from pathlib import Path
 
 import pytest
 from shellous import CAPTURE, INHERIT, PipeResult, Result, ResultError, context
@@ -14,6 +15,9 @@ pytestmark = pytest.mark.asyncio
 # 4MB + 1: Much larger than necessary.
 # See https://github.com/python/cpython/blob/main/Lib/test/support/__init__.py
 PIPE_MAX_SIZE = 4 * 1024 * 1024 + 1
+
+# On Windows, the exit_code of a terminated process is 1.
+CANCELLED_EXIT_CODE = -15 if sys.platform != "win32" else 1
 
 
 def test_debug_mode(event_loop):
@@ -34,50 +38,8 @@ def python_script(sh):
     The script behaves like common versions of `echo`, `cat`, `sleep` or `env`
     depending on environment variables.
     """
-    return sh(sys.executable, "-c", _SCRIPT).stderr(INHERIT)
-
-
-# The script behaves differently depending on its environment vars.
-_SCRIPT = """
-import os
-import sys
-import time
-
-SHELLOUS_CMD = os.environ.get("SHELLOUS_CMD")
-SHELLOUS_EXIT_CODE = int(os.environ.get("SHELLOUS_EXIT_CODE") or 0)
-SHELLOUS_EXIT_SLEEP = int(os.environ.get("SHELLOUS_EXIT_SLEEP") or 0)
-
-if SHELLOUS_CMD == "echo":
-  data = b' '.join(arg.encode("utf-8") for arg in sys.argv[1:])
-  sys.stdout.buffer.write(data)
-elif SHELLOUS_CMD == "cat":
-  data = sys.stdin.buffer.read()
-  if data:
-    sys.stdout.buffer.write(data)
-elif SHELLOUS_CMD == "sleep":
-  time.sleep(float(sys.argv[1]))
-elif SHELLOUS_CMD == "env":
-  data = b''.join(f"{key}={value}\\n".encode('utf-8') for key, value in os.environ.items())
-  if data:
-    sys.stdout.buffer.write(data)
-elif SHELLOUS_CMD == "tr":
-  data = sys.stdin.buffer.read()
-  if data:
-    sys.stdout.buffer.write(data.upper())
-elif SHELLOUS_CMD == "bulk":
-  sys.stdout.buffer.write(b"1234"*(1024*1024+1))
-else:
-  raise NotImplementedError
-
-if SHELLOUS_EXIT_SLEEP:
-  sys.stdout.buffer.flush()
-  time.sleep(float(SHELLOUS_EXIT_SLEEP))
-
-sys.exit(SHELLOUS_EXIT_CODE)
-"""
-
-
-_CANCELLED_EXIT_CODE = -15 if sys.platform != "win32" else 1
+    source_file = Path("tests/python_script.py")
+    return sh(sys.executable, source_file).stderr(INHERIT)
 
 
 @pytest.fixture
@@ -165,7 +127,7 @@ async def test_echo_cancel(echo_cmd):
     assert exc_info.type is ResultError
     assert exc_info.value.result == Result(
         output_bytes=None,  # FIXME: Should contain partial output?
-        exit_code=_CANCELLED_EXIT_CODE,
+        exit_code=CANCELLED_EXIT_CODE,
         cancelled=True,
         encoding="utf-8",
         extra=None,
@@ -184,7 +146,7 @@ async def test_echo_cancel_stringio(echo_cmd):
     assert exc_info.type is ResultError
     assert exc_info.value.result == Result(
         output_bytes=None,
-        exit_code=_CANCELLED_EXIT_CODE,
+        exit_code=CANCELLED_EXIT_CODE,
         cancelled=True,
         encoding="utf-8",
         extra=None,
@@ -207,7 +169,7 @@ async def test_pipe_error_cmd1(echo_cmd, tr_cmd):
         encoding="utf-8",
         extra=(
             PipeResult(exit_code=3, cancelled=False),
-            PipeResult(exit_code=_CANCELLED_EXIT_CODE, cancelled=True),
+            PipeResult(exit_code=CANCELLED_EXIT_CODE, cancelled=True),
         ),
     )
 
@@ -337,10 +299,26 @@ async def test_broken_pipe_in_failed_pipeline(cat_cmd, echo_cmd):
     assert result.cancelled == False
 
     # Depending on timing, the `cat_cmd` subcommand can return either
-    # _CANCELLED_EXIT_CODE or 1.
+    # CANCELLED_EXIT_CODE or 1.
 
     assert result.extra[0] in (
-        PipeResult(exit_code=_CANCELLED_EXIT_CODE, cancelled=True),
+        PipeResult(exit_code=CANCELLED_EXIT_CODE, cancelled=True),
         PipeResult(exit_code=1, cancelled=True),
     )
     assert result.extra[1] == PipeResult(exit_code=7, cancelled=False)
+
+
+async def test_stdout_deadlock_antipattern(bulk_cmd):
+    "Use async-with but don't read from stdout."
+
+    async def _antipattern():
+        runner = bulk_cmd.runner()
+        async with runner as (stdin, stdout, stderr):
+            assert stdin is None
+            assert stderr is None
+            assert stdout is not None
+            # ... and we don't read from stdout at all.
+
+    with pytest.raises(asyncio.TimeoutError):
+        # The _antipattern function must time out.
+        await asyncio.wait_for(_antipattern(), 3.0)
