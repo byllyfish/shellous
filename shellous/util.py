@@ -73,8 +73,11 @@ async def _gather_collect(aws, return_exceptions=False):
         done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_EXCEPTION)
     except asyncio.CancelledError:
         LOGGER.warning("gather_collect ret_ex=%r itself cancelled", return_exceptions)
-        done = set()
-        pending = set(tasks)
+        await _cancel_wait(tasks)
+        _retrieve_exceptions(tasks)
+        raise
+        # done = set()
+        # pending = set(tasks)
 
     if len(done) == len(tasks):
         if return_exceptions:
