@@ -103,7 +103,9 @@ async def _gather_collect(aws, return_exceptions=False):
         failed[0].result()
 
     # Only choice is a task that was cancelled.
-    LOGGER.warning("gather_collect - all tasks were cancelled!")
+    LOGGER.warning(
+        "gather_collect - all tasks cancelled! done=%r pending=%r", done, pending
+    )
     raise asyncio.CancelledError()
 
 
