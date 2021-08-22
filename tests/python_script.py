@@ -1,6 +1,5 @@
 # Python script used in `test_shellous.py`.
 
-import errno
 import os
 import sys
 import time
@@ -12,13 +11,8 @@ SHELLOUS_EXIT_SLEEP = int(os.environ.get("SHELLOUS_EXIT_SLEEP") or 0)
 
 def _write(data):
     "Write data to stdout as bytes."
-    try:
-        if data:
-            sys.stdout.buffer.write(data)
-    except OSError as ex:
-        # Ignore "Invalid argument"
-        if ex.errno != errno.EINVAL:
-            raise
+    if data:
+        sys.stdout.buffer.write(data)
 
 
 if SHELLOUS_CMD == "echo":
