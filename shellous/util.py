@@ -73,13 +73,13 @@ async def _gather_collect(aws, return_exceptions=False):
         done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_EXCEPTION)
     except asyncio.CancelledError:
         LOGGER.warning("gather_collect itself cancelled")
-        # Cancel all tasks here before re-raising the exception.
-        await _cancel_wait(tasks)
-        raise
+        done = set()
+        pending = set(tasks)
 
     if len(done) == len(tasks):
         if return_exceptions:
             return [_to_result(task) for task in tasks]
+        _retrieve_exceptions(tasks)
         return [task.result() for task in tasks]
 
     LOGGER.info("gather_collect cancelling %d of %d tasks", len(pending), len(tasks))
@@ -89,14 +89,22 @@ async def _gather_collect(aws, return_exceptions=False):
         # Return list of exceptions in same order as original tasks.
         return [_to_result(task) for task in tasks]
 
+    # Retrieve any pending exceptions that cancellation may have triggered.
+    _retrieve_exceptions(tasks)
+
     # Look for a task in `done` that wasn't cancelled, if there is one.
     failed = [task for task in done if not task.cancelled()]
     if failed:
         failed[0].result()
 
+    # Look for a task in `pending` that wasn't cancelled, if there is one.
+    failed = [task for task in pending if not task.cancelled()]
+    if failed:
+        failed[0].result()
+
     # Only choice is a task that was cancelled.
-    LOGGER.warning("gather_collect - done task was cancelled!")
-    done.pop().result()
+    LOGGER.warning("gather_collect - all tasks were cancelled!")
+    raise asyncio.CancelledError()
 
 
 async def _cancel_wait(tasks):
@@ -114,3 +122,9 @@ def _to_result(task):
     if task.cancelled():
         return asyncio.CancelledError()
     return task.exception() or task.result()
+
+
+def _retrieve_exceptions(tasks):
+    for task in tasks:
+        if not task.cancelled():
+            task.exception()

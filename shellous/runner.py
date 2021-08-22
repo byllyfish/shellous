@@ -224,26 +224,13 @@ class Runner:
             LOGGER.info("Runner.kill %r never started", self.name)
             return
 
-        if self.proc.returncode is not None:
-            LOGGER.info("Runner.kill %r already done", self.name)
-            return
-
         cancel_timeout = self.command.options.cancel_timeout
         cancel_signal = self.command.options.cancel_signal
 
         try:
-            # FIXME: refactor this and catch ProcessLookupError?
-            if cancel_signal is None:
-                LOGGER.info("Runner.kill %r killing proc=%r", self.name, self.proc)
-                self.proc.kill()
-            else:
-                LOGGER.info(
-                    "Runner.kill %r signalling proc=%r signal=%r",
-                    self.name,
-                    self.proc,
-                    cancel_signal,
-                )
-                self.proc.send_signal(cancel_signal)
+            # If not already done, send cancel signal.
+            if self.proc.returncode is None:
+                self._send_signal(cancel_signal)
 
             if self.tasks:
                 await gather_collect(*self.tasks, timeout=cancel_timeout)
@@ -262,6 +249,20 @@ class Runner:
             LOGGER.warning("Runner.kill %r ex=%r", self.name, ex)
             await self._kill_wait()
             raise
+
+    def _send_signal(self, sig):
+        "Send a signal to the process."
+        if sig is None:
+            LOGGER.info("Runner.kill %r killing proc=%r", self.name, self.proc)
+            self.proc.kill()
+        else:
+            LOGGER.info(
+                "Runner.kill %r signalling proc=%r signal=%r",
+                self.name,
+                self.proc,
+                sig,
+            )
+            self.proc.send_signal(sig)
 
     async def _kill_wait(self):
         "Wait for killed process to exit."
