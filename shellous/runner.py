@@ -224,10 +224,15 @@ class Runner:
             LOGGER.info("Runner.kill %r never started", self.name)
             return
 
+        if self.proc.returncode is not None:
+            LOGGER.info("Runner.kill %r already done", self.name)
+            return
+
         cancel_timeout = self.command.options.cancel_timeout
         cancel_signal = self.command.options.cancel_signal
 
         try:
+            # FIXME: refactor this and catch ProcessLookupError?
             if cancel_signal is None:
                 LOGGER.info("Runner.kill %r killing proc=%r", self.name, self.proc)
                 self.proc.kill()
