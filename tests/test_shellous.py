@@ -268,11 +268,8 @@ async def test_broken_pipe_in_pipeline(cat_cmd, echo_cmd):
     """
     data = b"c" * PIPE_MAX_SIZE
 
-    err = bytearray()
     with pytest.raises(BrokenPipeError):
-        await (data | cat_cmd.stderr(err) | echo_cmd("abc"))
-
-    assert b"BrokenPipeError" in err
+        await (data | cat_cmd | echo_cmd("abc"))
 
 
 async def test_broken_pipe_in_failed_pipeline(cat_cmd, echo_cmd):
@@ -280,11 +277,8 @@ async def test_broken_pipe_in_failed_pipeline(cat_cmd, echo_cmd):
     data = b"c" * PIPE_MAX_SIZE
     echo = echo_cmd.env(SHELLOUS_EXIT_CODE=7)
 
-    err = bytearray()
     with pytest.raises(BrokenPipeError):
-        await (data | cat_cmd.stderr(err) | echo("abc"))
-
-    assert b"BrokenPipeError" in err
+        await (data | cat_cmd | echo("abc"))
 
 
 async def test_stdout_deadlock_antipattern(bulk_cmd):
