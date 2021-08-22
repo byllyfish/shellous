@@ -23,7 +23,6 @@ jobs:
     env:
       POETRY_RUN: python -m poetry run
       POETRY_ADD: python -m poetry add
-      PYTEST_ARGS: -vv -s --timeout=10 --color=yes --log-cli-level=INFO --log-cli-format="%(created).03f %(levelname)s %(message)s"
 
     steps:
     - uses: actions/checkout@v2
@@ -50,7 +49,7 @@ jobs:
     - name: Run Tests
       run: |
         # Run pytest.
-        $POETRY_RUN python -m pytest $PYTEST_ARGS
+        $POETRY_RUN python -m pytest -vv -s --timeout=10 --color=yes --log-cli-level=INFO --log-cli-format="%(created).03f %(levelname)s %(message)s"
     - name: Run Code Coverage (Linux only)
       if: matrix.os == 'ubuntu-latest'
       run: |
@@ -62,6 +61,6 @@ jobs:
       run: |
         # Run pytest under uvloop.
         $POETRY_ADD uvloop
-        $POETRY_RUN python -m pytest $PYTEST_ARGS
+        $POETRY_RUN python -m pytest -vv -s --timeout=10 --color=yes --log-cli-level=INFO --log-cli-format="%(created).03f %(levelname)s %(message)s"
       env:
         SHELLOUS_TEST_UVLOOP: "1"
