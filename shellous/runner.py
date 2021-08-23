@@ -402,7 +402,7 @@ class Runner:
                 await gather_collect(self.stdin.wait_closed(), timeout=0.25)
 
         except asyncio.TimeoutError:
-            LOGGER.info("Runner._close %r timeout", self.name)
+            LOGGER.error("Runner._close %r timeout", self.name)
         finally:
             LOGGER.info("Runner._close %r finished", self.name)
 
