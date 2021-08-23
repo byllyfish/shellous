@@ -219,6 +219,9 @@ class Runner:
             LOGGER.warning("Runner.wait %r ex=%r", self.name, ex)
             raise
 
+        finally:
+            LOGGER.info("Runner.wait %r finished", self.name)
+
     async def kill(self):
         "Kill process and wait for it to finish."
         if self.proc is None:
@@ -252,7 +255,7 @@ class Runner:
             raise
 
         finally:
-            LOGGER.info("Runner.kill finished")
+            LOGGER.info("Runner.kill %r finished", self.name)
 
     def _send_signal(self, sig):
         "Send a signal to the process."
@@ -386,14 +389,19 @@ class Runner:
         assert self.proc
         assert self.proc.returncode is not None
 
-        # Make sure the transport is closed (for asyncio and uvloop).
-        self.proc._transport.close()
+        try:
+            LOGGER.info("Runner._close %r", self.name)
 
-        # Make sure that stdin is properly closed. `wait_closed` will raise
-        # a BrokenPipeError if not all input was properly written.
-        if self.stdin is not None:
-            self.stdin.close()
-            await self.stdin.wait_closed()
+            # Make sure the transport is closed (for asyncio and uvloop).
+            self.proc._transport.close()
+
+            # Make sure that stdin is properly closed. `wait_closed` will raise
+            # a BrokenPipeError if not all input was properly written.
+            if self.stdin is not None:
+                self.stdin.close()
+                await self.stdin.wait_closed()
+        finally:
+            LOGGER.info("Runner._close %r finished", self.name)
 
 
 class PipeRunner:
