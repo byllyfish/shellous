@@ -24,7 +24,7 @@ if loop_type:
 
         @pytest.fixture
         def event_loop():
-            selector = selectors.SelectSelector()
+            selector = selectors.DefaultSelector()
             loop = asyncio.SelectorEventLoop(selector)
             loop.set_debug(True)
             yield loop

@@ -27,7 +27,7 @@ _CANCELLED_EXIT_CODE = -15
 
 def _is_uvloop():
     "Return true if we're running under uvloop."
-    return os.environ.get("SHELLOUS_TEST_UVLOOP")
+    return os.environ.get("SHELLOUS_LOOP_TYPE") == "uvloop"
 
 
 @pytest.fixture
