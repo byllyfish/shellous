@@ -5,15 +5,30 @@ import os
 
 import pytest
 
-if os.environ.get("SHELLOUS_TEST_UVLOOP"):
-    import uvloop
+loop_type = os.environ.get("SHELLOUS_LOOP_TYPE")
 
-    @pytest.fixture
-    def event_loop():
-        loop = uvloop.new_event_loop()
-        loop.set_debug(True)
-        yield loop
-        loop.close()
+if loop_type:
+    # Customize the event loop: uvloop or SelectorEventLoop.
+    if loop_type == "uvloop":
+        import uvloop
+
+        @pytest.fixture
+        def event_loop():
+            loop = uvloop.new_event_loop()
+            loop.set_debug(True)
+            yield loop
+            loop.close()
+
+    elif loop_type == "selectoreventloop":
+        import selectors
+
+        @pytest.fixture
+        def event_loop():
+            selector = selectors.SelectSelector()
+            loop = asyncio.SelectorEventLoop(selector)
+            loop.set_debug(True)
+            yield loop
+            loop.close()
 
 
 @pytest.fixture(autouse=True)

@@ -50,17 +50,23 @@ jobs:
       run: |
         # Run pytest.
         $POETRY_RUN python -m pytest -vv -s --timeout=10 --color=yes --log-cli-level=INFO --log-cli-format="%(created).03f %(levelname)s %(message)s"
-    - name: Run Code Coverage (Linux only)
+    - name: Run Code Coverage (Linux)
       if: matrix.os == 'ubuntu-latest'
       run: |
         # Run coverage and upload report to codecov.
         $POETRY_RUN coverage run --source shellous -m pytest
         $POETRY_RUN codecov
-    - name: Run Tests with uvloop (Linux only)
-      if: matrix.os == 'ubuntu-latest'
+    - name: Run Tests with uvloop (Linux and MacOS)
+      if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
       run: |
         # Run pytest under uvloop.
         $POETRY_ADD uvloop
         $POETRY_RUN python -m pytest -vv -s --timeout=10 --color=yes --log-cli-level=INFO --log-cli-format="%(created).03f %(levelname)s %(message)s"
       env:
-        SHELLOUS_TEST_UVLOOP: "1"
+        SHELLOUS_LOOP_TYPE: "uvloop"
+    - name: Run Tests with SelectorEventLoop (Windows)
+      if: matrix.os == 'windows-latest'
+      run: |
+        $POETRY_RUN python -m pytest -vv -s --timeout=10 --color=yes --log-cli-level=INFO --log-cli-format="%(created).03f %(levelname)s %(message)s"
+      env:
+        SHELLOUS_LOOP_TYPE: "selectoreventloop"
