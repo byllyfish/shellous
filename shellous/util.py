@@ -129,7 +129,11 @@ async def _cancel_wait(tasks):
             tasks, timeout=1.0, return_when=asyncio.ALL_COMPLETED
         )
         if pending:
-            LOGGER.error("gather_collect._cancel_wait pending=%r", pending)
+            LOGGER.error(
+                "gather_collect._cancel_wait pending=%r all_tasks=%r",
+                pending,
+                asyncio.all_tasks(),
+            )
     except asyncio.CancelledError:
         LOGGER.warning("gather_collect._cancel_wait cancelled itself?")
         pass

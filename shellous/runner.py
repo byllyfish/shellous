@@ -251,6 +251,9 @@ class Runner:
             await self._kill_wait()
             raise
 
+        finally:
+            LOGGER.info("Runner.kill finished")
+
     def _send_signal(self, sig):
         "Send a signal to the process."
         if sig is None:
