@@ -399,7 +399,10 @@ class Runner:
             # a BrokenPipeError if not all input was properly written.
             if self.stdin is not None:
                 self.stdin.close()
-                await self.stdin.wait_closed()
+                await gather_collect(self.stdin.wait_closed(), timeout=0.25)
+
+        except asyncio.TimeoutError:
+            LOGGER.info("Runner._close %r timeout", self.name)
         finally:
             LOGGER.info("Runner._close %r finished", self.name)
 
