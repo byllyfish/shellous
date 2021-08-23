@@ -1,6 +1,7 @@
 "Configure common fixtures for pytest."
 
 import asyncio
+import gc
 import os
 
 import pytest
@@ -18,6 +19,9 @@ if loop_type:
             loop.set_debug(True)
             yield loop
             loop.close()
+            # Force garbage collection to flush out un-run __del__ methods.
+            del loop
+            gc.collect()
 
     elif loop_type == "selectoreventloop":
         import selectors
@@ -29,6 +33,21 @@ if loop_type:
             loop.set_debug(True)
             yield loop
             loop.close()
+            # Force garbage collection to flush out un-run __del__ methods.
+            del loop
+            gc.collect()
+
+    else:
+
+        @pytest.fixture
+        def event_loop():
+            loop = asyncio.new_event_loop()
+            loop.set_debug(True)
+            yield loop
+            loop.close()
+            # Force garbage collection to flush out un-run __del__ methods.
+            del loop
+            gc.collect()
 
 
 @pytest.fixture(autouse=True)
