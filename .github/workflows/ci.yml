@@ -64,9 +64,3 @@ jobs:
         $POETRY_RUN python -m pytest -vv -s --timeout=10 --color=yes --log-cli-level=INFO --log-cli-format="%(created).03f %(levelname)s %(message)s"
       env:
         SHELLOUS_LOOP_TYPE: "uvloop"
-    - name: Run Tests with SelectorEventLoop (Windows)
-      if: matrix.os == 'windows-latest'
-      run: |
-        $POETRY_RUN python -m pytest -vv -s --timeout=10 --color=yes --log-cli-level=INFO --log-cli-format="%(created).03f %(levelname)s %(message)s"
-      env:
-        SHELLOUS_LOOP_TYPE: "selectoreventloop"
