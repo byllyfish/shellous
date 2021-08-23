@@ -636,3 +636,12 @@ async def test_shell_cmd(sh):
         encoding="utf-8",
         extra=None,
     )
+
+
+async def test_large_cat(sh):
+    "Test cat with some decent sized data."
+    data = b"x" * (4 * 1024 * 1024 + 1)
+    cat = sh("cat").set(encoding=None)
+    result = await (data | cat)
+    assert len(result) == (4 * 1024 * 1024 + 1)
+    assert result == data

@@ -1,11 +1,13 @@
 "Shellous cross-platform tests."
 
 import asyncio
+import hashlib
 import io
 import sys
+from pathlib import Path
 
 import pytest
-from shellous import CAPTURE, INHERIT, PipeResult, Result, ResultError, context
+from shellous import CAPTURE, DEVNULL, INHERIT, PipeResult, Result, ResultError, context
 
 pytestmark = pytest.mark.asyncio
 
@@ -13,6 +15,9 @@ pytestmark = pytest.mark.asyncio
 # 4MB + 1: Much larger than necessary.
 # See https://github.com/python/cpython/blob/main/Lib/test/support/__init__.py
 PIPE_MAX_SIZE = 4 * 1024 * 1024 + 1
+
+# On Windows, the exit_code of a terminated process is 1.
+CANCELLED_EXIT_CODE = -15 if sys.platform != "win32" else 1
 
 
 def test_debug_mode(event_loop):
@@ -33,70 +38,38 @@ def python_script(sh):
     The script behaves like common versions of `echo`, `cat`, `sleep` or `env`
     depending on environment variables.
     """
-    return sh(sys.executable, "-c", _SCRIPT)
-
-
-# The script behaves differently depending on its environment vars.
-_SCRIPT = """
-import os
-import sys
-import time
-
-SHELLOUS_CMD = os.environ.get("SHELLOUS_CMD")
-SHELLOUS_EXIT_CODE = int(os.environ.get("SHELLOUS_EXIT_CODE") or 0)
-SHELLOUS_EXIT_SLEEP = int(os.environ.get("SHELLOUS_EXIT_SLEEP") or 0)
-
-if SHELLOUS_CMD == "echo":
-  data = b' '.join(arg.encode("utf-8") for arg in sys.argv[1:])
-  sys.stdout.buffer.write(data)
-elif SHELLOUS_CMD == "cat":
-  data = sys.stdin.buffer.read()
-  sys.stdout.buffer.write(data)
-elif SHELLOUS_CMD == "sleep":
-  time.sleep(float(sys.argv[1]))
-elif SHELLOUS_CMD == "env":
-  data = b''.join(f"{key}={value}\\n".encode('utf-8') for key, value in os.environ.items())
-  sys.stdout.buffer.write(data)
-elif SHELLOUS_CMD == "tr":
-  data = sys.stdin.buffer.read()
-  sys.stdout.buffer.write(data.upper())
-else:
-  raise NotImplementedError
-
-if SHELLOUS_EXIT_SLEEP:
-  sys.stdout.buffer.flush()
-  time.sleep(float(SHELLOUS_EXIT_SLEEP))
-
-sys.exit(SHELLOUS_EXIT_CODE)
-"""
-
-
-_CANCELLED_EXIT_CODE = -15 if sys.platform != "win32" else 1
+    source_file = Path("tests/python_script.py")
+    return sh(sys.executable, source_file).stderr(INHERIT)
 
 
 @pytest.fixture
 def echo_cmd(python_script):
-    return python_script.env(SHELLOUS_CMD="echo").stderr(INHERIT)
+    return python_script.env(SHELLOUS_CMD="echo")
 
 
 @pytest.fixture
 def cat_cmd(python_script):
-    return python_script.env(SHELLOUS_CMD="cat").stderr(INHERIT)
+    return python_script.env(SHELLOUS_CMD="cat")
 
 
 @pytest.fixture
 def sleep_cmd(python_script):
-    return python_script.env(SHELLOUS_CMD="sleep").stderr(INHERIT)
+    return python_script.env(SHELLOUS_CMD="sleep")
 
 
 @pytest.fixture
 def env_cmd(python_script):
-    return python_script.env(SHELLOUS_CMD="env").stderr(INHERIT)
+    return python_script.env(SHELLOUS_CMD="env")
 
 
 @pytest.fixture
 def tr_cmd(python_script):
-    return python_script.env(SHELLOUS_CMD="tr").stderr(INHERIT)
+    return python_script.env(SHELLOUS_CMD="tr")
+
+
+@pytest.fixture
+def bulk_cmd(python_script):
+    return python_script.env(SHELLOUS_CMD="bulk")
 
 
 async def test_echo(echo_cmd):
@@ -124,6 +97,13 @@ async def test_tr(tr_cmd):
     assert result == "ABC"
 
 
+async def test_bulk(bulk_cmd):
+    result = await bulk_cmd().set(encoding=None)
+    assert len(result) == 4 * (1024 * 1024 + 1)
+    hash = hashlib.sha256(result).hexdigest()
+    assert hash == "462d6c497b393d2c9e1584a7b4636592da837ef66cf4ff871dc937f3fe309459"
+
+
 async def test_pipeline(echo_cmd, cat_cmd, tr_cmd):
     pipe = echo_cmd("xyz") | cat_cmd() | tr_cmd()
     result = await pipe()
@@ -147,7 +127,7 @@ async def test_echo_cancel(echo_cmd):
     assert exc_info.type is ResultError
     assert exc_info.value.result == Result(
         output_bytes=None,  # FIXME: Should contain partial output?
-        exit_code=_CANCELLED_EXIT_CODE,
+        exit_code=CANCELLED_EXIT_CODE,
         cancelled=True,
         encoding="utf-8",
         extra=None,
@@ -166,7 +146,7 @@ async def test_echo_cancel_stringio(echo_cmd):
     assert exc_info.type is ResultError
     assert exc_info.value.result == Result(
         output_bytes=None,
-        exit_code=_CANCELLED_EXIT_CODE,
+        exit_code=CANCELLED_EXIT_CODE,
         cancelled=True,
         encoding="utf-8",
         extra=None,
@@ -189,7 +169,7 @@ async def test_pipe_error_cmd1(echo_cmd, tr_cmd):
         encoding="utf-8",
         extra=(
             PipeResult(exit_code=3, cancelled=False),
-            PipeResult(exit_code=_CANCELLED_EXIT_CODE, cancelled=True),
+            PipeResult(exit_code=CANCELLED_EXIT_CODE, cancelled=True),
         ),
     )
 
@@ -252,10 +232,89 @@ async def test_pipe_redirect_stdin_capture(cat_cmd, tr_cmd):
 
 
 async def test_broken_pipe(sh):
-    "Test broken pipe error for large data passed to stdin."
+    """Test broken pipe error for large data passed to stdin.
 
+    We expect our process (Python) to fail with a broken pipe because `cmd`
+    doesn't read its standard input.
+    """
     data = b"b" * PIPE_MAX_SIZE
     cmd = sh(sys.executable, "-c", "pass")
 
     with pytest.raises(BrokenPipeError):
         await cmd.stdin(data)
+
+
+async def test_unread_stdin_unreported(sh):
+    """Test tiny data passed to stdin of process that doesn't read it."""
+    data = b"b" * 64
+    cmd = sh(sys.executable, "-c", "pass")
+
+    result = await cmd.stdin(data)
+    assert result == ""
+
+
+async def test_cat_large_data(cat_cmd):
+    "Test cat with large data."
+    data = "a" * PIPE_MAX_SIZE
+    result = await (data | cat_cmd)
+    assert result == data
+
+
+async def test_broken_pipe_in_pipeline(cat_cmd, echo_cmd):
+    """Test broken pipe error within a pipeline.
+
+    We expect `cat_cmd` to fail with a broken pipe because `echo`
+    doesn't read its standard input.
+    """
+    data = b"c" * PIPE_MAX_SIZE
+
+    with pytest.raises(BrokenPipeError):
+        await (data | cat_cmd | echo_cmd("abc"))
+
+
+@pytest.mark.xfail(sys.platform == "win32", reason="timeout in wait_closed")
+async def test_broken_pipe_in_failed_pipeline(cat_cmd, echo_cmd):
+    "Test broken pipe error within a pipeline; last command fails."
+    data = b"c" * PIPE_MAX_SIZE
+    echo = echo_cmd.env(SHELLOUS_EXIT_CODE=7)
+
+    with pytest.raises(BrokenPipeError):
+        await (data | cat_cmd | echo("abc"))
+
+
+async def test_broken_pipe_in_failed_pipeline_async_with(cat_cmd, echo_cmd):
+    "Test broken pipe error within a pipeline; last command fails."
+    data = b"c" * PIPE_MAX_SIZE
+    echo = echo_cmd.env(SHELLOUS_EXIT_CODE=7)
+
+    cmd = (data | cat_cmd | echo("abc")).stdin(CAPTURE).stdout(DEVNULL)
+    runner = cmd.runner()
+    async with runner as (stdin, _stdout, _stderr):
+        stdin.write(data)
+        try:
+            await stdin.drain()
+        except BrokenPipeError:
+            pass
+        finally:
+            stdin.close()
+
+    with pytest.raises(BrokenPipeError):
+        # Must retrieve BrokenPipeError from the `_stdin_closed` future.
+        stdin.close()  # redundant close here
+        await stdin.wait_closed()
+
+
+async def test_stdout_deadlock_antipattern(bulk_cmd):
+    "Use async-with but don't read from stdout."
+
+    async def _antipattern():
+        runner = bulk_cmd.runner()
+        async with runner as (stdin, stdout, stderr):
+            assert stdin is None
+            assert stderr is None
+            assert stdout is not None
+            # ... and we don't read from stdout at all.
+
+    with pytest.raises(asyncio.TimeoutError):
+        # The _antipattern function must time out.
+        await asyncio.wait_for(_antipattern(), 3.0)

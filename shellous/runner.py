@@ -162,6 +162,7 @@ class Runner:
         self.cancelled = False
         self.proc = None
         self.tasks = []
+        self.stdin = None
 
     @property
     def name(self):
@@ -218,6 +219,9 @@ class Runner:
             LOGGER.warning("Runner.wait %r ex=%r", self.name, ex)
             raise
 
+        finally:
+            LOGGER.info("Runner.wait %r finished", self.name)
+
     async def kill(self):
         "Kill process and wait for it to finish."
         if self.proc is None:
@@ -228,17 +232,9 @@ class Runner:
         cancel_signal = self.command.options.cancel_signal
 
         try:
-            if cancel_signal is None:
-                LOGGER.info("Runner.kill %r killing proc=%r", self.name, self.proc)
-                self.proc.kill()
-            else:
-                LOGGER.info(
-                    "Runner.kill %r signalling proc=%r signal=%r",
-                    self.name,
-                    self.proc,
-                    cancel_signal,
-                )
-                self.proc.send_signal(cancel_signal)
+            # If not already done, send cancel signal.
+            if self.proc.returncode is None:
+                self._send_signal(cancel_signal)
 
             if self.tasks:
                 await gather_collect(*self.tasks, timeout=cancel_timeout)
@@ -257,6 +253,23 @@ class Runner:
             LOGGER.warning("Runner.kill %r ex=%r", self.name, ex)
             await self._kill_wait()
             raise
+
+        finally:
+            LOGGER.info("Runner.kill %r finished", self.name)
+
+    def _send_signal(self, sig):
+        "Send a signal to the process."
+        if sig is None:
+            LOGGER.info("Runner.kill %r killing proc=%r", self.name, self.proc)
+            self.proc.kill()
+        else:
+            LOGGER.info(
+                "Runner.kill %r signalling proc=%r signal=%r",
+                self.name,
+                self.proc,
+                sig,
+            )
+            self.proc.send_signal(sig)
 
     async def _kill_wait(self):
         "Wait for killed process to exit."
@@ -302,6 +315,9 @@ class Runner:
         stdout = self.proc.stdout
         stderr = self.proc.stderr
 
+        # Keep track of stdin so we can close it later.
+        self.stdin = stdin
+
         if stderr is not None:
             error = opts.command.options.error
             stderr = self._setup_output_sink(stderr, error, opts.encoding, "stderr")
@@ -333,13 +349,15 @@ class Runner:
     async def __aexit__(self, _exc_type, exc_value, _exc_tb):
         "Wait for process to exit and handle cancellation."
 
-        LOGGER.info("Runner exiting %r exc_value=%r", self.name, exc_value)
+        LOGGER.info(
+            "Runner exiting %r proc=%r exc_value=%r",
+            self.name,
+            self.proc,
+            exc_value,
+        )
         try:
-            if exc_value is not None:
-                return await self._cleanup(exc_value)
-            await self.wait()
+            await self._finish(exc_value)
         finally:
-            assert self.proc
             LOGGER.info(
                 "Runner exited %r proc=%r exit_code=%r ex=%r",
                 self.name,
@@ -347,8 +365,15 @@ class Runner:
                 self.proc.returncode,
                 sys.exc_info()[1],
             )
-            # Make sure the transport is closed (for asyncio and uvloop).
-            self.proc._transport.close()
+
+    async def _finish(self, exc_value):
+        "Finish the run. Return True only if `exc_value` should be suppressed."
+        try:
+            if exc_value is not None:
+                return await self._cleanup(exc_value)
+            await self.wait()
+        finally:
+            await self._close()
 
     async def _cleanup(self, exc_value):
         "Clean up when there is an exception. Return true to suppress exception."
@@ -358,6 +383,28 @@ class Runner:
         await self.kill()
 
         return self.cancelled
+
+    async def _close(self):
+        "Make sure that our resources are properly closed."
+        assert self.proc
+        assert self.proc.returncode is not None
+
+        try:
+            LOGGER.info("Runner._close %r", self.name)
+
+            # Make sure the transport is closed (for asyncio and uvloop).
+            self.proc._transport.close()
+
+            # Make sure that stdin is properly closed. `wait_closed` will raise
+            # a BrokenPipeError if not all input was properly written.
+            if self.stdin is not None:
+                self.stdin.close()
+                await gather_collect(self.stdin.wait_closed(), timeout=0.25)
+
+        except asyncio.TimeoutError:
+            LOGGER.error("Runner._close %r timeout", self.name)
+        finally:
+            LOGGER.info("Runner._close %r finished", self.name)
 
 
 class PipeRunner:
@@ -609,10 +656,10 @@ def _log_exception(func):
         try:
             return await func(*args, **kwargs)
         except asyncio.CancelledError:
-            LOGGER.info("Task cancelled!")
+            LOGGER.info("Task %r cancelled!", func)
             raise
         except Exception as ex:
-            LOGGER.warning("Task ex=%r", ex)
+            LOGGER.warning("Task %r ex=%r", func, ex)
             raise
 
     return _wrapper
@@ -624,11 +671,13 @@ async def _feed_writer(input_bytes, stream):
         try:
             stream.write(input_bytes)
             await stream.drain()
+        except asyncio.CancelledError:
+            LOGGER.info("_feed_writer cancelled!")
+            pass
         except (BrokenPipeError, ConnectionResetError) as ex:
             LOGGER.info("_feed_writer ex=%r", ex)
             pass
     stream.close()
-    await stream.wait_closed()  # May raise BrokenPipeError...
 
 
 @_log_exception
