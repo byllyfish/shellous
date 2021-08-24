@@ -207,9 +207,7 @@ class Runner:
 
     async def _wait(self):
         "Normal wait for background I/O tasks and process to finish."
-        if self.proc is None:
-            LOGGER.info("Runner.wait %r never started", self.name)
-            return
+        assert self.proc is not None
 
         try:
             await gather_collect(*self.tasks)
@@ -226,9 +224,7 @@ class Runner:
 
     async def _kill(self):
         "Kill process and wait for it to finish."
-        if self.proc is None:
-            LOGGER.info("Runner.kill %r never started", self.name)
-            return
+        assert self.proc is not None
 
         cancel_timeout = self.command.options.cancel_timeout
         cancel_signal = self.command.options.cancel_signal
@@ -266,7 +262,10 @@ class Runner:
 
     async def _kill_wait(self):
         "Wait for killed process to exit."
-        if not self.proc or self.proc.returncode is not None:
+        assert self.proc is not None
+
+        # Check if process is already done.
+        if self.proc.returncode is not None:
             return
 
         LOGGER.info("Runner.kill_wait %r killing proc=%r", self.name, self.proc)
@@ -289,6 +288,7 @@ class Runner:
 
     async def _start(self):
         "Set up redirections and launch subprocess."
+        assert self.proc is None
         assert not self.tasks
 
         try:
@@ -329,7 +329,8 @@ class Runner:
         except (Exception, asyncio.CancelledError) as ex:
             LOGGER.warning("Runner.start %r proc=%r ex=%r", self.name, self.proc, ex)
             self.cancelled = isinstance(ex, asyncio.CancelledError)
-            await self._kill()
+            if self.proc is not None:
+                await self._kill()
             raise
 
         return (stdin, stdout, stderr)
