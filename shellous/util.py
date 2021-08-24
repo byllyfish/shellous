@@ -10,7 +10,11 @@ from shellous.log import LOGGER
 
 
 def log_method(enabled):
-    """`log_method` logs when an async method call is entered and exited."""
+    """`log_method` logs when an async method call is entered and exited.
+
+    <method-name> stepin <self>
+    <method-name> stepout <self>
+    """
 
     def _decorator(func):
         "Decorator to log method call entry and exit."
@@ -20,12 +24,12 @@ def log_method(enabled):
 
         @functools.wraps(func)
         async def _wrapper(*args, **kwargs):
-            LOGGER.info("%s %r entered", func.__qualname__, args[0])
+            LOGGER.info("%s stepin %r", func.__qualname__, args[0])
             try:
                 return await func(*args, **kwargs)
             finally:
                 LOGGER.info(
-                    "%s %r exited ex=%r",
+                    "%s stepout %r ex=%r",
                     func.__qualname__,
                     args[0],
                     sys.exc_info()[1],

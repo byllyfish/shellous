@@ -102,8 +102,8 @@ async def test_log_method(caplog):
         await tester.demo3()
 
     assert caplog.record_tuples == [
-        ("shellous", 20, "_Tester.demo1 <self> entered"),
-        ("shellous", 20, "_Tester.demo1 <self> exited ex=None"),
-        ("shellous", 20, "_Tester.demo3 <self> entered"),
-        ("shellous", 20, "_Tester.demo3 <self> exited ex=ValueError(1)"),
+        ("shellous", 20, "_Tester.demo1 stepin <self>"),
+        ("shellous", 20, "_Tester.demo1 stepout <self> ex=None"),
+        ("shellous", 20, "_Tester.demo3 stepin <self>"),
+        ("shellous", 20, "_Tester.demo3 stepout <self> ex=ValueError(1)"),
     ]
