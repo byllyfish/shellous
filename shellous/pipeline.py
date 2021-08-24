@@ -8,7 +8,6 @@ from typing import Any
 
 from shellous.command import Command
 from shellous.runner import PipeRunner, run_pipe, run_pipe_iter
-from shellous.util import Redirect
 
 
 @dataclass(frozen=True)

@@ -1,23 +1,39 @@
-"Implements Redirect enum and various utility functions."
+"Implements various utility functions."
 
 import asyncio
-import enum
+import functools
+import platform
+import sys
 from typing import Optional, Union
 
 from shellous.log import LOGGER
 
 
-class Redirect(enum.IntEnum):
-    "Redirection constants."
+def log_method(enabled):
+    """`log_method` logs when an async method call is entered and exited."""
 
-    STDOUT = asyncio.subprocess.STDOUT  # -2
-    DEVNULL = asyncio.subprocess.DEVNULL  # -3
-    CAPTURE = -10
-    INHERIT = -11
+    def _decorator(func):
+        "Decorator to log method call entry and exit."
 
-    def is_custom(self):
-        "Return true if this redirect option is not built into asyncio."
-        return self in {Redirect.CAPTURE, Redirect.INHERIT}
+        if not enabled:
+            return func
+
+        @functools.wraps(func)
+        async def _wrapper(*args, **kwargs):
+            LOGGER.info("%s %r entered", func.__qualname__, args[0])
+            try:
+                return await func(*args, **kwargs)
+            finally:
+                LOGGER.info(
+                    "%s %r exited ex=%r",
+                    func.__qualname__,
+                    args[0],
+                    sys.exc_info()[1],
+                )
+
+        return _wrapper
+
+    return _decorator
 
 
 def decode(data: Optional[bytes], encoding: Optional[str]) -> Union[str, bytes, None]:
@@ -149,3 +165,26 @@ def _retrieve_exceptions(tasks):
     for task in tasks:
         if not task.cancelled():
             task.exception()
+
+
+def platform_info():
+    "Return platform information for use in logging."
+
+    platform_vers = platform.platform(terse=True)
+    python_impl = platform.python_implementation()
+    python_vers = platform.python_version()
+
+    # Include module name with name of loop class.
+    loop_cls = asyncio.get_running_loop().__class__
+    loop_name = f"{loop_cls.__module__}.{loop_cls.__name__}"
+
+    try:
+        # Child watcher is only implemented on Unix.
+        child_watcher = asyncio.get_child_watcher().__class__.__name__
+    except NotImplementedError:
+        child_watcher = None
+
+    info = f"{platform_vers} {python_impl} {python_vers} {loop_name}"
+    if child_watcher:
+        return f"{info} {child_watcher}"
+    return info

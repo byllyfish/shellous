@@ -1,14 +1,22 @@
 "Implements utilities to run a command."
 
 import asyncio
-import functools
 import io
 import os
 import sys
 
+import shellous.redirect as redir
 from shellous.log import LOGGER
+from shellous.redirect import Redirect
 from shellous.result import Result, ResultError, make_result
-from shellous.util import Redirect, decode, gather_collect
+from shellous.util import decode, gather_collect, log_method, platform_info
+
+_DETAILED_LOGGING = True
+
+
+def _exc():
+    "Return current exception value."
+    return sys.exc_info()[1]
 
 
 class _RunOptions:
@@ -42,7 +50,7 @@ class _RunOptions:
             self._setup()
             return self
         except Exception as ex:
-            LOGGER.warning("_RunOptions.__enter__ %r ex=%r", self.command.name, ex)
+            LOGGER.warning("_RunOptions.enter %r ex=%r", self.command.name, ex)
             raise
 
     def __exit__(self, *exc):
@@ -199,11 +207,10 @@ class Runner:
         task = asyncio.create_task(coro, name=task_name)
         self.tasks.append(task)
 
-    async def wait(self):
+    @log_method(_DETAILED_LOGGING)
+    async def _wait(self):
         "Normal wait for background I/O tasks and process to finish."
-        if self.proc is None:
-            LOGGER.info("Runner.wait %r never started", self.name)
-            return
+        assert self.proc
 
         try:
             await gather_collect(*self.tasks)
@@ -213,20 +220,12 @@ class Runner:
             LOGGER.info("Runner.wait %r cancelled proc=%r", self.name, self.proc)
             self.cancelled = True
             self.tasks.clear()  # all tasks were cancelled
-            await self.kill()
+            await self._kill()
 
-        except Exception as ex:
-            LOGGER.warning("Runner.wait %r ex=%r", self.name, ex)
-            raise
-
-        finally:
-            LOGGER.info("Runner.wait %r finished", self.name)
-
-    async def kill(self):
+    @log_method(_DETAILED_LOGGING)
+    async def _kill(self):
         "Kill process and wait for it to finish."
-        if self.proc is None:
-            LOGGER.info("Runner.kill %r never started", self.name)
-            return
+        assert self.proc
 
         cancel_timeout = self.command.options.cancel_timeout
         cancel_signal = self.command.options.cancel_signal
@@ -241,12 +240,8 @@ class Runner:
             else:
                 await gather_collect(self.proc.wait(), timeout=cancel_timeout)
 
-        except asyncio.CancelledError:
-            LOGGER.warning("Runner.kill %r gather_collect cancelled", self.name)
-            await self._kill_wait()
-
-        except asyncio.TimeoutError:
-            LOGGER.warning("Runner.kill %r gather_collect timeout", self.name)
+        except (asyncio.CancelledError, asyncio.TimeoutError) as ex:
+            LOGGER.warning("Runner.kill %r (ex)=%r", self.name, ex)
             await self._kill_wait()
 
         except Exception as ex:
@@ -254,95 +249,101 @@ class Runner:
             await self._kill_wait()
             raise
 
-        finally:
-            LOGGER.info("Runner.kill %r finished", self.name)
-
     def _send_signal(self, sig):
         "Send a signal to the process."
+
+        LOGGER.info("Runner.signal %r proc=%r signal=%r", self.name, self.proc, sig)
         if sig is None:
-            LOGGER.info("Runner.kill %r killing proc=%r", self.name, self.proc)
             self.proc.kill()
         else:
-            LOGGER.info(
-                "Runner.kill %r signalling proc=%r signal=%r",
-                self.name,
-                self.proc,
-                sig,
-            )
             self.proc.send_signal(sig)
 
+    @log_method(_DETAILED_LOGGING)
     async def _kill_wait(self):
         "Wait for killed process to exit."
-        if not self.proc or self.proc.returncode is not None:
+        assert self.proc
+
+        # Check if process is already done.
+        if self.proc.returncode is not None:
             return
 
-        LOGGER.info("Runner._kill_wait %r killing proc=%r", self.name, self.proc)
+        LOGGER.info("Runner.kill_wait %r killing proc=%r", self.name, self.proc)
         self.proc.kill()
         await self.proc.wait()  # FIXME: needs timeout...
 
     async def __aenter__(self):
         "Set up redirections and launch subprocess."
-        LOGGER.info("Runner entering %r (%s)", self.name, _sys_info())
+        LOGGER.info("Runner entering %r (%s)", self.name, platform_info())
         try:
-            return await self._setup()
-        except (Exception, asyncio.CancelledError) as ex:
-            LOGGER.warning("Runner enter %r ex=%r", self.name, ex)
-            self.cancelled = isinstance(ex, asyncio.CancelledError)
-            await self.kill()
-            raise
+            return await self._start()
+
         finally:
             LOGGER.info(
                 "Runner entered %r proc=%r ex=%r",
                 self.name,
                 self.proc,
-                sys.exc_info()[1],
+                _exc(),
             )
 
-    async def _setup(self):
+    async def _start(self):
         "Set up redirections and launch subprocess."
+        assert self.proc is None
         assert not self.tasks
 
-        with self.options as opts:
-            self.proc = await asyncio.create_subprocess_exec(
-                *opts.args,
-                **opts.kwd_args,
-            )
+        try:
+            # Set up subprocess arguments and launch subprocess.
+            with self.options as opts:
+                self.proc = await asyncio.create_subprocess_exec(
+                    *opts.args,
+                    **opts.kwd_args,
+                )
 
-        LOGGER.info("Runner %r started proc=%r", self.name, self.proc)
-        self.add_task(self.proc.wait(), "proc.wait")
+            LOGGER.info("Runner.start %r proc=%r", self.name, self.proc)
 
-        stdin = self.proc.stdin
-        stdout = self.proc.stdout
-        stderr = self.proc.stderr
+            # Add a task to monitor for when the process finishes.
+            self.add_task(self.proc.wait(), "proc.wait")
 
-        # Keep track of stdin so we can close it later.
-        self.stdin = stdin
+            stdin = self.proc.stdin
+            stdout = self.proc.stdout
+            stderr = self.proc.stderr
 
-        if stderr is not None:
-            error = opts.command.options.error
-            stderr = self._setup_output_sink(stderr, error, opts.encoding, "stderr")
+            # Keep track of stdin so we can close it later.
+            self.stdin = stdin
 
-        if stdout is not None:
-            output = opts.command.options.output
-            stdout = self._setup_output_sink(stdout, output, opts.encoding, "stdout")
+            if stderr is not None:
+                error = opts.command.options.error
+                stderr = self._setup_output_sink(stderr, error, opts.encoding, "stderr")
 
-        if stdin is not None:
-            if opts.input_bytes is not None:
-                self.add_task(_feed_writer(opts.input_bytes, stdin), "stdin")
-                stdin = None
+            if stdout is not None:
+                output = opts.command.options.output
+                stdout = self._setup_output_sink(
+                    stdout, output, opts.encoding, "stdout"
+                )
+
+            if stdin is not None:
+                if opts.input_bytes is not None:
+                    self.add_task(redir.write_stream(opts.input_bytes, stdin), "stdin")
+                    stdin = None
+
+        except (Exception, asyncio.CancelledError) as ex:
+            LOGGER.warning("Runner.start %r proc=%r ex=%r", self.name, self.proc, ex)
+            self.cancelled = isinstance(ex, asyncio.CancelledError)
+            if self.proc:
+                await self._kill()
+            raise
 
         return (stdin, stdout, stderr)
 
     def _setup_output_sink(self, stream, sink, encoding, tag):
         "Set up a task to write to custom output sink."
         if isinstance(sink, io.StringIO):
-            self.add_task(_copy_stringio(stream, sink, encoding), tag)
+            self.add_task(redir.copy_stringio(stream, sink, encoding), tag)
             stream = None
         elif isinstance(sink, io.BytesIO):
-            self.add_task(_copy_bytesio(stream, sink), tag)
+            self.add_task(redir.copy_bytesio(stream, sink), tag)
             stream = None
         elif isinstance(sink, bytearray):
-            self.add_task(_copy_bytearray(stream, sink), tag)
+            self.add_task(redir.copy_bytearray(stream, sink), tag)
             stream = None
         return stream
 
@@ -363,27 +364,26 @@ class Runner:
                 self.name,
                 self.proc,
                 self.proc.returncode,
-                sys.exc_info()[1],
+                _exc(),
             )
 
     async def _finish(self, exc_value):
         "Finish the run. Return True only if `exc_value` should be suppressed."
+        assert self.proc
+
         try:
             if exc_value is not None:
-                return await self._cleanup(exc_value)
-            await self.wait()
+                self.cancelled = isinstance(exc_value, asyncio.CancelledError)
+                await self._kill()
+                return self.cancelled
+
+            await self._wait()
+            return False
+
         finally:
             await self._close()
 
-    async def _cleanup(self, exc_value):
-        "Clean up when there is an exception. Return true to suppress exception."
-
-        # We only suppress CancelledError.
-        self.cancelled = isinstance(exc_value, asyncio.CancelledError)
-        await self.kill()
-
-        return self.cancelled
-
+    @log_method(_DETAILED_LOGGING)
     async def _close(self):
         "Make sure that our resources are properly closed."
         assert self.proc
@@ -403,8 +403,6 @@ class Runner:
 
         except asyncio.TimeoutError:
             LOGGER.error("Runner._close %r timeout", self.name)
-        finally:
-            LOGGER.info("Runner._close %r finished", self.name)
 
 
 class PipeRunner:
@@ -466,7 +464,7 @@ class PipeRunner:
             await self.wait(kill=True)  # FIXME
             raise
         finally:
-            LOGGER.info("PipeRunner entered %r ex=%r", self.name, sys.exc_info()[1])
+            LOGGER.info("PipeRunner entered %r ex=%r", self.name, _exc())
 
     async def __aexit__(self, _exc_type, exc_value, _exc_tb):
         "Wait for pipeline to exit and handle cancellation."
@@ -479,7 +477,7 @@ class PipeRunner:
             LOGGER.warning("PipeRunner exit %r ex=%r", self.name, ex)
             raise
         finally:
-            LOGGER.info("PipeRunner exited %r ex=%r", self.name, sys.exc_info()[1])
+            LOGGER.info("PipeRunner exited %r ex=%r", self.name, _exc())
 
     async def _cleanup(self, exc_value):
         "Clean up when there is an exception."
@@ -553,34 +551,6 @@ class PipeRunner:
         return (stdin, stdout, stderr)
 
 
-def _log_cmd(func):
-    @functools.wraps(func)
-    async def _wrapper(*args, **kwargs):
-        try:
-            LOGGER.info("enter %s(%r)", func.__name__, args[0].name)
-            result = await func(*args, **kwargs)
-            LOGGER.info("exit %s(%r)", func.__name__, args[0].name)
-            return result
-        except ResultError as ex:
-            LOGGER.info(
-                "exit %s(%r) error: %r",
-                func.__name__,
-                args[0].name,
-                ex.result,
-            )
-            raise
-        except (Exception, asyncio.CancelledError) as ex:
-            LOGGER.warning(
-                "exit %s(%r) exception %r",
-                func.__name__,
-                args[0].name,
-                ex,
-            )
-            raise
-
-    return _wrapper
-
-
 async def run(command, *, _streams_future=None):
     "Run a command."
     if not _streams_future and command.multiple_capture:
@@ -650,72 +620,6 @@ async def run_pipe_iter(pipe):
     runner.result()  # No return value; raises exception if needed
 
 
-def _log_exception(func):
-    @functools.wraps(func)
-    async def _wrapper(*args, **kwargs):
-        try:
-            return await func(*args, **kwargs)
-        except asyncio.CancelledError:
-            LOGGER.info("Task %r cancelled!", func)
-            raise
-        except Exception as ex:
-            LOGGER.warning("Task %r ex=%r", func, ex)
-            raise
-
-    return _wrapper
-
-
-@_log_exception
-async def _feed_writer(input_bytes, stream):
-    if input_bytes:
-        try:
-            stream.write(input_bytes)
-            await stream.drain()
-        except asyncio.CancelledError:
-            LOGGER.info("_feed_writer cancelled!")
-            pass
-        except (BrokenPipeError, ConnectionResetError) as ex:
-            LOGGER.info("_feed_writer ex=%r", ex)
-            pass
-    stream.close()
-
-
-@_log_exception
-async def _copy_stringio(source, dest, encoding):
-    # Collect partial reads into a BytesIO.
-    buf = io.BytesIO()
-    try:
-        while True:
-            data = await source.read(1024)
-            if not data:
-                break
-            buf.write(data)
-    finally:
-        # Only convert to string once all output is collected.
-        # (What if utf-8 codepoint is split between reads?)
-        dest.write(decode(buf.getvalue(), encoding))
-
-
-@_log_exception
-async def _copy_bytesio(source, dest):
-    # Collect partial reads into a BytesIO.
-    while True:
-        data = await source.read(1024)
-        if not data:
-            break
-        dest.write(data)
-
-
-@_log_exception
-async def _copy_bytearray(source, dest):
-    # Collect partial reads into a bytearray.
-    while True:
-        data = await source.read(1024)
-        if not data:
-            break
-        dest.extend(data)
-
-
 def _close_fds(open_fds):
     "Close open file descriptors or file objects."
     try:
@@ -730,27 +634,3 @@ def _close_fds(open_fds):
                 obj.close()
     finally:
         open_fds.clear()
-
-
-def _sys_info():
-    "Return system information for use in logging."
-    import platform
-
-    platform_vers = platform.platform(terse=True)
-    python_impl = platform.python_implementation()
-    python_vers = platform.python_version()
-
-    # Include module name with name of loop class.
-    loop_cls = asyncio.get_running_loop().__class__
-    loop_name = f"{loop_cls.__module__}.{loop_cls.__name__}"
-
-    try:
-        # Child watcher is only implemented on Unix.
-        child_watcher = asyncio.get_child_watcher().__class__.__name__
-    except NotImplementedError:
-        child_watcher = None
-
-    info = f"{platform_vers} {python_impl} {python_vers} {loop_name}"
-    if child_watcher:
-        return f"{info} {child_watcher}"
-    return info
