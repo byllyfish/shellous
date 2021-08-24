@@ -10,7 +10,11 @@ from shellous.log import LOGGER
 
 
 def log_method(enabled):
-    """`log_method` logs when an async method call is entered and exited."""
+    """`log_method` logs when an async method call is entered and exited.
+
+    <method-name> stepin <self>
+    <method-name> stepout <self>
+    """
 
     def _decorator(func):
         "Decorator to log method call entry and exit."
@@ -20,12 +24,12 @@ def log_method(enabled):
 
         @functools.wraps(func)
         async def _wrapper(*args, **kwargs):
-            LOGGER.info("%s %r entered", func.__qualname__, args[0])
+            LOGGER.info("%s stepin %r", func.__qualname__, args[0])
             try:
                 return await func(*args, **kwargs)
             finally:
                 LOGGER.info(
-                    "%s %r exited ex=%r",
+                    "%s stepout %r ex=%r",
                     func.__qualname__,
                     args[0],
                     sys.exc_info()[1],
@@ -46,7 +50,7 @@ def decode(data: Optional[bytes], encoding: Optional[str]) -> Union[str, bytes, 
     return data.decode(encoding)
 
 
-async def gather_collect(*aws, timeout=None, return_exceptions=False):
+async def gather_collect(*aws, timeout=None, return_exceptions=False, trustee=None):
     """Run a bunch of awaitables as tasks and return the results.
 
     Similar to `asyncio.gather` with one difference: If an awaitable raises
@@ -63,13 +67,13 @@ async def gather_collect(*aws, timeout=None, return_exceptions=False):
     """
     if timeout:
         return await asyncio.wait_for(
-            _gather_collect(aws, return_exceptions),
+            _gather_collect(aws, return_exceptions, trustee),
             timeout,
         )
-    return await _gather_collect(aws, return_exceptions)
+    return await _gather_collect(aws, return_exceptions, trustee)
 
 
-async def _gather_collect(aws, return_exceptions=False):
+async def _gather_collect(aws, return_exceptions, trustee):
     """Helper function for gather_collect.
 
     Similar to `asyncio.gather` with one difference: If an awaitable raises
@@ -88,8 +92,12 @@ async def _gather_collect(aws, return_exceptions=False):
     try:
         done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_EXCEPTION)
     except asyncio.CancelledError:
-        LOGGER.warning("gather_collect ret_ex=%r itself cancelled", return_exceptions)
-        await _cancel_wait(tasks)
+        LOGGER.warning(
+            "gather_collect itself cancelled ret_ex=%r trustee=%r",
+            return_exceptions,
+            trustee,
+        )
+        await _cancel_wait(tasks, trustee)
         _retrieve_exceptions(tasks)
         raise
         # done = set()
@@ -102,12 +110,13 @@ async def _gather_collect(aws, return_exceptions=False):
         return [task.result() for task in tasks]
 
     LOGGER.info(
-        "gather_collect ret_ex=%r cancelling %d of %d tasks",
-        return_exceptions,
+        "gather_collect cancelling %d of %d tasks ret_ex=%r trustee=%r",
         len(pending),
         len(tasks),
+        return_exceptions,
+        trustee,
     )
-    await _cancel_wait(pending)
+    await _cancel_wait(pending, trustee)
 
     if return_exceptions:
         # Return list of exceptions in same order as original tasks.
@@ -128,30 +137,37 @@ async def _gather_collect(aws, return_exceptions=False):
 
     # Only choice is a task that was cancelled.
     LOGGER.warning(
-        "gather_collect ret_ex=%r all tasks cancelled! done=%r pending=%r",
-        return_exceptions,
+        "gather_collect all tasks cancelled! done=%r pending=%r ret_ex=%r trustee=%r",
         done,
         pending,
+        return_exceptions,
+        trustee,
     )
     raise asyncio.CancelledError()
 
 
-async def _cancel_wait(tasks):
+async def _cancel_wait(tasks, trustee):
     "Cancel tasks and wait for them to finish."
     try:
         for task in tasks:
             task.cancel()
         _, pending = await asyncio.wait(
-            tasks, timeout=1.0, return_when=asyncio.ALL_COMPLETED
+            tasks,
+            timeout=1.0,
+            return_when=asyncio.ALL_COMPLETED,
         )
         if pending:
             LOGGER.error(
-                "gather_collect._cancel_wait pending=%r all_tasks=%r",
+                "gather_collect._cancel_wait pending=%r all_tasks=%r trustee=%r",
                 pending,
                 asyncio.all_tasks(),
+                trustee,
             )
     except asyncio.CancelledError:
-        LOGGER.warning("gather_collect._cancel_wait cancelled itself?")
+        LOGGER.warning(
+            "gather_collect._cancel_wait cancelled itself? trustee=%r",
+            trustee,
+        )
         pass
 
 

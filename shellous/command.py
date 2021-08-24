@@ -37,6 +37,7 @@ class Options:  # pylint: disable=too-many-instance-attributes
     allowed_exit_codes: Optional[set] = None
     cancel_timeout: float = 3.0
     cancel_signal: Optional[Any] = signal.SIGTERM
+    alt_name: Optional[str] = None
 
     def merge_env(self):
         "Return our `env` merged with the global environment."
@@ -141,6 +142,7 @@ class Context:
         allowed_exit_codes=_UNSET,
         cancel_timeout=_UNSET,
         cancel_signal=_UNSET,
+        alt_name=_UNSET,
     ):
         "Return new context with custom options set."
         kwargs = locals()
@@ -223,8 +225,11 @@ class Command:
     def name(self) -> str:
         """Returns the name of the program being run.
 
-        Names longer than 31 characters are truncated.
+        Names longer than 31 characters are truncated. If `alt_name` option
+        is set, return that instead.
         """
+        if self.options.alt_name:
+            return self.options.alt_name
         name = str(self.args[0])
         if len(name) > 31:
             return f"...{name[-31:]}"
@@ -271,6 +276,7 @@ class Command:
         allowed_exit_codes=_UNSET,
         cancel_timeout=_UNSET,
         cancel_signal=_UNSET,
+        alt_name=_UNSET,
     ):
         "Return new command with custom options set."
         kwargs = locals()

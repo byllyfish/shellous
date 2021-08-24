@@ -43,6 +43,12 @@ def test_name_long(sh):
     assert cmd.name == "...789/name_longer_than_many_names"
 
 
+def test_alt_name(sh):
+    "Test command's name property with alt_name option."
+    cmd = sh("echo", "a").set(alt_name="my-echo-a")
+    assert cmd.name == "my-echo-a"
+
+
 def test_apply_concat(sh):
     "You can apply an arglist to an existing command."
     cmd = sh("echo", "-n")

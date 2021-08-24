@@ -57,3 +57,9 @@ async def report_orphan_tasks():
 
     # We expect the only task to be the current task.
     assert tasks.pop() is asyncio.current_task()
+
+    # Garbage collect here to flush out warnings from __del__ methods
+    # while loop is still running.
+    gc.collect()
+    for _ in range(3):
+        await asyncio.sleep(0)
