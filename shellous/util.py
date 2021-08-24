@@ -1,10 +1,39 @@
 "Implements various utility functions."
 
 import asyncio
+import functools
 import platform
+import sys
 from typing import Optional, Union
 
 from shellous.log import LOGGER
+
+
+def log_method(enabled):
+    """`log_method` logs when an async method call is entered and exited."""
+
+    def _decorator(func):
+        "Decorator to log method call entry and exit."
+
+        if not enabled:
+            return func
+
+        @functools.wraps(func)
+        async def _wrapper(*args, **kwargs):
+            LOGGER.info("%s %s entered", func.__name__, args[0])
+            try:
+                return await func(*args, **kwargs)
+            finally:
+                LOGGER.info(
+                    "%s %s exited ex=%r",
+                    func.__name__,
+                    args[0],
+                    sys.exc_info()[1],
+                )
+
+        return _wrapper
+
+    return _decorator
 
 
 def decode(data: Optional[bytes], encoding: Optional[str]) -> Union[str, bytes, None]:

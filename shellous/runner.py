@@ -1,7 +1,6 @@
 "Implements utilities to run a command."
 
 import asyncio
-import functools
 import io
 import os
 import sys
@@ -11,6 +10,11 @@ from shellous.log import LOGGER
 from shellous.redirect import Redirect
 from shellous.result import Result, ResultError, make_result
 from shellous.util import decode, gather_collect, platform_info
+
+
+def _exc():
+    "Return current exception value."
+    return sys.exc_info()[1]
 
 
 class _RunOptions:
@@ -44,7 +48,7 @@ class _RunOptions:
             self._setup()
             return self
         except Exception as ex:
-            LOGGER.warning("_RunOptions.__enter__ %r ex=%r", self.command.name, ex)
+            LOGGER.warning("_RunOptions.enter %r ex=%r", self.command.name, ex)
             raise
 
     def __exit__(self, *exc):
@@ -217,12 +221,8 @@ class Runner:
             self.tasks.clear()  # all tasks were cancelled
             await self._kill()
 
-        except Exception as ex:
-            LOGGER.warning("Runner.wait %r ex=%r", self.name, ex)
-            raise
-
         finally:
-            LOGGER.info("Runner.wait %r finished", self.name)
+            LOGGER.info("Runner.wait %r finished ex=%r", self.name, _exc())
 
     async def _kill(self):
         "Kill process and wait for it to finish."
@@ -243,12 +243,8 @@ class Runner:
             else:
                 await gather_collect(self.proc.wait(), timeout=cancel_timeout)
 
-        except asyncio.CancelledError:
-            LOGGER.warning("Runner.kill %r gather_collect cancelled", self.name)
-            await self._kill_wait()
-
-        except asyncio.TimeoutError:
-            LOGGER.warning("Runner.kill %r gather_collect timeout", self.name)
+        except (asyncio.CancelledError, asyncio.TimeoutError) as ex:
+            LOGGER.warning("Runner.kill %r (ex)=%r", self.name, ex)
             await self._kill_wait()
 
         except Exception as ex:
@@ -257,7 +253,7 @@ class Runner:
             raise
 
         finally:
-            LOGGER.info("Runner.kill %r finished", self.name)
+            LOGGER.info("Runner.kill %r finished ex=%r", self.name, _exc())
 
     def _send_signal(self, sig):
         "Send a signal to the process."
@@ -288,7 +284,7 @@ class Runner:
                 "Runner entered %r proc=%r ex=%r",
                 self.name,
                 self.proc,
-                sys.exc_info()[1],
+                _exc(),
             )
 
     async def _start(self):
@@ -368,7 +364,7 @@ class Runner:
                 self.name,
                 self.proc,
                 self.proc.returncode,
-                sys.exc_info()[1],
+                _exc(),
             )
 
     async def _finish(self, exc_value):
@@ -405,7 +401,7 @@ class Runner:
         except asyncio.TimeoutError:
             LOGGER.error("Runner._close %r timeout", self.name)
         finally:
-            LOGGER.info("Runner._close %r finished", self.name)
+            LOGGER.info("Runner._close %r finished ex=%r", self.name, _exc())
 
 
 class PipeRunner:
@@ -467,7 +463,7 @@ class PipeRunner:
             await self.wait(kill=True)  # FIXME
             raise
         finally:
-            LOGGER.info("PipeRunner entered %r ex=%r", self.name, sys.exc_info()[1])
+            LOGGER.info("PipeRunner entered %r ex=%r", self.name, _exc())
 
     async def __aexit__(self, _exc_type, exc_value, _exc_tb):
         "Wait for pipeline to exit and handle cancellation."
@@ -480,7 +476,7 @@ class PipeRunner:
             LOGGER.warning("PipeRunner exit %r ex=%r", self.name, ex)
             raise
         finally:
-            LOGGER.info("PipeRunner exited %r ex=%r", self.name, sys.exc_info()[1])
+            LOGGER.info("PipeRunner exited %r ex=%r", self.name, _exc())
 
     async def _cleanup(self, exc_value):
         "Clean up when there is an exception."
@@ -552,35 +548,6 @@ class PipeRunner:
         stdin, stdout, stderr = (first_ready[0], last_ready[1], last_ready[2])
 
         return (stdin, stdout, stderr)
-
-
-# FIXME: unused!
-def _log_cmd(func):
-    @functools.wraps(func)
-    async def _wrapper(*args, **kwargs):
-        try:
-            LOGGER.info("enter %s(%r)", func.__name__, args[0].name)
-            result = await func(*args, **kwargs)
-            LOGGER.info("exit %s(%r)", func.__name__, args[0].name)
-            return result
-        except ResultError as ex:
-            LOGGER.info(
-                "exit %s(%r) error: %r",
-                func.__name__,
-                args[0].name,
-                ex.result,
-            )
-            raise
-        except (Exception, asyncio.CancelledError) as ex:
-            LOGGER.warning(
-                "exit %s(%r) exception %r",
-                func.__name__,
-                args[0].name,
-                ex,
-            )
-            raise
-
-    return _wrapper
 
 
 async def run(command, *, _streams_future=None):

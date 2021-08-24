@@ -1,7 +1,8 @@
 import asyncio
+import logging
 
 import pytest
-from shellous.util import gather_collect
+from shellous.util import gather_collect, log_method
 
 pytestmark = pytest.mark.asyncio
 
@@ -71,3 +72,32 @@ async def test_gather_collect_timeout():
 
     with pytest.raises(asyncio.TimeoutError):
         await gather_collect(_coro(), _coro(), timeout=0.1)
+
+
+async def test_log_method(caplog):
+    "Test the log_method decorator for async methods."
+    caplog.set_level(logging.INFO)
+
+    @log_method(True)
+    async def demo1(arg):
+        pass
+
+    @log_method(False)  # logging disabled
+    async def demo2(arg):
+        pass
+
+    @log_method(True)
+    async def demo3(arg):
+        raise ValueError(1)
+
+    await demo1("self1")
+    await demo2("self2")
+    with pytest.raises(ValueError):
+        await demo3("self3")
+
+    assert caplog.record_tuples == [
+        ("shellous", 20, "demo1 self1 entered"),
+        ("shellous", 20, "demo1 self1 exited ex=None"),
+        ("shellous", 20, "demo3 self3 entered"),
+        ("shellous", 20, "demo3 self3 exited ex=ValueError(1)"),
+    ]
