@@ -262,11 +262,11 @@ class Runner:
     def _send_signal(self, sig):
         "Send a signal to the process."
         if sig is None:
-            LOGGER.info("Runner.kill %r killing proc=%r", self.name, self.proc)
+            LOGGER.info("Runner %r killing proc=%r", self.name, self.proc)
             self.proc.kill()
         else:
             LOGGER.info(
-                "Runner.kill %r signalling proc=%r signal=%r",
+                "Runner %r signalling proc=%r signal=%r",
                 self.name,
                 self.proc,
                 sig,
@@ -278,7 +278,7 @@ class Runner:
         if not self.proc or self.proc.returncode is not None:
             return
 
-        LOGGER.info("Runner._kill_wait %r killing proc=%r", self.name, self.proc)
+        LOGGER.info("Runner.kill_wait %r killing proc=%r", self.name, self.proc)
         self.proc.kill()
         await self.proc.wait()  # FIXME: needs timeout...
 
@@ -286,12 +286,8 @@ class Runner:
         "Set up redirections and launch subprocess."
         LOGGER.info("Runner entering %r (%s)", self.name, platform_info())
         try:
-            return await self._setup()
-        except (Exception, asyncio.CancelledError) as ex:
-            LOGGER.warning("Runner enter %r ex=%r", self.name, ex)
-            self.cancelled = isinstance(ex, asyncio.CancelledError)
-            await self.kill()
-            raise
+            return await self._start()
+
         finally:
             LOGGER.info(
                 "Runner entered %r proc=%r ex=%r",
@@ -300,38 +296,50 @@ class Runner:
                 sys.exc_info()[1],
             )
 
-    async def _setup(self):
+    async def _start(self):
         "Set up redirections and launch subprocess."
         assert not self.tasks
 
-        with self.options as opts:
-            self.proc = await asyncio.create_subprocess_exec(
-                *opts.args,
-                **opts.kwd_args,
-            )
+        try:
+            # Set up subprocess arguments and launch subprocess.
+            with self.options as opts:
+                self.proc = await asyncio.create_subprocess_exec(
+                    *opts.args,
+                    **opts.kwd_args,
+                )
 
-        LOGGER.info("Runner %r started proc=%r", self.name, self.proc)
-        self.add_task(self.proc.wait(), "proc.wait")
+            LOGGER.info("Runner.start %r proc=%r", self.name, self.proc)
 
-        stdin = self.proc.stdin
-        stdout = self.proc.stdout
-        stderr = self.proc.stderr
+            # Add a task to monitor for when the process finishes.
+            self.add_task(self.proc.wait(), "proc.wait")
 
-        # Keep track of stdin so we can close it later.
-        self.stdin = stdin
+            stdin = self.proc.stdin
+            stdout = self.proc.stdout
+            stderr = self.proc.stderr
 
-        if stderr is not None:
-            error = opts.command.options.error
-            stderr = self._setup_output_sink(stderr, error, opts.encoding, "stderr")
+            # Keep track of stdin so we can close it later.
+            self.stdin = stdin
 
-        if stdout is not None:
-            output = opts.command.options.output
-            stdout = self._setup_output_sink(stdout, output, opts.encoding, "stdout")
+            if stderr is not None:
+                error = opts.command.options.error
+                stderr = self._setup_output_sink(stderr, error, opts.encoding, "stderr")
 
-        if stdin is not None:
-            if opts.input_bytes is not None:
-                self.add_task(redir.write_stream(opts.input_bytes, stdin), "stdin")
-                stdin = None
+            if stdout is not None:
+                output = opts.command.options.output
+                stdout = self._setup_output_sink(
+                    stdout, output, opts.encoding, "stdout"
+                )
+
+            if stdin is not None:
+                if opts.input_bytes is not None:
+                    self.add_task(redir.write_stream(opts.input_bytes, stdin), "stdin")
+                    stdin = None
+
+        except (Exception, asyncio.CancelledError) as ex:
+            LOGGER.warning("Runner.start %r proc=%r ex=%r", self.name, self.proc, ex)
+            self.cancelled = isinstance(ex, asyncio.CancelledError)
+            await self.kill()
+            raise
 
         return (stdin, stdout, stderr)
 
@@ -372,19 +380,15 @@ class Runner:
         "Finish the run. Return True only if `exc_value` should be suppressed."
         try:
             if exc_value is not None:
-                return await self._cleanup(exc_value)
+                self.cancelled = isinstance(exc_value, asyncio.CancelledError)
+                await self.kill()
+                return self.cancelled
+
             await self.wait()
+            return False
+
         finally:
             await self._close()
-
-    async def _cleanup(self, exc_value):
-        "Clean up when there is an exception. Return true to suppress exception."
-
-        # We only suppress CancelledError.
-        self.cancelled = isinstance(exc_value, asyncio.CancelledError)
-        await self.kill()
-
-        return self.cancelled
 
     async def _close(self):
         "Make sure that our resources are properly closed."
