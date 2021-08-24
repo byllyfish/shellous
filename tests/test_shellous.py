@@ -44,32 +44,32 @@ def python_script(sh):
 
 @pytest.fixture
 def echo_cmd(python_script):
-    return python_script.env(SHELLOUS_CMD="echo")
+    return python_script.env(SHELLOUS_CMD="echo").set(alt_name="echo")
 
 
 @pytest.fixture
 def cat_cmd(python_script):
-    return python_script.env(SHELLOUS_CMD="cat")
+    return python_script.env(SHELLOUS_CMD="cat").set(alt_name="cat")
 
 
 @pytest.fixture
 def sleep_cmd(python_script):
-    return python_script.env(SHELLOUS_CMD="sleep")
+    return python_script.env(SHELLOUS_CMD="sleep").set(alt_name="sleep")
 
 
 @pytest.fixture
 def env_cmd(python_script):
-    return python_script.env(SHELLOUS_CMD="env")
+    return python_script.env(SHELLOUS_CMD="env").set(alt_name="env")
 
 
 @pytest.fixture
 def tr_cmd(python_script):
-    return python_script.env(SHELLOUS_CMD="tr")
+    return python_script.env(SHELLOUS_CMD="tr").set(alt_name="tr")
 
 
 @pytest.fixture
 def bulk_cmd(python_script):
-    return python_script.env(SHELLOUS_CMD="bulk")
+    return python_script.env(SHELLOUS_CMD="bulk").set(alt_name="bulk")
 
 
 async def test_echo(echo_cmd):
