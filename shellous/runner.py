@@ -201,7 +201,7 @@ class Runner:
         task = asyncio.create_task(coro, name=task_name)
         self.tasks.append(task)
 
-    async def wait(self):
+    async def _wait(self):
         "Normal wait for background I/O tasks and process to finish."
         if self.proc is None:
             LOGGER.info("Runner.wait %r never started", self.name)
@@ -215,7 +215,7 @@ class Runner:
             LOGGER.info("Runner.wait %r cancelled proc=%r", self.name, self.proc)
             self.cancelled = True
             self.tasks.clear()  # all tasks were cancelled
-            await self.kill()
+            await self._kill()
 
         except Exception as ex:
             LOGGER.warning("Runner.wait %r ex=%r", self.name, ex)
@@ -224,7 +224,7 @@ class Runner:
         finally:
             LOGGER.info("Runner.wait %r finished", self.name)
 
-    async def kill(self):
+    async def _kill(self):
         "Kill process and wait for it to finish."
         if self.proc is None:
             LOGGER.info("Runner.kill %r never started", self.name)
@@ -261,16 +261,11 @@ class Runner:
 
     def _send_signal(self, sig):
         "Send a signal to the process."
+
+        LOGGER.info("Runner.signal %r proc=%r signal=%r", self.name, self.proc, sig)
         if sig is None:
-            LOGGER.info("Runner %r killing proc=%r", self.name, self.proc)
             self.proc.kill()
         else:
-            LOGGER.info(
-                "Runner %r signalling proc=%r signal=%r",
-                self.name,
-                self.proc,
-                sig,
-            )
             self.proc.send_signal(sig)
 
     async def _kill_wait(self):
@@ -338,7 +333,7 @@ class Runner:
         except (Exception, asyncio.CancelledError) as ex:
             LOGGER.warning("Runner.start %r proc=%r ex=%r", self.name, self.proc, ex)
             self.cancelled = isinstance(ex, asyncio.CancelledError)
-            await self.kill()
+            await self._kill()
             raise
 
         return (stdin, stdout, stderr)
@@ -381,10 +376,10 @@ class Runner:
         try:
             if exc_value is not None:
                 self.cancelled = isinstance(exc_value, asyncio.CancelledError)
-                await self.kill()
+                await self._kill()
                 return self.cancelled
 
-            await self.wait()
+            await self._wait()
             return False
 
         finally:
