@@ -332,3 +332,21 @@ async def test_stdout_deadlock_antipattern(bulk_cmd):
     with pytest.raises(asyncio.TimeoutError):
         # The _antipattern function must time out.
         await asyncio.wait_for(_antipattern(), 3.0)
+
+
+async def test_runner_enter(echo_cmd):
+    "Test cancellation behavior in Runner.__aenter__."
+
+    async def test_task():
+        runner = echo_cmd.runner()
+        async with runner as _:
+            pass
+        return runner.result()
+
+    task = asyncio.create_task(test_task())
+    await asyncio.sleep(0)
+    task.cancel()
+
+    # FIXME: At what point, should Runner raise a ResultError?
+    with pytest.raises(asyncio.CancelledError):
+        await task

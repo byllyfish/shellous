@@ -53,9 +53,13 @@ class _RunOptions:
             LOGGER.warning("_RunOptions.enter %r ex=%r", self.command.name, ex)
             raise
 
-    def __exit__(self, *exc):
+    def __exit__(self, _exc_type, exc_value, _exc_tb):
         "Make sure those file descriptors are cleaned up."
         self.close_fds()
+        if exc_value:
+            LOGGER.warning(
+                "_RunOptions.exit %r exc_value=%r", self.command.name, exc_value
+            )
 
     def _setup(self):
         "Set up I/O redirections."
@@ -342,10 +346,20 @@ class Runner:
         "Wait for process to exit and handle cancellation."
 
         LOGGER.info("Runner exiting %r exc_value=%r", self, exc_value)
+        suppress = False
         try:
-            await self._finish(exc_value)
+            suppress = await self._finish(exc_value)
+        except asyncio.CancelledError:
+            LOGGER.warning("Runner cancelled inside _finish %r", self)
         finally:
-            LOGGER.info("Runner exited %r ex=%r", self, _exc())
+            LOGGER.info(
+                "Runner exited %r ex=%r exc_value=%r suppress=%r",
+                self,
+                _exc(),
+                exc_value,
+                suppress,
+            )
+        return suppress
 
     async def _finish(self, exc_value):
         "Finish the run. Return True only if `exc_value` should be suppressed."
