@@ -6,9 +6,11 @@ import io
 import os
 import sys
 
+import shellous.redirect as redir
 from shellous.log import LOGGER
+from shellous.redirect import Redirect
 from shellous.result import Result, ResultError, make_result
-from shellous.util import Redirect, decode, gather_collect
+from shellous.util import decode, gather_collect, platform_info
 
 
 class _RunOptions:
@@ -282,7 +284,7 @@ class Runner:
 
     async def __aenter__(self):
         "Set up redirections and launch subprocess."
-        LOGGER.info("Runner entering %r (%s)", self.name, _sys_info())
+        LOGGER.info("Runner entering %r (%s)", self.name, platform_info())
         try:
             return await self._setup()
         except (Exception, asyncio.CancelledError) as ex:
@@ -328,7 +330,7 @@ class Runner:
 
         if stdin is not None:
             if opts.input_bytes is not None:
-                self.add_task(_feed_writer(opts.input_bytes, stdin), "stdin")
+                self.add_task(redir.write_stream(opts.input_bytes, stdin), "stdin")
                 stdin = None
 
         return (stdin, stdout, stderr)
@@ -336,13 +338,13 @@ class Runner:
     def _setup_output_sink(self, stream, sink, encoding, tag):
         "Set up a task to write to custom output sink."
         if isinstance(sink, io.StringIO):
-            self.add_task(_copy_stringio(stream, sink, encoding), tag)
+            self.add_task(redir.copy_stringio(stream, sink, encoding), tag)
             stream = None
         elif isinstance(sink, io.BytesIO):
-            self.add_task(_copy_bytesio(stream, sink), tag)
+            self.add_task(redir.copy_bytesio(stream, sink), tag)
             stream = None
         elif isinstance(sink, bytearray):
-            self.add_task(_copy_bytearray(stream, sink), tag)
+            self.add_task(redir.copy_bytearray(stream, sink), tag)
             stream = None
         return stream
 
@@ -553,6 +555,7 @@ class PipeRunner:
         return (stdin, stdout, stderr)
 
 
+# FIXME: unused!
 def _log_cmd(func):
     @functools.wraps(func)
     async def _wrapper(*args, **kwargs):
@@ -650,72 +653,6 @@ async def run_pipe_iter(pipe):
     runner.result()  # No return value; raises exception if needed
 
 
-def _log_exception(func):
-    @functools.wraps(func)
-    async def _wrapper(*args, **kwargs):
-        try:
-            return await func(*args, **kwargs)
-        except asyncio.CancelledError:
-            LOGGER.info("Task %r cancelled!", func)
-            raise
-        except Exception as ex:
-            LOGGER.warning("Task %r ex=%r", func, ex)
-            raise
-
-    return _wrapper
-
-
-@_log_exception
-async def _feed_writer(input_bytes, stream):
-    if input_bytes:
-        try:
-            stream.write(input_bytes)
-            await stream.drain()
-        except asyncio.CancelledError:
-            LOGGER.info("_feed_writer cancelled!")
-            pass
-        except (BrokenPipeError, ConnectionResetError) as ex:
-            LOGGER.info("_feed_writer ex=%r", ex)
-            pass
-    stream.close()
-
-
-@_log_exception
-async def _copy_stringio(source, dest, encoding):
-    # Collect partial reads into a BytesIO.
-    buf = io.BytesIO()
-    try:
-        while True:
-            data = await source.read(1024)
-            if not data:
-                break
-            buf.write(data)
-    finally:
-        # Only convert to string once all output is collected.
-        # (What if utf-8 codepoint is split between reads?)
-        dest.write(decode(buf.getvalue(), encoding))
-
-
-@_log_exception
-async def _copy_bytesio(source, dest):
-    # Collect partial reads into a BytesIO.
-    while True:
-        data = await source.read(1024)
-        if not data:
-            break
-        dest.write(data)
-
-
-@_log_exception
-async def _copy_bytearray(source, dest):
-    # Collect partial reads into a bytearray.
-    while True:
-        data = await source.read(1024)
-        if not data:
-            break
-        dest.extend(data)
-
-
 def _close_fds(open_fds):
     "Close open file descriptors or file objects."
     try:
@@ -730,27 +667,3 @@ def _close_fds(open_fds):
                 obj.close()
     finally:
         open_fds.clear()
-
-
-def _sys_info():
-    "Return system information for use in logging."
-    import platform
-
-    platform_vers = platform.platform(terse=True)
-    python_impl = platform.python_implementation()
-    python_vers = platform.python_version()
-
-    # Include module name with name of loop class.
-    loop_cls = asyncio.get_running_loop().__class__
-    loop_name = f"{loop_cls.__module__}.{loop_cls.__name__}"
-
-    try:
-        # Child watcher is only implemented on Unix.
-        child_watcher = asyncio.get_child_watcher().__class__.__name__
-    except NotImplementedError:
-        child_watcher = None
-
-    info = f"{platform_vers} {python_impl} {python_vers} {loop_name}"
-    if child_watcher:
-        return f"{info} {child_watcher}"
-    return info

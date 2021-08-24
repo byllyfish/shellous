@@ -9,8 +9,8 @@ from typing import Any, Optional
 
 from immutables import Map as ImmutableDict
 
+from shellous.redirect import Redirect
 from shellous.runner import Runner, run, run_iter
-from shellous.util import Redirect
 
 # Sentinel used in "mergable" keyword arguments to indicate that a value
 # was not set by the caller.

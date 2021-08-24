@@ -3,8 +3,8 @@
 __version__ = "0.1.0"
 
 from .command import context, pipeline  # noqa: F401
+from .redirect import Redirect
 from .result import PipeResult, Result, ResultError  # noqa: F401
-from .util import Redirect
 
 STDOUT = Redirect.STDOUT
 DEVNULL = Redirect.DEVNULL
