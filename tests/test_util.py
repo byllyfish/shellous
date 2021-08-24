@@ -74,30 +74,36 @@ async def test_gather_collect_timeout():
         await gather_collect(_coro(), _coro(), timeout=0.1)
 
 
+class _Tester:
+    @log_method(True)
+    async def demo1(self):
+        pass
+
+    @log_method(False)
+    async def demo2(self):
+        pass
+
+    @log_method(True)
+    async def demo3(self):
+        raise ValueError(1)
+
+    def __repr__(self):
+        return "<self>"
+
+
 async def test_log_method(caplog):
     "Test the log_method decorator for async methods."
     caplog.set_level(logging.INFO)
 
-    @log_method(True)
-    async def demo1(arg):
-        pass
-
-    @log_method(False)  # logging disabled
-    async def demo2(arg):
-        pass
-
-    @log_method(True)
-    async def demo3(arg):
-        raise ValueError(1)
-
-    await demo1("self1")
-    await demo2("self2")
+    tester = _Tester()
+    await tester.demo1()
+    await tester.demo2()
     with pytest.raises(ValueError):
-        await demo3("self3")
+        await tester.demo3()
 
     assert caplog.record_tuples == [
-        ("shellous", 20, "demo1 self1 entered"),
-        ("shellous", 20, "demo1 self1 exited ex=None"),
-        ("shellous", 20, "demo3 self3 entered"),
-        ("shellous", 20, "demo3 self3 exited ex=ValueError(1)"),
+        ("shellous", 20, "_Tester.demo1 <self> entered"),
+        ("shellous", 20, "_Tester.demo1 <self> exited ex=None"),
+        ("shellous", 20, "_Tester.demo3 <self> entered"),
+        ("shellous", 20, "_Tester.demo3 <self> exited ex=ValueError(1)"),
     ]

@@ -20,13 +20,13 @@ def log_method(enabled):
 
         @functools.wraps(func)
         async def _wrapper(*args, **kwargs):
-            LOGGER.info("%s %s entered", func.__name__, args[0])
+            LOGGER.info("%s %r entered", func.__qualname__, args[0])
             try:
                 return await func(*args, **kwargs)
             finally:
                 LOGGER.info(
-                    "%s %s exited ex=%r",
-                    func.__name__,
+                    "%s %r exited ex=%r",
+                    func.__qualname__,
                     args[0],
                     sys.exc_info()[1],
                 )

@@ -9,7 +9,9 @@ import shellous.redirect as redir
 from shellous.log import LOGGER
 from shellous.redirect import Redirect
 from shellous.result import Result, ResultError, make_result
-from shellous.util import decode, gather_collect, platform_info
+from shellous.util import decode, gather_collect, log_method, platform_info
+
+_DETAILED_LOGGING = True
 
 
 def _exc():
@@ -205,9 +207,10 @@ class Runner:
         task = asyncio.create_task(coro, name=task_name)
         self.tasks.append(task)
 
+    @log_method(_DETAILED_LOGGING)
     async def _wait(self):
         "Normal wait for background I/O tasks and process to finish."
-        assert self.proc is not None
+        assert self.proc
 
         try:
             await gather_collect(*self.tasks)
@@ -219,12 +222,10 @@ class Runner:
             self.tasks.clear()  # all tasks were cancelled
             await self._kill()
 
-        finally:
-            LOGGER.info("Runner.wait %r finished ex=%r", self.name, _exc())
-
+    @log_method(_DETAILED_LOGGING)
     async def _kill(self):
         "Kill process and wait for it to finish."
-        assert self.proc is not None
+        assert self.proc
 
         cancel_timeout = self.command.options.cancel_timeout
         cancel_signal = self.command.options.cancel_signal
@@ -248,9 +249,6 @@ class Runner:
             await self._kill_wait()
             raise
 
-        finally:
-            LOGGER.info("Runner.kill %r finished ex=%r", self.name, _exc())
-
     def _send_signal(self, sig):
         "Send a signal to the process."
 
@@ -260,9 +258,10 @@ class Runner:
         else:
             self.proc.send_signal(sig)
 
+    @log_method(_DETAILED_LOGGING)
     async def _kill_wait(self):
         "Wait for killed process to exit."
-        assert self.proc is not None
+        assert self.proc
 
         # Check if process is already done.
         if self.proc.returncode is not None:
@@ -329,7 +328,7 @@ class Runner:
         except (Exception, asyncio.CancelledError) as ex:
             LOGGER.warning("Runner.start %r proc=%r ex=%r", self.name, self.proc, ex)
             self.cancelled = isinstance(ex, asyncio.CancelledError)
-            if self.proc is not None:
+            if self.proc:
                 await self._kill()
             raise
 
@@ -370,6 +369,8 @@ class Runner:
 
     async def _finish(self, exc_value):
         "Finish the run. Return True only if `exc_value` should be suppressed."
+        assert self.proc
+
         try:
             if exc_value is not None:
                 self.cancelled = isinstance(exc_value, asyncio.CancelledError)
@@ -382,6 +383,7 @@ class Runner:
         finally:
             await self._close()
 
+    @log_method(_DETAILED_LOGGING)
     async def _close(self):
         "Make sure that our resources are properly closed."
         assert self.proc
@@ -401,8 +403,6 @@ class Runner:
 
         except asyncio.TimeoutError:
             LOGGER.error("Runner._close %r timeout", self.name)
-        finally:
-            LOGGER.info("Runner._close %r finished ex=%r", self.name, _exc())
 
 
 class PipeRunner:
