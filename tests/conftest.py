@@ -6,10 +6,10 @@ import os
 
 import pytest
 
+childwatcher_type = os.environ.get("SHELLOUS_CHILDWATCHER_TYPE")
 loop_type = os.environ.get("SHELLOUS_LOOP_TYPE")
 
 if loop_type:
-    # Customize the event loop: uvloop or SelectorEventLoop.
     if loop_type == "uvloop":
         import uvloop
 
@@ -23,31 +23,26 @@ if loop_type:
             del loop
             gc.collect()
 
-    elif loop_type == "selectoreventloop":
-        import selectors
-
-        @pytest.fixture
-        def event_loop():
-            selector = selectors.DefaultSelector()
-            loop = asyncio.SelectorEventLoop(selector)
-            loop.set_debug(True)
-            yield loop
-            loop.close()
-            # Force garbage collection to flush out un-run __del__ methods.
-            del loop
-            gc.collect()
-
     else:
+        raise NotImplementedError
 
-        @pytest.fixture
-        def event_loop():
-            loop = asyncio.new_event_loop()
-            loop.set_debug(True)
-            yield loop
-            loop.close()
-            # Force garbage collection to flush out un-run __del__ methods.
-            del loop
-            gc.collect()
+else:
+
+    @pytest.fixture
+    def event_loop():
+        _init_child_watcher()
+        loop = asyncio.new_event_loop()
+        loop.set_debug(True)
+        yield loop
+        loop.close()
+        # Force garbage collection to flush out un-run __del__ methods.
+        del loop
+        gc.collect()
+
+
+def _init_child_watcher():
+    if childwatcher_type == "fast":
+        asyncio.set_child_watcher(asyncio.FastChildWatcher())
 
 
 @pytest.fixture(autouse=True)
