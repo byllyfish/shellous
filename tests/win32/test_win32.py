@@ -41,10 +41,5 @@ async def test_empty_env(sh):
 async def test_empty_env_system_root(sh):
     "Test running a command with just SYSTEM_ROOT env var."
     cmd = sh(sys.executable, "-c", "print('test1')")
-    result = await cmd.set(inherit_env=False).env(**_filter_env("SYSTEMROOT"))
+    result = await cmd.set(inherit_env=False).env(SystemRoot=...)
     assert result == "test1\r\n"
-
-
-def _filter_env(*vars):
-    "Return environment with just the selected variables present."
-    return {key: value for key, value in os.environ.items() if key.upper() in vars}

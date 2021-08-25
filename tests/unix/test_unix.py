@@ -645,3 +645,18 @@ async def test_large_cat(sh):
     result = await (data | cat)
     assert len(result) == (4 * 1024 * 1024 + 1)
     assert result == data
+
+
+async def test_env_ellipsis_unix(sh):
+    "Test using `...` in env method to grab value from global environment."
+    cmd = sh("env").set(inherit_env=False).env(PATH=...)
+    result = await cmd
+    assert result.startswith("PATH=")
+
+
+async def test_env_ellipsis_unix_wrong_case(sh):
+    "Test using `...` in env method to grab value from global environment."
+
+    # Fails because actual env is named "PATH", not "path"
+    with pytest.raises(KeyError):
+        sh("env").set(inherit_env=False).env(path=...)

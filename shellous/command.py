@@ -16,6 +16,7 @@ from immutables import Map as ImmutableDict
 
 from shellous.redirect import Redirect
 from shellous.runner import Runner, run, run_iter
+from shellous.util import coerce_env
 
 # Sentinel used in "mergable" keyword arguments to indicate that a value
 # was not set by the caller. This is an enum class to make UNSET more visible
@@ -132,7 +133,7 @@ class Options:  # pylint: disable=too-many-instance-attributes
     def set_env(self, env):
         "Return new options with augmented environment."
         current = self.env or ImmutableDict()
-        updates = {str(k): str(v) for k, v in env.items()}
+        updates = coerce_env(env)
         new_env = current.update(**updates)
         return dataclasses.replace(self, env=new_env)
 
