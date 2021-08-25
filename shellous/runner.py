@@ -445,39 +445,40 @@ class PipeRunner:
         assert self.tasks is not None
 
         if kill:
-            LOGGER.info("PipeRunner.wait killing pipe %r", self.name)
+            LOGGER.info("PipeRunner.wait killing pipe %r", self)
             for task in self.tasks:
                 task.cancel()
 
         self.results = await gather_collect(
             *self.tasks, return_exceptions=True, trustee=self
         )
-        LOGGER.info("PipeRunner.wait results=%r", self.results)
 
     async def __aenter__(self):
         "Set up redirections and launch pipeline."
-        LOGGER.info("PipeRunner entering %r", self.name)
+        LOGGER.info("PipeRunner entering %r", self)
         try:
             return await self._start()
         except (Exception, asyncio.CancelledError) as ex:
-            LOGGER.warning("PipeRunner enter %r ex=%r", self.name, ex)
+            LOGGER.warning("PipeRunner enter %r ex=%r", self, ex)
             await self.wait(kill=True)  # FIXME
             raise
         finally:
-            LOGGER.info("PipeRunner entered %r ex=%r", self.name, _exc())
+            LOGGER.info("PipeRunner entered %r ex=%r", self, _exc())
 
     async def __aexit__(self, _exc_type, exc_value, _exc_tb):
         "Wait for pipeline to exit and handle cancellation."
-        LOGGER.info("PipeRunner exiting %r exc_value=%r", self.name, exc_value)
+        LOGGER.info("PipeRunner exiting %r exc_value=%r", self, exc_value)
         try:
             if exc_value is not None:
                 return await self._cleanup(exc_value)
             await self._wait()
-        except (Exception, asyncio.CancelledError) as ex:
-            LOGGER.warning("PipeRunner exit %r ex=%r", self.name, ex)
-            raise
         finally:
-            LOGGER.info("PipeRunner exited %r ex=%r", self.name, _exc())
+            LOGGER.info(
+                "PipeRunner exited %r exc_value=%r ex=%r",
+                self,
+                exc_value,
+                _exc(),
+            )
 
     @log_method(_DETAILED_LOGGING)
     async def _cleanup(self, exc_value):
@@ -553,6 +554,13 @@ class PipeRunner:
         stdin, stdout, stderr = (first_ready[0], last_ready[1], last_ready[2])
 
         return (stdin, stdout, stderr)
+
+    def __repr__(self):
+        "Return string representation of PipeRunner."
+        result_info = ""
+        if self.results:
+            result_info = f" results={self.results!r}"
+        return f"<PipeRunner {self.name!r}{result_info}>"
 
 
 async def run(command, *, _streams_future=None):
