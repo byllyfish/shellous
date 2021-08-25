@@ -2,6 +2,7 @@
 
 import asyncio
 import functools
+import os
 import platform
 import sys
 from typing import Optional, Union
@@ -49,6 +50,21 @@ def decode(data: Optional[bytes], encoding: Optional[str]) -> Union[str, bytes]:
     if not data:
         return ""
     return data.decode(*encoding.split(maxsplit=1))
+
+
+def coerce_env(env: dict):
+    """Utility function to coerce environment variables to string.
+
+    If the value of an environment variable is `...`, grab the value from the
+    parent environment.
+    """
+
+    def _coerce(key, value):
+        if value is ...:
+            value = os.environ[key]
+        return str(value)
+
+    return {str(key): _coerce(key, value) for key, value in env.items()}
 
 
 async def gather_collect(*aws, timeout=None, return_exceptions=False, trustee=None):
