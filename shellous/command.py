@@ -1,7 +1,12 @@
-"Implements the Context, Options, and Command classes."
+"""Implements the Context and Command classes.
+
+- A Context creates new command objects.
+- A Command specifies the arguments and options used to run a program.
+"""
 
 import asyncio
 import dataclasses
+import enum
 import os
 import signal
 from dataclasses import dataclass, field
@@ -13,8 +18,10 @@ from shellous.redirect import Redirect
 from shellous.runner import Runner, run, run_iter
 
 # Sentinel used in "mergable" keyword arguments to indicate that a value
-# was not set by the caller.
-_UNSET = object()
+# was not set by the caller. This is an enum class to make UNSET more visible
+# in generated documentation.
+_UnsetType = enum.Enum("UNSET", "UNSET")
+_UNSET = _UnsetType.UNSET
 
 
 @dataclass(frozen=True)
@@ -241,9 +248,22 @@ def pipeline(*commands):
 
 @dataclass(frozen=True)
 class Command:
-    """Concrete class for a command.
+    """A Command instance is lightweight and immutable object that specifies the
+    arguments and options used to run a program. Commands do not do anything
+    until they are awaited.
 
-    A Command instance is lightweight and immutable.
+    Commands are always created by a Context.
+
+    ```
+    # Create a context.
+    sh = shellous.context()
+
+    # Create a new command from the context.
+    echo = sh("echo", "hello, world")
+
+    # Run the command.
+    result = await echo
+    ```
     """
 
     args: Any
@@ -303,15 +323,32 @@ class Command:
     def set(  # pylint: disable=unused-argument
         self,
         *,
-        inherit_env=_UNSET,
-        encoding=_UNSET,
-        return_result=_UNSET,
-        allowed_exit_codes=_UNSET,
-        cancel_timeout=_UNSET,
-        cancel_signal=_UNSET,
-        alt_name=_UNSET,
+        inherit_env: bool = _UNSET,
+        encoding: Optional[str] = _UNSET,
+        return_result: bool = _UNSET,
+        allowed_exit_codes: Optional[set] = _UNSET,
+        cancel_timeout: float = _UNSET,
+        cancel_signal: Any = _UNSET,
+        alt_name: Optional[str] = _UNSET,
     ):
-        "Return new command with custom options set."
+        """Return new command with custom options set.
+
+        - Set `inherit_env` to False to prevent the command from inheriting
+        the parent environment.
+        - Set `encoding` to a string encoding like "utf-8", or "utf-8 replace".
+        If `encoding` is None, use raw bytes.
+        - Set `return_result` to True to return a `Result` object instead of
+        the standard output. The `Result` object includes the exit code.
+        - Set `exit_codes` to the set of allowed exit codes that will not raise
+        a `ResultError`. None means {0}.
+        - Set `cancel_timeout` to the timeout in seconds to wait for a process
+        to terminate after sending it the cancel signal.
+        - Set `cancel_signal` to the signal used to stop a process when it is
+        cancelled.
+        - Set `alt_name` to an alternative name of the command to be displayed
+        in logs. Used to resolve ambiguity when the actual command name is a
+        scripting language.
+        """
         kwargs = locals()
         del kwargs["self"]
         return Command(self.args, self.options.set(kwargs))

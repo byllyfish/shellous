@@ -13,7 +13,7 @@ import shellous
 sh = shellous.context()
 
 async def main():
-    result = await sh("echo", "hello, world")
+    result = await (sh("ls") | sh("grep", "README"))
     print(result)
 
 asyncio.run(main())
@@ -25,13 +25,13 @@ Benefits
 - Run programs asychronously in a single line.
 - Easily capture output or redirect stdin, stdout and stderr to files.
 - Easily construct pipelines.
+- Runs on Linux, MacOS and Windows.
 
 Requirements
 ------------
 
 - Requires Python 3.9 or later.
 - Requires an asyncio event loop.
-- Runs on Linux, MacOS and Windows.
 
 Basic Usage
 -----------
