@@ -1,6 +1,5 @@
 "Unit tests for shellous module (Windows)."
 
-import os
 import sys
 
 import pytest

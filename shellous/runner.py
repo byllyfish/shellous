@@ -404,8 +404,7 @@ class Runner:
         "Return string representation of Runner."
         if self.proc:
             return f"<Runner {self.name!r} pid={self.proc.pid} exit_code={self.proc.returncode}>"
-        else:
-            return f"<Runner {self.name!r} pid=None>"
+        return f"<Runner {self.name!r} pid=None>"
 
 
 class PipeRunner:
