@@ -40,10 +40,14 @@ def log_method(enabled):
     return _decorator
 
 
-def decode(data: Optional[bytes], encoding: Optional[str]) -> Union[str, bytes, None]:
+def decode(data: Optional[bytes], encoding: Optional[str]) -> Union[str, bytes]:
     "Utility function to decode optional byte strings."
-    if encoding is None or data is None:
+    if encoding is None:
+        if data is None:
+            return b""
         return data
+    if not data:
+        return ""
     return data.decode(*encoding.split(maxsplit=1))
 
 

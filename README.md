@@ -112,7 +112,7 @@ To redirect stdin using a file's contents, use a `Path` object from `pathlib`.
 >>> from pathlib import Path
 >>> cmd = Path("README.md") | sh("wc", "-l")
 >>> await cmd
-'     181\n'
+'     183\n'
 ```
 
 [More on redirection...](docs/redirection.md)
@@ -126,6 +126,7 @@ To redirect standard output, use the `|` operator.
 >>> output_file = Path("/tmp/output_file")
 >>> cmd = sh("echo", "abc") | output_file
 >>> await cmd
+''
 >>> output_file.read_bytes()
 b'abc\n'
 ```
@@ -135,6 +136,7 @@ To redirect standard output with append, use the `>>` operator.
 ```python-repl
 >>> cmd = sh("echo", "def") >> output_file
 >>> await cmd
+''
 >>> output_file.read_bytes()
 b'abc\ndef\n'
 ```

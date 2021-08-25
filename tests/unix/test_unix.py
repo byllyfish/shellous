@@ -244,12 +244,12 @@ async def test_redirect_output_path(sh, tmp_path):
 
     # Erase and write to file.
     result = await sh("echo", "test", 1, 2, 3).stdout(out)
-    assert result is None
+    assert result == ""
     assert out.read_bytes() == b"test 1 2 3\n"
 
     # Append to the above file.
     result = await sh("echo", ".1.").stdout(out, append=True)
-    assert result is None
+    assert result == ""
     assert out.read_bytes() == b"test 1 2 3\n.1.\n"
 
 
@@ -259,12 +259,12 @@ async def test_redirect_output_str(sh, tmp_path):
 
     # Erase and write to file.
     result = await sh("echo", "test", 4, 5, 6).stdout(str(out))
-    assert result is None
+    assert result == ""
     assert out.read_bytes() == b"test 4 5 6\n"
 
     # Append to the above file.
     result = await sh("echo", ".2.").stdout(str(out), append=True)
-    assert result is None
+    assert result == ""
     assert out.read_bytes() == b"test 4 5 6\n.2.\n"
 
 
@@ -274,7 +274,7 @@ async def test_redirect_output_file(sh, tmp_path):
 
     with open(out, "w") as fp:
         result = await sh("echo", "123").stdout(fp)
-        assert result is None
+        assert result == ""
 
     assert out.read_bytes() == b"123\n"
 
@@ -283,14 +283,14 @@ async def test_redirect_output_stringio(sh):
     "Test redirecting command output to a StringIO buffer."
     buf = io.StringIO()
     result = await sh("echo", "456").stdout(buf)
-    assert result is None
+    assert result == ""
     assert buf.getvalue() == "456\n"
 
 
 async def test_redirect_output_devnull(sh):
     "Test redirecting command output to /dev/null."
     result = await sh("echo", "789").stdout(DEVNULL)
-    assert result is None
+    assert result == ""
 
 
 async def test_redirect_output_stdout(sh):
@@ -302,7 +302,7 @@ async def test_redirect_output_stdout(sh):
 async def test_redirect_output_none(sh):
     "Test redirecting command output to None (same as DEVNULL)."
     result = await sh("echo", "789").stdout(None)
-    assert result is None
+    assert result == ""
 
 
 async def test_redirect_output_capture(sh):
@@ -314,7 +314,7 @@ async def test_redirect_output_capture(sh):
 async def test_redirect_output_inherit(sh, capfd):
     "Test redirecting command output to None (same as DEVNULL)."
     result = await sh("echo", "789").stdout(INHERIT)
-    assert result is None
+    assert result == ""
     assert capfd.readouterr() == ("789\n", "")
 
 
@@ -352,14 +352,14 @@ async def test_redirection(python_script, capfd):
 async def test_redirect_output_to_devnull(python_script, capfd):
     "Test redirection options with both stdout and stderr output."
     result = await python_script.stdout(DEVNULL)
-    assert result is None
+    assert result == ""
     assert capfd.readouterr() == ("", "")
 
 
 async def test_redirect_output_to_inherit(python_script, capfd):
     "Test redirection options with both stdout and stderr output."
     result = await python_script.stdout(INHERIT)
-    assert result is None
+    assert result == ""
     assert capfd.readouterr() == ("hi stdout\ngoodbye!", "")
 
 
@@ -425,7 +425,7 @@ async def test_manually_created_pipeline(sh):
     echo = sh("echo", "-n", "abc").stdout(w, close=True)
     tr = sh("tr", "[:lower:]", "[:upper:]").stdin(r, close=True)
     result = await asyncio.gather(tr, echo)
-    assert result == ["ABC", None]
+    assert result == ["ABC", ""]
 
 
 async def test_pipeline(sh):

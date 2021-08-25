@@ -34,6 +34,8 @@ class Result:
     @property
     def output(self) -> Union[str, bytes, None]:
         "Return output string, based on encoding."
+        if self.encoding is None:
+            raise TypeError("use output_bytes instead; encoding is None")
         return decode(self.output_bytes, self.encoding)
 
 
@@ -89,6 +91,10 @@ def make_result(command, result):
 
     if command.options.return_result:
         return result
+
+    if result.encoding is None:
+        return result.output_bytes
+
     return result.output
 
 

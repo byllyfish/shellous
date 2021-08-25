@@ -2,7 +2,7 @@ import asyncio
 import logging
 
 import pytest
-from shellous.util import gather_collect, log_method
+from shellous.util import decode, gather_collect, log_method
 
 pytestmark = pytest.mark.asyncio
 
@@ -107,3 +107,19 @@ async def test_log_method(caplog):
         ("shellous", 20, "_Tester.demo3 stepin <self>"),
         ("shellous", 20, "_Tester.demo3 stepout <self> ex=ValueError(1)"),
     ]
+
+
+def test_decode():
+    "Test the util.decode function."
+    assert decode(None, None) == b""
+    assert decode(b"", None) == b""
+    assert decode(b"abc", None) == b"abc"
+
+    assert decode(b"", "utf-8") == ""
+    assert decode(b"abc", "utf-8") == "abc"
+    assert decode(None, "utf-8") == ""
+
+    with pytest.raises(UnicodeDecodeError):
+        decode(b"\x81", "utf-8")
+
+    assert decode(b"\x81abc", "utf-8 replace") == "\ufffdabc"

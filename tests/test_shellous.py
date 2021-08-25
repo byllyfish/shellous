@@ -197,7 +197,7 @@ async def test_redirect_stdout_bytearray(echo_cmd):
     "Test redirecting stdout to bytearray."
     buf = bytearray()
     result = await echo_cmd("abc").stdout(buf)
-    assert result is None
+    assert result == ""
     assert buf == b"abc"
 
 
@@ -205,7 +205,7 @@ async def test_redirect_stdout_bytesio(echo_cmd):
     "Test redirecting stdout to BytesIO."
     buf = io.BytesIO()
     result = await echo_cmd("abc").stdout(buf)
-    assert result is None
+    assert result == ""
     assert buf.getvalue() == b"abc"
 
 
@@ -213,7 +213,7 @@ async def test_redirect_stdout_stringio(echo_cmd):
     "Test redirecting stdout to StringIO."
     buf = io.StringIO()
     result = await echo_cmd("abc").stdout(buf)
-    assert result is None
+    assert result == ""
     assert buf.getvalue() == "abc"
 
 
