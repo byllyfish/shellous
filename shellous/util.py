@@ -40,14 +40,15 @@ def log_method(enabled):
     return _decorator
 
 
-def decode(data: Optional[bytes], encoding: Optional[str]) -> Union[str, bytes, None]:
+def decode(data: Optional[bytes], encoding: Optional[str]) -> Union[str, bytes]:
     "Utility function to decode optional byte strings."
-    if encoding is None or data is None:
+    if encoding is None:
+        if data is None:
+            return b""
         return data
-    if " " in encoding:
-        encoding, errors = encoding.split(maxsplit=1)
-        return data.decode(encoding, errors)
-    return data.decode(encoding)
+    if not data:
+        return ""
+    return data.decode(*encoding.split(maxsplit=1))
 
 
 async def gather_collect(*aws, timeout=None, return_exceptions=False, trustee=None):

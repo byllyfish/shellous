@@ -197,7 +197,7 @@ async def test_redirect_stdout_bytearray(echo_cmd):
     "Test redirecting stdout to bytearray."
     buf = bytearray()
     result = await echo_cmd("abc").stdout(buf)
-    assert result is None
+    assert result == ""
     assert buf == b"abc"
 
 
@@ -205,7 +205,7 @@ async def test_redirect_stdout_bytesio(echo_cmd):
     "Test redirecting stdout to BytesIO."
     buf = io.BytesIO()
     result = await echo_cmd("abc").stdout(buf)
-    assert result is None
+    assert result == ""
     assert buf.getvalue() == b"abc"
 
 
@@ -213,7 +213,7 @@ async def test_redirect_stdout_stringio(echo_cmd):
     "Test redirecting stdout to StringIO."
     buf = io.StringIO()
     result = await echo_cmd("abc").stdout(buf)
-    assert result is None
+    assert result == ""
     assert buf.getvalue() == "abc"
 
 
@@ -350,3 +350,19 @@ async def test_runner_enter(echo_cmd):
     # FIXME: At what point, should Runner raise a ResultError?
     with pytest.raises(asyncio.CancelledError):
         await task
+
+
+async def test_encoding_utf8_strict(cat_cmd):
+    "Test use of encoding option with bad utf-8 data."
+
+    cat = cat_cmd.set(encoding="utf-8 strict")
+    with pytest.raises(UnicodeDecodeError, match="invalid start byte"):
+        result = await (b"\x81abc" | cat)
+
+
+async def test_encoding_utf8_replace(cat_cmd):
+    "Test use of encoding option with bad utf-8 data."
+
+    cat = cat_cmd.set(encoding="utf-8 replace")
+    result = await (b"\x81abc" | cat)
+    assert result == "\ufffdabc"
