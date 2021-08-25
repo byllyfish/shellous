@@ -23,6 +23,10 @@ def log_method(enabled):
         if not enabled:
             return func
 
+        assert asyncio.iscoroutinefunction(
+            func
+        ), f"Decorator expects {func.__qualname__} to be coroutine function"
+
         @functools.wraps(func)
         async def _wrapper(*args, **kwargs):
             LOGGER.info("%s stepin %r", func.__qualname__, args[0])

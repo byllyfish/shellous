@@ -438,31 +438,27 @@ class PipeRunner:
         "Return `Result` object for PipeRunner."
         return make_result(self.pipe, self.results)
 
-    async def wait(self, *, kill=False):
+    @log_method(_DETAILED_LOGGING)
+    async def _wait(self, *, kill=False):
         "Wait for pipeline to finish."
-        try:
-            assert self.results is None
-            assert self.tasks is not None
+        assert self.results is None
+        assert self.tasks is not None
 
-            if kill:
-                LOGGER.info("PipeRunner.wait killing pipe %r", self.name)
-                for task in self.tasks:
-                    task.cancel()
+        if kill:
+            LOGGER.info("PipeRunner.wait killing pipe %r", self.name)
+            for task in self.tasks:
+                task.cancel()
 
-            self.results = await gather_collect(
-                *self.tasks, return_exceptions=True, trustee=self
-            )
-            LOGGER.info("PipeRunner.wait results=%r", self.results)
-
-        except (Exception, asyncio.CancelledError) as ex:
-            LOGGER.warning("PipeRunner.wait ex=%r", ex)
-            raise
+        self.results = await gather_collect(
+            *self.tasks, return_exceptions=True, trustee=self
+        )
+        LOGGER.info("PipeRunner.wait results=%r", self.results)
 
     async def __aenter__(self):
         "Set up redirections and launch pipeline."
         LOGGER.info("PipeRunner entering %r", self.name)
         try:
-            return await self._setup()
+            return await self._start()
         except (Exception, asyncio.CancelledError) as ex:
             LOGGER.warning("PipeRunner enter %r ex=%r", self.name, ex)
             await self.wait(kill=True)  # FIXME
@@ -476,22 +472,24 @@ class PipeRunner:
         try:
             if exc_value is not None:
                 return await self._cleanup(exc_value)
-            await self.wait()
+            await self._wait()
         except (Exception, asyncio.CancelledError) as ex:
             LOGGER.warning("PipeRunner exit %r ex=%r", self.name, ex)
             raise
         finally:
             LOGGER.info("PipeRunner exited %r ex=%r", self.name, _exc())
 
+    @log_method(_DETAILED_LOGGING)
     async def _cleanup(self, exc_value):
         "Clean up when there is an exception."
 
         self.cancelled = isinstance(exc_value, asyncio.CancelledError)
-        await self.wait(kill=True)
+        await self._wait(kill=True)
 
         return self.cancelled
 
-    async def _setup(self):
+    @log_method(_DETAILED_LOGGING)
+    async def _start(self):
         "Set up redirection and launch pipeline."
         open_fds = []
 
@@ -509,10 +507,9 @@ class PipeRunner:
 
             return (stdin, stdout, stderr)
 
-        except (Exception, asyncio.CancelledError) as ex:
-            LOGGER.warning("Pipeline._setup failed with ex=%r", ex)
+        except BaseException:
+            # Clean up after any exception *including* CancelledError.
             _close_fds(open_fds)
-            raise
 
     def _setup_pipeline(self, open_fds):
         """Return the pipeline stitched together with pipe fd's.
@@ -535,6 +532,7 @@ class PipeRunner:
 
         return cmds
 
+    @log_method(_DETAILED_LOGGING)
     async def _setup_capturing(self, cmds):
         """Set up capturing and return (stdin, stdout, stderr) streams."""
 
