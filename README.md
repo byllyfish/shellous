@@ -151,7 +151,7 @@ method.
 
 ```python-repl
 >>> cmd = sh("cat", "does_not_exist").stderr(shellous.STDOUT)
->>> await cmd.set(allowed_exit_codes={0,1})
+>>> await cmd.set(exit_codes={0,1})
 'cat: does_not_exist: No such file or directory\n'
 ```
 

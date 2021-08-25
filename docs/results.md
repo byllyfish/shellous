@@ -21,13 +21,13 @@ When a command fails, it raises a `ResultError` exception. The `ResultError` obj
 - result - the result of the command
 
 Normally, a command will fail as a result of a non-zero exit code. You can modify this behavior by 
-using the `allowed_exit_codes` setting.
+using the `exit_codes` setting.
 
-To return a `Result` object instead of raising an exception, set the `allowed_exit_codes` option
+To return a `Result` object instead of raising an exception, set the `exit_codes` option
 together with the `return_result` option.
 
 ```python-repl
->>> await sh("cat", "does_not_exist").set(return_result=True, allowed_exit_codes={0,1})
+>>> await sh("cat", "does_not_exist").set(return_result=True, exit_codes={0,1})
 Result(output_bytes=b'', exit_code=1, cancelled=False, encoding='utf-8', extra=None)
 ```
 

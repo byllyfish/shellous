@@ -86,7 +86,7 @@ async def test_run_asyncio_repl():
             "import shellous",
             "sh = shellous.context()",
             'await sh("echo", "hello, world")',
-            'await sh("cat", "does_not_exist").stderr(shellous.STDOUT).set(allowed_exit_codes={0,1})',
+            'await sh("cat", "does_not_exist").stderr(shellous.STDOUT).set(exit_codes={0,1})',
         ]
     )
 
@@ -123,7 +123,7 @@ def test_parse_readme():
         "await cmd",
         "output_file.read_bytes()",
         'cmd = sh("cat", "does_not_exist").stderr(shellous.STDOUT)',
-        "await cmd.set(allowed_exit_codes={0,1})",
+        "await cmd.set(exit_codes={0,1})",
         'cmd = sh("cat", "does_not_exist").stderr(shellous.INHERIT)',
         "await cmd",
         'pipe = sh("ls") | sh("grep", "README")',

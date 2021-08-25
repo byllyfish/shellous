@@ -67,7 +67,7 @@ class Options:  # pylint: disable=too-many-instance-attributes
     return_result: bool = False
     "True if we should return `Result` object instead of the output text/bytes."
 
-    allowed_exit_codes: Optional[set] = None
+    exit_codes: Optional[set] = None
     "Set of exit codes that do not raise a `ResultError`. None means {0}."
 
     cancel_timeout: float = 3.0
@@ -179,7 +179,7 @@ class Context:
         inherit_env=_UNSET,
         encoding=_UNSET,
         return_result=_UNSET,
-        allowed_exit_codes=_UNSET,
+        exit_codes=_UNSET,
         cancel_timeout=_UNSET,
         cancel_signal=_UNSET,
         alt_name=_UNSET,
@@ -326,7 +326,7 @@ class Command:
         inherit_env: bool = _UNSET,
         encoding: Optional[str] = _UNSET,
         return_result: bool = _UNSET,
-        allowed_exit_codes: Optional[set] = _UNSET,
+        exit_codes: Optional[set] = _UNSET,
         cancel_timeout: float = _UNSET,
         cancel_signal: Any = _UNSET,
         alt_name: Optional[str] = _UNSET,

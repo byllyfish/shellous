@@ -111,7 +111,7 @@ async def test_pipeline(echo_cmd, cat_cmd, tr_cmd):
 
 
 async def test_echo_exit_code(echo_cmd):
-    options = dict(return_result=True, allowed_exit_codes={7})
+    options = dict(return_result=True, exit_codes={7})
     result = await echo_cmd("abc").env(SHELLOUS_EXIT_CODE=7).set(**options)
     assert result.exit_code == 7
     assert result.output == "abc"
