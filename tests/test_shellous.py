@@ -111,7 +111,7 @@ async def test_pipeline(echo_cmd, cat_cmd, tr_cmd):
 
 
 async def test_echo_exit_code(echo_cmd):
-    options = dict(return_result=True, allowed_exit_codes={7})
+    options = dict(return_result=True, exit_codes={7})
     result = await echo_cmd("abc").env(SHELLOUS_EXIT_CODE=7).set(**options)
     assert result.exit_code == 7
     assert result.output == "abc"
@@ -357,7 +357,7 @@ async def test_encoding_utf8_strict(cat_cmd):
 
     cat = cat_cmd.set(encoding="utf-8 strict")
     with pytest.raises(UnicodeDecodeError, match="invalid start byte"):
-        result = await (b"\x81abc" | cat)
+        await (b"\x81abc" | cat)
 
 
 async def test_encoding_utf8_replace(cat_cmd):

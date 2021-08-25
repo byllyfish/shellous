@@ -486,9 +486,9 @@ async def test_pipeline_invalid_cmd2(sh):
         await pipe
 
 
-async def test_allowed_exit_codes(sh):
+async def test_exit_codes(sh):
     "Test `allows_exit_codes` option."
-    sh = sh.stderr(STDOUT).set(allowed_exit_codes={1})
+    sh = sh.stderr(STDOUT).set(exit_codes={1})
     cmd = sh("cat", "/tmp/__does_not_exist__")
     result = await cmd
     assert result == "cat: /tmp/__does_not_exist__: No such file or directory\n"
@@ -538,11 +538,11 @@ async def test_cancelled_antipattern(sh):
 
     async def _subtask():
         try:
-            result1 = await sleep_cmd
+            await sleep_cmd
         except ResultError as ex:
             assert ex.result.cancelled
             # First, CancelledError is lost!
-        result2 = await sleep_cmd
+        await sleep_cmd
 
     task = asyncio.create_task(_subtask())
 
@@ -572,12 +572,12 @@ async def test_cancelled_antipattern_fix(sh):
 
     async def _subtask():
         try:
-            result1 = await sleep_cmd
+            await sleep_cmd
         except ResultError as ex:
             assert ex.result.cancelled
             ex.raise_cancel()  # Re-raises CancelledError when necessary
 
-        result2 = await sleep_cmd
+        await sleep_cmd
 
     task = asyncio.create_task(_subtask())
 
@@ -621,7 +621,7 @@ async def test_shell_cmd(sh):
     "Test a shell command.  (https://bugs.python.org/issue43884)"
     shell = sh("/bin/sh", "-c").set(
         return_result=True,
-        allowed_exit_codes={0, _CANCELLED_EXIT_CODE},
+        exit_codes={0, _CANCELLED_EXIT_CODE},
     )
 
     task = shell("sleep 2 && echo done").task()

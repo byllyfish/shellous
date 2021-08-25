@@ -38,7 +38,7 @@ async def test_empty_env(sh):
         await sh(sys.executable, "-c", "pass").set(inherit_env=False)
 
 
-async def test_empty_env(sh):
+async def test_empty_env_system_root(sh):
     "Test running a command with just SYSTEM_ROOT env var."
     cmd = sh(sys.executable, "-c", "print('test1')")
     result = await cmd.set(inherit_env=False).env(**_filter_env("SYSTEMROOT"))

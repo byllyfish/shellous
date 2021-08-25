@@ -13,7 +13,7 @@ import shellous
 sh = shellous.context()
 
 async def main():
-    result = await sh("echo", "hello, world")
+    result = await (sh("ls") | sh("grep", "README"))
     print(result)
 
 asyncio.run(main())
@@ -25,13 +25,13 @@ Benefits
 - Run programs asychronously in a single line.
 - Easily capture output or redirect stdin, stdout and stderr to files.
 - Easily construct pipelines.
+- Runs on Linux, MacOS and Windows.
 
 Requirements
 ------------
 
 - Requires Python 3.9 or later.
 - Requires an asyncio event loop.
-- Runs on Linux, MacOS and Windows.
 
 Basic Usage
 -----------
@@ -112,7 +112,7 @@ To redirect stdin using a file's contents, use a `Path` object from `pathlib`.
 >>> from pathlib import Path
 >>> cmd = Path("README.md") | sh("wc", "-l")
 >>> await cmd
-'     183\n'
+'     210\n'
 ```
 
 [More on redirection...](docs/redirection.md)
@@ -151,7 +151,7 @@ method.
 
 ```python-repl
 >>> cmd = sh("cat", "does_not_exist").stderr(shellous.STDOUT)
->>> await cmd.set(allowed_exit_codes={0,1})
+>>> await cmd.set(exit_codes={0,1})
 'cat: does_not_exist: No such file or directory\n'
 ```
 
@@ -180,4 +180,31 @@ You can create a pipeline by combining commands using the `|` operator.
 >>> pipe = sh("ls") | sh("grep", "README")
 >>> await pipe
 'README.md\n'
+```
+
+Iteration
+---------
+
+You can loop over a command's output.
+
+```python-repl
+>>> async for line in pipe:
+...   print(line.rstrip())
+... 
+README.md
+```
+
+Async With
+----------
+
+You can use `async with` to interact with the process streams directly. You have to be careful; you
+are responsible for correctly reading and writing multiple streams at the same time.
+
+```python-repl
+>>> runner = pipe.runner()
+>>> async with runner as (stdin, stdout, stderr):
+...   data = await stdout.readline()
+...   print(data)
+... 
+b'README.md\n'
 ```

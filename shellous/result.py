@@ -85,8 +85,8 @@ def make_result(command, result):
 
     assert isinstance(result, Result)
 
-    allowed_exit_codes = command.options.allowed_exit_codes or {0}
-    if result.exit_code not in allowed_exit_codes:
+    exit_codes = command.options.exit_codes or {0}
+    if result.exit_code not in exit_codes:
         raise ResultError(result)
 
     if command.options.return_result:
