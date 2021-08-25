@@ -22,22 +22,55 @@ class Options:  # pylint: disable=too-many-instance-attributes
     "Concrete class for per-command options."
 
     context: "Context" = field(compare=False, repr=False)
+    "Root context object."
+
     env: Optional[ImmutableDict] = field(default=None, repr=False)
+    "Additional environment variables for command."
+
     inherit_env: bool = True
+    "True if subprocess should inherit the current environment variables."
+
     input: Any = b""
+    "Input object to bind to stdin."
+
     input_close: bool = False
+    "True if input object should be closed after subprocess launch."
+
     output: Any = Redirect.CAPTURE
+    "Output object to bind to stdout."
+
     output_append: bool = False
+    "True if output object should be opened in append mode."
+
     output_close: bool = False
+    "True if output object should be closed after subprocess launch."
+
     error: Any = Redirect.DEVNULL
+    "Error object to bind to stderr."
+
     error_append: bool = False
+    "True if error object should be opened in append mode."
+
     error_close: bool = False
+    "True if error object should be closed after subprocess launch."
+
     encoding: Optional[str] = "utf-8"
+    "Specifies encoding of input/ouput. None means binary."
+
     return_result: bool = False
+    "True if we should return `Result` object instead of the output text/bytes."
+
     allowed_exit_codes: Optional[set] = None
+    "Set of exit codes that do not raise a `ResultError`. None means {0}."
+
     cancel_timeout: float = 3.0
+    "Timeout in seconds that we wait for a cancelled process to terminate."
+
     cancel_signal: Optional[Any] = signal.SIGTERM
+    "The signal sent to terminate a cancelled process."
+
     alt_name: Optional[str] = None
+    "Alternate name for the command to use when logging."
 
     def merge_env(self):
         "Return our `env` merged with the global environment."
@@ -291,7 +324,7 @@ class Command:
         )
 
     def runner(self):
-        """Return a `Runner` to help run the process incrementally.
+        """Return a `Runner` to run the process incrementally.
 
         ```
         runner = cmd.runner()
