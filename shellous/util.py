@@ -44,10 +44,7 @@ def decode(data: Optional[bytes], encoding: Optional[str]) -> Union[str, bytes, 
     "Utility function to decode optional byte strings."
     if encoding is None or data is None:
         return data
-    if " " in encoding:
-        encoding, errors = encoding.split(maxsplit=1)
-        return data.decode(encoding, errors)
-    return data.decode(encoding)
+    return data.decode(*encoding.split(maxsplit=1))
 
 
 async def gather_collect(*aws, timeout=None, return_exceptions=False, trustee=None):

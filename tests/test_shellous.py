@@ -350,3 +350,19 @@ async def test_runner_enter(echo_cmd):
     # FIXME: At what point, should Runner raise a ResultError?
     with pytest.raises(asyncio.CancelledError):
         await task
+
+
+async def test_encoding_utf8_strict(cat_cmd):
+    "Test use of encoding option with bad utf-8 data."
+
+    cat = cat_cmd.set(encoding="utf-8 strict")
+    with pytest.raises(UnicodeDecodeError, match="invalid start byte"):
+        result = await (b"\x81abc" | cat)
+
+
+async def test_encoding_utf8_replace(cat_cmd):
+    "Test use of encoding option with bad utf-8 data."
+
+    cat = cat_cmd.set(encoding="utf-8 replace")
+    result = await (b"\x81abc" | cat)
+    assert result == "\ufffdabc"
