@@ -11,6 +11,7 @@ import shellous
 pytestmark = pytest.mark.asyncio
 
 _PROMPT = ">>> "
+_PROMPT_ELLIPSIS = "... "
 
 
 class Prompt:
@@ -25,7 +26,6 @@ class Prompt:
     async def prompt(self, input_text=""):
         "Write some input text to stdin, then await the response."
         if input_text:
-            assert "\n" not in input_text
             self.stdin.write(input_text.encode("utf-8") + b"\n")
 
         # Drain our write to stdin, and wait for prompt from stdout.
@@ -33,6 +33,9 @@ class Prompt:
             self.stdout.readuntil(self.prompt_bytes),
             self.stdin.drain(),
         )
+
+        # If there are ellipsis bytes in the beginning of out, remove them.
+        out = re.sub(b"^(?:\.\.\. )+", b"", out)
 
         # Combine stderr and stdout, then clear stderr.
         buf = self.errbuf + out
@@ -94,6 +97,44 @@ async def test_run_asyncio_repl():
     ]
 
 
+def test_parse_readme():
+    "Test the parse readme function."
+    cmds, _ = _parse_readme("README.md")
+
+    assert cmds == [
+        "import shellous",
+        "sh = shellous.context()",
+        'await sh("echo", "hello, world")',
+        'echo = sh("echo", "-n")',
+        'await echo("abc")',
+        'await echo("abc").set(return_result=True)',
+        'await sh("cat", "does_not_exist")',
+        'cmd = "abc" | sh("wc", "-c")',
+        "await cmd",
+        "from pathlib import Path",
+        'cmd = Path("README.md") | sh("wc", "-l")',
+        "await cmd",
+        'output_file = Path("/tmp/output_file")',
+        'cmd = sh("echo", "abc") | output_file',
+        "await cmd",
+        "output_file.read_bytes()",
+        'cmd = sh("echo", "def") >> output_file',
+        "await cmd",
+        "output_file.read_bytes()",
+        'cmd = sh("cat", "does_not_exist").stderr(shellous.STDOUT)',
+        "await cmd.set(allowed_exit_codes={0,1})",
+        'cmd = sh("cat", "does_not_exist").stderr(shellous.INHERIT)',
+        "await cmd",
+        'pipe = sh("ls") | sh("grep", "README")',
+        "await pipe",
+        "async for line in pipe:\n  print(line.rstrip())\n",
+        "runner = pipe.runner()",
+        "async with runner as (stdin, stdout, stderr):\n"
+        "  data = await stdout.readline()\n"
+        "  print(data)\n",
+    ]
+
+
 @pytest.mark.skipif(sys.platform != "darwin", reason="Darwin")
 async def test_readme():
     "Test that the REPL commands in the README.md file actually work."
@@ -147,6 +188,9 @@ def _separate_cmds_and_outputs(lines):
                 yield (cmd, output.rstrip("\n"))
             cmd = line[4:]
             output = ""
+        elif line.startswith(_PROMPT_ELLIPSIS):
+            assert cmd
+            cmd += "\n" + line[4:]
         else:
             output += f"{line}\n"
 
