@@ -8,7 +8,7 @@ import sys
 import shellous.redirect as redir
 from shellous.log import LOGGER
 from shellous.redirect import Redirect
-from shellous.result import Result, ResultError, make_result
+from shellous.result import Result, make_result
 from shellous.util import decode, gather_collect, log_method, platform_info
 
 _DETAILED_LOGGING = True

@@ -538,11 +538,11 @@ async def test_cancelled_antipattern(sh):
 
     async def _subtask():
         try:
-            result1 = await sleep_cmd
+            await sleep_cmd
         except ResultError as ex:
             assert ex.result.cancelled
             # First, CancelledError is lost!
-        result2 = await sleep_cmd
+        await sleep_cmd
 
     task = asyncio.create_task(_subtask())
 
@@ -572,12 +572,12 @@ async def test_cancelled_antipattern_fix(sh):
 
     async def _subtask():
         try:
-            result1 = await sleep_cmd
+            await sleep_cmd
         except ResultError as ex:
             assert ex.result.cancelled
             ex.raise_cancel()  # Re-raises CancelledError when necessary
 
-        result2 = await sleep_cmd
+        await sleep_cmd
 
     task = asyncio.create_task(_subtask())
 

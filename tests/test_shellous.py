@@ -357,7 +357,7 @@ async def test_encoding_utf8_strict(cat_cmd):
 
     cat = cat_cmd.set(encoding="utf-8 strict")
     with pytest.raises(UnicodeDecodeError, match="invalid start byte"):
-        result = await (b"\x81abc" | cat)
+        await (b"\x81abc" | cat)
 
 
 async def test_encoding_utf8_replace(cat_cmd):

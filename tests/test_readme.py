@@ -35,7 +35,7 @@ class Prompt:
         )
 
         # If there are ellipsis bytes in the beginning of out, remove them.
-        out = re.sub(b"^(?:\.\.\. )+", b"", out)
+        out = re.sub(br"^(?:\.\.\. )+", b"", out)
 
         # Combine stderr and stdout, then clear stderr.
         buf = self.errbuf + out
@@ -44,7 +44,8 @@ class Prompt:
         # Clean up the output to remove the prompt, then return as string.
         buf = buf.replace(b"\r\n", b"\n")
         assert buf.endswith(self.prompt_bytes)
-        buf = buf[0 : -len(self.prompt_bytes)].rstrip(b"\n")
+        promptlen = len(self.prompt_bytes)
+        buf = buf[0:-promptlen].rstrip(b"\n")
 
         return buf.decode("utf-8")
 
