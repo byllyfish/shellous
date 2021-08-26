@@ -2,7 +2,8 @@ import asyncio
 import logging
 
 import pytest
-from shellous.util import decode, harvest, log_method
+from shellous.harvest import harvest
+from shellous.util import decode, log_method
 
 pytestmark = pytest.mark.asyncio
 

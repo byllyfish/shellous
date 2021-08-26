@@ -6,10 +6,11 @@ import os
 import sys
 
 import shellous.redirect as redir
+from shellous.harvest import harvest
 from shellous.log import LOGGER
 from shellous.redirect import Redirect
 from shellous.result import Result, make_result
-from shellous.util import decode, harvest, log_method, platform_info
+from shellous.util import decode, log_method, platform_info
 
 _DETAILED_LOGGING = True
 

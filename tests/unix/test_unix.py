@@ -17,7 +17,7 @@ from shellous import (
     ResultError,
     context,
 )
-from shellous.util import harvest
+from shellous.harvest import harvest
 
 unix_only = pytest.mark.skipif(sys.platform == "win32", reason="Unix")
 pytestmark = [pytest.mark.asyncio, unix_only]

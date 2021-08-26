@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 from shellous import CAPTURE, DEVNULL, INHERIT, PipeResult, Result, ResultError, context
-from shellous.util import harvest
+from shellous.harvest import harvest
 
 pytestmark = pytest.mark.asyncio
 
