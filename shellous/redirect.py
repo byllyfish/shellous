@@ -24,17 +24,16 @@ class Redirect(enum.IntEnum):
 
 @log_method(True)
 async def write_stream(input_bytes, stream):
-    if input_bytes:
-        try:
+    try:
+        if input_bytes:
             stream.write(input_bytes)
             await stream.drain()
-        except asyncio.CancelledError:
-            LOGGER.info("_feed_writer cancelled!")
-            pass
-        except (BrokenPipeError, ConnectionResetError) as ex:
-            LOGGER.info("_feed_writer ex=%r", ex)
-            pass
-    stream.close()
+    except (BrokenPipeError, ConnectionResetError):
+        # Catch these errors and quietly stop.
+        # See "_feed_stdin" in /3.9/Lib/asyncio/subprocess.py
+        pass
+    finally:
+        stream.close()
 
 
 @log_method(True)
