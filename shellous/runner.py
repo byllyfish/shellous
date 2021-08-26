@@ -9,7 +9,7 @@ import shellous.redirect as redir
 from shellous.log import LOGGER
 from shellous.redirect import Redirect
 from shellous.result import Result, make_result
-from shellous.util import decode, gather_collect, log_method, platform_info
+from shellous.util import decode, harvest, log_method, platform_info
 
 _DETAILED_LOGGING = True
 
@@ -217,7 +217,7 @@ class Runner:
         assert self.proc
 
         try:
-            await gather_collect(*self.tasks, trustee=self)
+            await harvest(*self.tasks, trustee=self)
 
         except asyncio.CancelledError:
             LOGGER.info("Runner.wait cancelled %r", self)
@@ -239,11 +239,9 @@ class Runner:
                 self._send_signal(cancel_signal)
 
             if self.tasks:
-                await gather_collect(*self.tasks, timeout=cancel_timeout, trustee=self)
+                await harvest(*self.tasks, timeout=cancel_timeout, trustee=self)
             else:
-                await gather_collect(
-                    self.proc.wait(), timeout=cancel_timeout, trustee=self
-                )
+                await harvest(self.proc.wait(), timeout=cancel_timeout, trustee=self)
 
         except (asyncio.CancelledError, asyncio.TimeoutError) as ex:
             LOGGER.warning("Runner.kill %r (ex)=%r", self, ex)
@@ -393,9 +391,7 @@ class Runner:
             # a BrokenPipeError if not all input was properly written.
             if self.stdin is not None:
                 self.stdin.close()
-                await gather_collect(
-                    self.stdin.wait_closed(), timeout=0.25, trustee=self
-                )
+                await harvest(self.stdin.wait_closed(), timeout=0.25, trustee=self)
 
         except asyncio.TimeoutError:
             LOGGER.error("Runner._close %r timeout", self)
@@ -449,9 +445,7 @@ class PipeRunner:
             for task in self.tasks:
                 task.cancel()
 
-        self.results = await gather_collect(
-            *self.tasks, return_exceptions=True, trustee=self
-        )
+        self.results = await harvest(*self.tasks, return_exceptions=True, trustee=self)
 
     async def __aenter__(self):
         "Set up redirections and launch pipeline."
@@ -548,9 +542,7 @@ class PipeRunner:
 
         # When capturing, we need the first and last commands in the
         # pipe to signal when they are ready.
-        first_ready, last_ready = await gather_collect(
-            first_fut, last_fut, trustee=self
-        )
+        first_ready, last_ready = await harvest(first_fut, last_fut, trustee=self)
         stdin, stdout, stderr = (first_ready[0], last_ready[1], last_ready[2])
 
         return (stdin, stdout, stderr)

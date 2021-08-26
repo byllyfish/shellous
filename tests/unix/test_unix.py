@@ -17,7 +17,7 @@ from shellous import (
     ResultError,
     context,
 )
-from shellous.util import gather_collect
+from shellous.util import harvest
 
 unix_only = pytest.mark.skipif(sys.platform == "win32", reason="Unix")
 pytestmark = [pytest.mark.asyncio, unix_only]
@@ -518,12 +518,12 @@ async def test_pipeline_async_context_manager(sh):
 
 
 async def test_gather_same_cmd(sh):
-    """Test passing the same cmd to gather_collect().
+    """Test passing the same cmd to harvest().
 
     This test fails with `asyncio.gather`.
     """
     cmd = sh(sys.executable, "-c", "import secrets; print(secrets.randbits(31))")
-    results = await gather_collect(cmd, cmd)
+    results = await harvest(cmd, cmd)
     assert results[0] != results[1]
 
 

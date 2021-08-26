@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 from shellous import CAPTURE, DEVNULL, INHERIT, PipeResult, Result, ResultError, context
-from shellous.util import gather_collect
+from shellous.util import harvest
 
 pytestmark = pytest.mark.asyncio
 
@@ -387,6 +387,6 @@ async def test_many_short_programs_parallel(echo_cmd):
     COUNT = 10
 
     cmds = [echo_cmd("abcd") for i in range(COUNT)]
-    results = await gather_collect(*cmds)
+    results = await harvest(*cmds)
 
     assert results == ["abcd"] * COUNT

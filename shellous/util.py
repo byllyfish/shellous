@@ -90,7 +90,7 @@ def coerce_env(env: dict):
     return {str(key): _coerce(key, value) for key, value in env.items()}
 
 
-async def gather_collect(*aws, timeout=None, return_exceptions=False, trustee=None):
+async def harvest(*aws, timeout=None, return_exceptions=False, trustee=None):
     """Run a bunch of awaitables as tasks and return the results.
 
     Similar to `asyncio.gather` with one difference: If an awaitable raises
@@ -107,14 +107,14 @@ async def gather_collect(*aws, timeout=None, return_exceptions=False, trustee=No
     """
     if timeout:
         return await asyncio.wait_for(
-            _gather_collect(aws, return_exceptions, trustee),
+            _harvest(aws, return_exceptions, trustee),
             timeout,
         )
-    return await _gather_collect(aws, return_exceptions, trustee)
+    return await _harvest(aws, return_exceptions, trustee)
 
 
-async def _gather_collect(aws, return_exceptions, trustee):
-    """Helper function for gather_collect.
+async def _harvest(aws, return_exceptions, trustee):
+    """Helper function for harvest.
 
     Similar to `asyncio.gather` with one difference: If an awaitable raises
     an exception, the other awaitables are cancelled and collected before
@@ -133,7 +133,7 @@ async def _gather_collect(aws, return_exceptions, trustee):
         done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_EXCEPTION)
     except asyncio.CancelledError:
         LOGGER.warning(
-            "gather_collect itself cancelled ret_ex=%r trustee=%r",
+            "harvest itself cancelled ret_ex=%r trustee=%r",
             return_exceptions,
             trustee,
         )
@@ -150,7 +150,7 @@ async def _gather_collect(aws, return_exceptions, trustee):
         return [task.result() for task in tasks]
 
     LOGGER.info(
-        "gather_collect cancelling %d of %d tasks ret_ex=%r trustee=%r",
+        "harvest cancelling %d of %d tasks ret_ex=%r trustee=%r",
         len(pending),
         len(tasks),
         return_exceptions,
@@ -177,7 +177,7 @@ async def _gather_collect(aws, return_exceptions, trustee):
 
     # Only choice is a task that was cancelled.
     LOGGER.warning(
-        "gather_collect all tasks cancelled! done=%r pending=%r ret_ex=%r trustee=%r",
+        "harvest all tasks cancelled! done=%r pending=%r ret_ex=%r trustee=%r",
         done,
         pending,
         return_exceptions,
@@ -198,14 +198,14 @@ async def _cancel_wait(tasks, trustee):
         )
         if pending:
             LOGGER.error(
-                "gather_collect._cancel_wait pending=%r all_tasks=%r trustee=%r",
+                "harvest._cancel_wait pending=%r all_tasks=%r trustee=%r",
                 pending,
                 asyncio.all_tasks(),
                 trustee,
             )
     except asyncio.CancelledError:
         LOGGER.warning(
-            "gather_collect._cancel_wait cancelled itself? trustee=%r",
+            "harvest._cancel_wait cancelled itself? trustee=%r",
             trustee,
         )
         pass
