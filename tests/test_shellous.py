@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 from shellous import CAPTURE, DEVNULL, INHERIT, PipeResult, Result, ResultError, context
+from shellous.util import gather_collect
 
 pytestmark = pytest.mark.asyncio
 
@@ -366,3 +367,26 @@ async def test_encoding_utf8_replace(cat_cmd):
     cat = cat_cmd.set(encoding="utf-8 replace")
     result = await (b"\x81abc" | cat)
     assert result == "\ufffdabc"
+
+
+async def test_many_short_programs_sequential(echo_cmd):
+    "Test many short programs (sequential)."
+    COUNT = 10
+
+    failure_count = 0
+    for i in range(COUNT):
+        result = await echo_cmd("abc")
+        if result != "abc":
+            failure_count += 1
+
+    assert failure_count == 0
+
+
+async def test_many_short_programs_parallel(echo_cmd):
+    "Test many short programs (parallel)."
+    COUNT = 10
+
+    cmds = [echo_cmd("abcd") for i in range(COUNT)]
+    results = await gather_collect(*cmds)
+
+    assert results == ["abcd"] * COUNT
