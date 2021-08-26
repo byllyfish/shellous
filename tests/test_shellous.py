@@ -296,7 +296,7 @@ async def test_broken_pipe_in_failed_pipeline(cat_cmd, echo_cmd):
         await (data | cat_cmd | echo("abc"))
 
 
-async def test_broken_pipe_in_failed_pipeline_async_with(cat_cmd, echo_cmd):
+async def test_broken_pipe_in_async_with_failed_pipeline(cat_cmd, echo_cmd):
     "Test broken pipe error within a pipeline; last command fails."
     data = b"c" * PIPE_MAX_SIZE
     echo = echo_cmd.env(SHELLOUS_EXIT_CODE=7)
