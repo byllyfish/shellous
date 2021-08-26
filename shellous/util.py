@@ -2,6 +2,7 @@
 
 import asyncio
 import functools
+import inspect
 import os
 import platform
 import sys
@@ -23,20 +24,42 @@ def log_method(enabled):
         if not enabled:
             return func
 
-        @functools.wraps(func)
-        async def _wrapper(*args, **kwargs):
-            LOGGER.info("%s stepin %r", func.__qualname__, args[0])
-            try:
-                return await func(*args, **kwargs)
-            finally:
-                LOGGER.info(
-                    "%s stepout %r ex=%r",
-                    func.__qualname__,
-                    args[0],
-                    sys.exc_info()[1],
-                )
+        assert asyncio.iscoroutinefunction(
+            func
+        ), f"Decorator expects {func.__qualname__} to be coroutine function"
 
-        return _wrapper
+        if "." in func.__qualname__:
+            # Use _method_wrapper which incldues value of `self` arg.
+            @functools.wraps(func)
+            async def _method_wrapper(*args, **kwargs):
+                LOGGER.info("%s stepin %r", func.__qualname__, args[0])
+                try:
+                    return await func(*args, **kwargs)
+                finally:
+                    LOGGER.info(
+                        "%s stepout %r ex=%r",
+                        func.__qualname__,
+                        args[0],
+                        sys.exc_info()[1],
+                    )
+
+            return _method_wrapper
+
+        else:
+            # Use _function_wrapper which ignores arguments.
+            @functools.wraps(func)
+            async def _function_wrapper(*args, **kwargs):
+                LOGGER.info("%s stepin", func.__qualname__)
+                try:
+                    return await func(*args, **kwargs)
+                finally:
+                    LOGGER.info(
+                        "%s stepout ex=%r",
+                        func.__qualname__,
+                        sys.exc_info()[1],
+                    )
+
+            return _function_wrapper
 
     return _decorator
 

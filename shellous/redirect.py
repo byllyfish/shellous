@@ -6,7 +6,7 @@ import functools
 import io
 
 from shellous.log import LOGGER
-from shellous.util import decode
+from shellous.util import decode, log_method
 
 
 class Redirect(enum.IntEnum):
@@ -22,37 +22,21 @@ class Redirect(enum.IntEnum):
         return self in {Redirect.CAPTURE, Redirect.INHERIT}
 
 
-def _log_exception(func):
-    @functools.wraps(func)
-    async def _wrapper(*args, **kwargs):
-        try:
-            return await func(*args, **kwargs)
-        except asyncio.CancelledError:
-            LOGGER.info("Task %r cancelled!", func)
-            raise
-        except Exception as ex:
-            LOGGER.warning("Task %r ex=%r", func, ex)
-            raise
-
-    return _wrapper
-
-
-@_log_exception
+@log_method(True)
 async def write_stream(input_bytes, stream):
-    if input_bytes:
-        try:
+    try:
+        if input_bytes:
             stream.write(input_bytes)
             await stream.drain()
-        except asyncio.CancelledError:
-            LOGGER.info("_feed_writer cancelled!")
-            pass
-        except (BrokenPipeError, ConnectionResetError) as ex:
-            LOGGER.info("_feed_writer ex=%r", ex)
-            pass
-    stream.close()
+    except (BrokenPipeError, ConnectionResetError):
+        # Catch these errors and quietly stop.
+        # See "_feed_stdin" in /3.9/Lib/asyncio/subprocess.py
+        pass
+    finally:
+        stream.close()
 
 
-@_log_exception
+@log_method(True)
 async def copy_stringio(source, dest, encoding):
     # Collect partial reads into a BytesIO.
     buf = io.BytesIO()
@@ -68,7 +52,7 @@ async def copy_stringio(source, dest, encoding):
         dest.write(decode(buf.getvalue(), encoding))
 
 
-@_log_exception
+@log_method(True)
 async def copy_bytesio(source, dest):
     # Collect partial reads into a BytesIO.
     while True:
@@ -78,7 +62,7 @@ async def copy_bytesio(source, dest):
         dest.write(data)
 
 
-@_log_exception
+@log_method(True)
 async def copy_bytearray(source, dest):
     # Collect partial reads into a bytearray.
     while True:
