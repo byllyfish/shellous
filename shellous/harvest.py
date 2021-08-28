@@ -88,25 +88,23 @@ async def _harvest(aws, return_exceptions, trustee):
     # Consume exceptions that cancellation may have triggered.
     _consume_exceptions(tasks)
 
-    # Look for a task in `done` that is finished, if there is one.
-    failed = [task for task in done if task.done()]
-    if failed:
-        failed[0].result()
-
-    # Look for a task in `pending` that is finished, if there is one.
-    failed = [task for task in pending if task.done()]
-    if failed:
-        failed[0].result()
-
-    # Only choice is a task that was cancelled.
-    LOGGER.warning(
-        "harvest all tasks cancelled! done=%r pending=%r ret_ex=%r trustee=%r",
-        done,
-        pending,
-        return_exceptions,
-        trustee,
+    # Look for a task that is `done` searching from first to last.
+    ready = next(
+        (task for task in tasks if task.done() and not task.cancelled()),
+        None,
     )
-    raise asyncio.CancelledError()
+    if not ready:
+        # All tasks were cancelled, but the `harvest` itself was not.
+        LOGGER.warning(
+            "harvest all tasks cancelled! done=%r pending=%r trustee=%r",
+            done,
+            pending,
+            trustee,
+        )
+        raise asyncio.CancelledError()
+
+    assert ready.exception()
+    return ready.result()
 
 
 async def _cancel_wait(tasks, trustee):

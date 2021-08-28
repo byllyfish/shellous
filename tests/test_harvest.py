@@ -79,7 +79,7 @@ async def test_harvest_cancel_subtask():
     """Test that `harvest` function when one subtask is cancelled."""
 
     async def coro():
-        await asyncio.sleep(0.2)
+        await asyncio.sleep(1.0)
         raise ValueError(1)
 
     task1 = asyncio.create_task(coro())
@@ -87,7 +87,10 @@ async def test_harvest_cancel_subtask():
 
     task1.cancel()
     with pytest.raises(asyncio.CancelledError):
-        # FIXME: task1 is first error, so it gets returned first.
+        await task1
+
+    with pytest.raises(asyncio.CancelledError):
+        # FIXME: Should this be returning CancelledError?
         await htask
 
 
@@ -106,6 +109,5 @@ async def test_harvest_2_done_tasks():
     htask = asyncio.create_task(harvest(task1, coro1(), coro2()))
 
     task1.cancel()
-    with pytest.raises(asyncio.CancelledError):
-        # FIXME: task1 is first error, so it gets returned first.
+    with pytest.raises(ValueError):
         await htask
