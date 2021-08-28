@@ -164,9 +164,9 @@ class Runner:
 
     ```
     runner = Runner(cmd)
-    async with runner as (stdin, stdout, stderr):
-        # process stdin, stdout, stderr (if not None)
-    result = runner.result()
+    async with runner as run:
+        # process run.stdin, run.stdout, run.stderr (if not None)
+    result = run.result()
     ```
     """
 
@@ -569,10 +569,10 @@ async def run(command, *, _streams_future=None):
         raise ValueError("multiple capture requires 'async with'")
 
     output_bytes = None
-    runner = Runner(command)
+    run = command.run()
 
     try:
-        async with runner as run:
+        async with run:
             if _streams_future is not None:
                 # Return streams to caller in another task.
                 _streams_future.set_result((run.stdin, run.stdout, run.stderr))
@@ -584,9 +584,10 @@ async def run(command, *, _streams_future=None):
                     output_bytes = await stream.read()
 
     except asyncio.CancelledError:
+        # FIXME: This needs to be nailed down!
         LOGGER.error("run %r cancelled inside enter", command.name)
 
-    return runner.result(output_bytes)
+    return run.result(output_bytes)
 
 
 async def run_iter(command):
@@ -594,15 +595,14 @@ async def run_iter(command):
     if command.multiple_capture:
         raise ValueError("multiple capture requires 'async with'")
 
-    runner = Runner(command)
-    async with runner as run:
-        encoding = runner.options.encoding
+    async with command.run() as run:
+        encoding = run.options.encoding
         stream = run.stdout or run.stderr
         if stream:
             async for line in stream:
                 yield decode(line, encoding)
 
-    runner.result()  # No return value; raises exception if needed
+    run.result()  # No return value; raises exception if needed
 
 
 async def run_pipe(pipe):

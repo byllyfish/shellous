@@ -361,15 +361,14 @@ class Command:
             name=f"{self.name}-{id(self)}",
         )
 
-    def runner(self):
+    def run(self):
         """Return a `Runner` to run the process incrementally.
 
         ```
-        runner = cmd.runner()
-        async with runner as (stdin, stdout, stderr):
-            # do something with stdin, stdout, stderr...
-            # close stdin to signal we're done...
-        result = runner.result()
+        async with cmd.run() as run:
+            # do something with run.stdin, run.stdout, run.stderr...
+            # close run.stdin to signal we're done...
+        result = run.result()
         ```
         """
         return Runner(self)

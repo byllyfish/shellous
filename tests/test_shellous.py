@@ -323,8 +323,7 @@ async def test_stdout_deadlock_antipattern(bulk_cmd):
     "Use async-with but don't read from stdout."
 
     async def _antipattern():
-        runner = bulk_cmd.runner()
-        async with runner as run:
+        async with bulk_cmd.run() as run:
             assert run.stdin is None
             assert run.stderr is None
             assert run.stdout
@@ -339,10 +338,9 @@ async def test_runner_enter(echo_cmd):
     "Test cancellation behavior in Runner.__aenter__."
 
     async def test_task():
-        runner = echo_cmd.runner()
-        async with runner as _:
+        async with echo_cmd.run() as run:
             pass
-        return runner.result()
+        return run.result()
 
     task = asyncio.create_task(test_task())
     await asyncio.sleep(0)

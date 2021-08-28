@@ -63,8 +63,7 @@ async def run_asyncio_repl(cmds):
         .env(**_current_env())
     )
 
-    runner = repl.runner()
-    async with runner as run:
+    async with repl.run() as run:
         p = Prompt(run.stdin, run.stdout, errbuf)
         await p.prompt()
 
@@ -74,7 +73,7 @@ async def run_asyncio_repl(cmds):
 
         run.stdin.close()
 
-    result = runner.result()
+    result = run.result()
     assert result.exit_code == 0
     return output
 
