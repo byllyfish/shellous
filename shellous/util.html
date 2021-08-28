@@ -40,9 +40,6 @@
                     <a class="function" href="#coerce_env">coerce_env</a>
             </li>
             <li>
-                    <a class="function" href="#gather_collect">gather_collect</a>
-            </li>
-            <li>
                     <a class="function" href="#platform_info">platform_info</a>
             </li>
     </ul>
@@ -70,7 +67,6 @@
 
 <span class="kn">import</span> <span class="nn">asyncio</span>
 <span class="kn">import</span> <span class="nn">functools</span>
-<span class="kn">import</span> <span class="nn">inspect</span>
 <span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">import</span> <span class="nn">platform</span>
 <span class="kn">import</span> <span class="nn">sys</span>
@@ -113,21 +109,20 @@
 
             <span class="k">return</span> <span class="n">_method_wrapper</span>
 
-        <span class="k">else</span><span class="p">:</span>
-            <span class="c1"># Use _function_wrapper which ignores arguments.</span>
-            <span class="nd">@functools</span><span class="o">.</span><span class="n">wraps</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
-            <span class="k">async</span> <span class="k">def</span> <span class="nf">_function_wrapper</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-                <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> stepin&quot;</span><span class="p">,</span> <span class="n">func</span><span class="o">.</span><span class="vm">__qualname__</span><span class="p">)</span>
-                <span class="k">try</span><span class="p">:</span>
-                    <span class="k">return</span> <span class="k">await</span> <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-                <span class="k">finally</span><span class="p">:</span>
-                    <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-                        <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> stepout ex=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span>
-                        <span class="n">func</span><span class="o">.</span><span class="vm">__qualname__</span><span class="p">,</span>
-                        <span class="n">sys</span><span class="o">.</span><span class="n">exc_info</span><span class="p">()[</span><span class="mi">1</span><span class="p">],</span>
-                    <span class="p">)</span>
+        <span class="c1"># Use _function_wrapper which ignores arguments.</span>
+        <span class="nd">@functools</span><span class="o">.</span><span class="n">wraps</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
+        <span class="k">async</span> <span class="k">def</span> <span class="nf">_function_wrapper</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> stepin&quot;</span><span class="p">,</span> <span class="n">func</span><span class="o">.</span><span class="vm">__qualname__</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">return</span> <span class="k">await</span> <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">finally</span><span class="p">:</span>
+                <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                    <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> stepout ex=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span>
+                    <span class="n">func</span><span class="o">.</span><span class="vm">__qualname__</span><span class="p">,</span>
+                    <span class="n">sys</span><span class="o">.</span><span class="n">exc_info</span><span class="p">()[</span><span class="mi">1</span><span class="p">],</span>
+                <span class="p">)</span>
 
-            <span class="k">return</span> <span class="n">_function_wrapper</span>
+        <span class="k">return</span> <span class="n">_function_wrapper</span>
 
     <span class="k">return</span> <span class="n">_decorator</span>
 
@@ -156,139 +151,6 @@
         <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="p">{</span><span class="nb">str</span><span class="p">(</span><span class="n">key</span><span class="p">):</span> <span class="n">_coerce</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">env</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
-
-
-<span class="k">async</span> <span class="k">def</span> <span class="nf">gather_collect</span><span class="p">(</span><span class="o">*</span><span class="n">aws</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">return_exceptions</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">trustee</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Run a bunch of awaitables as tasks and return the results.</span>
-
-<span class="sd">    Similar to `asyncio.gather` with one difference: If an awaitable raises</span>
-<span class="sd">    an exception, the other awaitables are cancelled and collected before</span>
-<span class="sd">    passing the exception to the client. (Even if the awaitable raises a</span>
-<span class="sd">    CancelledError...)</span>
-
-<span class="sd">    Set `timeout` to specify a timeout in seconds. When the timeout expires,</span>
-<span class="sd">    all awaitables are cancelled and collected, then we raise a</span>
-<span class="sd">    `asyncio.TimeoutError`.</span>
-
-<span class="sd">    When `return_exceptions` is True, this method will include exceptions in</span>
-<span class="sd">    the list of results returned, including `asyncio.CancelError` exceptions.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="n">timeout</span><span class="p">:</span>
-        <span class="k">return</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">wait_for</span><span class="p">(</span>
-            <span class="n">_gather_collect</span><span class="p">(</span><span class="n">aws</span><span class="p">,</span> <span class="n">return_exceptions</span><span class="p">,</span> <span class="n">trustee</span><span class="p">),</span>
-            <span class="n">timeout</span><span class="p">,</span>
-        <span class="p">)</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">_gather_collect</span><span class="p">(</span><span class="n">aws</span><span class="p">,</span> <span class="n">return_exceptions</span><span class="p">,</span> <span class="n">trustee</span><span class="p">)</span>
-
-
-<span class="k">async</span> <span class="k">def</span> <span class="nf">_gather_collect</span><span class="p">(</span><span class="n">aws</span><span class="p">,</span> <span class="n">return_exceptions</span><span class="p">,</span> <span class="n">trustee</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Helper function for gather_collect.</span>
-
-<span class="sd">    Similar to `asyncio.gather` with one difference: If an awaitable raises</span>
-<span class="sd">    an exception, the other awaitables are cancelled and collected before</span>
-<span class="sd">    passing the exception to the client. (Even if the awaitable raises a</span>
-<span class="sd">    CancelledError...)</span>
-
-<span class="sd">    When `return_exceptions` is True, this method will include exceptions in</span>
-<span class="sd">    the list of results returned, including `asyncio.CancelError` exceptions.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-
-    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">aws</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
-
-    <span class="n">tasks</span> <span class="o">=</span> <span class="p">[</span><span class="n">asyncio</span><span class="o">.</span><span class="n">ensure_future</span><span class="p">(</span><span class="n">item</span><span class="p">)</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">aws</span><span class="p">]</span>
-
-    <span class="k">try</span><span class="p">:</span>
-        <span class="n">done</span><span class="p">,</span> <span class="n">pending</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">wait</span><span class="p">(</span><span class="n">tasks</span><span class="p">,</span> <span class="n">return_when</span><span class="o">=</span><span class="n">asyncio</span><span class="o">.</span><span class="n">FIRST_EXCEPTION</span><span class="p">)</span>
-    <span class="k">except</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">CancelledError</span><span class="p">:</span>
-        <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-            <span class="s2">&quot;gather_collect itself cancelled ret_ex=</span><span class="si">%r</span><span class="s2"> trustee=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span>
-            <span class="n">return_exceptions</span><span class="p">,</span>
-            <span class="n">trustee</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="k">await</span> <span class="n">_cancel_wait</span><span class="p">(</span><span class="n">tasks</span><span class="p">,</span> <span class="n">trustee</span><span class="p">)</span>
-        <span class="n">_retrieve_exceptions</span><span class="p">(</span><span class="n">tasks</span><span class="p">)</span>
-        <span class="k">raise</span>
-        <span class="c1"># done = set()</span>
-        <span class="c1"># pending = set(tasks)</span>
-
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">done</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">tasks</span><span class="p">):</span>
-        <span class="k">if</span> <span class="n">return_exceptions</span><span class="p">:</span>
-            <span class="k">return</span> <span class="p">[</span><span class="n">_to_result</span><span class="p">(</span><span class="n">task</span><span class="p">)</span> <span class="k">for</span> <span class="n">task</span> <span class="ow">in</span> <span class="n">tasks</span><span class="p">]</span>
-        <span class="n">_retrieve_exceptions</span><span class="p">(</span><span class="n">tasks</span><span class="p">)</span>
-        <span class="k">return</span> <span class="p">[</span><span class="n">task</span><span class="o">.</span><span class="n">result</span><span class="p">()</span> <span class="k">for</span> <span class="n">task</span> <span class="ow">in</span> <span class="n">tasks</span><span class="p">]</span>
-
-    <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-        <span class="s2">&quot;gather_collect cancelling </span><span class="si">%d</span><span class="s2"> of </span><span class="si">%d</span><span class="s2"> tasks ret_ex=</span><span class="si">%r</span><span class="s2"> trustee=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span>
-        <span class="nb">len</span><span class="p">(</span><span class="n">pending</span><span class="p">),</span>
-        <span class="nb">len</span><span class="p">(</span><span class="n">tasks</span><span class="p">),</span>
-        <span class="n">return_exceptions</span><span class="p">,</span>
-        <span class="n">trustee</span><span class="p">,</span>
-    <span class="p">)</span>
-    <span class="k">await</span> <span class="n">_cancel_wait</span><span class="p">(</span><span class="n">pending</span><span class="p">,</span> <span class="n">trustee</span><span class="p">)</span>
-
-    <span class="k">if</span> <span class="n">return_exceptions</span><span class="p">:</span>
-        <span class="c1"># Return list of exceptions in same order as original tasks.</span>
-        <span class="k">return</span> <span class="p">[</span><span class="n">_to_result</span><span class="p">(</span><span class="n">task</span><span class="p">)</span> <span class="k">for</span> <span class="n">task</span> <span class="ow">in</span> <span class="n">tasks</span><span class="p">]</span>
-
-    <span class="c1"># Retrieve any pending exceptions that cancellation may have triggered.</span>
-    <span class="n">_retrieve_exceptions</span><span class="p">(</span><span class="n">tasks</span><span class="p">)</span>
-
-    <span class="c1"># Look for a task in `done` that is finished, if there is one.</span>
-    <span class="n">failed</span> <span class="o">=</span> <span class="p">[</span><span class="n">task</span> <span class="k">for</span> <span class="n">task</span> <span class="ow">in</span> <span class="n">done</span> <span class="k">if</span> <span class="n">task</span><span class="o">.</span><span class="n">done</span><span class="p">()]</span>
-    <span class="k">if</span> <span class="n">failed</span><span class="p">:</span>
-        <span class="n">failed</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">result</span><span class="p">()</span>
-
-    <span class="c1"># Look for a task in `pending` that is finished, if there is one.</span>
-    <span class="n">failed</span> <span class="o">=</span> <span class="p">[</span><span class="n">task</span> <span class="k">for</span> <span class="n">task</span> <span class="ow">in</span> <span class="n">pending</span> <span class="k">if</span> <span class="n">task</span><span class="o">.</span><span class="n">done</span><span class="p">()]</span>
-    <span class="k">if</span> <span class="n">failed</span><span class="p">:</span>
-        <span class="n">failed</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">result</span><span class="p">()</span>
-
-    <span class="c1"># Only choice is a task that was cancelled.</span>
-    <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-        <span class="s2">&quot;gather_collect all tasks cancelled! done=</span><span class="si">%r</span><span class="s2"> pending=</span><span class="si">%r</span><span class="s2"> ret_ex=</span><span class="si">%r</span><span class="s2"> trustee=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span>
-        <span class="n">done</span><span class="p">,</span>
-        <span class="n">pending</span><span class="p">,</span>
-        <span class="n">return_exceptions</span><span class="p">,</span>
-        <span class="n">trustee</span><span class="p">,</span>
-    <span class="p">)</span>
-    <span class="k">raise</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">CancelledError</span><span class="p">()</span>
-
-
-<span class="k">async</span> <span class="k">def</span> <span class="nf">_cancel_wait</span><span class="p">(</span><span class="n">tasks</span><span class="p">,</span> <span class="n">trustee</span><span class="p">):</span>
-    <span class="s2">&quot;Cancel tasks and wait for them to finish.&quot;</span>
-    <span class="k">try</span><span class="p">:</span>
-        <span class="k">for</span> <span class="n">task</span> <span class="ow">in</span> <span class="n">tasks</span><span class="p">:</span>
-            <span class="n">task</span><span class="o">.</span><span class="n">cancel</span><span class="p">()</span>
-        <span class="n">_</span><span class="p">,</span> <span class="n">pending</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">wait</span><span class="p">(</span>
-            <span class="n">tasks</span><span class="p">,</span>
-            <span class="n">timeout</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
-            <span class="n">return_when</span><span class="o">=</span><span class="n">asyncio</span><span class="o">.</span><span class="n">ALL_COMPLETED</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="k">if</span> <span class="n">pending</span><span class="p">:</span>
-            <span class="n">LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
-                <span class="s2">&quot;gather_collect._cancel_wait pending=</span><span class="si">%r</span><span class="s2"> all_tasks=</span><span class="si">%r</span><span class="s2"> trustee=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span>
-                <span class="n">pending</span><span class="p">,</span>
-                <span class="n">asyncio</span><span class="o">.</span><span class="n">all_tasks</span><span class="p">(),</span>
-                <span class="n">trustee</span><span class="p">,</span>
-            <span class="p">)</span>
-    <span class="k">except</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">CancelledError</span><span class="p">:</span>
-        <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-            <span class="s2">&quot;gather_collect._cancel_wait cancelled itself? trustee=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span>
-            <span class="n">trustee</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="k">pass</span>
-
-
-<span class="k">def</span> <span class="nf">_to_result</span><span class="p">(</span><span class="n">task</span><span class="p">):</span>
-    <span class="k">if</span> <span class="n">task</span><span class="o">.</span><span class="n">cancelled</span><span class="p">():</span>
-        <span class="k">return</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">CancelledError</span><span class="p">()</span>
-    <span class="k">return</span> <span class="n">task</span><span class="o">.</span><span class="n">exception</span><span class="p">()</span> <span class="ow">or</span> <span class="n">task</span><span class="o">.</span><span class="n">result</span><span class="p">()</span>
-
-
-<span class="k">def</span> <span class="nf">_retrieve_exceptions</span><span class="p">(</span><span class="n">tasks</span><span class="p">):</span>
-    <span class="k">for</span> <span class="n">task</span> <span class="ow">in</span> <span class="n">tasks</span><span class="p">:</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">task</span><span class="o">.</span><span class="n">cancelled</span><span class="p">():</span>
-            <span class="n">task</span><span class="o">.</span><span class="n">exception</span><span class="p">()</span>
 
 
 <span class="k">def</span> <span class="nf">platform_info</span><span class="p">():</span>
@@ -361,21 +223,20 @@
 
             <span class="k">return</span> <span class="n">_method_wrapper</span>
 
-        <span class="k">else</span><span class="p">:</span>
-            <span class="c1"># Use _function_wrapper which ignores arguments.</span>
-            <span class="nd">@functools</span><span class="o">.</span><span class="n">wraps</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
-            <span class="k">async</span> <span class="k">def</span> <span class="nf">_function_wrapper</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-                <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> stepin&quot;</span><span class="p">,</span> <span class="n">func</span><span class="o">.</span><span class="vm">__qualname__</span><span class="p">)</span>
-                <span class="k">try</span><span class="p">:</span>
-                    <span class="k">return</span> <span class="k">await</span> <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-                <span class="k">finally</span><span class="p">:</span>
-                    <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-                        <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> stepout ex=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span>
-                        <span class="n">func</span><span class="o">.</span><span class="vm">__qualname__</span><span class="p">,</span>
-                        <span class="n">sys</span><span class="o">.</span><span class="n">exc_info</span><span class="p">()[</span><span class="mi">1</span><span class="p">],</span>
-                    <span class="p">)</span>
+        <span class="c1"># Use _function_wrapper which ignores arguments.</span>
+        <span class="nd">@functools</span><span class="o">.</span><span class="n">wraps</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
+        <span class="k">async</span> <span class="k">def</span> <span class="nf">_function_wrapper</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> stepin&quot;</span><span class="p">,</span> <span class="n">func</span><span class="o">.</span><span class="vm">__qualname__</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">return</span> <span class="k">await</span> <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">finally</span><span class="p">:</span>
+                <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                    <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> stepout ex=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span>
+                    <span class="n">func</span><span class="o">.</span><span class="vm">__qualname__</span><span class="p">,</span>
+                    <span class="n">sys</span><span class="o">.</span><span class="n">exc_info</span><span class="p">()[</span><span class="mi">1</span><span class="p">],</span>
+                <span class="p">)</span>
 
-            <span class="k">return</span> <span class="n">_function_wrapper</span>
+        <span class="k">return</span> <span class="n">_function_wrapper</span>
 
     <span class="k">return</span> <span class="n">_decorator</span>
 </pre></div>
@@ -449,58 +310,6 @@
 
 <p>If the value of an environment variable is <code>...</code>, grab the value from the
 parent environment.</p>
-</div>
-
-
-                </section>
-                <section id="gather_collect">
-                            <div class="attr function"><a class="headerlink" href="#gather_collect">#&nbsp;&nbsp</a>
-
-        
-            <span class="def">async def</span>
-            <span class="name">gather_collect</span><span class="signature">(*aws, timeout=None, return_exceptions=False, trustee=None)</span>:
-    </div>
-
-                <details>
-            <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span><span class="k">async</span> <span class="k">def</span> <span class="nf">gather_collect</span><span class="p">(</span><span class="o">*</span><span class="n">aws</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">return_exceptions</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">trustee</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Run a bunch of awaitables as tasks and return the results.</span>
-
-<span class="sd">    Similar to `asyncio.gather` with one difference: If an awaitable raises</span>
-<span class="sd">    an exception, the other awaitables are cancelled and collected before</span>
-<span class="sd">    passing the exception to the client. (Even if the awaitable raises a</span>
-<span class="sd">    CancelledError...)</span>
-
-<span class="sd">    Set `timeout` to specify a timeout in seconds. When the timeout expires,</span>
-<span class="sd">    all awaitables are cancelled and collected, then we raise a</span>
-<span class="sd">    `asyncio.TimeoutError`.</span>
-
-<span class="sd">    When `return_exceptions` is True, this method will include exceptions in</span>
-<span class="sd">    the list of results returned, including `asyncio.CancelError` exceptions.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="n">timeout</span><span class="p">:</span>
-        <span class="k">return</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">wait_for</span><span class="p">(</span>
-            <span class="n">_gather_collect</span><span class="p">(</span><span class="n">aws</span><span class="p">,</span> <span class="n">return_exceptions</span><span class="p">,</span> <span class="n">trustee</span><span class="p">),</span>
-            <span class="n">timeout</span><span class="p">,</span>
-        <span class="p">)</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">_gather_collect</span><span class="p">(</span><span class="n">aws</span><span class="p">,</span> <span class="n">return_exceptions</span><span class="p">,</span> <span class="n">trustee</span><span class="p">)</span>
-</pre></div>
-
-        </details>
-
-            <div class="docstring"><p>Run a bunch of awaitables as tasks and return the results.</p>
-
-<p>Similar to <code>asyncio.gather</code> with one difference: If an awaitable raises
-an exception, the other awaitables are cancelled and collected before
-passing the exception to the client. (Even if the awaitable raises a
-CancelledError...)</p>
-
-<p>Set <code>timeout</code> to specify a timeout in seconds. When the timeout expires,
-all awaitables are cancelled and collected, then we raise a
-<code>asyncio.TimeoutError</code>.</p>
-
-<p>When <code>return_exceptions</code> is True, this method will include exceptions in
-the list of results returned, including <code>asyncio.CancelError</code> exceptions.</p>
 </div>
 
 

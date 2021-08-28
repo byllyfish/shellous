@@ -107,10 +107,11 @@
 <span class="kn">import</span> <span class="nn">sys</span>
 
 <span class="kn">import</span> <span class="nn">shellous.redirect</span> <span class="k">as</span> <span class="nn">redir</span>
+<span class="kn">from</span> <span class="nn">shellous.harvest</span> <span class="kn">import</span> <span class="n">harvest</span><span class="p">,</span> <span class="n">harvest_results</span>
 <span class="kn">from</span> <span class="nn">shellous.log</span> <span class="kn">import</span> <span class="n">LOGGER</span>
 <span class="kn">from</span> <span class="nn">shellous.redirect</span> <span class="kn">import</span> <span class="n">Redirect</span>
 <span class="kn">from</span> <span class="nn">shellous.result</span> <span class="kn">import</span> <span class="n">Result</span><span class="p">,</span> <span class="n">make_result</span>
-<span class="kn">from</span> <span class="nn">shellous.util</span> <span class="kn">import</span> <span class="n">decode</span><span class="p">,</span> <span class="n">gather_collect</span><span class="p">,</span> <span class="n">log_method</span><span class="p">,</span> <span class="n">platform_info</span>
+<span class="kn">from</span> <span class="nn">shellous.util</span> <span class="kn">import</span> <span class="n">decode</span><span class="p">,</span> <span class="n">log_method</span><span class="p">,</span> <span class="n">platform_info</span>
 
 <span class="n">_DETAILED_LOGGING</span> <span class="o">=</span> <span class="kc">True</span>
 
@@ -318,7 +319,7 @@
         <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span>
 
         <span class="k">try</span><span class="p">:</span>
-            <span class="k">await</span> <span class="n">gather_collect</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">,</span> <span class="n">trustee</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+            <span class="k">await</span> <span class="n">harvest</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">,</span> <span class="n">trustee</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
 
         <span class="k">except</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">CancelledError</span><span class="p">:</span>
             <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Runner.wait cancelled </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
@@ -340,11 +341,9 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">_send_signal</span><span class="p">(</span><span class="n">cancel_signal</span><span class="p">)</span>
 
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">:</span>
-                <span class="k">await</span> <span class="n">gather_collect</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">cancel_timeout</span><span class="p">,</span> <span class="n">trustee</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+                <span class="k">await</span> <span class="n">harvest</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">cancel_timeout</span><span class="p">,</span> <span class="n">trustee</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="k">await</span> <span class="n">gather_collect</span><span class="p">(</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">wait</span><span class="p">(),</span> <span class="n">timeout</span><span class="o">=</span><span class="n">cancel_timeout</span><span class="p">,</span> <span class="n">trustee</span><span class="o">=</span><span class="bp">self</span>
-                <span class="p">)</span>
+                <span class="k">await</span> <span class="n">harvest</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">wait</span><span class="p">(),</span> <span class="n">timeout</span><span class="o">=</span><span class="n">cancel_timeout</span><span class="p">,</span> <span class="n">trustee</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
 
         <span class="k">except</span> <span class="p">(</span><span class="n">asyncio</span><span class="o">.</span><span class="n">CancelledError</span><span class="p">,</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">TimeoutError</span><span class="p">)</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>
             <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Runner.kill </span><span class="si">%r</span><span class="s2"> (ex)=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="n">ex</span><span class="p">)</span>
@@ -494,9 +493,7 @@
             <span class="c1"># a BrokenPipeError if not all input was properly written.</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">stdin</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
-                <span class="k">await</span> <span class="n">gather_collect</span><span class="p">(</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">wait_closed</span><span class="p">(),</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">0.25</span><span class="p">,</span> <span class="n">trustee</span><span class="o">=</span><span class="bp">self</span>
-                <span class="p">)</span>
+                <span class="k">await</span> <span class="n">harvest</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">wait_closed</span><span class="p">(),</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">0.25</span><span class="p">,</span> <span class="n">trustee</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
 
         <span class="k">except</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">TimeoutError</span><span class="p">:</span>
             <span class="n">LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Runner._close </span><span class="si">%r</span><span class="s2"> timeout&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
@@ -550,9 +547,7 @@
             <span class="k">for</span> <span class="n">task</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">:</span>
                 <span class="n">task</span><span class="o">.</span><span class="n">cancel</span><span class="p">()</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="o">=</span> <span class="k">await</span> <span class="n">gather_collect</span><span class="p">(</span>
-            <span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">,</span> <span class="n">return_exceptions</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">trustee</span><span class="o">=</span><span class="bp">self</span>
-        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="o">=</span> <span class="k">await</span> <span class="n">harvest_results</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">,</span> <span class="n">trustee</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
 
     <span class="k">async</span> <span class="k">def</span> <span class="fm">__aenter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Set up redirections and launch pipeline.&quot;</span>
@@ -561,7 +556,7 @@
             <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_start</span><span class="p">()</span>
         <span class="k">except</span> <span class="p">(</span><span class="ne">Exception</span><span class="p">,</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">CancelledError</span><span class="p">)</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>
             <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;PipeRunner enter </span><span class="si">%r</span><span class="s2"> ex=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="n">ex</span><span class="p">)</span>
-            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">wait</span><span class="p">(</span><span class="n">kill</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># FIXME</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wait</span><span class="p">(</span><span class="n">kill</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># FIXME</span>
             <span class="k">raise</span>
         <span class="k">finally</span><span class="p">:</span>
             <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;PipeRunner entered </span><span class="si">%r</span><span class="s2"> ex=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="n">_exc</span><span class="p">())</span>
@@ -649,7 +644,7 @@
 
         <span class="c1"># When capturing, we need the first and last commands in the</span>
         <span class="c1"># pipe to signal when they are ready.</span>
-        <span class="n">first_ready</span><span class="p">,</span> <span class="n">last_ready</span> <span class="o">=</span> <span class="k">await</span> <span class="n">gather_collect</span><span class="p">(</span>
+        <span class="n">first_ready</span><span class="p">,</span> <span class="n">last_ready</span> <span class="o">=</span> <span class="k">await</span> <span class="n">harvest_results</span><span class="p">(</span>
             <span class="n">first_fut</span><span class="p">,</span> <span class="n">last_fut</span><span class="p">,</span> <span class="n">trustee</span><span class="o">=</span><span class="bp">self</span>
         <span class="p">)</span>
         <span class="n">stdin</span><span class="p">,</span> <span class="n">stdout</span><span class="p">,</span> <span class="n">stderr</span> <span class="o">=</span> <span class="p">(</span><span class="n">first_ready</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">last_ready</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">last_ready</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
@@ -822,7 +817,7 @@
         <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span>
 
         <span class="k">try</span><span class="p">:</span>
-            <span class="k">await</span> <span class="n">gather_collect</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">,</span> <span class="n">trustee</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+            <span class="k">await</span> <span class="n">harvest</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">,</span> <span class="n">trustee</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
 
         <span class="k">except</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">CancelledError</span><span class="p">:</span>
             <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Runner.wait cancelled </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
@@ -844,11 +839,9 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">_send_signal</span><span class="p">(</span><span class="n">cancel_signal</span><span class="p">)</span>
 
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">:</span>
-                <span class="k">await</span> <span class="n">gather_collect</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">cancel_timeout</span><span class="p">,</span> <span class="n">trustee</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+                <span class="k">await</span> <span class="n">harvest</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">cancel_timeout</span><span class="p">,</span> <span class="n">trustee</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="k">await</span> <span class="n">gather_collect</span><span class="p">(</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">wait</span><span class="p">(),</span> <span class="n">timeout</span><span class="o">=</span><span class="n">cancel_timeout</span><span class="p">,</span> <span class="n">trustee</span><span class="o">=</span><span class="bp">self</span>
-                <span class="p">)</span>
+                <span class="k">await</span> <span class="n">harvest</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">wait</span><span class="p">(),</span> <span class="n">timeout</span><span class="o">=</span><span class="n">cancel_timeout</span><span class="p">,</span> <span class="n">trustee</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
 
         <span class="k">except</span> <span class="p">(</span><span class="n">asyncio</span><span class="o">.</span><span class="n">CancelledError</span><span class="p">,</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">TimeoutError</span><span class="p">)</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>
             <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Runner.kill </span><span class="si">%r</span><span class="s2"> (ex)=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="n">ex</span><span class="p">)</span>
@@ -998,9 +991,7 @@
             <span class="c1"># a BrokenPipeError if not all input was properly written.</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">stdin</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
-                <span class="k">await</span> <span class="n">gather_collect</span><span class="p">(</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">wait_closed</span><span class="p">(),</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">0.25</span><span class="p">,</span> <span class="n">trustee</span><span class="o">=</span><span class="bp">self</span>
-                <span class="p">)</span>
+                <span class="k">await</span> <span class="n">harvest</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">wait_closed</span><span class="p">(),</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">0.25</span><span class="p">,</span> <span class="n">trustee</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
 
         <span class="k">except</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">TimeoutError</span><span class="p">:</span>
             <span class="n">LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Runner._close </span><span class="si">%r</span><span class="s2"> timeout&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
@@ -1183,9 +1174,7 @@ result = runner.result()
             <span class="k">for</span> <span class="n">task</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">:</span>
                 <span class="n">task</span><span class="o">.</span><span class="n">cancel</span><span class="p">()</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="o">=</span> <span class="k">await</span> <span class="n">gather_collect</span><span class="p">(</span>
-            <span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">,</span> <span class="n">return_exceptions</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">trustee</span><span class="o">=</span><span class="bp">self</span>
-        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="o">=</span> <span class="k">await</span> <span class="n">harvest_results</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">,</span> <span class="n">trustee</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
 
     <span class="k">async</span> <span class="k">def</span> <span class="fm">__aenter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Set up redirections and launch pipeline.&quot;</span>
@@ -1194,7 +1183,7 @@ result = runner.result()
             <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_start</span><span class="p">()</span>
         <span class="k">except</span> <span class="p">(</span><span class="ne">Exception</span><span class="p">,</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">CancelledError</span><span class="p">)</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>
             <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;PipeRunner enter </span><span class="si">%r</span><span class="s2"> ex=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="n">ex</span><span class="p">)</span>
-            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">wait</span><span class="p">(</span><span class="n">kill</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># FIXME</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wait</span><span class="p">(</span><span class="n">kill</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># FIXME</span>
             <span class="k">raise</span>
         <span class="k">finally</span><span class="p">:</span>
             <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;PipeRunner entered </span><span class="si">%r</span><span class="s2"> ex=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="n">_exc</span><span class="p">())</span>
@@ -1282,7 +1271,7 @@ result = runner.result()
 
         <span class="c1"># When capturing, we need the first and last commands in the</span>
         <span class="c1"># pipe to signal when they are ready.</span>
-        <span class="n">first_ready</span><span class="p">,</span> <span class="n">last_ready</span> <span class="o">=</span> <span class="k">await</span> <span class="n">gather_collect</span><span class="p">(</span>
+        <span class="n">first_ready</span><span class="p">,</span> <span class="n">last_ready</span> <span class="o">=</span> <span class="k">await</span> <span class="n">harvest_results</span><span class="p">(</span>
             <span class="n">first_fut</span><span class="p">,</span> <span class="n">last_fut</span><span class="p">,</span> <span class="n">trustee</span><span class="o">=</span><span class="bp">self</span>
         <span class="p">)</span>
         <span class="n">stdin</span><span class="p">,</span> <span class="n">stdout</span><span class="p">,</span> <span class="n">stderr</span> <span class="o">=</span> <span class="p">(</span><span class="n">first_ready</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">last_ready</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">last_ready</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
