@@ -72,7 +72,7 @@ async def test_harvest_timeout():
 
 
 async def test_harvest_cancel_subtask():
-    """Test that `harvest` function when one subtask is cancelled."""
+    """Test `harvest` function when one subtask is cancelled."""
 
     async def coro():
         await asyncio.sleep(1.0)
@@ -82,16 +82,12 @@ async def test_harvest_cancel_subtask():
     htask = asyncio.create_task(harvest(task1, coro(), coro()))
 
     task1.cancel()
-    with pytest.raises(asyncio.CancelledError):
-        await task1
-
-    with pytest.raises(asyncio.CancelledError):
-        # FIXME: Should this be returning CancelledError?
+    with pytest.raises(ValueError):
         await htask
 
 
 async def test_harvest_2_done_tasks():
-    """Test that `harvest` function when one subtask is cancelled and
+    """Test `harvest` function when one subtask is cancelled and
     another raises an exception."""
 
     async def coro1():

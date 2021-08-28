@@ -6,26 +6,28 @@ from shellous.log import LOGGER
 
 
 async def harvest(*aws, timeout=None, trustee=None):
-    """Run a bunch of awaitables as tasks. Does not return results.
+    """Run a bunch of awaitables as tasks. Do not return results.
 
-    Raises first exception seen.
+    Raises first exception seen, or just returns normally.
 
     Similar to `asyncio.gather` but doesn't return anything.
     If an awaitable raises an exception, the other awaitables are immediately
-    cancelled and consumed before raising this first exception.
+    cancelled and consumed before raising the first exception seen.
 
     Set `timeout` to specify a timeout in seconds. When the timeout expires,
     all awaitables are cancelled and consumed before raising a
     `asyncio.TimeoutError`.
 
-    If `harvest_results` is cancelled itself, all awaitables are cancelled and
-    consumed before raising CancelledError.
+    If `harvest` is cancelled itself, all awaitables are cancelled and
+    consumed before raising `CancelledError`.
     """
 
-    if timeout:
-        await asyncio.wait_for(_harvest(aws, False, trustee), timeout)
-    else:
-        await _harvest(aws, False, trustee)
+    tasks = [asyncio.ensure_future(item) for item in aws]
+    await harvest_wait(tasks, timeout=timeout, trustee=trustee)
+    _consume_exceptions(tasks)
+    for task in tasks:
+        if not task.cancelled():
+            task.result()
 
 
 async def harvest_results(*aws, timeout=None, trustee=None):
@@ -56,16 +58,24 @@ async def harvest_wait(tasks, *, timeout=None, trustee=None):
 
     try:
         # Wait for all tasks to complete, the first one to raise an
-        # exception, or a timeout. When a timeout occurs, `done` will
-        # be empty.
+        # exception, or a timeout.
         done, pending = await asyncio.wait(
             tasks, timeout=timeout, return_when=asyncio.FIRST_EXCEPTION
         )
-        time_expired = not done
+
+        # Determine whether asyncio.wait timed out.
+        time_expired = False
+        if not done:
+            time_expired = True
+        elif pending:
+            # No tasks in `done` finished with an exception.
+            time_expired = not any(
+                task.exception() for task in done if not task.cancelled()
+            )
 
     except asyncio.CancelledError:
         # Our own task has been cancelled.
-        LOGGER.info("_harvest_wait cancelled trustee=%r", trustee)
+        LOGGER.info("harvest_wait cancelled trustee=%r", trustee)
         # Cancel all tasks and wait for them to finish.
         await _cancel_wait(tasks, trustee)
         _consume_exceptions(tasks)
@@ -77,7 +87,7 @@ async def harvest_wait(tasks, *, timeout=None, trustee=None):
     assert all(task.done() for task in tasks)
 
     if time_expired:
-        LOGGER.info("_harvest_wait timed out trustee=%r", trustee)
+        LOGGER.info("harvest_wait timed out trustee=%r", trustee)
         _consume_exceptions(tasks)
         raise asyncio.TimeoutError()
 
