@@ -1,77 +1,10 @@
-import asyncio
 import logging
+import os
 
 import pytest
-from shellous.util import decode, gather_collect, log_method
+from shellous.util import coerce_env, decode, log_method
 
 pytestmark = pytest.mark.asyncio
-
-
-async def test_gather_collect():
-    "Test the `gather_collect` function."
-    some_list = []
-
-    async def _coro1():
-        await asyncio.sleep(0.001)
-        raise ValueError(7)
-
-    async def _coro2(obj):
-        try:
-            await asyncio.sleep(60.0)
-        except asyncio.CancelledError:
-            await asyncio.sleep(0.1)
-            obj.append(1)
-
-    with pytest.raises(ValueError, match="7"):
-        await gather_collect(_coro1(), _coro2(some_list))
-
-    # Test that `some_list` is modified as a side-effect of cancelling _coro2.
-    assert some_list == [1]
-
-    # There should only be one task in this event loop.
-    tasks = asyncio.all_tasks()
-    assert len(tasks) == 1 and tasks.pop() is asyncio.current_task()
-
-
-async def test_gather_collect_cancel():
-    "Test the `gather_collect` function cancellation behavior."
-
-    async def _coro():
-        await asyncio.sleep(60.0)
-
-    with pytest.raises(asyncio.TimeoutError):
-        await asyncio.wait_for(gather_collect(_coro(), _coro()), 0.1)
-
-
-async def test_gather_collect_return_exceptions():
-    "Test the `gather_collect` function."
-
-    async def _coro1():
-        await asyncio.sleep(0.001)
-        raise ValueError(7)
-
-    async def _coro2():
-        try:
-            await asyncio.sleep(60.0)
-        except asyncio.CancelledError:
-            pass
-        return 99
-
-    result = await gather_collect(_coro1(), _coro2(), return_exceptions=True)
-
-    assert isinstance(result[0], ValueError)
-    assert result[0].args[0] == 7
-    assert result[1] == 99
-
-
-async def test_gather_collect_timeout():
-    "Test the `gather_collect` function with a timeout."
-
-    async def _coro():
-        await asyncio.sleep(60.0)
-
-    with pytest.raises(asyncio.TimeoutError):
-        await gather_collect(_coro(), _coro(), timeout=0.1)
 
 
 class _Tester:
@@ -123,3 +56,17 @@ def test_decode():
         decode(b"\x81", "utf-8")
 
     assert decode(b"\x81abc", "utf-8 replace") == "\ufffdabc"
+
+
+def test_coerce_env():
+    "Test the util.coerce_env function."
+    result = coerce_env(dict(a="a", b=1))
+    assert result == {"a": "a", "b": "1"}
+
+    # Test on Windows using SystemRoot env, otherwise test with PATH.
+    if "SystemRoot" in os.environ:
+        result = coerce_env(dict(SystemRoot=...))
+        assert result == {"SystemRoot": os.environ["SystemRoot"]}
+    else:
+        result = coerce_env(dict(PATH=...))
+        assert result == {"PATH": os.environ["PATH"]}

@@ -2,10 +2,8 @@
 
 import asyncio
 import enum
-import functools
 import io
 
-from shellous.log import LOGGER
 from shellous.util import decode, log_method
 
 
