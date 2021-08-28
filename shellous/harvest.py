@@ -53,7 +53,18 @@ async def harvest_results(*aws, timeout=None, trustee=None):
 
 
 async def harvest_wait(tasks, *, timeout=None, trustee=None):
-    "Helper for harvest."
+    """Wait for tasks to finish or raise an exception.
+
+    If there are pending tasks, they are cancelled and collected. Their
+    exceptions are not consumed.
+
+    Set `timeout` to specify a timeout in seconds. When the timeout expires,
+    all tasks are cancelled and consumed before raising a
+    `asyncio.TimeoutError`.
+
+    If `harvest_wait` is cancelled itself, all tasks are cancelled and
+    consumed before raising `CancelledError`.
+    """
 
     try:
         # Wait for all tasks to complete, the first one to raise an
@@ -73,9 +84,8 @@ async def harvest_wait(tasks, *, timeout=None, trustee=None):
             )
 
     except asyncio.CancelledError:
-        # Our own task has been cancelled.
-        LOGGER.info("harvest_wait cancelled trustee=%r", trustee)
         # Cancel all tasks and wait for them to finish.
+        LOGGER.info("harvest_wait cancelled trustee=%r", trustee)
         await _cancel_wait(tasks, trustee)
         _consume_exceptions(tasks)
         raise
@@ -89,86 +99,6 @@ async def harvest_wait(tasks, *, timeout=None, trustee=None):
         LOGGER.info("harvest_wait timed out trustee=%r", trustee)
         _consume_exceptions(tasks)
         raise asyncio.TimeoutError()
-
-
-async def _harvest(aws, return_exceptions, trustee):
-    """Helper function for harvest.
-
-    Similar to `asyncio.gather` with one difference: If an awaitable raises
-    an exception, the other awaitables are cancelled and collected before
-    passing the exception to the client.
-
-    When `return_exceptions` is True, this method will include exceptions in
-    the list of results returned, including `asyncio.CancelError` exceptions.
-    """
-
-    assert len(aws) > 0
-
-    tasks = [asyncio.ensure_future(item) for item in aws]
-
-    try:
-        # Wait for all tasks to complete, or the first one to raise an
-        # exception.
-        done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_EXCEPTION)
-
-    except asyncio.CancelledError:
-        # Our own task has been cancelled.
-        LOGGER.info(
-            "_harvest itself cancelled ret_ex=%r trustee=%r",
-            return_exceptions,
-            trustee,
-        )
-        # Cancel all tasks and wait for them to finish.
-        await _cancel_wait(tasks, trustee)
-        _consume_exceptions(tasks)
-        raise
-
-    # Check if all tasks are done.
-    if len(done) == len(tasks):
-        LOGGER.info("_harvest done %d tasks trustee=%r", len(tasks), trustee)
-        assert not pending
-        if return_exceptions:
-            return [_to_result(task) for task in tasks]
-        _consume_exceptions(tasks)
-        for task in tasks:
-            task.result()
-        return
-
-    LOGGER.info(
-        "_harvest cancelling %d of %d tasks ret_ex=%r trustee=%r",
-        len(pending),
-        len(tasks),
-        return_exceptions,
-        trustee,
-    )
-
-    # Cancel pending tasks and wait for them to finish.
-    await _cancel_wait(pending, trustee)
-
-    if return_exceptions:
-        # Return list of exceptions in same order as original tasks.
-        return [_to_result(task) for task in tasks]
-
-    # Consume exceptions that cancellation may have triggered.
-    _consume_exceptions(tasks)
-
-    # Look for a task that is `done` searching from first to last.
-    ready = next(
-        (task for task in tasks if task.done() and not task.cancelled()),
-        None,
-    )
-    if not ready:
-        # All tasks were cancelled, but the `harvest` itself was not.
-        LOGGER.warning(
-            "_harvest all tasks cancelled! done=%r pending=%r trustee=%r",
-            done,
-            pending,
-            trustee,
-        )
-        raise asyncio.CancelledError()
-
-    assert ready.exception()
-    return ready.result()
 
 
 async def _cancel_wait(tasks, trustee):
@@ -198,12 +128,14 @@ async def _cancel_wait(tasks, trustee):
 
 
 def _to_result(task):
+    "Return task's result, or its exception object."
     if task.cancelled():
         return asyncio.CancelledError()
     return task.exception() or task.result()
 
 
 def _consume_exceptions(tasks):
+    "Consume exception for every done task to eliminate warning messages."
     for task in tasks:
         assert task.done()
         if not task.cancelled():
