@@ -6,7 +6,7 @@ import os
 import sys
 
 import shellous.redirect as redir
-from shellous.harvest import harvest
+from shellous.harvest import harvest, harvest_results
 from shellous.log import LOGGER
 from shellous.redirect import Redirect
 from shellous.result import Result, make_result
@@ -446,7 +446,7 @@ class PipeRunner:
             for task in self.tasks:
                 task.cancel()
 
-        self.results = await harvest(*self.tasks, return_exceptions=True, trustee=self)
+        self.results = await harvest_results(*self.tasks, trustee=self)
 
     async def __aenter__(self):
         "Set up redirections and launch pipeline."
@@ -543,7 +543,9 @@ class PipeRunner:
 
         # When capturing, we need the first and last commands in the
         # pipe to signal when they are ready.
-        first_ready, last_ready = await harvest(first_fut, last_fut, trustee=self)
+        first_ready, last_ready = await harvest_results(
+            first_fut, last_fut, trustee=self
+        )
         stdin, stdout, stderr = (first_ready[0], last_ready[1], last_ready[2])
 
         return (stdin, stdout, stderr)

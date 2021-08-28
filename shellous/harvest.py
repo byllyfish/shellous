@@ -1,31 +1,54 @@
-"Implementation for harvest function, a better `asyncio.gather`."
+"Implementation for harvest and harvest_results function."
 
 import asyncio
 
 from shellous.log import LOGGER
 
 
-async def harvest(*aws, timeout=None, return_exceptions=False, trustee=None):
-    """Run a bunch of awaitables as tasks and return the results.
+async def harvest(*aws, timeout=None, trustee=None):
+    """Run a bunch of awaitables as tasks. Does not return results.
 
-    Similar to `asyncio.gather` with one difference: If an awaitable raises
-    an exception, the other awaitables are cancelled and collected before
-    passing the exception to the client. (Even if the awaitable raises a
-    CancelledError...)
+    Raises first exception seen.
+
+    Similar to `asyncio.gather` but doesn't return anything.
+    If an awaitable raises an exception, the other awaitables are immediately
+    cancelled and consumed before raising this first exception.
 
     Set `timeout` to specify a timeout in seconds. When the timeout expires,
-    all awaitables are cancelled and collected, then we raise a
+    all awaitables are cancelled and consumed before raising a
     `asyncio.TimeoutError`.
 
-    When `return_exceptions` is True, this method will include exceptions in
-    the list of results returned, including `asyncio.CancelError` exceptions.
+    If `harvest_results` is cancelled itself, all awaitables are cancelled and
+    consumed before raising CancelledError.
     """
+
     if timeout:
-        return await asyncio.wait_for(
-            _harvest(aws, return_exceptions, trustee),
-            timeout,
-        )
-    return await _harvest(aws, return_exceptions, trustee)
+        await asyncio.wait_for(_harvest(aws, False, trustee), timeout)
+    else:
+        await _harvest(aws, False, trustee)
+
+
+async def harvest_results(*aws, timeout=None, trustee=None):
+    """Run a bunch of awaitables as tasks and return the results.
+
+    Exceptions are included in the result list, including CancelledError.
+
+    Similar to `asyncio.gather` with `return_exceptions` with one difference:
+    If an awaitable raises an exception, the other awaitables are immediately
+    cancelled and consumed before returning any results.
+
+    Set `timeout` to specify a timeout in seconds. When the timeout expires,
+    all awaitables are cancelled and consumed before raising a
+    `asyncio.TimeoutError`.
+
+    If `harvest_results` is cancelled itself, all awaitables are cancelled and
+    consumed before raising CancelledError.
+    """
+
+    if timeout:
+        return await asyncio.wait_for(_harvest(aws, True, trustee), timeout)
+
+    return await _harvest(aws, True, trustee)
 
 
 async def _harvest(aws, return_exceptions, trustee):
@@ -33,8 +56,7 @@ async def _harvest(aws, return_exceptions, trustee):
 
     Similar to `asyncio.gather` with one difference: If an awaitable raises
     an exception, the other awaitables are cancelled and collected before
-    passing the exception to the client. (Even if the awaitable raises a
-    CancelledError...)
+    passing the exception to the client.
 
     When `return_exceptions` is True, this method will include exceptions in
     the list of results returned, including `asyncio.CancelError` exceptions.
@@ -112,11 +134,13 @@ async def _cancel_wait(tasks, trustee):
     try:
         for task in tasks:
             task.cancel()
+
         _, pending = await asyncio.wait(
             tasks,
             timeout=1.0,
             return_when=asyncio.ALL_COMPLETED,
         )
+
         if pending:
             LOGGER.error(
                 "harvest._cancel_wait pending=%r all_tasks=%r trustee=%r",

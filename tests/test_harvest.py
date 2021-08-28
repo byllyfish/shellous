@@ -3,7 +3,7 @@
 import asyncio
 
 import pytest
-from shellous.harvest import harvest
+from shellous.harvest import harvest, harvest_results
 
 pytestmark = pytest.mark.asyncio
 
@@ -29,10 +29,6 @@ async def test_harvest():
     # Test that `some_list` is modified as a side-effect of cancelling _coro2.
     assert some_list == [1]
 
-    # There should only be one task in this event loop.
-    tasks = asyncio.all_tasks()
-    assert len(tasks) == 1 and tasks.pop() is asyncio.current_task()
-
 
 async def test_harvest_cancel():
     "Test the `harvest` function cancellation behavior."
@@ -44,7 +40,7 @@ async def test_harvest_cancel():
         await asyncio.wait_for(harvest(_coro(), _coro()), 0.1)
 
 
-async def test_harvest_return_exceptions():
+async def test_harvest_results():
     "Test the `harvest` function."
 
     async def _coro1():
@@ -58,7 +54,7 @@ async def test_harvest_return_exceptions():
             pass
         return 99
 
-    result = await harvest(_coro1(), _coro2(), return_exceptions=True)
+    result = await harvest_results(_coro1(), _coro2())
 
     assert isinstance(result[0], ValueError)
     assert result[0].args[0] == 7
