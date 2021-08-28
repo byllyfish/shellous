@@ -64,15 +64,15 @@ async def run_asyncio_repl(cmds):
     )
 
     runner = repl.runner()
-    async with runner as (stdin, stdout, _stderr):
-        p = Prompt(stdin, stdout, errbuf)
+    async with runner as run:
+        p = Prompt(run.stdin, run.stdout, errbuf)
         await p.prompt()
 
         output = []
         for cmd in cmds:
             output.append(await p.prompt(cmd))
 
-        stdin.close()
+        run.stdin.close()
 
     result = runner.result()
     assert result.exit_code == 0

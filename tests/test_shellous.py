@@ -324,10 +324,10 @@ async def test_stdout_deadlock_antipattern(bulk_cmd):
 
     async def _antipattern():
         runner = bulk_cmd.runner()
-        async with runner as (stdin, stdout, stderr):
-            assert stdin is None
-            assert stderr is None
-            assert stdout is not None
+        async with runner as run:
+            assert run.stdin is None
+            assert run.stderr is None
+            assert run.stdout
             # ... and we don't read from stdout at all.
 
     with pytest.raises(asyncio.TimeoutError):
