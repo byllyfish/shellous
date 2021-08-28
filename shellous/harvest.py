@@ -47,10 +47,9 @@ async def harvest_results(*aws, timeout=None, trustee=None):
     consumed before raising CancelledError.
     """
 
-    if timeout:
-        return await asyncio.wait_for(_harvest(aws, True, trustee), timeout)
-
-    return await _harvest(aws, True, trustee)
+    tasks = [asyncio.ensure_future(item) for item in aws]
+    await harvest_wait(tasks, timeout=timeout, trustee=trustee)
+    return [_to_result(task) for task in tasks]
 
 
 async def harvest_wait(tasks, *, timeout=None, trustee=None):
