@@ -45,23 +45,29 @@ async def _harvest(aws, return_exceptions, trustee):
     tasks = [asyncio.ensure_future(item) for item in aws]
 
     try:
+        # Wait for all tasks to complete, or the first one to raise an
+        # exception.
         done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_EXCEPTION)
+
     except asyncio.CancelledError:
-        LOGGER.warning(
+        # Our own task has been cancelled.
+        LOGGER.info(
             "harvest itself cancelled ret_ex=%r trustee=%r",
             return_exceptions,
             trustee,
         )
+        # Cancel all tasks and wait for them to finish.
         await _cancel_wait(tasks, trustee)
-        _retrieve_exceptions(tasks)
+        _consume_exceptions(tasks)
         raise
-        # done = set()
-        # pending = set(tasks)
 
+    # Check if all tasks are done.
     if len(done) == len(tasks):
+        LOGGER.info("harvest done %d tasks trustee=%r", len(tasks), trustee)
+        assert not pending
         if return_exceptions:
             return [_to_result(task) for task in tasks]
-        _retrieve_exceptions(tasks)
+        _consume_exceptions(tasks)
         return [task.result() for task in tasks]
 
     LOGGER.info(
@@ -71,14 +77,16 @@ async def _harvest(aws, return_exceptions, trustee):
         return_exceptions,
         trustee,
     )
+
+    # Cancel pending tasks and wait for them to finish.
     await _cancel_wait(pending, trustee)
 
     if return_exceptions:
         # Return list of exceptions in same order as original tasks.
         return [_to_result(task) for task in tasks]
 
-    # Retrieve any pending exceptions that cancellation may have triggered.
-    _retrieve_exceptions(tasks)
+    # Consume exceptions that cancellation may have triggered.
+    _consume_exceptions(tasks)
 
     # Look for a task in `done` that is finished, if there is one.
     failed = [task for task in done if task.done()]
@@ -132,7 +140,8 @@ def _to_result(task):
     return task.exception() or task.result()
 
 
-def _retrieve_exceptions(tasks):
+def _consume_exceptions(tasks):
     for task in tasks:
+        assert task.done()
         if not task.cancelled():
             task.exception()
