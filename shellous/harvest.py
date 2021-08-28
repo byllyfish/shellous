@@ -51,6 +51,37 @@ async def harvest_results(*aws, timeout=None, trustee=None):
     return await _harvest(aws, True, trustee)
 
 
+async def harvest_wait(tasks, *, timeout=None, trustee=None):
+    "Helper for harvest."
+
+    try:
+        # Wait for all tasks to complete, the first one to raise an
+        # exception, or a timeout. When a timeout occurs, `done` will
+        # be empty.
+        done, pending = await asyncio.wait(
+            tasks, timeout=timeout, return_when=asyncio.FIRST_EXCEPTION
+        )
+        time_expired = not done
+
+    except asyncio.CancelledError:
+        # Our own task has been cancelled.
+        LOGGER.info("_harvest_wait cancelled trustee=%r", trustee)
+        # Cancel all tasks and wait for them to finish.
+        await _cancel_wait(tasks, trustee)
+        _consume_exceptions(tasks)
+        raise
+
+    if pending:
+        await _cancel_wait(pending, trustee)
+
+    assert all(task.done() for task in tasks)
+
+    if time_expired:
+        LOGGER.info("_harvest_wait timed out trustee=%r", trustee)
+        _consume_exceptions(tasks)
+        raise asyncio.TimeoutError()
+
+
 async def _harvest(aws, return_exceptions, trustee):
     """Helper function for harvest.
 
@@ -74,7 +105,7 @@ async def _harvest(aws, return_exceptions, trustee):
     except asyncio.CancelledError:
         # Our own task has been cancelled.
         LOGGER.info(
-            "harvest itself cancelled ret_ex=%r trustee=%r",
+            "_harvest itself cancelled ret_ex=%r trustee=%r",
             return_exceptions,
             trustee,
         )
@@ -85,15 +116,17 @@ async def _harvest(aws, return_exceptions, trustee):
 
     # Check if all tasks are done.
     if len(done) == len(tasks):
-        LOGGER.info("harvest done %d tasks trustee=%r", len(tasks), trustee)
+        LOGGER.info("_harvest done %d tasks trustee=%r", len(tasks), trustee)
         assert not pending
         if return_exceptions:
             return [_to_result(task) for task in tasks]
         _consume_exceptions(tasks)
-        return [task.result() for task in tasks]
+        for task in tasks:
+            task.result()
+        return
 
     LOGGER.info(
-        "harvest cancelling %d of %d tasks ret_ex=%r trustee=%r",
+        "_harvest cancelling %d of %d tasks ret_ex=%r trustee=%r",
         len(pending),
         len(tasks),
         return_exceptions,
@@ -118,7 +151,7 @@ async def _harvest(aws, return_exceptions, trustee):
     if not ready:
         # All tasks were cancelled, but the `harvest` itself was not.
         LOGGER.warning(
-            "harvest all tasks cancelled! done=%r pending=%r trustee=%r",
+            "_harvest all tasks cancelled! done=%r pending=%r trustee=%r",
             done,
             pending,
             trustee,

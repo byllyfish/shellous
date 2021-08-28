@@ -3,7 +3,7 @@
 import asyncio
 
 import pytest
-from shellous.harvest import harvest, harvest_results
+from shellous.harvest import harvest, harvest_results, harvest_wait
 
 pytestmark = pytest.mark.asyncio
 
@@ -107,3 +107,18 @@ async def test_harvest_2_done_tasks():
     task1.cancel()
     with pytest.raises(ValueError):
         await htask
+
+
+async def test_harvest_wait_timeout():
+    "Test the harvest_wait function."
+
+    async def coro():
+        await asyncio.sleep(30)
+
+    tasks = [asyncio.create_task(coro())]
+
+    with pytest.raises(asyncio.TimeoutError):
+        await harvest_wait(tasks, timeout=0.1)
+
+    assert tasks[0].done()
+    assert tasks[0].cancelled()
