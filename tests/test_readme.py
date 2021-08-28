@@ -63,18 +63,17 @@ async def run_asyncio_repl(cmds):
         .env(**_current_env())
     )
 
-    runner = repl.runner()
-    async with runner as (stdin, stdout, _stderr):
-        p = Prompt(stdin, stdout, errbuf)
+    async with repl.run() as run:
+        p = Prompt(run.stdin, run.stdout, errbuf)
         await p.prompt()
 
         output = []
         for cmd in cmds:
             output.append(await p.prompt(cmd))
 
-        stdin.close()
+        run.stdin.close()
 
-    result = runner.result()
+    result = run.result()
     assert result.exit_code == 0
     return output
 
@@ -129,9 +128,8 @@ def test_parse_readme():
         'pipe = sh("ls") | sh("grep", "README")',
         "await pipe",
         "async for line in pipe:\n  print(line.rstrip())\n",
-        "runner = pipe.runner()",
-        "async with runner as (stdin, stdout, stderr):\n"
-        "  data = await stdout.readline()\n"
+        "async with pipe.run() as run:\n"
+        "  data = await run.stdout.readline()\n"
         "  print(data)\n",
     ]
 

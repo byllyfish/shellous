@@ -163,10 +163,9 @@ class Runner:
     """Runner is an asynchronous context manager that runs a command.
 
     ```
-    runner = Runner(cmd)
-    async with runner as (stdin, stdout, stderr):
-        # process stdin, stdout, stderr (if not None)
-    result = runner.result()
+    async with cmd.run() as run:
+        # process run.stdin, run.stdout, run.stderr (if not None)
+    result = run.result()
     ```
     """
 
@@ -176,6 +175,8 @@ class Runner:
         self.proc = None
         self.tasks = []
         self.stdin = None
+        self.stdout = None
+        self.stderr = None
 
     @property
     def name(self):
@@ -303,9 +304,6 @@ class Runner:
             stdout = self.proc.stdout
             stderr = self.proc.stderr
 
-            # Keep track of stdin so we can close it later.
-            self.stdin = stdin
-
             if stderr is not None:
                 error = opts.command.options.error
                 stderr = self._setup_output_sink(stderr, error, opts.encoding, "stderr")
@@ -328,7 +326,13 @@ class Runner:
                 await self._kill()
             raise
 
-        return (stdin, stdout, stderr)
+        # Make final streams available. These may be different from `self.proc`
+        # versions.
+        self.stdin = stdin
+        self.stdout = stdout
+        self.stderr = stderr
+
+        return self
 
     def _setup_output_sink(self, stream, sink, encoding, tag):
         "Set up a task to write to custom output sink."
@@ -388,11 +392,11 @@ class Runner:
             # Make sure the transport is closed (for asyncio and uvloop).
             self.proc._transport.close()
 
-            # Make sure that stdin is properly closed. `wait_closed` will raise
-            # a BrokenPipeError if not all input was properly written.
-            if self.stdin is not None:
-                self.stdin.close()
-                await harvest(self.stdin.wait_closed(), timeout=0.25, trustee=self)
+            # Make sure that original stdin is properly closed. `wait_closed`
+            # will raise a BrokenPipeError if not all input was properly written.
+            if self.proc.stdin is not None:
+                self.proc.stdin.close()
+                await harvest(self.proc.stdin.wait_closed(), timeout=0.25, trustee=self)
 
         except asyncio.TimeoutError:
             LOGGER.error("Runner._close %r timeout", self)
@@ -408,14 +412,13 @@ class PipeRunner:
     """PipeRunner is an asynchronous context manager that runs a pipeline.
 
     ```
-    runner = PipeRunner(pipe)
-    async with runner as (stdin, stdout, stderr):
-        # process stdin, stdout, stderr (if not None)
-    result = runner.result()
+    async with pipe.run() as run:
+        # process run.stdin, run.stdout, run.stderr (if not None)
+    result = run.result()
     ```
     """
 
-    def __init__(self, pipe, *, capturing=False):
+    def __init__(self, pipe, *, capturing):
         """`capturing=True` indicates we are within an `async with` block and
         client needs to access `stdin` and `stderr` streams.
         """
@@ -425,6 +428,9 @@ class PipeRunner:
         self.results = None
         self.capturing = capturing
         self.encoding = pipe.commands[-1].options.encoding
+        self.stdin = None
+        self.stdout = None
+        self.stderr = None
 
     @property
     def name(self):
@@ -501,7 +507,11 @@ class PipeRunner:
             else:
                 self.tasks = [cmd.task() for cmd in cmds]
 
-            return (stdin, stdout, stderr)
+            self.stdin = stdin
+            self.stdout = stdout
+            self.stderr = stderr
+
+            return self
 
         except BaseException:
             # Clean up after any exception *including* CancelledError.
@@ -564,24 +574,25 @@ async def run(command, *, _streams_future=None):
         raise ValueError("multiple capture requires 'async with'")
 
     output_bytes = None
-    runner = Runner(command)
+    run = command.run()
 
     try:
-        async with runner as (stdin, stdout, stderr):
+        async with run:
             if _streams_future is not None:
                 # Return streams to caller in another task.
-                _streams_future.set_result((stdin, stdout, stderr))
+                _streams_future.set_result((run.stdin, run.stdout, run.stderr))
 
             else:
                 # Read the output here and return it.
-                stream = stdout or stderr
+                stream = run.stdout or run.stderr
                 if stream:
                     output_bytes = await stream.read()
 
     except asyncio.CancelledError:
-        LOGGER.info("run %r cancelled inside enter", command.name)
+        # FIXME: This needs to be nailed down!
+        LOGGER.error("run %r cancelled inside enter", command.name)
 
-    return runner.result(output_bytes)
+    return run.result(output_bytes)
 
 
 async def run_iter(command):
@@ -589,15 +600,14 @@ async def run_iter(command):
     if command.multiple_capture:
         raise ValueError("multiple capture requires 'async with'")
 
-    runner = Runner(command)
-    async with runner as (_stdin, stdout, stderr):
-        encoding = runner.options.encoding
-        stream = stdout or stderr
+    async with command.run() as run:
+        encoding = run.options.encoding
+        stream = run.stdout or run.stderr
         if stream:
             async for line in stream:
                 yield decode(line, encoding)
 
-    runner.result()  # No return value; raises exception if needed
+    run.result()  # No return value; raises exception if needed
 
 
 async def run_pipe(pipe):
@@ -607,7 +617,7 @@ async def run_pipe(pipe):
     if cmd_count == 1:
         return await run(pipe.commands[0])
 
-    runner = PipeRunner(pipe)
+    runner = PipeRunner(pipe, capturing=False)
     async with runner:
         pass
     return runner.result()
@@ -615,16 +625,16 @@ async def run_pipe(pipe):
 
 async def run_pipe_iter(pipe):
     "Run a pipeline and iterate over its output lines."
-    runner = PipeRunner(pipe, capturing=True)
-    async with runner as (stdin, stdout, stderr):
-        assert stdin is None
-        assert stderr is None
+    run = PipeRunner(pipe, capturing=True)
+    async with run:
+        assert run.stdin is None
+        assert run.stderr is None
 
-        encoding = runner.encoding
-        async for line in stdout:
+        encoding = run.encoding
+        async for line in run.stdout:
             yield decode(line, encoding)
 
-    runner.result()  # No return value; raises exception if needed
+    run.result()  # No return value; raises exception if needed
 
 
 def _close_fds(open_fds):

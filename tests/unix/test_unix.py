@@ -401,13 +401,13 @@ async def test_async_context_manager(sh):
     "Use `async with` to read/write bytes incrementally."
     tr = sh("tr", "[:lower:]", "[:upper:]").stdin(CAPTURE)
 
-    async with tr.runner() as (stdin, stdout, stderr):
-        assert stderr is None
+    async with tr.run() as run:
+        assert run.stderr is None
 
         # N.B. We won't deadlock writing/reading a single byte.
-        stdin.write(b"a")
-        stdin.close()
-        result = await stdout.read()
+        run.stdin.write(b"a")
+        run.stdin.close()
+        result = await run.stdout.read()
 
     assert result == b"A"
 
@@ -506,13 +506,13 @@ async def test_pipeline_async_context_manager(sh):
     "Use `async with` to read/write bytes incrementally."
     tr = sh("tr", "[:lower:]", "[:upper:]")
     pipe = (tr | sh("cat")).stdin(CAPTURE)
-    async with pipe.runner() as (stdin, stdout, stderr):
-        assert stderr is None
+    async with pipe.run() as run:
+        assert run.stderr is None
 
         # N.B. We won't deadlock writing/reading a single byte.
-        stdin.write(b"a")
-        stdin.close()
-        result = await stdout.read()
+        run.stdin.write(b"a")
+        run.stdin.close()
+        result = await run.stdout.read()
 
     assert result == b"A"
 
@@ -596,14 +596,12 @@ async def test_multiple_capture(sh):
     "Test the multiple capture example from the documentation."
     cmd = sh("cat").stdin(CAPTURE)
 
-    runner = cmd.runner()
-    async with runner as (stdin, stdout, _stderr):
-        stdin.write(b"abc\n")
-        output, _ = await asyncio.gather(stdout.readline(), stdin.drain())
+    async with cmd.run() as run:
+        run.stdin.write(b"abc\n")
+        output, _ = await asyncio.gather(run.stdout.readline(), run.stdin.drain())
+        run.stdin.close()
 
-        stdin.close()
-    result = runner.result(output)
-
+    result = run.result(output)
     assert result == "abc\n"
 
 

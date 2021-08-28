@@ -54,15 +54,14 @@ class Pipeline:
             name=f"{self.name}-{id(self)}",
         )
 
-    def runner(self):
-        """Return a `Runner` to help run the process incrementally.
+    def run(self):
+        """Return a `Runner` to help run the pipeline incrementally.
 
         ```
-        runner = pipe.runner()
-        async with runner as (stdin, stdout, stderr):
-            # do something with stdin, stdout, stderr...
+        async with pipe.run() as run:
+            # do something with run.stdin, run.stdout, run.stderr...
             # close stdin to signal we're done...
-        result = runner.result()
+        result = run.result()
         ```
         """
         return PipeRunner(self, capturing=True)
