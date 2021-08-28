@@ -172,7 +172,7 @@
                                 <a class="function" href="#Command.task">task</a>
                         </li>
                         <li>
-                                <a class="function" href="#Command.runner">runner</a>
+                                <a class="function" href="#Command.run">run</a>
                         </li>
                 </ul>
 
@@ -566,15 +566,14 @@
             <span class="n">name</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="nb">id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">runner</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Return a `Runner` to run the process incrementally.</span>
 
 <span class="sd">        ```</span>
-<span class="sd">        runner = cmd.runner()</span>
-<span class="sd">        async with runner as (stdin, stdout, stderr):</span>
-<span class="sd">            # do something with stdin, stdout, stderr...</span>
-<span class="sd">            # close stdin to signal we&#39;re done...</span>
-<span class="sd">        result = runner.result()</span>
+<span class="sd">        async with cmd.run() as run:</span>
+<span class="sd">            # do something with run.stdin, run.stdout, run.stderr...</span>
+<span class="sd">            # close run.stdin to signal we&#39;re done...</span>
+<span class="sd">        result = run.result()</span>
 <span class="sd">        ```</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">Runner</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
@@ -1587,15 +1586,14 @@
             <span class="n">name</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="nb">id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">runner</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Return a `Runner` to run the process incrementally.</span>
 
 <span class="sd">        ```</span>
-<span class="sd">        runner = cmd.runner()</span>
-<span class="sd">        async with runner as (stdin, stdout, stderr):</span>
-<span class="sd">            # do something with stdin, stdout, stderr...</span>
-<span class="sd">            # close stdin to signal we&#39;re done...</span>
-<span class="sd">        result = runner.result()</span>
+<span class="sd">        async with cmd.run() as run:</span>
+<span class="sd">            # do something with run.stdin, run.stdout, run.stderr...</span>
+<span class="sd">            # close run.stdin to signal we&#39;re done...</span>
+<span class="sd">        result = run.result()</span>
 <span class="sd">        ```</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">Runner</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
@@ -1890,25 +1888,24 @@ scripting language.</li>
 
 
                             </div>
-                            <div id="Command.runner" class="classattr">
-                                        <div class="attr function"><a class="headerlink" href="#Command.runner">#&nbsp;&nbsp</a>
+                            <div id="Command.run" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#Command.run">#&nbsp;&nbsp</a>
 
         
             <span class="def">def</span>
-            <span class="name">runner</span><span class="signature">(self)</span>:
+            <span class="name">run</span><span class="signature">(self)</span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">runner</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Return a `Runner` to run the process incrementally.</span>
 
 <span class="sd">        ```</span>
-<span class="sd">        runner = cmd.runner()</span>
-<span class="sd">        async with runner as (stdin, stdout, stderr):</span>
-<span class="sd">            # do something with stdin, stdout, stderr...</span>
-<span class="sd">            # close stdin to signal we&#39;re done...</span>
-<span class="sd">        result = runner.result()</span>
+<span class="sd">        async with cmd.run() as run:</span>
+<span class="sd">            # do something with run.stdin, run.stdout, run.stderr...</span>
+<span class="sd">            # close run.stdin to signal we&#39;re done...</span>
+<span class="sd">        result = run.result()</span>
 <span class="sd">        ```</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">Runner</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
@@ -1918,11 +1915,10 @@ scripting language.</li>
 
             <div class="docstring"><p>Return a <code>Runner</code> to run the process incrementally.</p>
 
-<pre><code>runner = cmd.runner()
-async with runner as (stdin, stdout, stderr):
-    # do something with stdin, stdout, stderr...
-    # close stdin to signal we're done...
-result = runner.result()
+<pre><code>async with cmd.run() as run:
+    # do something with run.stdin, run.stdout, run.stderr...
+    # close run.stdin to signal we're done...
+result = run.result()
 </code></pre>
 </div>
 

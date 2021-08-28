@@ -264,10 +264,9 @@
     <span class="sd">&quot;&quot;&quot;Runner is an asynchronous context manager that runs a command.</span>
 
 <span class="sd">    ```</span>
-<span class="sd">    runner = Runner(cmd)</span>
-<span class="sd">    async with runner as (stdin, stdout, stderr):</span>
-<span class="sd">        # process stdin, stdout, stderr (if not None)</span>
-<span class="sd">    result = runner.result()</span>
+<span class="sd">    async with cmd.run() as run:</span>
+<span class="sd">        # process run.stdin, run.stdout, run.stderr (if not None)</span>
+<span class="sd">    result = run.result()</span>
 <span class="sd">    ```</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -277,6 +276,8 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">proc</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">stdin</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stdout</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stderr</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -404,9 +405,6 @@
             <span class="n">stdout</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">stdout</span>
             <span class="n">stderr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">stderr</span>
 
-            <span class="c1"># Keep track of stdin so we can close it later.</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">stdin</span> <span class="o">=</span> <span class="n">stdin</span>
-
             <span class="k">if</span> <span class="n">stderr</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">error</span> <span class="o">=</span> <span class="n">opts</span><span class="o">.</span><span class="n">command</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">error</span>
                 <span class="n">stderr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_setup_output_sink</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="n">error</span><span class="p">,</span> <span class="n">opts</span><span class="o">.</span><span class="n">encoding</span><span class="p">,</span> <span class="s2">&quot;stderr&quot;</span><span class="p">)</span>
@@ -429,7 +427,13 @@
                 <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kill</span><span class="p">()</span>
             <span class="k">raise</span>
 
-        <span class="k">return</span> <span class="p">(</span><span class="n">stdin</span><span class="p">,</span> <span class="n">stdout</span><span class="p">,</span> <span class="n">stderr</span><span class="p">)</span>
+        <span class="c1"># Make final streams available. These may be different from `self.proc`</span>
+        <span class="c1"># versions.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stdin</span> <span class="o">=</span> <span class="n">stdin</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stdout</span> <span class="o">=</span> <span class="n">stdout</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stderr</span> <span class="o">=</span> <span class="n">stderr</span>
+
+        <span class="k">return</span> <span class="bp">self</span>
 
     <span class="k">def</span> <span class="nf">_setup_output_sink</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stream</span><span class="p">,</span> <span class="n">sink</span><span class="p">,</span> <span class="n">encoding</span><span class="p">,</span> <span class="n">tag</span><span class="p">):</span>
         <span class="s2">&quot;Set up a task to write to custom output sink.&quot;</span>
@@ -489,11 +493,11 @@
             <span class="c1"># Make sure the transport is closed (for asyncio and uvloop).</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">_transport</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 
-            <span class="c1"># Make sure that stdin is properly closed. `wait_closed` will raise</span>
-            <span class="c1"># a BrokenPipeError if not all input was properly written.</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">stdin</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
-                <span class="k">await</span> <span class="n">harvest</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">wait_closed</span><span class="p">(),</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">0.25</span><span class="p">,</span> <span class="n">trustee</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+            <span class="c1"># Make sure that original stdin is properly closed. `wait_closed`</span>
+            <span class="c1"># will raise a BrokenPipeError if not all input was properly written.</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">stdin</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+                <span class="k">await</span> <span class="n">harvest</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">wait_closed</span><span class="p">(),</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">0.25</span><span class="p">,</span> <span class="n">trustee</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
 
         <span class="k">except</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">TimeoutError</span><span class="p">:</span>
             <span class="n">LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Runner._close </span><span class="si">%r</span><span class="s2"> timeout&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
@@ -509,14 +513,13 @@
     <span class="sd">&quot;&quot;&quot;PipeRunner is an asynchronous context manager that runs a pipeline.</span>
 
 <span class="sd">    ```</span>
-<span class="sd">    runner = PipeRunner(pipe)</span>
-<span class="sd">    async with runner as (stdin, stdout, stderr):</span>
-<span class="sd">        # process stdin, stdout, stderr (if not None)</span>
-<span class="sd">    result = runner.result()</span>
+<span class="sd">    async with pipe.run() as run:</span>
+<span class="sd">        # process run.stdin, run.stdout, run.stderr (if not None)</span>
+<span class="sd">    result = run.result()</span>
 <span class="sd">    ```</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pipe</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">capturing</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pipe</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">capturing</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;`capturing=True` indicates we are within an `async with` block and</span>
 <span class="sd">        client needs to access `stdin` and `stderr` streams.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -526,6 +529,9 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">capturing</span> <span class="o">=</span> <span class="n">capturing</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">encoding</span> <span class="o">=</span> <span class="n">pipe</span><span class="o">.</span><span class="n">commands</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">encoding</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stdin</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stdout</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stderr</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -602,7 +608,11 @@
             <span class="k">else</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span> <span class="o">=</span> <span class="p">[</span><span class="n">cmd</span><span class="o">.</span><span class="n">task</span><span class="p">()</span> <span class="k">for</span> <span class="n">cmd</span> <span class="ow">in</span> <span class="n">cmds</span><span class="p">]</span>
 
-            <span class="k">return</span> <span class="p">(</span><span class="n">stdin</span><span class="p">,</span> <span class="n">stdout</span><span class="p">,</span> <span class="n">stderr</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">stdin</span> <span class="o">=</span> <span class="n">stdin</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">stdout</span> <span class="o">=</span> <span class="n">stdout</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">stderr</span> <span class="o">=</span> <span class="n">stderr</span>
+
+            <span class="k">return</span> <span class="bp">self</span>
 
         <span class="k">except</span> <span class="ne">BaseException</span><span class="p">:</span>
             <span class="c1"># Clean up after any exception *including* CancelledError.</span>
@@ -665,24 +675,25 @@
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;multiple capture requires &#39;async with&#39;&quot;</span><span class="p">)</span>
 
     <span class="n">output_bytes</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="n">runner</span> <span class="o">=</span> <span class="n">Runner</span><span class="p">(</span><span class="n">command</span><span class="p">)</span>
+    <span class="n">run</span> <span class="o">=</span> <span class="n">command</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
 
     <span class="k">try</span><span class="p">:</span>
-        <span class="k">async</span> <span class="k">with</span> <span class="n">runner</span> <span class="k">as</span> <span class="p">(</span><span class="n">stdin</span><span class="p">,</span> <span class="n">stdout</span><span class="p">,</span> <span class="n">stderr</span><span class="p">):</span>
+        <span class="k">async</span> <span class="k">with</span> <span class="n">run</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">_streams_future</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="c1"># Return streams to caller in another task.</span>
-                <span class="n">_streams_future</span><span class="o">.</span><span class="n">set_result</span><span class="p">((</span><span class="n">stdin</span><span class="p">,</span> <span class="n">stdout</span><span class="p">,</span> <span class="n">stderr</span><span class="p">))</span>
+                <span class="n">_streams_future</span><span class="o">.</span><span class="n">set_result</span><span class="p">((</span><span class="n">run</span><span class="o">.</span><span class="n">stdin</span><span class="p">,</span> <span class="n">run</span><span class="o">.</span><span class="n">stdout</span><span class="p">,</span> <span class="n">run</span><span class="o">.</span><span class="n">stderr</span><span class="p">))</span>
 
             <span class="k">else</span><span class="p">:</span>
                 <span class="c1"># Read the output here and return it.</span>
-                <span class="n">stream</span> <span class="o">=</span> <span class="n">stdout</span> <span class="ow">or</span> <span class="n">stderr</span>
+                <span class="n">stream</span> <span class="o">=</span> <span class="n">run</span><span class="o">.</span><span class="n">stdout</span> <span class="ow">or</span> <span class="n">run</span><span class="o">.</span><span class="n">stderr</span>
                 <span class="k">if</span> <span class="n">stream</span><span class="p">:</span>
                     <span class="n">output_bytes</span> <span class="o">=</span> <span class="k">await</span> <span class="n">stream</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
 
     <span class="k">except</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">CancelledError</span><span class="p">:</span>
-        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;run </span><span class="si">%r</span><span class="s2"> cancelled inside enter&quot;</span><span class="p">,</span> <span class="n">command</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="c1"># FIXME: This needs to be nailed down!</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;run </span><span class="si">%r</span><span class="s2"> cancelled inside enter&quot;</span><span class="p">,</span> <span class="n">command</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
 
-    <span class="k">return</span> <span class="n">runner</span><span class="o">.</span><span class="n">result</span><span class="p">(</span><span class="n">output_bytes</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">run</span><span class="o">.</span><span class="n">result</span><span class="p">(</span><span class="n">output_bytes</span><span class="p">)</span>
 
 
 <span class="k">async</span> <span class="k">def</span> <span class="nf">run_iter</span><span class="p">(</span><span class="n">command</span><span class="p">):</span>
@@ -690,15 +701,14 @@
     <span class="k">if</span> <span class="n">command</span><span class="o">.</span><span class="n">multiple_capture</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;multiple capture requires &#39;async with&#39;&quot;</span><span class="p">)</span>
 
-    <span class="n">runner</span> <span class="o">=</span> <span class="n">Runner</span><span class="p">(</span><span class="n">command</span><span class="p">)</span>
-    <span class="k">async</span> <span class="k">with</span> <span class="n">runner</span> <span class="k">as</span> <span class="p">(</span><span class="n">_stdin</span><span class="p">,</span> <span class="n">stdout</span><span class="p">,</span> <span class="n">stderr</span><span class="p">):</span>
-        <span class="n">encoding</span> <span class="o">=</span> <span class="n">runner</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">encoding</span>
-        <span class="n">stream</span> <span class="o">=</span> <span class="n">stdout</span> <span class="ow">or</span> <span class="n">stderr</span>
+    <span class="k">async</span> <span class="k">with</span> <span class="n">command</span><span class="o">.</span><span class="n">run</span><span class="p">()</span> <span class="k">as</span> <span class="n">run</span><span class="p">:</span>
+        <span class="n">encoding</span> <span class="o">=</span> <span class="n">run</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">encoding</span>
+        <span class="n">stream</span> <span class="o">=</span> <span class="n">run</span><span class="o">.</span><span class="n">stdout</span> <span class="ow">or</span> <span class="n">run</span><span class="o">.</span><span class="n">stderr</span>
         <span class="k">if</span> <span class="n">stream</span><span class="p">:</span>
             <span class="k">async</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">stream</span><span class="p">:</span>
                 <span class="k">yield</span> <span class="n">decode</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="n">encoding</span><span class="p">)</span>
 
-    <span class="n">runner</span><span class="o">.</span><span class="n">result</span><span class="p">()</span>  <span class="c1"># No return value; raises exception if needed</span>
+    <span class="n">run</span><span class="o">.</span><span class="n">result</span><span class="p">()</span>  <span class="c1"># No return value; raises exception if needed</span>
 
 
 <span class="k">async</span> <span class="k">def</span> <span class="nf">run_pipe</span><span class="p">(</span><span class="n">pipe</span><span class="p">):</span>
@@ -708,7 +718,7 @@
     <span class="k">if</span> <span class="n">cmd_count</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
         <span class="k">return</span> <span class="k">await</span> <span class="n">run</span><span class="p">(</span><span class="n">pipe</span><span class="o">.</span><span class="n">commands</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
 
-    <span class="n">runner</span> <span class="o">=</span> <span class="n">PipeRunner</span><span class="p">(</span><span class="n">pipe</span><span class="p">)</span>
+    <span class="n">runner</span> <span class="o">=</span> <span class="n">PipeRunner</span><span class="p">(</span><span class="n">pipe</span><span class="p">,</span> <span class="n">capturing</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
     <span class="k">async</span> <span class="k">with</span> <span class="n">runner</span><span class="p">:</span>
         <span class="k">pass</span>
     <span class="k">return</span> <span class="n">runner</span><span class="o">.</span><span class="n">result</span><span class="p">()</span>
@@ -716,16 +726,16 @@
 
 <span class="k">async</span> <span class="k">def</span> <span class="nf">run_pipe_iter</span><span class="p">(</span><span class="n">pipe</span><span class="p">):</span>
     <span class="s2">&quot;Run a pipeline and iterate over its output lines.&quot;</span>
-    <span class="n">runner</span> <span class="o">=</span> <span class="n">PipeRunner</span><span class="p">(</span><span class="n">pipe</span><span class="p">,</span> <span class="n">capturing</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="k">async</span> <span class="k">with</span> <span class="n">runner</span> <span class="k">as</span> <span class="p">(</span><span class="n">stdin</span><span class="p">,</span> <span class="n">stdout</span><span class="p">,</span> <span class="n">stderr</span><span class="p">):</span>
-        <span class="k">assert</span> <span class="n">stdin</span> <span class="ow">is</span> <span class="kc">None</span>
-        <span class="k">assert</span> <span class="n">stderr</span> <span class="ow">is</span> <span class="kc">None</span>
+    <span class="n">run</span> <span class="o">=</span> <span class="n">PipeRunner</span><span class="p">(</span><span class="n">pipe</span><span class="p">,</span> <span class="n">capturing</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">async</span> <span class="k">with</span> <span class="n">run</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="n">run</span><span class="o">.</span><span class="n">stdin</span> <span class="ow">is</span> <span class="kc">None</span>
+        <span class="k">assert</span> <span class="n">run</span><span class="o">.</span><span class="n">stderr</span> <span class="ow">is</span> <span class="kc">None</span>
 
-        <span class="n">encoding</span> <span class="o">=</span> <span class="n">runner</span><span class="o">.</span><span class="n">encoding</span>
-        <span class="k">async</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">stdout</span><span class="p">:</span>
+        <span class="n">encoding</span> <span class="o">=</span> <span class="n">run</span><span class="o">.</span><span class="n">encoding</span>
+        <span class="k">async</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">run</span><span class="o">.</span><span class="n">stdout</span><span class="p">:</span>
             <span class="k">yield</span> <span class="n">decode</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="n">encoding</span><span class="p">)</span>
 
-    <span class="n">runner</span><span class="o">.</span><span class="n">result</span><span class="p">()</span>  <span class="c1"># No return value; raises exception if needed</span>
+    <span class="n">run</span><span class="o">.</span><span class="n">result</span><span class="p">()</span>  <span class="c1"># No return value; raises exception if needed</span>
 
 
 <span class="k">def</span> <span class="nf">_close_fds</span><span class="p">(</span><span class="n">open_fds</span><span class="p">):</span>
@@ -762,10 +772,9 @@
     <span class="sd">&quot;&quot;&quot;Runner is an asynchronous context manager that runs a command.</span>
 
 <span class="sd">    ```</span>
-<span class="sd">    runner = Runner(cmd)</span>
-<span class="sd">    async with runner as (stdin, stdout, stderr):</span>
-<span class="sd">        # process stdin, stdout, stderr (if not None)</span>
-<span class="sd">    result = runner.result()</span>
+<span class="sd">    async with cmd.run() as run:</span>
+<span class="sd">        # process run.stdin, run.stdout, run.stderr (if not None)</span>
+<span class="sd">    result = run.result()</span>
 <span class="sd">    ```</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -775,6 +784,8 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">proc</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">stdin</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stdout</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stderr</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -902,9 +913,6 @@
             <span class="n">stdout</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">stdout</span>
             <span class="n">stderr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">stderr</span>
 
-            <span class="c1"># Keep track of stdin so we can close it later.</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">stdin</span> <span class="o">=</span> <span class="n">stdin</span>
-
             <span class="k">if</span> <span class="n">stderr</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">error</span> <span class="o">=</span> <span class="n">opts</span><span class="o">.</span><span class="n">command</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">error</span>
                 <span class="n">stderr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_setup_output_sink</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="n">error</span><span class="p">,</span> <span class="n">opts</span><span class="o">.</span><span class="n">encoding</span><span class="p">,</span> <span class="s2">&quot;stderr&quot;</span><span class="p">)</span>
@@ -927,7 +935,13 @@
                 <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kill</span><span class="p">()</span>
             <span class="k">raise</span>
 
-        <span class="k">return</span> <span class="p">(</span><span class="n">stdin</span><span class="p">,</span> <span class="n">stdout</span><span class="p">,</span> <span class="n">stderr</span><span class="p">)</span>
+        <span class="c1"># Make final streams available. These may be different from `self.proc`</span>
+        <span class="c1"># versions.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stdin</span> <span class="o">=</span> <span class="n">stdin</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stdout</span> <span class="o">=</span> <span class="n">stdout</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stderr</span> <span class="o">=</span> <span class="n">stderr</span>
+
+        <span class="k">return</span> <span class="bp">self</span>
 
     <span class="k">def</span> <span class="nf">_setup_output_sink</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stream</span><span class="p">,</span> <span class="n">sink</span><span class="p">,</span> <span class="n">encoding</span><span class="p">,</span> <span class="n">tag</span><span class="p">):</span>
         <span class="s2">&quot;Set up a task to write to custom output sink.&quot;</span>
@@ -987,11 +1001,11 @@
             <span class="c1"># Make sure the transport is closed (for asyncio and uvloop).</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">_transport</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 
-            <span class="c1"># Make sure that stdin is properly closed. `wait_closed` will raise</span>
-            <span class="c1"># a BrokenPipeError if not all input was properly written.</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">stdin</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
-                <span class="k">await</span> <span class="n">harvest</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">wait_closed</span><span class="p">(),</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">0.25</span><span class="p">,</span> <span class="n">trustee</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+            <span class="c1"># Make sure that original stdin is properly closed. `wait_closed`</span>
+            <span class="c1"># will raise a BrokenPipeError if not all input was properly written.</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">stdin</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+                <span class="k">await</span> <span class="n">harvest</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">wait_closed</span><span class="p">(),</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">0.25</span><span class="p">,</span> <span class="n">trustee</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
 
         <span class="k">except</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">TimeoutError</span><span class="p">:</span>
             <span class="n">LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Runner._close </span><span class="si">%r</span><span class="s2"> timeout&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
@@ -1007,10 +1021,9 @@
 
             <div class="docstring"><p>Runner is an asynchronous context manager that runs a command.</p>
 
-<pre><code>runner = Runner(cmd)
-async with runner as (stdin, stdout, stderr):
-    # process stdin, stdout, stderr (if not None)
-result = runner.result()
+<pre><code>async with cmd.run() as run:
+    # process run.stdin, run.stdout, run.stderr (if not None)
+result = run.result()
 </code></pre>
 </div>
 
@@ -1030,6 +1043,8 @@ result = runner.result()
         <span class="bp">self</span><span class="o">.</span><span class="n">proc</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">stdin</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stdout</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stderr</span> <span class="o">=</span> <span class="kc">None</span>
 </pre></div>
 
         </details>
@@ -1136,14 +1151,13 @@ result = runner.result()
     <span class="sd">&quot;&quot;&quot;PipeRunner is an asynchronous context manager that runs a pipeline.</span>
 
 <span class="sd">    ```</span>
-<span class="sd">    runner = PipeRunner(pipe)</span>
-<span class="sd">    async with runner as (stdin, stdout, stderr):</span>
-<span class="sd">        # process stdin, stdout, stderr (if not None)</span>
-<span class="sd">    result = runner.result()</span>
+<span class="sd">    async with pipe.run() as run:</span>
+<span class="sd">        # process run.stdin, run.stdout, run.stderr (if not None)</span>
+<span class="sd">    result = run.result()</span>
 <span class="sd">    ```</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pipe</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">capturing</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pipe</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">capturing</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;`capturing=True` indicates we are within an `async with` block and</span>
 <span class="sd">        client needs to access `stdin` and `stderr` streams.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -1153,6 +1167,9 @@ result = runner.result()
         <span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">capturing</span> <span class="o">=</span> <span class="n">capturing</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">encoding</span> <span class="o">=</span> <span class="n">pipe</span><span class="o">.</span><span class="n">commands</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">encoding</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stdin</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stdout</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stderr</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -1229,7 +1246,11 @@ result = runner.result()
             <span class="k">else</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span> <span class="o">=</span> <span class="p">[</span><span class="n">cmd</span><span class="o">.</span><span class="n">task</span><span class="p">()</span> <span class="k">for</span> <span class="n">cmd</span> <span class="ow">in</span> <span class="n">cmds</span><span class="p">]</span>
 
-            <span class="k">return</span> <span class="p">(</span><span class="n">stdin</span><span class="p">,</span> <span class="n">stdout</span><span class="p">,</span> <span class="n">stderr</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">stdin</span> <span class="o">=</span> <span class="n">stdin</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">stdout</span> <span class="o">=</span> <span class="n">stdout</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">stderr</span> <span class="o">=</span> <span class="n">stderr</span>
+
+            <span class="k">return</span> <span class="bp">self</span>
 
         <span class="k">except</span> <span class="ne">BaseException</span><span class="p">:</span>
             <span class="c1"># Clean up after any exception *including* CancelledError.</span>
@@ -1290,10 +1311,9 @@ result = runner.result()
 
             <div class="docstring"><p>PipeRunner is an asynchronous context manager that runs a pipeline.</p>
 
-<pre><code>runner = PipeRunner(pipe)
-async with runner as (stdin, stdout, stderr):
-    # process stdin, stdout, stderr (if not None)
-result = runner.result()
+<pre><code>async with pipe.run() as run:
+    # process run.stdin, run.stdout, run.stderr (if not None)
+result = run.result()
 </code></pre>
 </div>
 
@@ -1302,12 +1322,12 @@ result = runner.result()
                                         <div class="attr function"><a class="headerlink" href="#PipeRunner.__init__">#&nbsp;&nbsp</a>
 
         
-            <span class="name">PipeRunner</span><span class="signature">(pipe, *, capturing=False)</span>
+            <span class="name">PipeRunner</span><span class="signature">(pipe, *, capturing)</span>
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pipe</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">capturing</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pipe</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">capturing</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;`capturing=True` indicates we are within an `async with` block and</span>
 <span class="sd">        client needs to access `stdin` and `stderr` streams.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -1317,6 +1337,9 @@ result = runner.result()
         <span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">capturing</span> <span class="o">=</span> <span class="n">capturing</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">encoding</span> <span class="o">=</span> <span class="n">pipe</span><span class="o">.</span><span class="n">commands</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">encoding</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stdin</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stdout</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stderr</span> <span class="o">=</span> <span class="kc">None</span>
 </pre></div>
 
         </details>
@@ -1377,24 +1400,25 @@ client needs to access <code>stdin</code> and <code>stderr</code> streams.</p>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;multiple capture requires &#39;async with&#39;&quot;</span><span class="p">)</span>
 
     <span class="n">output_bytes</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="n">runner</span> <span class="o">=</span> <span class="n">Runner</span><span class="p">(</span><span class="n">command</span><span class="p">)</span>
+    <span class="n">run</span> <span class="o">=</span> <span class="n">command</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
 
     <span class="k">try</span><span class="p">:</span>
-        <span class="k">async</span> <span class="k">with</span> <span class="n">runner</span> <span class="k">as</span> <span class="p">(</span><span class="n">stdin</span><span class="p">,</span> <span class="n">stdout</span><span class="p">,</span> <span class="n">stderr</span><span class="p">):</span>
+        <span class="k">async</span> <span class="k">with</span> <span class="n">run</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">_streams_future</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="c1"># Return streams to caller in another task.</span>
-                <span class="n">_streams_future</span><span class="o">.</span><span class="n">set_result</span><span class="p">((</span><span class="n">stdin</span><span class="p">,</span> <span class="n">stdout</span><span class="p">,</span> <span class="n">stderr</span><span class="p">))</span>
+                <span class="n">_streams_future</span><span class="o">.</span><span class="n">set_result</span><span class="p">((</span><span class="n">run</span><span class="o">.</span><span class="n">stdin</span><span class="p">,</span> <span class="n">run</span><span class="o">.</span><span class="n">stdout</span><span class="p">,</span> <span class="n">run</span><span class="o">.</span><span class="n">stderr</span><span class="p">))</span>
 
             <span class="k">else</span><span class="p">:</span>
                 <span class="c1"># Read the output here and return it.</span>
-                <span class="n">stream</span> <span class="o">=</span> <span class="n">stdout</span> <span class="ow">or</span> <span class="n">stderr</span>
+                <span class="n">stream</span> <span class="o">=</span> <span class="n">run</span><span class="o">.</span><span class="n">stdout</span> <span class="ow">or</span> <span class="n">run</span><span class="o">.</span><span class="n">stderr</span>
                 <span class="k">if</span> <span class="n">stream</span><span class="p">:</span>
                     <span class="n">output_bytes</span> <span class="o">=</span> <span class="k">await</span> <span class="n">stream</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
 
     <span class="k">except</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">CancelledError</span><span class="p">:</span>
-        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;run </span><span class="si">%r</span><span class="s2"> cancelled inside enter&quot;</span><span class="p">,</span> <span class="n">command</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="c1"># FIXME: This needs to be nailed down!</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;run </span><span class="si">%r</span><span class="s2"> cancelled inside enter&quot;</span><span class="p">,</span> <span class="n">command</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
 
-    <span class="k">return</span> <span class="n">runner</span><span class="o">.</span><span class="n">result</span><span class="p">(</span><span class="n">output_bytes</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">run</span><span class="o">.</span><span class="n">result</span><span class="p">(</span><span class="n">output_bytes</span><span class="p">)</span>
 </pre></div>
 
         </details>
@@ -1419,15 +1443,14 @@ client needs to access <code>stdin</code> and <code>stderr</code> streams.</p>
     <span class="k">if</span> <span class="n">command</span><span class="o">.</span><span class="n">multiple_capture</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;multiple capture requires &#39;async with&#39;&quot;</span><span class="p">)</span>
 
-    <span class="n">runner</span> <span class="o">=</span> <span class="n">Runner</span><span class="p">(</span><span class="n">command</span><span class="p">)</span>
-    <span class="k">async</span> <span class="k">with</span> <span class="n">runner</span> <span class="k">as</span> <span class="p">(</span><span class="n">_stdin</span><span class="p">,</span> <span class="n">stdout</span><span class="p">,</span> <span class="n">stderr</span><span class="p">):</span>
-        <span class="n">encoding</span> <span class="o">=</span> <span class="n">runner</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">encoding</span>
-        <span class="n">stream</span> <span class="o">=</span> <span class="n">stdout</span> <span class="ow">or</span> <span class="n">stderr</span>
+    <span class="k">async</span> <span class="k">with</span> <span class="n">command</span><span class="o">.</span><span class="n">run</span><span class="p">()</span> <span class="k">as</span> <span class="n">run</span><span class="p">:</span>
+        <span class="n">encoding</span> <span class="o">=</span> <span class="n">run</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">encoding</span>
+        <span class="n">stream</span> <span class="o">=</span> <span class="n">run</span><span class="o">.</span><span class="n">stdout</span> <span class="ow">or</span> <span class="n">run</span><span class="o">.</span><span class="n">stderr</span>
         <span class="k">if</span> <span class="n">stream</span><span class="p">:</span>
             <span class="k">async</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">stream</span><span class="p">:</span>
                 <span class="k">yield</span> <span class="n">decode</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="n">encoding</span><span class="p">)</span>
 
-    <span class="n">runner</span><span class="o">.</span><span class="n">result</span><span class="p">()</span>  <span class="c1"># No return value; raises exception if needed</span>
+    <span class="n">run</span><span class="o">.</span><span class="n">result</span><span class="p">()</span>  <span class="c1"># No return value; raises exception if needed</span>
 </pre></div>
 
         </details>
@@ -1454,7 +1477,7 @@ client needs to access <code>stdin</code> and <code>stderr</code> streams.</p>
     <span class="k">if</span> <span class="n">cmd_count</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
         <span class="k">return</span> <span class="k">await</span> <span class="n">run</span><span class="p">(</span><span class="n">pipe</span><span class="o">.</span><span class="n">commands</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
 
-    <span class="n">runner</span> <span class="o">=</span> <span class="n">PipeRunner</span><span class="p">(</span><span class="n">pipe</span><span class="p">)</span>
+    <span class="n">runner</span> <span class="o">=</span> <span class="n">PipeRunner</span><span class="p">(</span><span class="n">pipe</span><span class="p">,</span> <span class="n">capturing</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
     <span class="k">async</span> <span class="k">with</span> <span class="n">runner</span><span class="p">:</span>
         <span class="k">pass</span>
     <span class="k">return</span> <span class="n">runner</span><span class="o">.</span><span class="n">result</span><span class="p">()</span>
@@ -1479,16 +1502,16 @@ client needs to access <code>stdin</code> and <code>stderr</code> streams.</p>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span><span class="k">async</span> <span class="k">def</span> <span class="nf">run_pipe_iter</span><span class="p">(</span><span class="n">pipe</span><span class="p">):</span>
     <span class="s2">&quot;Run a pipeline and iterate over its output lines.&quot;</span>
-    <span class="n">runner</span> <span class="o">=</span> <span class="n">PipeRunner</span><span class="p">(</span><span class="n">pipe</span><span class="p">,</span> <span class="n">capturing</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="k">async</span> <span class="k">with</span> <span class="n">runner</span> <span class="k">as</span> <span class="p">(</span><span class="n">stdin</span><span class="p">,</span> <span class="n">stdout</span><span class="p">,</span> <span class="n">stderr</span><span class="p">):</span>
-        <span class="k">assert</span> <span class="n">stdin</span> <span class="ow">is</span> <span class="kc">None</span>
-        <span class="k">assert</span> <span class="n">stderr</span> <span class="ow">is</span> <span class="kc">None</span>
+    <span class="n">run</span> <span class="o">=</span> <span class="n">PipeRunner</span><span class="p">(</span><span class="n">pipe</span><span class="p">,</span> <span class="n">capturing</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">async</span> <span class="k">with</span> <span class="n">run</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="n">run</span><span class="o">.</span><span class="n">stdin</span> <span class="ow">is</span> <span class="kc">None</span>
+        <span class="k">assert</span> <span class="n">run</span><span class="o">.</span><span class="n">stderr</span> <span class="ow">is</span> <span class="kc">None</span>
 
-        <span class="n">encoding</span> <span class="o">=</span> <span class="n">runner</span><span class="o">.</span><span class="n">encoding</span>
-        <span class="k">async</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">stdout</span><span class="p">:</span>
+        <span class="n">encoding</span> <span class="o">=</span> <span class="n">run</span><span class="o">.</span><span class="n">encoding</span>
+        <span class="k">async</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">run</span><span class="o">.</span><span class="n">stdout</span><span class="p">:</span>
             <span class="k">yield</span> <span class="n">decode</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="n">encoding</span><span class="p">)</span>
 
-    <span class="n">runner</span><span class="o">.</span><span class="n">result</span><span class="p">()</span>  <span class="c1"># No return value; raises exception if needed</span>
+    <span class="n">run</span><span class="o">.</span><span class="n">result</span><span class="p">()</span>  <span class="c1"># No return value; raises exception if needed</span>
 </pre></div>
 
         </details>

@@ -55,7 +55,7 @@
                                 <a class="function" href="#Pipeline.task">task</a>
                         </li>
                         <li>
-                                <a class="function" href="#Pipeline.runner">runner</a>
+                                <a class="function" href="#Pipeline.run">run</a>
                         </li>
                 </ul>
 
@@ -137,15 +137,14 @@
             <span class="n">name</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="nb">id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">runner</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Return a `Runner` to help run the process incrementally.</span>
+    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return a `Runner` to help run the pipeline incrementally.</span>
 
 <span class="sd">        ```</span>
-<span class="sd">        runner = pipe.runner()</span>
-<span class="sd">        async with runner as (stdin, stdout, stderr):</span>
-<span class="sd">            # do something with stdin, stdout, stderr...</span>
+<span class="sd">        async with pipe.run() as run:</span>
+<span class="sd">            # do something with run.stdin, run.stdout, run.stderr...</span>
 <span class="sd">            # close stdin to signal we&#39;re done...</span>
-<span class="sd">        result = runner.result()</span>
+<span class="sd">        result = run.result()</span>
 <span class="sd">        ```</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">PipeRunner</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">capturing</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -251,15 +250,14 @@
             <span class="n">name</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="nb">id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">runner</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Return a `Runner` to help run the process incrementally.</span>
+    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return a `Runner` to help run the pipeline incrementally.</span>
 
 <span class="sd">        ```</span>
-<span class="sd">        runner = pipe.runner()</span>
-<span class="sd">        async with runner as (stdin, stdout, stderr):</span>
-<span class="sd">            # do something with stdin, stdout, stderr...</span>
+<span class="sd">        async with pipe.run() as run:</span>
+<span class="sd">            # do something with run.stdin, run.stdout, run.stderr...</span>
 <span class="sd">            # close stdin to signal we&#39;re done...</span>
-<span class="sd">        result = runner.result()</span>
+<span class="sd">        result = run.result()</span>
 <span class="sd">        ```</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">PipeRunner</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">capturing</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -431,25 +429,24 @@
 
 
                             </div>
-                            <div id="Pipeline.runner" class="classattr">
-                                        <div class="attr function"><a class="headerlink" href="#Pipeline.runner">#&nbsp;&nbsp</a>
+                            <div id="Pipeline.run" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#Pipeline.run">#&nbsp;&nbsp</a>
 
         
             <span class="def">def</span>
-            <span class="name">runner</span><span class="signature">(self)</span>:
+            <span class="name">run</span><span class="signature">(self)</span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">runner</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Return a `Runner` to help run the process incrementally.</span>
+            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return a `Runner` to help run the pipeline incrementally.</span>
 
 <span class="sd">        ```</span>
-<span class="sd">        runner = pipe.runner()</span>
-<span class="sd">        async with runner as (stdin, stdout, stderr):</span>
-<span class="sd">            # do something with stdin, stdout, stderr...</span>
+<span class="sd">        async with pipe.run() as run:</span>
+<span class="sd">            # do something with run.stdin, run.stdout, run.stderr...</span>
 <span class="sd">            # close stdin to signal we&#39;re done...</span>
-<span class="sd">        result = runner.result()</span>
+<span class="sd">        result = run.result()</span>
 <span class="sd">        ```</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">PipeRunner</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">capturing</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -457,13 +454,12 @@
 
         </details>
 
-            <div class="docstring"><p>Return a <code>Runner</code> to help run the process incrementally.</p>
+            <div class="docstring"><p>Return a <code>Runner</code> to help run the pipeline incrementally.</p>
 
-<pre><code>runner = pipe.runner()
-async with runner as (stdin, stdout, stderr):
-    # do something with stdin, stdout, stderr...
+<pre><code>async with pipe.run() as run:
+    # do something with run.stdin, run.stdout, run.stderr...
     # close stdin to signal we're done...
-result = runner.result()
+result = run.result()
 </code></pre>
 </div>
 
