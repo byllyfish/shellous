@@ -96,11 +96,11 @@ async def test_harvest_2_done_tasks():
     another raises an exception."""
 
     async def coro1():
-        await asyncio.sleep(0.1)
+        await asyncio.sleep(0.25)
         raise ValueError(1)
 
     async def coro2():
-        await asyncio.sleep(0.2)
+        await asyncio.sleep(1.0)
 
     task1 = asyncio.create_task(coro2())
     htask = asyncio.create_task(harvest(task1, coro1(), coro2()))
