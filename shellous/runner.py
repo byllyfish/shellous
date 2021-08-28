@@ -455,7 +455,7 @@ class PipeRunner:
             return await self._start()
         except (Exception, asyncio.CancelledError) as ex:
             LOGGER.warning("PipeRunner enter %r ex=%r", self, ex)
-            await self.wait(kill=True)  # FIXME
+            await self._wait(kill=True)  # FIXME
             raise
         finally:
             LOGGER.info("PipeRunner entered %r ex=%r", self, _exc())

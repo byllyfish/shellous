@@ -2,7 +2,6 @@
 
 import asyncio
 import functools
-import inspect
 import os
 import platform
 import sys
@@ -45,21 +44,20 @@ def log_method(enabled):
 
             return _method_wrapper
 
-        else:
-            # Use _function_wrapper which ignores arguments.
-            @functools.wraps(func)
-            async def _function_wrapper(*args, **kwargs):
-                LOGGER.info("%s stepin", func.__qualname__)
-                try:
-                    return await func(*args, **kwargs)
-                finally:
-                    LOGGER.info(
-                        "%s stepout ex=%r",
-                        func.__qualname__,
-                        sys.exc_info()[1],
-                    )
+        # Use _function_wrapper which ignores arguments.
+        @functools.wraps(func)
+        async def _function_wrapper(*args, **kwargs):
+            LOGGER.info("%s stepin", func.__qualname__)
+            try:
+                return await func(*args, **kwargs)
+            finally:
+                LOGGER.info(
+                    "%s stepout ex=%r",
+                    func.__qualname__,
+                    sys.exc_info()[1],
+                )
 
-            return _function_wrapper
+        return _function_wrapper
 
     return _decorator
 

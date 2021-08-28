@@ -129,7 +129,6 @@ async def _cancel_wait(tasks, trustee):
             "harvest._cancel_wait cancelled itself? trustee=%r",
             trustee,
         )
-        pass
 
 
 def _to_result(task):

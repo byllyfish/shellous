@@ -2,7 +2,6 @@ import logging
 import os
 
 import pytest
-from shellous.harvest import harvest
 from shellous.util import coerce_env, decode, log_method
 
 pytestmark = pytest.mark.asyncio
