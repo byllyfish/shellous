@@ -128,9 +128,8 @@ def test_parse_readme():
         'pipe = sh("ls") | sh("grep", "README")',
         "await pipe",
         "async for line in pipe:\n  print(line.rstrip())\n",
-        "runner = pipe.runner()",
-        "async with runner as (stdin, stdout, stderr):\n"
-        "  data = await stdout.readline()\n"
+        "async with pipe.run() as run:\n"
+        "  data = await run.stdout.readline()\n"
         "  print(data)\n",
     ]
 

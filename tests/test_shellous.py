@@ -303,20 +303,19 @@ async def test_broken_pipe_in_async_with_failed_pipeline(cat_cmd, echo_cmd):
     echo = echo_cmd.env(SHELLOUS_EXIT_CODE=7)
 
     cmd = (data | cat_cmd | echo("abc")).stdin(CAPTURE).stdout(DEVNULL)
-    runner = cmd.runner()
-    async with runner as (stdin, _stdout, _stderr):
-        stdin.write(data)
+    async with cmd.run() as run:
+        run.stdin.write(data)
         try:
-            await stdin.drain()
+            await run.stdin.drain()
         except BrokenPipeError:
             pass
         finally:
-            stdin.close()
+            run.stdin.close()
 
     with pytest.raises(BrokenPipeError):
         # Must retrieve BrokenPipeError from the `_stdin_closed` future.
-        stdin.close()  # redundant close here
-        await stdin.wait_closed()
+        run.stdin.close()  # redundant close here
+        await run.stdin.wait_closed()
 
 
 async def test_stdout_deadlock_antipattern(bulk_cmd):

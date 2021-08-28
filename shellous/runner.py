@@ -163,8 +163,7 @@ class Runner:
     """Runner is an asynchronous context manager that runs a command.
 
     ```
-    runner = Runner(cmd)
-    async with runner as run:
+    async with cmd.run() as run:
         # process run.stdin, run.stdout, run.stderr (if not None)
     result = run.result()
     ```
@@ -413,14 +412,13 @@ class PipeRunner:
     """PipeRunner is an asynchronous context manager that runs a pipeline.
 
     ```
-    runner = PipeRunner(pipe)
-    async with runner as (stdin, stdout, stderr):
-        # process stdin, stdout, stderr (if not None)
-    result = runner.result()
+    async with pipe.run() as run:
+        # process run.stdin, run.stdout, run.stderr (if not None)
+    result = run.result()
     ```
     """
 
-    def __init__(self, pipe, *, capturing=False):
+    def __init__(self, pipe, *, capturing):
         """`capturing=True` indicates we are within an `async with` block and
         client needs to access `stdin` and `stderr` streams.
         """
@@ -430,6 +428,9 @@ class PipeRunner:
         self.results = None
         self.capturing = capturing
         self.encoding = pipe.commands[-1].options.encoding
+        self.stdin = None
+        self.stdout = None
+        self.stderr = None
 
     @property
     def name(self):
@@ -506,7 +507,11 @@ class PipeRunner:
             else:
                 self.tasks = [cmd.task() for cmd in cmds]
 
-            return (stdin, stdout, stderr)
+            self.stdin = stdin
+            self.stdout = stdout
+            self.stderr = stderr
+
+            return self
 
         except BaseException:
             # Clean up after any exception *including* CancelledError.
@@ -612,7 +617,7 @@ async def run_pipe(pipe):
     if cmd_count == 1:
         return await run(pipe.commands[0])
 
-    runner = PipeRunner(pipe)
+    runner = PipeRunner(pipe, capturing=False)
     async with runner:
         pass
     return runner.result()
@@ -620,16 +625,16 @@ async def run_pipe(pipe):
 
 async def run_pipe_iter(pipe):
     "Run a pipeline and iterate over its output lines."
-    runner = PipeRunner(pipe, capturing=True)
-    async with runner as (stdin, stdout, stderr):
-        assert stdin is None
-        assert stderr is None
+    run = PipeRunner(pipe, capturing=True)
+    async with run:
+        assert run.stdin is None
+        assert run.stderr is None
 
-        encoding = runner.encoding
-        async for line in stdout:
+        encoding = run.encoding
+        async for line in run.stdout:
             yield decode(line, encoding)
 
-    runner.result()  # No return value; raises exception if needed
+    run.result()  # No return value; raises exception if needed
 
 
 def _close_fds(open_fds):
