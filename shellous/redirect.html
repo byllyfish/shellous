@@ -108,6 +108,7 @@
 
 <span class="nd">@log_method</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span> <span class="nf">write_stream</span><span class="p">(</span><span class="n">input_bytes</span><span class="p">,</span> <span class="n">stream</span><span class="p">):</span>
+    <span class="s2">&quot;Write input_bytes to stream.&quot;</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">input_bytes</span><span class="p">:</span>
             <span class="n">stream</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">input_bytes</span><span class="p">)</span>
@@ -122,6 +123,7 @@
 
 <span class="nd">@log_method</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span> <span class="nf">copy_stringio</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">dest</span><span class="p">,</span> <span class="n">encoding</span><span class="p">):</span>
+    <span class="s2">&quot;Copy bytes from source stream to dest StringIO.&quot;</span>
     <span class="c1"># Collect partial reads into a BytesIO.</span>
     <span class="n">buf</span> <span class="o">=</span> <span class="n">io</span><span class="o">.</span><span class="n">BytesIO</span><span class="p">()</span>
     <span class="k">try</span><span class="p">:</span>
@@ -138,6 +140,7 @@
 
 <span class="nd">@log_method</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span> <span class="nf">copy_bytesio</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">dest</span><span class="p">):</span>
+    <span class="s2">&quot;Copy bytes from source stream to dest BytesIO.&quot;</span>
     <span class="c1"># Collect partial reads into a BytesIO.</span>
     <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
         <span class="n">data</span> <span class="o">=</span> <span class="k">await</span> <span class="n">source</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">1024</span><span class="p">)</span>
@@ -148,6 +151,7 @@
 
 <span class="nd">@log_method</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span> <span class="nf">copy_bytearray</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">dest</span><span class="p">):</span>
+    <span class="s2">&quot;Copy bytes from source stream to dest bytearray.&quot;</span>
     <span class="c1"># Collect partial reads into a bytearray.</span>
     <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
         <span class="n">data</span> <span class="o">=</span> <span class="k">await</span> <span class="n">source</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">1024</span><span class="p">)</span>
@@ -283,6 +287,7 @@
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span><span class="nd">@log_method</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span> <span class="nf">write_stream</span><span class="p">(</span><span class="n">input_bytes</span><span class="p">,</span> <span class="n">stream</span><span class="p">):</span>
+    <span class="s2">&quot;Write input_bytes to stream.&quot;</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">input_bytes</span><span class="p">:</span>
             <span class="n">stream</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">input_bytes</span><span class="p">)</span>
@@ -297,7 +302,9 @@
 
         </details>
 
-    
+            <div class="docstring"><p>Write input_bytes to stream.</p>
+</div>
+
 
                 </section>
                 <section id="copy_stringio">
@@ -313,6 +320,7 @@
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span><span class="nd">@log_method</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span> <span class="nf">copy_stringio</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">dest</span><span class="p">,</span> <span class="n">encoding</span><span class="p">):</span>
+    <span class="s2">&quot;Copy bytes from source stream to dest StringIO.&quot;</span>
     <span class="c1"># Collect partial reads into a BytesIO.</span>
     <span class="n">buf</span> <span class="o">=</span> <span class="n">io</span><span class="o">.</span><span class="n">BytesIO</span><span class="p">()</span>
     <span class="k">try</span><span class="p">:</span>
@@ -329,7 +337,9 @@
 
         </details>
 
-    
+            <div class="docstring"><p>Copy bytes from source stream to dest StringIO.</p>
+</div>
+
 
                 </section>
                 <section id="copy_bytesio">
@@ -345,6 +355,7 @@
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span><span class="nd">@log_method</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span> <span class="nf">copy_bytesio</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">dest</span><span class="p">):</span>
+    <span class="s2">&quot;Copy bytes from source stream to dest BytesIO.&quot;</span>
     <span class="c1"># Collect partial reads into a BytesIO.</span>
     <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
         <span class="n">data</span> <span class="o">=</span> <span class="k">await</span> <span class="n">source</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">1024</span><span class="p">)</span>
@@ -355,7 +366,9 @@
 
         </details>
 
-    
+            <div class="docstring"><p>Copy bytes from source stream to dest BytesIO.</p>
+</div>
+
 
                 </section>
                 <section id="copy_bytearray">
@@ -371,6 +384,7 @@
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span><span class="nd">@log_method</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span> <span class="nf">copy_bytearray</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">dest</span><span class="p">):</span>
+    <span class="s2">&quot;Copy bytes from source stream to dest bytearray.&quot;</span>
     <span class="c1"># Collect partial reads into a bytearray.</span>
     <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
         <span class="n">data</span> <span class="o">=</span> <span class="k">await</span> <span class="n">source</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">1024</span><span class="p">)</span>
@@ -381,7 +395,9 @@
 
         </details>
 
-    
+            <div class="docstring"><p>Copy bytes from source stream to dest bytearray.</p>
+</div>
+
 
                 </section>
     </main>

@@ -46,6 +46,9 @@
                                 <a class="variable" href="#Pipeline.options">options</a>
                         </li>
                         <li>
+                                <a class="variable" href="#Pipeline.multiple_capture">multiple_capture</a>
+                        </li>
+                        <li>
                                 <a class="function" href="#Pipeline.stdin">stdin</a>
                         </li>
                         <li>
@@ -113,6 +116,11 @@
     <span class="k">def</span> <span class="nf">options</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Return last command&#39;s options.&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">commands</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">options</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">multiple_capture</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;Return true if pipe uses multiple capture.&quot;</span>
+        <span class="k">return</span> <span class="nb">any</span><span class="p">(</span><span class="n">cmd</span><span class="o">.</span><span class="n">multiple_capture</span> <span class="k">for</span> <span class="n">cmd</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">commands</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">stdin</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_</span><span class="p">):</span>
         <span class="s2">&quot;Set stdin on the first command of the pipeline.&quot;</span>
@@ -226,6 +234,11 @@
     <span class="k">def</span> <span class="nf">options</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Return last command&#39;s options.&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">commands</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">options</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">multiple_capture</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;Return true if pipe uses multiple capture.&quot;</span>
+        <span class="k">return</span> <span class="nb">any</span><span class="p">(</span><span class="n">cmd</span><span class="o">.</span><span class="n">multiple_capture</span> <span class="k">for</span> <span class="n">cmd</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">commands</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">stdin</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_</span><span class="p">):</span>
         <span class="s2">&quot;Set stdin on the first command of the pipeline.&quot;</span>
@@ -348,6 +361,17 @@
     </div>
 
             <div class="docstring"><p>Return last command's options.</p>
+</div>
+
+
+                            </div>
+                            <div id="Pipeline.multiple_capture" class="classattr">
+                                            <div class="attr variable"><a class="headerlink" href="#Pipeline.multiple_capture">#&nbsp;&nbsp</a>
+
+        <span class="name">multiple_capture</span>
+    </div>
+
+            <div class="docstring"><p>Return true if pipe uses multiple capture.</p>
 </div>
 
 

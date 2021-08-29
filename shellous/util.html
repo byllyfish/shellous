@@ -42,6 +42,9 @@
             <li>
                     <a class="function" href="#platform_info">platform_info</a>
             </li>
+            <li>
+                    <a class="function" href="#close_fds">close_fds</a>
+            </li>
     </ul>
 
 
@@ -174,6 +177,22 @@
     <span class="k">if</span> <span class="n">child_watcher</span><span class="p">:</span>
         <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">info</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">child_watcher</span><span class="si">}</span><span class="s2">&quot;</span>
     <span class="k">return</span> <span class="n">info</span>
+
+
+<span class="k">def</span> <span class="nf">close_fds</span><span class="p">(</span><span class="n">open_fds</span><span class="p">):</span>
+    <span class="s2">&quot;Close open file descriptors or file objects.&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">open_fds</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">obj</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">os</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+                    <span class="k">except</span> <span class="ne">OSError</span><span class="p">:</span>
+                        <span class="k">pass</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">obj</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="n">open_fds</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
 </pre></div>
 
         </details>
@@ -350,6 +369,39 @@ parent environment.</p>
         </details>
 
             <div class="docstring"><p>Return platform information for use in logging.</p>
+</div>
+
+
+                </section>
+                <section id="close_fds">
+                            <div class="attr function"><a class="headerlink" href="#close_fds">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">close_fds</span><span class="signature">(open_fds)</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">close_fds</span><span class="p">(</span><span class="n">open_fds</span><span class="p">):</span>
+    <span class="s2">&quot;Close open file descriptors or file objects.&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">open_fds</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">obj</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">os</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+                    <span class="k">except</span> <span class="ne">OSError</span><span class="p">:</span>
+                        <span class="k">pass</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">obj</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="n">open_fds</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Close open file descriptors or file objects.</p>
 </div>
 
 

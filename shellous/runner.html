@@ -67,10 +67,10 @@
 
             </li>
             <li>
-                    <a class="function" href="#run">run</a>
+                    <a class="function" href="#run_cmd">run_cmd</a>
             </li>
             <li>
-                    <a class="function" href="#run_iter">run_iter</a>
+                    <a class="function" href="#run_cmd_iter">run_cmd_iter</a>
             </li>
             <li>
                     <a class="function" href="#run_pipe">run_pipe</a>
@@ -111,7 +111,7 @@
 <span class="kn">from</span> <span class="nn">shellous.log</span> <span class="kn">import</span> <span class="n">LOGGER</span>
 <span class="kn">from</span> <span class="nn">shellous.redirect</span> <span class="kn">import</span> <span class="n">Redirect</span>
 <span class="kn">from</span> <span class="nn">shellous.result</span> <span class="kn">import</span> <span class="n">Result</span><span class="p">,</span> <span class="n">make_result</span>
-<span class="kn">from</span> <span class="nn">shellous.util</span> <span class="kn">import</span> <span class="n">decode</span><span class="p">,</span> <span class="n">log_method</span><span class="p">,</span> <span class="n">platform_info</span>
+<span class="kn">from</span> <span class="nn">shellous.util</span> <span class="kn">import</span> <span class="n">close_fds</span><span class="p">,</span> <span class="n">decode</span><span class="p">,</span> <span class="n">log_method</span><span class="p">,</span> <span class="n">platform_info</span>
 
 <span class="n">_DETAILED_LOGGING</span> <span class="o">=</span> <span class="kc">True</span>
 
@@ -144,7 +144,7 @@
 
     <span class="k">def</span> <span class="nf">close_fds</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Close all open file descriptors in `open_fds`.&quot;</span>
-        <span class="n">_close_fds</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">open_fds</span><span class="p">)</span>
+        <span class="n">close_fds</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">open_fds</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Set up I/O redirections.&quot;</span>
@@ -614,9 +614,9 @@
 
             <span class="k">return</span> <span class="bp">self</span>
 
-        <span class="k">except</span> <span class="ne">BaseException</span><span class="p">:</span>
+        <span class="k">except</span> <span class="ne">BaseException</span><span class="p">:</span>  <span class="c1"># pylint: disable=broad-except</span>
             <span class="c1"># Clean up after any exception *including* CancelledError.</span>
-            <span class="n">_close_fds</span><span class="p">(</span><span class="n">open_fds</span><span class="p">)</span>
+            <span class="n">close_fds</span><span class="p">(</span><span class="n">open_fds</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_setup_pipeline</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">open_fds</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Return the pipeline stitched together with pipe fd&#39;s.</span>
@@ -646,8 +646,8 @@
         <span class="n">loop</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">get_event_loop</span><span class="p">()</span>
         <span class="n">first_fut</span> <span class="o">=</span> <span class="n">loop</span><span class="o">.</span><span class="n">create_future</span><span class="p">()</span>
         <span class="n">last_fut</span> <span class="o">=</span> <span class="n">loop</span><span class="o">.</span><span class="n">create_future</span><span class="p">()</span>
-        <span class="n">first_task</span> <span class="o">=</span> <span class="n">cmds</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">task</span><span class="p">(</span><span class="n">_streams_future</span><span class="o">=</span><span class="n">first_fut</span><span class="p">)</span>
-        <span class="n">last_task</span> <span class="o">=</span> <span class="n">cmds</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">task</span><span class="p">(</span><span class="n">_streams_future</span><span class="o">=</span><span class="n">last_fut</span><span class="p">)</span>
+        <span class="n">first_task</span> <span class="o">=</span> <span class="n">cmds</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">task</span><span class="p">(</span><span class="n">_run_future</span><span class="o">=</span><span class="n">first_fut</span><span class="p">)</span>
+        <span class="n">last_task</span> <span class="o">=</span> <span class="n">cmds</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">task</span><span class="p">(</span><span class="n">_run_future</span><span class="o">=</span><span class="n">last_fut</span><span class="p">)</span>
 
         <span class="n">middle_tasks</span> <span class="o">=</span> <span class="p">[</span><span class="n">cmd</span><span class="o">.</span><span class="n">task</span><span class="p">()</span> <span class="k">for</span> <span class="n">cmd</span> <span class="ow">in</span> <span class="n">cmds</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span> <span class="o">=</span> <span class="p">[</span><span class="n">first_task</span><span class="p">]</span> <span class="o">+</span> <span class="n">middle_tasks</span> <span class="o">+</span> <span class="p">[</span><span class="n">last_task</span><span class="p">]</span>
@@ -657,7 +657,12 @@
         <span class="n">first_ready</span><span class="p">,</span> <span class="n">last_ready</span> <span class="o">=</span> <span class="k">await</span> <span class="n">harvest_results</span><span class="p">(</span>
             <span class="n">first_fut</span><span class="p">,</span> <span class="n">last_fut</span><span class="p">,</span> <span class="n">trustee</span><span class="o">=</span><span class="bp">self</span>
         <span class="p">)</span>
-        <span class="n">stdin</span><span class="p">,</span> <span class="n">stdout</span><span class="p">,</span> <span class="n">stderr</span> <span class="o">=</span> <span class="p">(</span><span class="n">first_ready</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">last_ready</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">last_ready</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+
+        <span class="n">stdin</span><span class="p">,</span> <span class="n">stdout</span><span class="p">,</span> <span class="n">stderr</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">first_ready</span><span class="o">.</span><span class="n">stdin</span><span class="p">,</span>
+            <span class="n">last_ready</span><span class="o">.</span><span class="n">stdout</span><span class="p">,</span>
+            <span class="n">last_ready</span><span class="o">.</span><span class="n">stderr</span><span class="p">,</span>
+        <span class="p">)</span>
 
         <span class="k">return</span> <span class="p">(</span><span class="n">stdin</span><span class="p">,</span> <span class="n">stdout</span><span class="p">,</span> <span class="n">stderr</span><span class="p">)</span>
 
@@ -669,9 +674,9 @@
         <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;&lt;PipeRunner </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">!r}{</span><span class="n">result_info</span><span class="si">}</span><span class="s2">&gt;&quot;</span>
 
 
-<span class="k">async</span> <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="n">command</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">_streams_future</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">run_cmd</span><span class="p">(</span><span class="n">command</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">_run_future</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="s2">&quot;Run a command.&quot;</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">_streams_future</span> <span class="ow">and</span> <span class="n">command</span><span class="o">.</span><span class="n">multiple_capture</span><span class="p">:</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">_run_future</span> <span class="ow">and</span> <span class="n">command</span><span class="o">.</span><span class="n">multiple_capture</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;multiple capture requires &#39;async with&#39;&quot;</span><span class="p">)</span>
 
     <span class="n">output_bytes</span> <span class="o">=</span> <span class="kc">None</span>
@@ -679,9 +684,9 @@
 
     <span class="k">try</span><span class="p">:</span>
         <span class="k">async</span> <span class="k">with</span> <span class="n">run</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">_streams_future</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">_run_future</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="c1"># Return streams to caller in another task.</span>
-                <span class="n">_streams_future</span><span class="o">.</span><span class="n">set_result</span><span class="p">((</span><span class="n">run</span><span class="o">.</span><span class="n">stdin</span><span class="p">,</span> <span class="n">run</span><span class="o">.</span><span class="n">stdout</span><span class="p">,</span> <span class="n">run</span><span class="o">.</span><span class="n">stderr</span><span class="p">))</span>
+                <span class="n">_run_future</span><span class="o">.</span><span class="n">set_result</span><span class="p">(</span><span class="n">run</span><span class="p">)</span>
 
             <span class="k">else</span><span class="p">:</span>
                 <span class="c1"># Read the output here and return it.</span>
@@ -691,12 +696,12 @@
 
     <span class="k">except</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">CancelledError</span><span class="p">:</span>
         <span class="c1"># FIXME: This needs to be nailed down!</span>
-        <span class="n">LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;run </span><span class="si">%r</span><span class="s2"> cancelled inside enter&quot;</span><span class="p">,</span> <span class="n">command</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;run_cmd </span><span class="si">%r</span><span class="s2"> cancelled inside enter&quot;</span><span class="p">,</span> <span class="n">command</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">run</span><span class="o">.</span><span class="n">result</span><span class="p">(</span><span class="n">output_bytes</span><span class="p">)</span>
 
 
-<span class="k">async</span> <span class="k">def</span> <span class="nf">run_iter</span><span class="p">(</span><span class="n">command</span><span class="p">):</span>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">run_cmd_iter</span><span class="p">(</span><span class="n">command</span><span class="p">):</span>
     <span class="s2">&quot;Run a command and iterate over its output lines.&quot;</span>
     <span class="k">if</span> <span class="n">command</span><span class="o">.</span><span class="n">multiple_capture</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;multiple capture requires &#39;async with&#39;&quot;</span><span class="p">)</span>
@@ -714,18 +719,22 @@
 <span class="k">async</span> <span class="k">def</span> <span class="nf">run_pipe</span><span class="p">(</span><span class="n">pipe</span><span class="p">):</span>
     <span class="s2">&quot;Run a pipeline&quot;</span>
 
+    <span class="c1"># FIXME: Make it harder to create single command pipes.</span>
     <span class="n">cmd_count</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">pipe</span><span class="o">.</span><span class="n">commands</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">cmd_count</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-        <span class="k">return</span> <span class="k">await</span> <span class="n">run</span><span class="p">(</span><span class="n">pipe</span><span class="o">.</span><span class="n">commands</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="n">run_cmd</span><span class="p">(</span><span class="n">pipe</span><span class="o">.</span><span class="n">commands</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
 
-    <span class="n">runner</span> <span class="o">=</span> <span class="n">PipeRunner</span><span class="p">(</span><span class="n">pipe</span><span class="p">,</span> <span class="n">capturing</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-    <span class="k">async</span> <span class="k">with</span> <span class="n">runner</span><span class="p">:</span>
+    <span class="n">run</span> <span class="o">=</span> <span class="n">PipeRunner</span><span class="p">(</span><span class="n">pipe</span><span class="p">,</span> <span class="n">capturing</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">async</span> <span class="k">with</span> <span class="n">run</span><span class="p">:</span>
         <span class="k">pass</span>
-    <span class="k">return</span> <span class="n">runner</span><span class="o">.</span><span class="n">result</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">run</span><span class="o">.</span><span class="n">result</span><span class="p">()</span>
 
 
 <span class="k">async</span> <span class="k">def</span> <span class="nf">run_pipe_iter</span><span class="p">(</span><span class="n">pipe</span><span class="p">):</span>
     <span class="s2">&quot;Run a pipeline and iterate over its output lines.&quot;</span>
+    <span class="k">if</span> <span class="n">pipe</span><span class="o">.</span><span class="n">multiple_capture</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;multiple capture requires &#39;async with&#39;&quot;</span><span class="p">)</span>
+
     <span class="n">run</span> <span class="o">=</span> <span class="n">PipeRunner</span><span class="p">(</span><span class="n">pipe</span><span class="p">,</span> <span class="n">capturing</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="k">async</span> <span class="k">with</span> <span class="n">run</span><span class="p">:</span>
         <span class="k">assert</span> <span class="n">run</span><span class="o">.</span><span class="n">stdin</span> <span class="ow">is</span> <span class="kc">None</span>
@@ -736,22 +745,6 @@
             <span class="k">yield</span> <span class="n">decode</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="n">encoding</span><span class="p">)</span>
 
     <span class="n">run</span><span class="o">.</span><span class="n">result</span><span class="p">()</span>  <span class="c1"># No return value; raises exception if needed</span>
-
-
-<span class="k">def</span> <span class="nf">_close_fds</span><span class="p">(</span><span class="n">open_fds</span><span class="p">):</span>
-    <span class="s2">&quot;Close open file descriptors or file objects.&quot;</span>
-    <span class="k">try</span><span class="p">:</span>
-        <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">open_fds</span><span class="p">:</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
-                <span class="k">if</span> <span class="n">obj</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
-                    <span class="k">try</span><span class="p">:</span>
-                        <span class="n">os</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
-                    <span class="k">except</span> <span class="ne">OSError</span><span class="p">:</span>
-                        <span class="k">pass</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">obj</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
-    <span class="k">finally</span><span class="p">:</span>
-        <span class="n">open_fds</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
 </pre></div>
 
         </details>
@@ -1252,9 +1245,9 @@ result = run.result()
 
             <span class="k">return</span> <span class="bp">self</span>
 
-        <span class="k">except</span> <span class="ne">BaseException</span><span class="p">:</span>
+        <span class="k">except</span> <span class="ne">BaseException</span><span class="p">:</span>  <span class="c1"># pylint: disable=broad-except</span>
             <span class="c1"># Clean up after any exception *including* CancelledError.</span>
-            <span class="n">_close_fds</span><span class="p">(</span><span class="n">open_fds</span><span class="p">)</span>
+            <span class="n">close_fds</span><span class="p">(</span><span class="n">open_fds</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_setup_pipeline</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">open_fds</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Return the pipeline stitched together with pipe fd&#39;s.</span>
@@ -1284,8 +1277,8 @@ result = run.result()
         <span class="n">loop</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">get_event_loop</span><span class="p">()</span>
         <span class="n">first_fut</span> <span class="o">=</span> <span class="n">loop</span><span class="o">.</span><span class="n">create_future</span><span class="p">()</span>
         <span class="n">last_fut</span> <span class="o">=</span> <span class="n">loop</span><span class="o">.</span><span class="n">create_future</span><span class="p">()</span>
-        <span class="n">first_task</span> <span class="o">=</span> <span class="n">cmds</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">task</span><span class="p">(</span><span class="n">_streams_future</span><span class="o">=</span><span class="n">first_fut</span><span class="p">)</span>
-        <span class="n">last_task</span> <span class="o">=</span> <span class="n">cmds</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">task</span><span class="p">(</span><span class="n">_streams_future</span><span class="o">=</span><span class="n">last_fut</span><span class="p">)</span>
+        <span class="n">first_task</span> <span class="o">=</span> <span class="n">cmds</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">task</span><span class="p">(</span><span class="n">_run_future</span><span class="o">=</span><span class="n">first_fut</span><span class="p">)</span>
+        <span class="n">last_task</span> <span class="o">=</span> <span class="n">cmds</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">task</span><span class="p">(</span><span class="n">_run_future</span><span class="o">=</span><span class="n">last_fut</span><span class="p">)</span>
 
         <span class="n">middle_tasks</span> <span class="o">=</span> <span class="p">[</span><span class="n">cmd</span><span class="o">.</span><span class="n">task</span><span class="p">()</span> <span class="k">for</span> <span class="n">cmd</span> <span class="ow">in</span> <span class="n">cmds</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span> <span class="o">=</span> <span class="p">[</span><span class="n">first_task</span><span class="p">]</span> <span class="o">+</span> <span class="n">middle_tasks</span> <span class="o">+</span> <span class="p">[</span><span class="n">last_task</span><span class="p">]</span>
@@ -1295,7 +1288,12 @@ result = run.result()
         <span class="n">first_ready</span><span class="p">,</span> <span class="n">last_ready</span> <span class="o">=</span> <span class="k">await</span> <span class="n">harvest_results</span><span class="p">(</span>
             <span class="n">first_fut</span><span class="p">,</span> <span class="n">last_fut</span><span class="p">,</span> <span class="n">trustee</span><span class="o">=</span><span class="bp">self</span>
         <span class="p">)</span>
-        <span class="n">stdin</span><span class="p">,</span> <span class="n">stdout</span><span class="p">,</span> <span class="n">stderr</span> <span class="o">=</span> <span class="p">(</span><span class="n">first_ready</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">last_ready</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">last_ready</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+
+        <span class="n">stdin</span><span class="p">,</span> <span class="n">stdout</span><span class="p">,</span> <span class="n">stderr</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">first_ready</span><span class="o">.</span><span class="n">stdin</span><span class="p">,</span>
+            <span class="n">last_ready</span><span class="o">.</span><span class="n">stdout</span><span class="p">,</span>
+            <span class="n">last_ready</span><span class="o">.</span><span class="n">stderr</span><span class="p">,</span>
+        <span class="p">)</span>
 
         <span class="k">return</span> <span class="p">(</span><span class="n">stdin</span><span class="p">,</span> <span class="n">stdout</span><span class="p">,</span> <span class="n">stderr</span><span class="p">)</span>
 
@@ -1384,19 +1382,19 @@ client needs to access <code>stdin</code> and <code>stderr</code> streams.</p>
 
                             </div>
                 </section>
-                <section id="run">
-                            <div class="attr function"><a class="headerlink" href="#run">#&nbsp;&nbsp</a>
+                <section id="run_cmd">
+                            <div class="attr function"><a class="headerlink" href="#run_cmd">#&nbsp;&nbsp</a>
 
         
             <span class="def">async def</span>
-            <span class="name">run</span><span class="signature">(command, *, _streams_future=None)</span>:
+            <span class="name">run_cmd</span><span class="signature">(command, *, _run_future=None)</span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span><span class="k">async</span> <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="n">command</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">_streams_future</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+            <div class="codehilite"><pre><span></span><span class="k">async</span> <span class="k">def</span> <span class="nf">run_cmd</span><span class="p">(</span><span class="n">command</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">_run_future</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="s2">&quot;Run a command.&quot;</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">_streams_future</span> <span class="ow">and</span> <span class="n">command</span><span class="o">.</span><span class="n">multiple_capture</span><span class="p">:</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">_run_future</span> <span class="ow">and</span> <span class="n">command</span><span class="o">.</span><span class="n">multiple_capture</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;multiple capture requires &#39;async with&#39;&quot;</span><span class="p">)</span>
 
     <span class="n">output_bytes</span> <span class="o">=</span> <span class="kc">None</span>
@@ -1404,9 +1402,9 @@ client needs to access <code>stdin</code> and <code>stderr</code> streams.</p>
 
     <span class="k">try</span><span class="p">:</span>
         <span class="k">async</span> <span class="k">with</span> <span class="n">run</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">_streams_future</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">_run_future</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="c1"># Return streams to caller in another task.</span>
-                <span class="n">_streams_future</span><span class="o">.</span><span class="n">set_result</span><span class="p">((</span><span class="n">run</span><span class="o">.</span><span class="n">stdin</span><span class="p">,</span> <span class="n">run</span><span class="o">.</span><span class="n">stdout</span><span class="p">,</span> <span class="n">run</span><span class="o">.</span><span class="n">stderr</span><span class="p">))</span>
+                <span class="n">_run_future</span><span class="o">.</span><span class="n">set_result</span><span class="p">(</span><span class="n">run</span><span class="p">)</span>
 
             <span class="k">else</span><span class="p">:</span>
                 <span class="c1"># Read the output here and return it.</span>
@@ -1416,7 +1414,7 @@ client needs to access <code>stdin</code> and <code>stderr</code> streams.</p>
 
     <span class="k">except</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">CancelledError</span><span class="p">:</span>
         <span class="c1"># FIXME: This needs to be nailed down!</span>
-        <span class="n">LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;run </span><span class="si">%r</span><span class="s2"> cancelled inside enter&quot;</span><span class="p">,</span> <span class="n">command</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;run_cmd </span><span class="si">%r</span><span class="s2"> cancelled inside enter&quot;</span><span class="p">,</span> <span class="n">command</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">run</span><span class="o">.</span><span class="n">result</span><span class="p">(</span><span class="n">output_bytes</span><span class="p">)</span>
 </pre></div>
@@ -1428,17 +1426,17 @@ client needs to access <code>stdin</code> and <code>stderr</code> streams.</p>
 
 
                 </section>
-                <section id="run_iter">
-                            <div class="attr function"><a class="headerlink" href="#run_iter">#&nbsp;&nbsp</a>
+                <section id="run_cmd_iter">
+                            <div class="attr function"><a class="headerlink" href="#run_cmd_iter">#&nbsp;&nbsp</a>
 
         
             <span class="def">async def</span>
-            <span class="name">run_iter</span><span class="signature">(command)</span>:
+            <span class="name">run_cmd_iter</span><span class="signature">(command)</span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span><span class="k">async</span> <span class="k">def</span> <span class="nf">run_iter</span><span class="p">(</span><span class="n">command</span><span class="p">):</span>
+            <div class="codehilite"><pre><span></span><span class="k">async</span> <span class="k">def</span> <span class="nf">run_cmd_iter</span><span class="p">(</span><span class="n">command</span><span class="p">):</span>
     <span class="s2">&quot;Run a command and iterate over its output lines.&quot;</span>
     <span class="k">if</span> <span class="n">command</span><span class="o">.</span><span class="n">multiple_capture</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;multiple capture requires &#39;async with&#39;&quot;</span><span class="p">)</span>
@@ -1473,14 +1471,15 @@ client needs to access <code>stdin</code> and <code>stderr</code> streams.</p>
             <div class="codehilite"><pre><span></span><span class="k">async</span> <span class="k">def</span> <span class="nf">run_pipe</span><span class="p">(</span><span class="n">pipe</span><span class="p">):</span>
     <span class="s2">&quot;Run a pipeline&quot;</span>
 
+    <span class="c1"># FIXME: Make it harder to create single command pipes.</span>
     <span class="n">cmd_count</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">pipe</span><span class="o">.</span><span class="n">commands</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">cmd_count</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-        <span class="k">return</span> <span class="k">await</span> <span class="n">run</span><span class="p">(</span><span class="n">pipe</span><span class="o">.</span><span class="n">commands</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="n">run_cmd</span><span class="p">(</span><span class="n">pipe</span><span class="o">.</span><span class="n">commands</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
 
-    <span class="n">runner</span> <span class="o">=</span> <span class="n">PipeRunner</span><span class="p">(</span><span class="n">pipe</span><span class="p">,</span> <span class="n">capturing</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-    <span class="k">async</span> <span class="k">with</span> <span class="n">runner</span><span class="p">:</span>
+    <span class="n">run</span> <span class="o">=</span> <span class="n">PipeRunner</span><span class="p">(</span><span class="n">pipe</span><span class="p">,</span> <span class="n">capturing</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">async</span> <span class="k">with</span> <span class="n">run</span><span class="p">:</span>
         <span class="k">pass</span>
-    <span class="k">return</span> <span class="n">runner</span><span class="o">.</span><span class="n">result</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">run</span><span class="o">.</span><span class="n">result</span><span class="p">()</span>
 </pre></div>
 
         </details>
@@ -1502,6 +1501,9 @@ client needs to access <code>stdin</code> and <code>stderr</code> streams.</p>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span><span class="k">async</span> <span class="k">def</span> <span class="nf">run_pipe_iter</span><span class="p">(</span><span class="n">pipe</span><span class="p">):</span>
     <span class="s2">&quot;Run a pipeline and iterate over its output lines.&quot;</span>
+    <span class="k">if</span> <span class="n">pipe</span><span class="o">.</span><span class="n">multiple_capture</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;multiple capture requires &#39;async with&#39;&quot;</span><span class="p">)</span>
+
     <span class="n">run</span> <span class="o">=</span> <span class="n">PipeRunner</span><span class="p">(</span><span class="n">pipe</span><span class="p">,</span> <span class="n">capturing</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="k">async</span> <span class="k">with</span> <span class="n">run</span><span class="p">:</span>
         <span class="k">assert</span> <span class="n">run</span><span class="o">.</span><span class="n">stdin</span> <span class="ow">is</span> <span class="kc">None</span>

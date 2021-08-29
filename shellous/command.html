@@ -174,6 +174,9 @@
                         <li>
                                 <a class="function" href="#Command.run">run</a>
                         </li>
+                        <li>
+                                <a class="function" href="#Command.iter">iter</a>
+                        </li>
                 </ul>
 
             </li>
@@ -210,24 +213,29 @@
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">import</span> <span class="nn">asyncio</span>
+<span class="kn">import</span> <span class="nn">contextlib</span>
 <span class="kn">import</span> <span class="nn">dataclasses</span>
 <span class="kn">import</span> <span class="nn">enum</span>
 <span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">import</span> <span class="nn">signal</span>
 <span class="kn">from</span> <span class="nn">dataclasses</span> <span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">TypeVar</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="kn">from</span> <span class="nn">immutables</span> <span class="kn">import</span> <span class="n">Map</span> <span class="k">as</span> <span class="n">ImmutableDict</span>
 
 <span class="kn">from</span> <span class="nn">shellous.redirect</span> <span class="kn">import</span> <span class="n">Redirect</span>
-<span class="kn">from</span> <span class="nn">shellous.runner</span> <span class="kn">import</span> <span class="n">Runner</span><span class="p">,</span> <span class="n">run</span><span class="p">,</span> <span class="n">run_iter</span>
+<span class="kn">from</span> <span class="nn">shellous.runner</span> <span class="kn">import</span> <span class="n">Runner</span><span class="p">,</span> <span class="n">run_cmd</span><span class="p">,</span> <span class="n">run_cmd_iter</span>
 <span class="kn">from</span> <span class="nn">shellous.util</span> <span class="kn">import</span> <span class="n">coerce_env</span>
 
 <span class="c1"># Sentinel used in &quot;mergable&quot; keyword arguments to indicate that a value</span>
 <span class="c1"># was not set by the caller. This is an enum class to make UNSET more visible</span>
 <span class="c1"># in generated documentation.</span>
-<span class="n">_UnsetType</span> <span class="o">=</span> <span class="n">enum</span><span class="o">.</span><span class="n">Enum</span><span class="p">(</span><span class="s2">&quot;UNSET&quot;</span><span class="p">,</span> <span class="s2">&quot;UNSET&quot;</span><span class="p">)</span>
-<span class="n">_UNSET</span> <span class="o">=</span> <span class="n">_UnsetType</span><span class="o">.</span><span class="n">UNSET</span>
+<span class="n">_UnsetEnum</span> <span class="o">=</span> <span class="n">enum</span><span class="o">.</span><span class="n">Enum</span><span class="p">(</span><span class="s2">&quot;UNSET&quot;</span><span class="p">,</span> <span class="s2">&quot;UNSET&quot;</span><span class="p">)</span>
+<span class="n">_UNSET</span> <span class="o">=</span> <span class="n">_UnsetEnum</span><span class="o">.</span><span class="n">UNSET</span>
+
+<span class="c1"># Use Unset[T] for unset variable types.</span>
+<span class="n">_T</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;_T&quot;</span><span class="p">)</span>
+<span class="n">Unset</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="n">_T</span><span class="p">,</span> <span class="n">_UnsetEnum</span><span class="p">]</span>
 
 
 <span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -352,7 +360,7 @@
 <span class="k">class</span> <span class="nc">Context</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Concrete class for an immutable execution context.&quot;&quot;&quot;</span>
 
-    <span class="n">options</span><span class="p">:</span> <span class="n">Options</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">options</span><span class="p">:</span> <span class="n">Options</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># type: ignore</span>
 
     <span class="k">def</span> <span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -409,7 +417,7 @@
             <span class="n">cmd</span><span class="o">.</span><span class="n">options</span><span class="p">,</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_pipe_apply</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_pipe</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_pipe_apply</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_pipe</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>  <span class="c1"># pylint: disable=no-self-use</span>
         <span class="sd">&quot;&quot;&quot;Apply arguments to an existing pipeline.</span>
 
 <span class="sd">        This method is an extension point.</span>
@@ -529,13 +537,13 @@
     <span class="k">def</span> <span class="nf">set</span><span class="p">(</span>  <span class="c1"># pylint: disable=unused-argument</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="o">*</span><span class="p">,</span>
-        <span class="n">inherit_env</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
-        <span class="n">encoding</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
-        <span class="n">return_result</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
-        <span class="n">exit_codes</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">set</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
-        <span class="n">cancel_timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
-        <span class="n">cancel_signal</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
-        <span class="n">alt_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">inherit_env</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">encoding</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">return_result</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">exit_codes</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">set</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">cancel_timeout</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">cancel_signal</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">alt_name</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Return new command with custom options set.</span>
 
@@ -559,10 +567,10 @@
         <span class="k">del</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;self&quot;</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">Command</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">kwargs</span><span class="p">))</span>
 
-    <span class="k">def</span> <span class="nf">task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">_streams_future</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">_run_future</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="s2">&quot;Wrap the command in a new asyncio task.&quot;</span>
         <span class="k">return</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span>
-            <span class="n">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_streams_future</span><span class="o">=</span><span class="n">_streams_future</span><span class="p">),</span>
+            <span class="n">run_cmd</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_run_future</span><span class="o">=</span><span class="n">_run_future</span><span class="p">),</span>
             <span class="n">name</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="nb">id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
         <span class="p">)</span>
 
@@ -578,13 +586,29 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">Runner</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
+    <span class="nd">@contextlib</span><span class="o">.</span><span class="n">asynccontextmanager</span>
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">iter</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Async context manager to return a &quot;safe&quot; async iterator.</span>
+
+<span class="sd">        ```</span>
+<span class="sd">        async with cmd.iter() as iter:</span>
+<span class="sd">            async for line in iter:</span>
+<span class="sd">                # do something with line</span>
+<span class="sd">        ```</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">aiter</span> <span class="o">=</span> <span class="n">run_cmd_iter</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">aiter</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="k">await</span> <span class="n">aiter</span><span class="o">.</span><span class="n">aclose</span><span class="p">()</span>
+
     <span class="k">def</span> <span class="fm">__await__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Run process and return the standard output.&quot;</span>
-        <span class="k">return</span> <span class="n">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__await__</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">run_cmd</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__await__</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="fm">__aiter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Return an asynchronous iterator over the standard output.&quot;</span>
-        <span class="k">return</span> <span class="n">run_iter</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">run_cmd_iter</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
         <span class="s2">&quot;Apply more arguments to the end of the command.&quot;</span>
@@ -1163,7 +1187,7 @@
 <span class="k">class</span> <span class="nc">Context</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Concrete class for an immutable execution context.&quot;&quot;&quot;</span>
 
-    <span class="n">options</span><span class="p">:</span> <span class="n">Options</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">options</span><span class="p">:</span> <span class="n">Options</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># type: ignore</span>
 
     <span class="k">def</span> <span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -1220,7 +1244,7 @@
             <span class="n">cmd</span><span class="o">.</span><span class="n">options</span><span class="p">,</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_pipe_apply</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_pipe</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_pipe_apply</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_pipe</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>  <span class="c1"># pylint: disable=no-self-use</span>
         <span class="sd">&quot;&quot;&quot;Apply arguments to an existing pipeline.</span>
 
 <span class="sd">        This method is an extension point.</span>
@@ -1549,13 +1573,13 @@
     <span class="k">def</span> <span class="nf">set</span><span class="p">(</span>  <span class="c1"># pylint: disable=unused-argument</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="o">*</span><span class="p">,</span>
-        <span class="n">inherit_env</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
-        <span class="n">encoding</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
-        <span class="n">return_result</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
-        <span class="n">exit_codes</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">set</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
-        <span class="n">cancel_timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
-        <span class="n">cancel_signal</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
-        <span class="n">alt_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">inherit_env</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">encoding</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">return_result</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">exit_codes</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">set</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">cancel_timeout</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">cancel_signal</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">alt_name</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Return new command with custom options set.</span>
 
@@ -1579,10 +1603,10 @@
         <span class="k">del</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;self&quot;</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">Command</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">kwargs</span><span class="p">))</span>
 
-    <span class="k">def</span> <span class="nf">task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">_streams_future</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">_run_future</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="s2">&quot;Wrap the command in a new asyncio task.&quot;</span>
         <span class="k">return</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span>
-            <span class="n">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_streams_future</span><span class="o">=</span><span class="n">_streams_future</span><span class="p">),</span>
+            <span class="n">run_cmd</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_run_future</span><span class="o">=</span><span class="n">_run_future</span><span class="p">),</span>
             <span class="n">name</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="nb">id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
         <span class="p">)</span>
 
@@ -1598,13 +1622,29 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">Runner</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
+    <span class="nd">@contextlib</span><span class="o">.</span><span class="n">asynccontextmanager</span>
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">iter</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Async context manager to return a &quot;safe&quot; async iterator.</span>
+
+<span class="sd">        ```</span>
+<span class="sd">        async with cmd.iter() as iter:</span>
+<span class="sd">            async for line in iter:</span>
+<span class="sd">                # do something with line</span>
+<span class="sd">        ```</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">aiter</span> <span class="o">=</span> <span class="n">run_cmd_iter</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">aiter</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="k">await</span> <span class="n">aiter</span><span class="o">.</span><span class="n">aclose</span><span class="p">()</span>
+
     <span class="k">def</span> <span class="fm">__await__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Run process and return the standard output.&quot;</span>
-        <span class="k">return</span> <span class="n">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__await__</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">run_cmd</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__await__</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="fm">__aiter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Return an asynchronous iterator over the standard output.&quot;</span>
-        <span class="k">return</span> <span class="n">run_iter</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">run_cmd_iter</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
         <span class="s2">&quot;Apply more arguments to the end of the command.&quot;</span>
@@ -1792,13 +1832,13 @@ stdout, stderr is set to CAPTURE.</p>
             <span class="name">set</span><span class="signature">(
     self,
     *,
-    inherit_env: bool = &lt;UNSET.UNSET: 1&gt;,
-    encoding: Optional[str] = &lt;UNSET.UNSET: 1&gt;,
-    return_result: bool = &lt;UNSET.UNSET: 1&gt;,
-    exit_codes: Optional[set] = &lt;UNSET.UNSET: 1&gt;,
-    cancel_timeout: float = &lt;UNSET.UNSET: 1&gt;,
-    cancel_signal: Any = &lt;UNSET.UNSET: 1&gt;,
-    alt_name: Optional[str] = &lt;UNSET.UNSET: 1&gt;
+    inherit_env: Union[bool, <a href="#UNSET">shellous.command.UNSET</a>] = &lt;UNSET.UNSET: 1&gt;,
+    encoding: Union[str, NoneType, <a href="#UNSET">shellous.command.UNSET</a>] = &lt;UNSET.UNSET: 1&gt;,
+    return_result: Union[bool, <a href="#UNSET">shellous.command.UNSET</a>] = &lt;UNSET.UNSET: 1&gt;,
+    exit_codes: Union[set, NoneType, <a href="#UNSET">shellous.command.UNSET</a>] = &lt;UNSET.UNSET: 1&gt;,
+    cancel_timeout: Union[float, <a href="#UNSET">shellous.command.UNSET</a>] = &lt;UNSET.UNSET: 1&gt;,
+    cancel_signal: Union[Any, <a href="#UNSET">shellous.command.UNSET</a>] = &lt;UNSET.UNSET: 1&gt;,
+    alt_name: Union[str, NoneType, <a href="#UNSET">shellous.command.UNSET</a>] = &lt;UNSET.UNSET: 1&gt;
 )</span>:
     </div>
 
@@ -1807,13 +1847,13 @@ stdout, stderr is set to CAPTURE.</p>
             <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">set</span><span class="p">(</span>  <span class="c1"># pylint: disable=unused-argument</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="o">*</span><span class="p">,</span>
-        <span class="n">inherit_env</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
-        <span class="n">encoding</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
-        <span class="n">return_result</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
-        <span class="n">exit_codes</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">set</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
-        <span class="n">cancel_timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
-        <span class="n">cancel_signal</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
-        <span class="n">alt_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">inherit_env</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">encoding</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">return_result</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">exit_codes</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">set</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">cancel_timeout</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">cancel_signal</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">alt_name</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Return new command with custom options set.</span>
 
@@ -1868,15 +1908,15 @@ scripting language.</li>
 
         
             <span class="def">def</span>
-            <span class="name">task</span><span class="signature">(self, *, _streams_future=None)</span>:
+            <span class="name">task</span><span class="signature">(self, *, _run_future=None)</span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">_streams_future</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">_run_future</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="s2">&quot;Wrap the command in a new asyncio task.&quot;</span>
         <span class="k">return</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span>
-            <span class="n">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_streams_future</span><span class="o">=</span><span class="n">_streams_future</span><span class="p">),</span>
+            <span class="n">run_cmd</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_run_future</span><span class="o">=</span><span class="n">_run_future</span><span class="p">),</span>
             <span class="n">name</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="nb">id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
         <span class="p">)</span>
 </pre></div>
@@ -1919,6 +1959,46 @@ scripting language.</li>
     # do something with run.stdin, run.stdout, run.stderr...
     # close run.stdin to signal we're done...
 result = run.result()
+</code></pre>
+</div>
+
+
+                            </div>
+                            <div id="Command.iter" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#Command.iter">#&nbsp;&nbsp</a>
+
+                <div class="decorator">@contextlib.asynccontextmanager</div>
+
+            <span class="def">def</span>
+            <span class="name">iter</span><span class="signature">(self)</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span>    <span class="nd">@contextlib</span><span class="o">.</span><span class="n">asynccontextmanager</span>
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">iter</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Async context manager to return a &quot;safe&quot; async iterator.</span>
+
+<span class="sd">        ```</span>
+<span class="sd">        async with cmd.iter() as iter:</span>
+<span class="sd">            async for line in iter:</span>
+<span class="sd">                # do something with line</span>
+<span class="sd">        ```</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">aiter</span> <span class="o">=</span> <span class="n">run_cmd_iter</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">aiter</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="k">await</span> <span class="n">aiter</span><span class="o">.</span><span class="n">aclose</span><span class="p">()</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Async context manager to return a "safe" async iterator.</p>
+
+<pre><code>async with cmd.iter() as iter:
+    async for line in iter:
+        # do something with line
 </code></pre>
 </div>
 
