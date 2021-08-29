@@ -379,16 +379,18 @@ async def test_many_short_programs_parallel(echo_cmd):
 async def test_redirect_stdin_capture_iter(cat_cmd, tr_cmd):
     "Test setting stdin to CAPTURE when using `async for`."
     with pytest.raises(ValueError, match="multiple capture requires 'async with'"):
-        async for line in cat_cmd.stdin(CAPTURE):
-            pass
+        async with cat_cmd.stdin(CAPTURE).iter() as iter:
+            async for line in iter:
+                pass
 
 
 async def test_pipe_redirect_stdin_capture_iter(cat_cmd, tr_cmd):
     "Test setting stdin on pipe to CAPTURE when using `async for`."
     cmd = cat_cmd | tr_cmd
     with pytest.raises(ValueError, match="multiple capture requires 'async with'"):
-        async for line in cmd.stdin(CAPTURE):
-            pass
+        async with cmd.stdin(CAPTURE).iter() as iter:
+            async for line in iter:
+                pass
 
 
 async def test_pipe_immediate_cancel(cat_cmd, tr_cmd):
@@ -407,6 +409,7 @@ async def test_breaking_out_of_async_iter(env_cmd):
     async with env_cmd.iter() as iter:
         async for _ in iter:
             break
+    # report_orphan_tasks
 
 
 async def test_exception_in_async_iter(env_cmd):
@@ -415,3 +418,25 @@ async def test_exception_in_async_iter(env_cmd):
         async with env_cmd.iter() as iter:
             async for _ in iter:
                 raise ValueError(1)
+    # report_orphan_tasks
+
+
+async def test_pipe_breaking_out_of_async_iter(env_cmd, tr_cmd):
+    "Test breaking out of an async iterator."
+    cmd = env_cmd | tr_cmd
+
+    async with cmd.iter() as iter:
+        async for _ in iter:
+            break
+    # report_orphan_tasks
+
+
+async def test_pipe_exception_in_async_iter(env_cmd, tr_cmd):
+    "Test breaking out of an async iterator."
+    cmd = env_cmd | tr_cmd
+
+    with pytest.raises(ValueError):
+        async with cmd.iter() as iter:
+            async for _ in iter:
+                raise ValueError(1)
+    # report_orphan_tasks

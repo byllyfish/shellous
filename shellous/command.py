@@ -398,10 +398,6 @@ class Command:
         "Run process and return the standard output."
         return run_cmd(self).__await__()
 
-    def __aiter__(self):
-        "Return an asynchronous iterator over the standard output."
-        return run_cmd_iter(self)
-
     def __call__(self, *args):
         "Apply more arguments to the end of the command."
         if not args:

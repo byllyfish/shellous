@@ -112,7 +112,7 @@ To redirect stdin using a file's contents, use a `Path` object from `pathlib`.
 >>> from pathlib import Path
 >>> cmd = Path("README.md") | sh("wc", "-l")
 >>> await cmd
-'     209\n'
+'     210\n'
 ```
 
 [More on redirection...](docs/redirection.md)
@@ -188,8 +188,9 @@ Iteration
 You can loop over a command's output.
 
 ```python-repl
->>> async for line in pipe:
-...   print(line.rstrip())
+>>> async with pipe.iter() as iter:
+...   async for line in iter:
+...     print(line.rstrip())
 ... 
 README.md
 ```
