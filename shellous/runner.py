@@ -625,6 +625,9 @@ async def run_pipe(pipe):
 
 async def run_pipe_iter(pipe):
     "Run a pipeline and iterate over its output lines."
+    if pipe.multiple_capture:
+        raise ValueError("multiple capture requires 'async with'")
+
     run = PipeRunner(pipe, capturing=True)
     async with run:
         assert run.stdin is None

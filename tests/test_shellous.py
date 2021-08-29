@@ -387,3 +387,18 @@ async def test_many_short_programs_parallel(echo_cmd):
     results = await harvest_results(*cmds)
 
     assert results == ["abcd"] * COUNT
+
+
+async def test_redirect_stdin_capture_iter(cat_cmd, tr_cmd):
+    "Test setting stdin to CAPTURE when using `async for`."
+    with pytest.raises(ValueError, match="multiple capture requires 'async with'"):
+        async for line in cat_cmd.stdin(CAPTURE):
+            pass
+
+
+async def test_pipe_redirect_stdin_capture_iter(cat_cmd, tr_cmd):
+    "Test setting stdin on pipe to CAPTURE when using `async for`."
+    cmd = cat_cmd | tr_cmd
+    with pytest.raises(ValueError, match="multiple capture requires 'async with'"):
+        async for line in cmd.stdin(CAPTURE):
+            pass
