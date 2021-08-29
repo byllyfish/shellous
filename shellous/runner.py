@@ -10,7 +10,7 @@ from shellous.harvest import harvest, harvest_results
 from shellous.log import LOGGER
 from shellous.redirect import Redirect
 from shellous.result import Result, make_result
-from shellous.util import decode, log_method, platform_info
+from shellous.util import close_fds, decode, log_method, platform_info
 
 _DETAILED_LOGGING = True
 
@@ -43,7 +43,7 @@ class _RunOptions:
 
     def close_fds(self):
         "Close all open file descriptors in `open_fds`."
-        _close_fds(self.open_fds)
+        close_fds(self.open_fds)
 
     def __enter__(self):
         "Set up I/O redirections."
@@ -515,7 +515,7 @@ class PipeRunner:
 
         except BaseException:
             # Clean up after any exception *including* CancelledError.
-            _close_fds(open_fds)
+            close_fds(open_fds)
 
     def _setup_pipeline(self, open_fds):
         """Return the pipeline stitched together with pipe fd's.
@@ -595,7 +595,7 @@ async def run_cmd(command, *, _run_future=None):
 
     except asyncio.CancelledError:
         # FIXME: This needs to be nailed down!
-        LOGGER.error("run %r cancelled inside enter", command.name)
+        LOGGER.error("run_cmd %r cancelled inside enter", command.name)
 
     return run.result(output_bytes)
 
@@ -618,14 +618,15 @@ async def run_cmd_iter(command):
 async def run_pipe(pipe):
     "Run a pipeline"
 
+    # FIXME: Make it harder to create single command pipes.
     cmd_count = len(pipe.commands)
     if cmd_count == 1:
         return await run_cmd(pipe.commands[0])
 
-    runner = PipeRunner(pipe, capturing=False)
-    async with runner:
+    run = PipeRunner(pipe, capturing=False)
+    async with run:
         pass
-    return runner.result()
+    return run.result()
 
 
 async def run_pipe_iter(pipe):
@@ -643,19 +644,3 @@ async def run_pipe_iter(pipe):
             yield decode(line, encoding)
 
     run.result()  # No return value; raises exception if needed
-
-
-def _close_fds(open_fds):
-    "Close open file descriptors or file objects."
-    try:
-        for obj in open_fds:
-            if isinstance(obj, int):
-                if obj >= 0:
-                    try:
-                        os.close(obj)
-                    except OSError:
-                        pass
-            else:
-                obj.close()
-    finally:
-        open_fds.clear()

@@ -402,3 +402,14 @@ async def test_pipe_redirect_stdin_capture_iter(cat_cmd, tr_cmd):
     with pytest.raises(ValueError, match="multiple capture requires 'async with'"):
         async for line in cmd.stdin(CAPTURE):
             pass
+
+
+async def test_pipe_immediate_cancel(cat_cmd, tr_cmd):
+    "Test running a pipe that is immediately cancelled."
+    cmd = cat_cmd | tr_cmd
+    task = cmd.task()
+    await asyncio.sleep(0)
+    task.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        # FIXME: Should raise ResultError.
+        await task
