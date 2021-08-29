@@ -274,21 +274,7 @@ async def test_broken_pipe_in_pipeline(cat_cmd, echo_cmd):
         await (data | cat_cmd | echo_cmd("abc"))
 
 
-def _latent_bug():
-    """There is a latent bug. This test...
-
-    1. Sometimes fails on Windows with a timeout in wait_closed.
-    2. Sometimes fails on Unix/MacOS with a FastChildWatcher.
-    """
-    import os
-
-    return (
-        sys.platform == "win32"
-        or os.environ.get("SHELLOUS_CHILDWATCHER_TYPE") == "fast"
-    )
-
-
-@pytest.mark.xfail(_latent_bug(), reason="latent bug")
+@pytest.mark.xfail(True, reason="latent bug")
 async def test_broken_pipe_in_failed_pipeline(cat_cmd, echo_cmd):
     "Test broken pipe error within a pipeline; last command fails."
     data = b"c" * PIPE_MAX_SIZE
