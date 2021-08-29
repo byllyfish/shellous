@@ -22,6 +22,7 @@ class Redirect(enum.IntEnum):
 
 @log_method(True)
 async def write_stream(input_bytes, stream):
+    "Write input_bytes to stream."
     try:
         if input_bytes:
             stream.write(input_bytes)
@@ -36,6 +37,7 @@ async def write_stream(input_bytes, stream):
 
 @log_method(True)
 async def copy_stringio(source, dest, encoding):
+    "Copy bytes from source stream to dest StringIO."
     # Collect partial reads into a BytesIO.
     buf = io.BytesIO()
     try:
@@ -52,6 +54,7 @@ async def copy_stringio(source, dest, encoding):
 
 @log_method(True)
 async def copy_bytesio(source, dest):
+    "Copy bytes from source stream to dest BytesIO."
     # Collect partial reads into a BytesIO.
     while True:
         data = await source.read(1024)
@@ -62,6 +65,7 @@ async def copy_bytesio(source, dest):
 
 @log_method(True)
 async def copy_bytearray(source, dest):
+    "Copy bytes from source stream to dest bytearray."
     # Collect partial reads into a bytearray.
     while True:
         data = await source.read(1024)

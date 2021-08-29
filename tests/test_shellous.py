@@ -1,5 +1,7 @@
 "Shellous cross-platform tests."
 
+# pylint: disable=redefined-outer-name,invalid-name
+
 import asyncio
 import hashlib
 import io
@@ -11,7 +13,6 @@ from shellous import CAPTURE, DEVNULL, INHERIT, PipeResult, Result, ResultError,
 from shellous.harvest import harvest_results
 
 pytestmark = pytest.mark.asyncio
-
 
 # 4MB + 1: Much larger than necessary.
 # See https://github.com/python/cpython/blob/main/Lib/test/support/__init__.py
@@ -413,3 +414,18 @@ async def test_pipe_immediate_cancel(cat_cmd, tr_cmd):
     with pytest.raises(asyncio.CancelledError):
         # FIXME: Should raise ResultError.
         await task
+
+
+async def test_breaking_out_of_async_iter(env_cmd):
+    "Test breaking out of an async iterator."
+    async with env_cmd.iter() as iter:
+        async for _ in iter:
+            break
+
+
+async def test_exception_in_async_iter(env_cmd):
+    "Test breaking out of an async iterator."
+    with pytest.raises(ValueError):
+        async with env_cmd.iter() as iter:
+            async for _ in iter:
+                raise ValueError(1)

@@ -1,5 +1,7 @@
 "Unit tests for the Command class."
 
+# pylint: disable=redefined-outer-name,invalid-name
+
 from pathlib import Path
 
 import pytest

@@ -513,7 +513,7 @@ class PipeRunner:
 
             return self
 
-        except BaseException:
+        except BaseException:  # pylint: disable=broad-except
             # Clean up after any exception *including* CancelledError.
             close_fds(open_fds)
 
