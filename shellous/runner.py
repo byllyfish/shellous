@@ -545,8 +545,8 @@ class PipeRunner:
         loop = asyncio.get_event_loop()
         first_fut = loop.create_future()
         last_fut = loop.create_future()
-        first_task = cmds[0].task(_streams_future=first_fut)
-        last_task = cmds[-1].task(_streams_future=last_fut)
+        first_task = cmds[0].task(_run_future=first_fut)
+        last_task = cmds[-1].task(_run_future=last_fut)
 
         middle_tasks = [cmd.task() for cmd in cmds[1:-1]]
         self.tasks = [first_task] + middle_tasks + [last_task]
@@ -556,7 +556,12 @@ class PipeRunner:
         first_ready, last_ready = await harvest_results(
             first_fut, last_fut, trustee=self
         )
-        stdin, stdout, stderr = (first_ready[0], last_ready[1], last_ready[2])
+
+        stdin, stdout, stderr = (
+            first_ready.stdin,
+            last_ready.stdout,
+            last_ready.stderr,
+        )
 
         return (stdin, stdout, stderr)
 
@@ -568,9 +573,9 @@ class PipeRunner:
         return f"<PipeRunner {self.name!r}{result_info}>"
 
 
-async def run(command, *, _streams_future=None):
+async def run_cmd(command, *, _run_future=None):
     "Run a command."
-    if not _streams_future and command.multiple_capture:
+    if not _run_future and command.multiple_capture:
         raise ValueError("multiple capture requires 'async with'")
 
     output_bytes = None
@@ -578,9 +583,9 @@ async def run(command, *, _streams_future=None):
 
     try:
         async with run:
-            if _streams_future is not None:
+            if _run_future is not None:
                 # Return streams to caller in another task.
-                _streams_future.set_result((run.stdin, run.stdout, run.stderr))
+                _run_future.set_result(run)
 
             else:
                 # Read the output here and return it.
@@ -595,7 +600,7 @@ async def run(command, *, _streams_future=None):
     return run.result(output_bytes)
 
 
-async def run_iter(command):
+async def run_cmd_iter(command):
     "Run a command and iterate over its output lines."
     if command.multiple_capture:
         raise ValueError("multiple capture requires 'async with'")
@@ -615,7 +620,7 @@ async def run_pipe(pipe):
 
     cmd_count = len(pipe.commands)
     if cmd_count == 1:
-        return await run(pipe.commands[0])
+        return await run_cmd(pipe.commands[0])
 
     runner = PipeRunner(pipe, capturing=False)
     async with runner:

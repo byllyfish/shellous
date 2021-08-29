@@ -15,7 +15,7 @@ from typing import Any, Optional
 from immutables import Map as ImmutableDict
 
 from shellous.redirect import Redirect
-from shellous.runner import Runner, run, run_iter
+from shellous.runner import Runner, run_cmd, run_cmd_iter
 from shellous.util import coerce_env
 
 # Sentinel used in "mergable" keyword arguments to indicate that a value
@@ -354,10 +354,10 @@ class Command:
         del kwargs["self"]
         return Command(self.args, self.options.set(kwargs))
 
-    def task(self, *, _streams_future=None):
+    def task(self, *, _run_future=None):
         "Wrap the command in a new asyncio task."
         return asyncio.create_task(
-            run(self, _streams_future=_streams_future),
+            run_cmd(self, _run_future=_run_future),
             name=f"{self.name}-{id(self)}",
         )
 
@@ -375,11 +375,11 @@ class Command:
 
     def __await__(self):
         "Run process and return the standard output."
-        return run(self).__await__()
+        return run_cmd(self).__await__()
 
     def __aiter__(self):
         "Return an asynchronous iterator over the standard output."
-        return run_iter(self)
+        return run_cmd_iter(self)
 
     def __call__(self, *args):
         "Apply more arguments to the end of the command."
