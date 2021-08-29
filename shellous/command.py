@@ -5,24 +5,29 @@
 """
 
 import asyncio
+import contextlib
 import dataclasses
 import enum
 import os
 import signal
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Any, Optional, TypeVar, Union
 
 from immutables import Map as ImmutableDict
 
 from shellous.redirect import Redirect
-from shellous.runner import Runner, run, run_iter
+from shellous.runner import Runner, run_cmd, run_cmd_iter
 from shellous.util import coerce_env
 
 # Sentinel used in "mergable" keyword arguments to indicate that a value
 # was not set by the caller. This is an enum class to make UNSET more visible
 # in generated documentation.
-_UnsetType = enum.Enum("UNSET", "UNSET")
-_UNSET = _UnsetType.UNSET
+_UnsetEnum = enum.Enum("UNSET", "UNSET")
+_UNSET = _UnsetEnum.UNSET
+
+# Use Unset[T] for unset variable types.
+_T = TypeVar("_T")
+Unset = Union[_T, _UnsetEnum]
 
 
 @dataclass(frozen=True)
@@ -147,7 +152,7 @@ class Options:  # pylint: disable=too-many-instance-attributes
 class Context:
     """Concrete class for an immutable execution context."""
 
-    options: Options = None
+    options: Options = None  # type: ignore
 
     def __post_init__(self):
         if self.options is None:
@@ -204,7 +209,7 @@ class Context:
             cmd.options,
         )
 
-    def _pipe_apply(self, _pipe, args):
+    def _pipe_apply(self, _pipe, args):  # pylint: disable=no-self-use
         """Apply arguments to an existing pipeline.
 
         This method is an extension point.
@@ -324,13 +329,13 @@ class Command:
     def set(  # pylint: disable=unused-argument
         self,
         *,
-        inherit_env: bool = _UNSET,
-        encoding: Optional[str] = _UNSET,
-        return_result: bool = _UNSET,
-        exit_codes: Optional[set] = _UNSET,
-        cancel_timeout: float = _UNSET,
-        cancel_signal: Any = _UNSET,
-        alt_name: Optional[str] = _UNSET,
+        inherit_env: Unset[bool] = _UNSET,
+        encoding: Unset[Optional[str]] = _UNSET,
+        return_result: Unset[bool] = _UNSET,
+        exit_codes: Unset[Optional[set]] = _UNSET,
+        cancel_timeout: Unset[float] = _UNSET,
+        cancel_signal: Unset[Any] = _UNSET,
+        alt_name: Unset[Optional[str]] = _UNSET,
     ):
         """Return new command with custom options set.
 
@@ -354,10 +359,10 @@ class Command:
         del kwargs["self"]
         return Command(self.args, self.options.set(kwargs))
 
-    def task(self, *, _streams_future=None):
+    def task(self, *, _run_future=None):
         "Wrap the command in a new asyncio task."
         return asyncio.create_task(
-            run(self, _streams_future=_streams_future),
+            run_cmd(self, _run_future=_run_future),
             name=f"{self.name}-{id(self)}",
         )
 
@@ -373,13 +378,29 @@ class Command:
         """
         return Runner(self)
 
+    @contextlib.asynccontextmanager
+    async def iter(self):
+        """Async context manager to return a "safe" async iterator.
+
+        ```
+        async with cmd.iter() as iter:
+            async for line in iter:
+                # do something with line
+        ```
+        """
+        aiter = run_cmd_iter(self)
+        try:
+            yield aiter
+        finally:
+            await aiter.aclose()
+
     def __await__(self):
         "Run process and return the standard output."
-        return run(self).__await__()
+        return run_cmd(self).__await__()
 
     def __aiter__(self):
         "Return an asynchronous iterator over the standard output."
-        return run_iter(self)
+        return run_cmd_iter(self)
 
     def __call__(self, *args):
         "Apply more arguments to the end of the command."

@@ -158,8 +158,8 @@ def _parse_readme(filename):
         data = afile.read()
 
     # Make a list of all the python-repl code blocks in the file.
-    PYTHON_REPL = re.compile(r"\n```python-repl\n(.+?)```\n", re.DOTALL)
-    blocks = [m.group(1) for m in PYTHON_REPL.finditer(data)]
+    _PYTHON_REPL = re.compile(r"\n```python-repl\n(.+?)```\n", re.DOTALL)
+    blocks = [m.group(1) for m in _PYTHON_REPL.finditer(data)]
 
     # Break each block into lines.
     lines = []

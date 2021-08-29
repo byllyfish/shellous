@@ -4,9 +4,13 @@ import asyncio
 
 from shellous.log import LOGGER
 
+_CANCEL_TIMEOUT = 1.0  # seconds to wait for cancelled task to finish
+
 
 async def harvest(*aws, timeout=None, trustee=None):
     """Run a bunch of awaitables as tasks. Do not return results.
+
+    After the harvest returns, all of the awaitables are guaranteed to be done.
 
     Raises first exception seen, or just returns normally.
 
@@ -33,6 +37,8 @@ async def harvest(*aws, timeout=None, trustee=None):
 async def harvest_results(*aws, timeout=None, trustee=None):
     """Run a bunch of awaitables as tasks and return the results.
 
+    After the harvest returns, all of the awaitables are guaranteed to be done.
+
     Exceptions are included in the result list, including CancelledError.
 
     Similar to `asyncio.gather` with `return_exceptions` with one difference:
@@ -54,6 +60,8 @@ async def harvest_results(*aws, timeout=None, trustee=None):
 
 async def harvest_wait(tasks, *, timeout=None, trustee=None):
     """Wait for tasks to finish or raise an exception.
+
+    After the harvest returns, all of the tasks are guaranteed to be done.
 
     If there are pending tasks, they are cancelled and collected. Their
     exceptions are not consumed.
@@ -109,7 +117,7 @@ async def _cancel_wait(tasks, trustee):
 
         _, pending = await asyncio.wait(
             tasks,
-            timeout=1.0,
+            timeout=_CANCEL_TIMEOUT,
             return_when=asyncio.ALL_COMPLETED,
         )
 

@@ -109,3 +109,19 @@ def platform_info():
     if child_watcher:
         return f"{info} {child_watcher}"
     return info
+
+
+def close_fds(open_fds):
+    "Close open file descriptors or file objects."
+    try:
+        for obj in open_fds:
+            if isinstance(obj, int):
+                if obj >= 0:
+                    try:
+                        os.close(obj)
+                    except OSError:
+                        pass
+            else:
+                obj.close()
+    finally:
+        open_fds.clear()

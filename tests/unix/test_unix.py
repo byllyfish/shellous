@@ -515,6 +515,12 @@ async def test_pipeline_async_context_manager(sh):
         result = await run.stdout.read()
 
     assert result == b"A"
+    assert run.name == "tr|cat"
+    assert (
+        repr(run) == "<PipeRunner 'tr|cat' results=["
+        "Result(output_bytes=None, exit_code=0, cancelled=False, encoding='utf-8', extra=None), "
+        "Result(output_bytes=None, exit_code=0, cancelled=False, encoding='utf-8', extra=None)]>"
+    )
 
 
 async def test_gather_same_cmd(sh):

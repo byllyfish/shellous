@@ -2,7 +2,7 @@ import logging
 import os
 
 import pytest
-from shellous.util import coerce_env, decode, log_method
+from shellous.util import close_fds, coerce_env, decode, log_method
 
 pytestmark = pytest.mark.asyncio
 
@@ -70,3 +70,15 @@ def test_coerce_env():
     else:
         result = coerce_env(dict(PATH=...))
         assert result == {"PATH": os.environ["PATH"]}
+
+
+def test_close_fds(tmp_path):
+    "Test the close_fds() function."
+    out = tmp_path / "test_close_fds"
+
+    with open(out, "w") as fp:
+        fd = fp.fileno()
+        open_files = [fp, fd]
+
+    close_fds(open_files)
+    assert not open_files

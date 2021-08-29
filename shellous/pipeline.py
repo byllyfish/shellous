@@ -31,6 +31,11 @@ class Pipeline:
         "Return last command's options."
         return self.commands[-1].options
 
+    @property
+    def multiple_capture(self):
+        "Return true if pipe uses multiple capture."
+        return any(cmd.multiple_capture for cmd in self.commands)
+
     def stdin(self, input_):
         "Set stdin on the first command of the pipeline."
         if not self.commands:

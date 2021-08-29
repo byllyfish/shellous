@@ -1,5 +1,7 @@
 "Shellous cross-platform tests."
 
+# pylint: disable=redefined-outer-name,invalid-name
+
 import asyncio
 import hashlib
 import io
@@ -11,7 +13,6 @@ from shellous import CAPTURE, DEVNULL, INHERIT, PipeResult, Result, ResultError,
 from shellous.harvest import harvest_results
 
 pytestmark = pytest.mark.asyncio
-
 
 # 4MB + 1: Much larger than necessary.
 # See https://github.com/python/cpython/blob/main/Lib/test/support/__init__.py
@@ -273,21 +274,7 @@ async def test_broken_pipe_in_pipeline(cat_cmd, echo_cmd):
         await (data | cat_cmd | echo_cmd("abc"))
 
 
-def _latent_bug():
-    """There is a latent bug. This test...
-
-    1. Sometimes fails on Windows with a timeout in wait_closed.
-    2. Sometimes fails on Unix/MacOS with a FastChildWatcher.
-    """
-    import os
-
-    return (
-        sys.platform == "win32"
-        or os.environ.get("SHELLOUS_CHILDWATCHER_TYPE") == "fast"
-    )
-
-
-@pytest.mark.xfail(_latent_bug(), reason="latent bug")
+@pytest.mark.xfail(True, reason="latent bug")
 async def test_broken_pipe_in_failed_pipeline(cat_cmd, echo_cmd):
     "Test broken pipe error within a pipeline; last command fails."
     data = b"c" * PIPE_MAX_SIZE
@@ -387,3 +374,44 @@ async def test_many_short_programs_parallel(echo_cmd):
     results = await harvest_results(*cmds)
 
     assert results == ["abcd"] * COUNT
+
+
+async def test_redirect_stdin_capture_iter(cat_cmd, tr_cmd):
+    "Test setting stdin to CAPTURE when using `async for`."
+    with pytest.raises(ValueError, match="multiple capture requires 'async with'"):
+        async for line in cat_cmd.stdin(CAPTURE):
+            pass
+
+
+async def test_pipe_redirect_stdin_capture_iter(cat_cmd, tr_cmd):
+    "Test setting stdin on pipe to CAPTURE when using `async for`."
+    cmd = cat_cmd | tr_cmd
+    with pytest.raises(ValueError, match="multiple capture requires 'async with'"):
+        async for line in cmd.stdin(CAPTURE):
+            pass
+
+
+async def test_pipe_immediate_cancel(cat_cmd, tr_cmd):
+    "Test running a pipe that is immediately cancelled."
+    cmd = cat_cmd | tr_cmd
+    task = cmd.task()
+    await asyncio.sleep(0)
+    task.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        # FIXME: Should raise ResultError.
+        await task
+
+
+async def test_breaking_out_of_async_iter(env_cmd):
+    "Test breaking out of an async iterator."
+    async with env_cmd.iter() as iter:
+        async for _ in iter:
+            break
+
+
+async def test_exception_in_async_iter(env_cmd):
+    "Test breaking out of an async iterator."
+    with pytest.raises(ValueError):
+        async with env_cmd.iter() as iter:
+            async for _ in iter:
+                raise ValueError(1)

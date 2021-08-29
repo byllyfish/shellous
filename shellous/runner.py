@@ -10,7 +10,7 @@ from shellous.harvest import harvest, harvest_results
 from shellous.log import LOGGER
 from shellous.redirect import Redirect
 from shellous.result import Result, make_result
-from shellous.util import decode, log_method, platform_info
+from shellous.util import close_fds, decode, log_method, platform_info
 
 _DETAILED_LOGGING = True
 
@@ -43,7 +43,7 @@ class _RunOptions:
 
     def close_fds(self):
         "Close all open file descriptors in `open_fds`."
-        _close_fds(self.open_fds)
+        close_fds(self.open_fds)
 
     def __enter__(self):
         "Set up I/O redirections."
@@ -513,9 +513,9 @@ class PipeRunner:
 
             return self
 
-        except BaseException:
+        except BaseException:  # pylint: disable=broad-except
             # Clean up after any exception *including* CancelledError.
-            _close_fds(open_fds)
+            close_fds(open_fds)
 
     def _setup_pipeline(self, open_fds):
         """Return the pipeline stitched together with pipe fd's.
@@ -545,8 +545,8 @@ class PipeRunner:
         loop = asyncio.get_event_loop()
         first_fut = loop.create_future()
         last_fut = loop.create_future()
-        first_task = cmds[0].task(_streams_future=first_fut)
-        last_task = cmds[-1].task(_streams_future=last_fut)
+        first_task = cmds[0].task(_run_future=first_fut)
+        last_task = cmds[-1].task(_run_future=last_fut)
 
         middle_tasks = [cmd.task() for cmd in cmds[1:-1]]
         self.tasks = [first_task] + middle_tasks + [last_task]
@@ -556,7 +556,12 @@ class PipeRunner:
         first_ready, last_ready = await harvest_results(
             first_fut, last_fut, trustee=self
         )
-        stdin, stdout, stderr = (first_ready[0], last_ready[1], last_ready[2])
+
+        stdin, stdout, stderr = (
+            first_ready.stdin,
+            last_ready.stdout,
+            last_ready.stderr,
+        )
 
         return (stdin, stdout, stderr)
 
@@ -568,9 +573,9 @@ class PipeRunner:
         return f"<PipeRunner {self.name!r}{result_info}>"
 
 
-async def run(command, *, _streams_future=None):
+async def run_cmd(command, *, _run_future=None):
     "Run a command."
-    if not _streams_future and command.multiple_capture:
+    if not _run_future and command.multiple_capture:
         raise ValueError("multiple capture requires 'async with'")
 
     output_bytes = None
@@ -578,9 +583,9 @@ async def run(command, *, _streams_future=None):
 
     try:
         async with run:
-            if _streams_future is not None:
+            if _run_future is not None:
                 # Return streams to caller in another task.
-                _streams_future.set_result((run.stdin, run.stdout, run.stderr))
+                _run_future.set_result(run)
 
             else:
                 # Read the output here and return it.
@@ -590,12 +595,12 @@ async def run(command, *, _streams_future=None):
 
     except asyncio.CancelledError:
         # FIXME: This needs to be nailed down!
-        LOGGER.error("run %r cancelled inside enter", command.name)
+        LOGGER.error("run_cmd %r cancelled inside enter", command.name)
 
     return run.result(output_bytes)
 
 
-async def run_iter(command):
+async def run_cmd_iter(command):
     "Run a command and iterate over its output lines."
     if command.multiple_capture:
         raise ValueError("multiple capture requires 'async with'")
@@ -613,18 +618,22 @@ async def run_iter(command):
 async def run_pipe(pipe):
     "Run a pipeline"
 
+    # FIXME: Make it harder to create single command pipes.
     cmd_count = len(pipe.commands)
     if cmd_count == 1:
-        return await run(pipe.commands[0])
+        return await run_cmd(pipe.commands[0])
 
-    runner = PipeRunner(pipe, capturing=False)
-    async with runner:
+    run = PipeRunner(pipe, capturing=False)
+    async with run:
         pass
-    return runner.result()
+    return run.result()
 
 
 async def run_pipe_iter(pipe):
     "Run a pipeline and iterate over its output lines."
+    if pipe.multiple_capture:
+        raise ValueError("multiple capture requires 'async with'")
+
     run = PipeRunner(pipe, capturing=True)
     async with run:
         assert run.stdin is None
@@ -635,19 +644,3 @@ async def run_pipe_iter(pipe):
             yield decode(line, encoding)
 
     run.result()  # No return value; raises exception if needed
-
-
-def _close_fds(open_fds):
-    "Close open file descriptors or file objects."
-    try:
-        for obj in open_fds:
-            if isinstance(obj, int):
-                if obj >= 0:
-                    try:
-                        os.close(obj)
-                    except OSError:
-                        pass
-            else:
-                obj.close()
-    finally:
-        open_fds.clear()
