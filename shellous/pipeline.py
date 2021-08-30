@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from shellous.command import Command
-from shellous.runner import PipeRunner, run_pipe, run_pipe_iter
+from shellous.runner import PipeRunner, run_pipe
 
 
 @dataclass(frozen=True)
@@ -110,7 +110,7 @@ class Pipeline:
         return run_pipe(self).__await__()
 
     @contextlib.asynccontextmanager
-    async def iter(self):
+    async def __iter(self):
         """Async context manager to return a "safe" async iterator.
 
         ```

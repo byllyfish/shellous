@@ -16,7 +16,7 @@ from typing import Any, Optional, TypeVar, Union
 from immutables import Map as ImmutableDict
 
 from shellous.redirect import Redirect
-from shellous.runner import Runner, run_cmd, run_cmd_iter
+from shellous.runner import Runner, run_cmd
 from shellous.util import coerce_env
 
 # Sentinel used in "mergable" keyword arguments to indicate that a value
@@ -379,7 +379,7 @@ class Command:
         return Runner(self)
 
     @contextlib.asynccontextmanager
-    async def iter(self):
+    async def __iter(self):
         """Async context manager to return a "safe" async iterator.
 
         ```

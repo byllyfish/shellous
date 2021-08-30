@@ -188,8 +188,8 @@ Iteration
 You can loop over a command's output.
 
 ```python-repl
->>> async with pipe.iter() as iter:
-...   async for line in iter:
+>>> async with pipe.run() as run:
+...   async for line in run:
 ...     print(line.rstrip())
 ... 
 README.md

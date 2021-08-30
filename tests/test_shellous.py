@@ -378,18 +378,23 @@ async def test_many_short_programs_parallel(echo_cmd):
 
 async def test_redirect_stdin_capture_iter(cat_cmd, tr_cmd):
     "Test setting stdin to CAPTURE when using `async for`."
-    with pytest.raises(ValueError, match="multiple capture requires 'async with'"):
-        async with cat_cmd.stdin(CAPTURE).iter() as iter:
-            async for line in iter:
+    with pytest.raises(
+        RuntimeError,
+        match="multiple capture not supported in iterator",
+    ):
+        async with cat_cmd.stdin(CAPTURE).run() as run:
+            async for line in run:
                 pass
 
 
 async def test_pipe_redirect_stdin_capture_iter(cat_cmd, tr_cmd):
     "Test setting stdin on pipe to CAPTURE when using `async for`."
     cmd = cat_cmd | tr_cmd
-    with pytest.raises(ValueError, match="multiple capture requires 'async with'"):
-        async with cmd.stdin(CAPTURE).iter() as iter:
-            async for line in iter:
+    with pytest.raises(
+        RuntimeError, match="multiple capture not supported in iterator"
+    ):
+        async with cmd.stdin(CAPTURE).run() as run:
+            async for line in run:
                 pass
 
 
@@ -406,8 +411,8 @@ async def test_pipe_immediate_cancel(cat_cmd, tr_cmd):
 
 async def test_breaking_out_of_async_iter(env_cmd):
     "Test breaking out of an async iterator."
-    async with env_cmd.iter() as iter:
-        async for _ in iter:
+    async with env_cmd.run() as run:
+        async for _ in run:
             break
     # report_orphan_tasks
 
@@ -415,8 +420,8 @@ async def test_breaking_out_of_async_iter(env_cmd):
 async def test_exception_in_async_iter(env_cmd):
     "Test breaking out of an async iterator."
     with pytest.raises(ValueError):
-        async with env_cmd.iter() as iter:
-            async for _ in iter:
+        async with env_cmd.run() as run:
+            async for _ in run:
                 raise ValueError(1)
     # report_orphan_tasks
 
@@ -425,8 +430,8 @@ async def test_pipe_breaking_out_of_async_iter(env_cmd, tr_cmd):
     "Test breaking out of an async iterator."
     cmd = env_cmd | tr_cmd
 
-    async with cmd.iter() as iter:
-        async for _ in iter:
+    async with cmd.run() as run:
+        async for _ in run:
             break
     # report_orphan_tasks
 
@@ -436,7 +441,7 @@ async def test_pipe_exception_in_async_iter(env_cmd, tr_cmd):
     cmd = env_cmd | tr_cmd
 
     with pytest.raises(ValueError):
-        async with cmd.iter() as iter:
-            async for _ in iter:
+        async with cmd.run() as run:
+            async for _ in run:
                 raise ValueError(1)
     # report_orphan_tasks

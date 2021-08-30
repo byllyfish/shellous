@@ -415,8 +415,8 @@ async def test_async_context_manager(sh):
 async def test_async_iteration(sh):
     "Use `async for` to read stdout line by line."
     echo = sh("echo", "-n", "line1\n", "line2\n", "line3").stderr(DEVNULL)
-    async with echo.iter() as iter:
-        result = [line async for line in iter]
+    async with echo.run() as run:
+        result = [line async for line in run]
     assert result == ["line1\n", " line2\n", " line3"]
 
 
@@ -499,8 +499,8 @@ async def test_pipeline_async_iteration(sh):
     "Use `async for` to read stdout line by line."
     echo = sh("echo", "-n", "line1\n", "line2\n", "line3")
     cat = sh("cat")
-    async with (echo | cat).iter() as iter:
-        result = [line async for line in iter]
+    async with (echo | cat).run() as run:
+        result = [line async for line in run]
     assert result == ["line1\n", " line2\n", " line3"]
 
 
