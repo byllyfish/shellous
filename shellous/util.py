@@ -1,8 +1,6 @@
 "Implements various utility functions."
 
-import asyncio
 import os
-import platform
 from typing import Optional, Union
 
 
@@ -30,29 +28,6 @@ def coerce_env(env: dict):
         return str(value)
 
     return {str(key): _coerce(key, value) for key, value in env.items()}
-
-
-def platform_info():
-    "Return platform information for use in logging."
-
-    platform_vers = platform.platform(terse=True)
-    python_impl = platform.python_implementation()
-    python_vers = platform.python_version()
-
-    # Include module name with name of loop class.
-    loop_cls = asyncio.get_running_loop().__class__
-    loop_name = f"{loop_cls.__module__}.{loop_cls.__name__}"
-
-    try:
-        # Child watcher is only implemented on Unix.
-        child_watcher = asyncio.get_child_watcher().__class__.__name__
-    except NotImplementedError:
-        child_watcher = None
-
-    info = f"{platform_vers} {python_impl} {python_vers} {loop_name}"
-    if child_watcher:
-        return f"{info} {child_watcher}"
-    return info
 
 
 def close_fds(open_fds):

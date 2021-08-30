@@ -10,7 +10,7 @@ from shellous.harvest import harvest, harvest_results
 from shellous.log import LOGGER, log_method
 from shellous.redirect import Redirect
 from shellous.result import Result, make_result
-from shellous.util import close_fds, decode, platform_info
+from shellous.util import close_fds, decode
 
 _NORMAL_LOGGING = True
 _DETAILED_LOGGING = True
@@ -279,15 +279,12 @@ class Runner:
         self.proc.kill()
         await harvest(self.proc.wait(), timeout=_KILL_TIMEOUT, trustee=self)
 
+    @log_method(_NORMAL_LOGGING, _info=True)
     async def __aenter__(self):
         "Set up redirections and launch subprocess."
-        LOGGER.info("Runner entering %r (%s)", self, platform_info())
-        try:
-            return await self._start()
+        return await self._start()
 
-        finally:
-            LOGGER.info("Runner entered %r ex=%r", self, _exc())
-
+    @log_method(_DETAILED_LOGGING)
     async def _start(self):
         "Set up redirections and launch subprocess."
         assert self.proc is None
@@ -351,25 +348,17 @@ class Runner:
             stream = None
         return stream
 
+    @log_method(_NORMAL_LOGGING, exc_value=2)
     async def __aexit__(self, _exc_type, exc_value, _exc_tb):
         "Wait for process to exit and handle cancellation."
-
-        LOGGER.info("Runner exiting %r exc_value=%r", self, exc_value)
         suppress = False
         try:
             suppress = await self._finish(exc_value)
         except asyncio.CancelledError:
             LOGGER.warning("Runner cancelled inside _finish %r", self)
-        finally:
-            LOGGER.info(
-                "Runner exited %r ex=%r exc_value=%r suppress=%r",
-                self,
-                _exc(),
-                exc_value,
-                suppress,
-            )
         return suppress
 
+    @log_method(_DETAILED_LOGGING)
     async def _finish(self, exc_value):
         "Finish the run. Return True only if `exc_value` should be suppressed."
         assert self.proc
@@ -480,32 +469,22 @@ class PipeRunner:  # pylint: disable=too-many-instance-attributes
 
         self.results = await harvest_results(*self.tasks, trustee=self)
 
+    @log_method(_NORMAL_LOGGING)
     async def __aenter__(self):
         "Set up redirections and launch pipeline."
-        LOGGER.info("PipeRunner entering %r", self)
         try:
             return await self._start()
         except (Exception, asyncio.CancelledError) as ex:
             LOGGER.warning("PipeRunner enter %r ex=%r", self, ex)
             await self._wait(kill=True)  # FIXME
             raise
-        finally:
-            LOGGER.info("PipeRunner entered %r ex=%r", self, _exc())
 
+    @log_method(_NORMAL_LOGGING, exc_value=2)
     async def __aexit__(self, _exc_type, exc_value, _exc_tb):
         "Wait for pipeline to exit and handle cancellation."
-        LOGGER.info("PipeRunner exiting %r exc_value=%r", self, exc_value)
-        try:
-            if exc_value is not None:
-                return await self._cleanup(exc_value)
-            await self._wait()
-        finally:
-            LOGGER.info(
-                "PipeRunner exited %r exc_value=%r ex=%r",
-                self,
-                exc_value,
-                _exc(),
-            )
+        if exc_value is not None:
+            return await self._cleanup(exc_value)
+        await self._wait()
 
     @log_method(_DETAILED_LOGGING)
     async def _cleanup(self, exc_value):
