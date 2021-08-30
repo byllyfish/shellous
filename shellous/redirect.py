@@ -4,7 +4,10 @@ import asyncio
 import enum
 import io
 
-from shellous.util import decode, log_method
+from shellous.log import log_method
+from shellous.util import decode
+
+_DETAILED_LOGGING = True
 
 
 class Redirect(enum.IntEnum):
@@ -20,7 +23,7 @@ class Redirect(enum.IntEnum):
         return self in {Redirect.CAPTURE, Redirect.INHERIT}
 
 
-@log_method(True)
+@log_method(_DETAILED_LOGGING)
 async def write_stream(input_bytes, stream):
     "Write input_bytes to stream."
     try:
@@ -35,7 +38,7 @@ async def write_stream(input_bytes, stream):
         stream.close()
 
 
-@log_method(True)
+@log_method(_DETAILED_LOGGING)
 async def copy_stringio(source, dest, encoding):
     "Copy bytes from source stream to dest StringIO."
     # Collect partial reads into a BytesIO.
@@ -52,7 +55,7 @@ async def copy_stringio(source, dest, encoding):
         dest.write(decode(buf.getvalue(), encoding))
 
 
-@log_method(True)
+@log_method(_DETAILED_LOGGING)
 async def copy_bytesio(source, dest):
     "Copy bytes from source stream to dest BytesIO."
     # Collect partial reads into a BytesIO.
@@ -63,7 +66,7 @@ async def copy_bytesio(source, dest):
         dest.write(data)
 
 
-@log_method(True)
+@log_method(_DETAILED_LOGGING)
 async def copy_bytearray(source, dest):
     "Copy bytes from source stream to dest bytearray."
     # Collect partial reads into a bytearray.

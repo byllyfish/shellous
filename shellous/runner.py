@@ -7,11 +7,12 @@ import sys
 
 import shellous.redirect as redir
 from shellous.harvest import harvest, harvest_results
-from shellous.log import LOGGER
+from shellous.log import LOGGER, log_method
 from shellous.redirect import Redirect
 from shellous.result import Result, make_result
-from shellous.util import close_fds, decode, log_method, platform_info
+from shellous.util import close_fds, decode, platform_info
 
+_NORMAL_LOGGING = True
 _DETAILED_LOGGING = True
 
 _KILL_TIMEOUT = 3.0
