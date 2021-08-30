@@ -14,6 +14,9 @@ from shellous.util import close_fds, decode, log_method, platform_info
 
 _DETAILED_LOGGING = True
 
+_KILL_TIMEOUT = 3.0
+_CLOSE_TIMEOUT = 0.25
+
 
 def _exc():
     "Return the current exception value. Useful in logging."
@@ -273,7 +276,7 @@ class Runner:
             return
 
         self.proc.kill()
-        await self.proc.wait()  # FIXME: needs timeout...
+        await harvest(self.proc.wait(), timeout=_KILL_TIMEOUT, trustee=self)
 
     async def __aenter__(self):
         "Set up redirections and launch subprocess."
@@ -396,7 +399,11 @@ class Runner:
             # will raise a BrokenPipeError if not all input was properly written.
             if self.proc.stdin is not None:
                 self.proc.stdin.close()
-                await harvest(self.proc.stdin.wait_closed(), timeout=0.25, trustee=self)
+                await harvest(
+                    self.proc.stdin.wait_closed(),
+                    timeout=_CLOSE_TIMEOUT,
+                    trustee=self,
+                )
 
         except asyncio.TimeoutError:
             LOGGER.error("Runner._close %r timeout", self)
