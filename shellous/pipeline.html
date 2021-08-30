@@ -93,7 +93,7 @@
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span>
 
 <span class="kn">from</span> <span class="nn">shellous.command</span> <span class="kn">import</span> <span class="n">Command</span>
-<span class="kn">from</span> <span class="nn">shellous.runner</span> <span class="kn">import</span> <span class="n">PipeRunner</span><span class="p">,</span> <span class="n">run_pipe</span><span class="p">,</span> <span class="n">run_pipe_iter</span>
+<span class="kn">from</span> <span class="nn">shellous.runner</span> <span class="kn">import</span> <span class="n">PipeRunner</span><span class="p">,</span> <span class="n">run_pipe</span>
 
 
 <span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -193,10 +193,6 @@
 
     <span class="k">def</span> <span class="fm">__await__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">run_pipe</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__await__</span><span class="p">()</span>
-
-    <span class="k">def</span> <span class="fm">__aiter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="s2">&quot;Return an asynchronous iterator over the standard output.&quot;</span>
-        <span class="k">return</span> <span class="n">run_pipe_iter</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 </pre></div>
 
         </details>
@@ -311,10 +307,6 @@
 
     <span class="k">def</span> <span class="fm">__await__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">run_pipe</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__await__</span><span class="p">()</span>
-
-    <span class="k">def</span> <span class="fm">__aiter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="s2">&quot;Return an asynchronous iterator over the standard output.&quot;</span>
-        <span class="k">return</span> <span class="n">run_pipe_iter</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 </pre></div>
 
         </details>

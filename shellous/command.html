@@ -174,9 +174,6 @@
                         <li>
                                 <a class="function" href="#Command.run">run</a>
                         </li>
-                        <li>
-                                <a class="function" href="#Command.iter">iter</a>
-                        </li>
                 </ul>
 
             </li>
@@ -213,7 +210,6 @@
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">import</span> <span class="nn">asyncio</span>
-<span class="kn">import</span> <span class="nn">contextlib</span>
 <span class="kn">import</span> <span class="nn">dataclasses</span>
 <span class="kn">import</span> <span class="nn">enum</span>
 <span class="kn">import</span> <span class="nn">os</span>
@@ -224,7 +220,7 @@
 <span class="kn">from</span> <span class="nn">immutables</span> <span class="kn">import</span> <span class="n">Map</span> <span class="k">as</span> <span class="n">ImmutableDict</span>
 
 <span class="kn">from</span> <span class="nn">shellous.redirect</span> <span class="kn">import</span> <span class="n">Redirect</span>
-<span class="kn">from</span> <span class="nn">shellous.runner</span> <span class="kn">import</span> <span class="n">Runner</span><span class="p">,</span> <span class="n">run_cmd</span><span class="p">,</span> <span class="n">run_cmd_iter</span>
+<span class="kn">from</span> <span class="nn">shellous.runner</span> <span class="kn">import</span> <span class="n">Runner</span><span class="p">,</span> <span class="n">run_cmd</span>
 <span class="kn">from</span> <span class="nn">shellous.util</span> <span class="kn">import</span> <span class="n">coerce_env</span>
 
 <span class="c1"># Sentinel used in &quot;mergable&quot; keyword arguments to indicate that a value</span>
@@ -586,29 +582,9 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">Runner</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
-    <span class="nd">@contextlib</span><span class="o">.</span><span class="n">asynccontextmanager</span>
-    <span class="k">async</span> <span class="k">def</span> <span class="nf">iter</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Async context manager to return a &quot;safe&quot; async iterator.</span>
-
-<span class="sd">        ```</span>
-<span class="sd">        async with cmd.iter() as iter:</span>
-<span class="sd">            async for line in iter:</span>
-<span class="sd">                # do something with line</span>
-<span class="sd">        ```</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">aiter</span> <span class="o">=</span> <span class="n">run_cmd_iter</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="k">yield</span> <span class="n">aiter</span>
-        <span class="k">finally</span><span class="p">:</span>
-            <span class="k">await</span> <span class="n">aiter</span><span class="o">.</span><span class="n">aclose</span><span class="p">()</span>
-
     <span class="k">def</span> <span class="fm">__await__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Run process and return the standard output.&quot;</span>
         <span class="k">return</span> <span class="n">run_cmd</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__await__</span><span class="p">()</span>
-
-    <span class="k">def</span> <span class="fm">__aiter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="s2">&quot;Return an asynchronous iterator over the standard output.&quot;</span>
-        <span class="k">return</span> <span class="n">run_cmd_iter</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
         <span class="s2">&quot;Apply more arguments to the end of the command.&quot;</span>
@@ -1622,29 +1598,9 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">Runner</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
-    <span class="nd">@contextlib</span><span class="o">.</span><span class="n">asynccontextmanager</span>
-    <span class="k">async</span> <span class="k">def</span> <span class="nf">iter</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Async context manager to return a &quot;safe&quot; async iterator.</span>
-
-<span class="sd">        ```</span>
-<span class="sd">        async with cmd.iter() as iter:</span>
-<span class="sd">            async for line in iter:</span>
-<span class="sd">                # do something with line</span>
-<span class="sd">        ```</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">aiter</span> <span class="o">=</span> <span class="n">run_cmd_iter</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="k">yield</span> <span class="n">aiter</span>
-        <span class="k">finally</span><span class="p">:</span>
-            <span class="k">await</span> <span class="n">aiter</span><span class="o">.</span><span class="n">aclose</span><span class="p">()</span>
-
     <span class="k">def</span> <span class="fm">__await__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Run process and return the standard output.&quot;</span>
         <span class="k">return</span> <span class="n">run_cmd</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__await__</span><span class="p">()</span>
-
-    <span class="k">def</span> <span class="fm">__aiter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="s2">&quot;Return an asynchronous iterator over the standard output.&quot;</span>
-        <span class="k">return</span> <span class="n">run_cmd_iter</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
         <span class="s2">&quot;Apply more arguments to the end of the command.&quot;</span>
@@ -1959,46 +1915,6 @@ scripting language.</li>
     # do something with run.stdin, run.stdout, run.stderr...
     # close run.stdin to signal we're done...
 result = run.result()
-</code></pre>
-</div>
-
-
-                            </div>
-                            <div id="Command.iter" class="classattr">
-                                        <div class="attr function"><a class="headerlink" href="#Command.iter">#&nbsp;&nbsp</a>
-
-                <div class="decorator">@contextlib.asynccontextmanager</div>
-
-            <span class="def">def</span>
-            <span class="name">iter</span><span class="signature">(self)</span>:
-    </div>
-
-                <details>
-            <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span>    <span class="nd">@contextlib</span><span class="o">.</span><span class="n">asynccontextmanager</span>
-    <span class="k">async</span> <span class="k">def</span> <span class="nf">iter</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Async context manager to return a &quot;safe&quot; async iterator.</span>
-
-<span class="sd">        ```</span>
-<span class="sd">        async with cmd.iter() as iter:</span>
-<span class="sd">            async for line in iter:</span>
-<span class="sd">                # do something with line</span>
-<span class="sd">        ```</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">aiter</span> <span class="o">=</span> <span class="n">run_cmd_iter</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="k">yield</span> <span class="n">aiter</span>
-        <span class="k">finally</span><span class="p">:</span>
-            <span class="k">await</span> <span class="n">aiter</span><span class="o">.</span><span class="n">aclose</span><span class="p">()</span>
-</pre></div>
-
-        </details>
-
-            <div class="docstring"><p>Async context manager to return a "safe" async iterator.</p>
-
-<pre><code>async with cmd.iter() as iter:
-    async for line in iter:
-        # do something with line
 </code></pre>
 </div>
 

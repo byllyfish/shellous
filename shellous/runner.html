@@ -70,13 +70,7 @@
                     <a class="function" href="#run_cmd">run_cmd</a>
             </li>
             <li>
-                    <a class="function" href="#run_cmd_iter">run_cmd_iter</a>
-            </li>
-            <li>
                     <a class="function" href="#run_pipe">run_pipe</a>
-            </li>
-            <li>
-                    <a class="function" href="#run_pipe_iter">run_pipe_iter</a>
             </li>
     </ul>
 
@@ -114,6 +108,9 @@
 <span class="kn">from</span> <span class="nn">shellous.util</span> <span class="kn">import</span> <span class="n">close_fds</span><span class="p">,</span> <span class="n">decode</span><span class="p">,</span> <span class="n">log_method</span><span class="p">,</span> <span class="n">platform_info</span>
 
 <span class="n">_DETAILED_LOGGING</span> <span class="o">=</span> <span class="kc">True</span>
+
+<span class="n">_KILL_TIMEOUT</span> <span class="o">=</span> <span class="mf">3.0</span>
+<span class="n">_CLOSE_TIMEOUT</span> <span class="o">=</span> <span class="mf">0.25</span>
 
 
 <span class="k">def</span> <span class="nf">_exc</span><span class="p">():</span>
@@ -374,7 +371,7 @@
             <span class="k">return</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">kill</span><span class="p">()</span>
-        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span>  <span class="c1"># FIXME: needs timeout...</span>
+        <span class="k">await</span> <span class="n">harvest</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">wait</span><span class="p">(),</span> <span class="n">timeout</span><span class="o">=</span><span class="n">_KILL_TIMEOUT</span><span class="p">,</span> <span class="n">trustee</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
 
     <span class="k">async</span> <span class="k">def</span> <span class="fm">__aenter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Set up redirections and launch subprocess.&quot;</span>
@@ -497,19 +494,41 @@
             <span class="c1"># will raise a BrokenPipeError if not all input was properly written.</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">stdin</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
-                <span class="k">await</span> <span class="n">harvest</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">wait_closed</span><span class="p">(),</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">0.25</span><span class="p">,</span> <span class="n">trustee</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+                <span class="k">await</span> <span class="n">harvest</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">wait_closed</span><span class="p">(),</span>
+                    <span class="n">timeout</span><span class="o">=</span><span class="n">_CLOSE_TIMEOUT</span><span class="p">,</span>
+                    <span class="n">trustee</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span>
+                <span class="p">)</span>
 
         <span class="k">except</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">TimeoutError</span><span class="p">:</span>
             <span class="n">LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Runner._close </span><span class="si">%r</span><span class="s2"> timeout&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Return string representation of Runner.&quot;</span>
+        <span class="n">cancelled</span> <span class="o">=</span> <span class="s2">&quot; cancelled&quot;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cancelled</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="p">:</span>
-            <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;&lt;Runner </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">!r}</span><span class="s2"> pid=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">pid</span><span class="si">}</span><span class="s2"> exit_code=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">returncode</span><span class="si">}</span><span class="s2">&gt;&quot;</span>
-        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;&lt;Runner </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">!r}</span><span class="s2"> pid=None&gt;&quot;</span>
+            <span class="n">procinfo</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot; pid=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">pid</span><span class="si">}</span><span class="s2"> exit_code=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">returncode</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">procinfo</span> <span class="o">=</span> <span class="s2">&quot; pid=None&quot;</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;&lt;Runner </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">!r}{</span><span class="n">cancelled</span><span class="si">}{</span><span class="n">procinfo</span><span class="si">}</span><span class="s2">&gt;&quot;</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">_readlines</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;Iterate over lines in stdout/stderr&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">stdin</span> <span class="ow">or</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stdout</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">stderr</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;multiple capture not supported in iterator&quot;</span><span class="p">)</span>
+
+        <span class="n">encoding</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">encoding</span>
+        <span class="n">stream</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stdout</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">stderr</span>
+        <span class="k">if</span> <span class="n">stream</span><span class="p">:</span>
+            <span class="k">async</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">stream</span><span class="p">:</span>
+                <span class="k">yield</span> <span class="n">decode</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="n">encoding</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__aiter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;Return asynchronous iterator over stdout/stderr.&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_readlines</span><span class="p">()</span>
 
 
-<span class="k">class</span> <span class="nc">PipeRunner</span><span class="p">:</span>
+<span class="k">class</span> <span class="nc">PipeRunner</span><span class="p">:</span>  <span class="c1"># pylint: disable=too-many-instance-attributes</span>
     <span class="sd">&quot;&quot;&quot;PipeRunner is an asynchronous context manager that runs a pipeline.</span>
 
 <span class="sd">    ```</span>
@@ -673,6 +692,21 @@
             <span class="n">result_info</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot; results=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="si">!r}</span><span class="s2">&quot;</span>
         <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;&lt;PipeRunner </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">!r}{</span><span class="n">result_info</span><span class="si">}</span><span class="s2">&gt;&quot;</span>
 
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">_readlines</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;Iterate over lines in stdout/stderr&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">stdin</span> <span class="ow">or</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stdout</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">stderr</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;multiple capture not supported in iterator&quot;</span><span class="p">)</span>
+
+        <span class="n">encoding</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoding</span>
+        <span class="n">stream</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stdout</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">stderr</span>
+        <span class="k">if</span> <span class="n">stream</span><span class="p">:</span>
+            <span class="k">async</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">stream</span><span class="p">:</span>
+                <span class="k">yield</span> <span class="n">decode</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="n">encoding</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__aiter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;Return asynchronous iterator over stdout/stderr.&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_readlines</span><span class="p">()</span>
+
 
 <span class="k">async</span> <span class="k">def</span> <span class="nf">run_cmd</span><span class="p">(</span><span class="n">command</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">_run_future</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="s2">&quot;Run a command.&quot;</span>
@@ -701,21 +735,6 @@
     <span class="k">return</span> <span class="n">run</span><span class="o">.</span><span class="n">result</span><span class="p">(</span><span class="n">output_bytes</span><span class="p">)</span>
 
 
-<span class="k">async</span> <span class="k">def</span> <span class="nf">run_cmd_iter</span><span class="p">(</span><span class="n">command</span><span class="p">):</span>
-    <span class="s2">&quot;Run a command and iterate over its output lines.&quot;</span>
-    <span class="k">if</span> <span class="n">command</span><span class="o">.</span><span class="n">multiple_capture</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;multiple capture requires &#39;async with&#39;&quot;</span><span class="p">)</span>
-
-    <span class="k">async</span> <span class="k">with</span> <span class="n">command</span><span class="o">.</span><span class="n">run</span><span class="p">()</span> <span class="k">as</span> <span class="n">run</span><span class="p">:</span>
-        <span class="n">encoding</span> <span class="o">=</span> <span class="n">run</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">encoding</span>
-        <span class="n">stream</span> <span class="o">=</span> <span class="n">run</span><span class="o">.</span><span class="n">stdout</span> <span class="ow">or</span> <span class="n">run</span><span class="o">.</span><span class="n">stderr</span>
-        <span class="k">if</span> <span class="n">stream</span><span class="p">:</span>
-            <span class="k">async</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">stream</span><span class="p">:</span>
-                <span class="k">yield</span> <span class="n">decode</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="n">encoding</span><span class="p">)</span>
-
-    <span class="n">run</span><span class="o">.</span><span class="n">result</span><span class="p">()</span>  <span class="c1"># No return value; raises exception if needed</span>
-
-
 <span class="k">async</span> <span class="k">def</span> <span class="nf">run_pipe</span><span class="p">(</span><span class="n">pipe</span><span class="p">):</span>
     <span class="s2">&quot;Run a pipeline&quot;</span>
 
@@ -728,23 +747,6 @@
     <span class="k">async</span> <span class="k">with</span> <span class="n">run</span><span class="p">:</span>
         <span class="k">pass</span>
     <span class="k">return</span> <span class="n">run</span><span class="o">.</span><span class="n">result</span><span class="p">()</span>
-
-
-<span class="k">async</span> <span class="k">def</span> <span class="nf">run_pipe_iter</span><span class="p">(</span><span class="n">pipe</span><span class="p">):</span>
-    <span class="s2">&quot;Run a pipeline and iterate over its output lines.&quot;</span>
-    <span class="k">if</span> <span class="n">pipe</span><span class="o">.</span><span class="n">multiple_capture</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;multiple capture requires &#39;async with&#39;&quot;</span><span class="p">)</span>
-
-    <span class="n">run</span> <span class="o">=</span> <span class="n">PipeRunner</span><span class="p">(</span><span class="n">pipe</span><span class="p">,</span> <span class="n">capturing</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="k">async</span> <span class="k">with</span> <span class="n">run</span><span class="p">:</span>
-        <span class="k">assert</span> <span class="n">run</span><span class="o">.</span><span class="n">stdin</span> <span class="ow">is</span> <span class="kc">None</span>
-        <span class="k">assert</span> <span class="n">run</span><span class="o">.</span><span class="n">stderr</span> <span class="ow">is</span> <span class="kc">None</span>
-
-        <span class="n">encoding</span> <span class="o">=</span> <span class="n">run</span><span class="o">.</span><span class="n">encoding</span>
-        <span class="k">async</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">run</span><span class="o">.</span><span class="n">stdout</span><span class="p">:</span>
-            <span class="k">yield</span> <span class="n">decode</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="n">encoding</span><span class="p">)</span>
-
-    <span class="n">run</span><span class="o">.</span><span class="n">result</span><span class="p">()</span>  <span class="c1"># No return value; raises exception if needed</span>
 </pre></div>
 
         </details>
@@ -875,7 +877,7 @@
             <span class="k">return</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">kill</span><span class="p">()</span>
-        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span>  <span class="c1"># FIXME: needs timeout...</span>
+        <span class="k">await</span> <span class="n">harvest</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">wait</span><span class="p">(),</span> <span class="n">timeout</span><span class="o">=</span><span class="n">_KILL_TIMEOUT</span><span class="p">,</span> <span class="n">trustee</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
 
     <span class="k">async</span> <span class="k">def</span> <span class="fm">__aenter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Set up redirections and launch subprocess.&quot;</span>
@@ -998,16 +1000,38 @@
             <span class="c1"># will raise a BrokenPipeError if not all input was properly written.</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">stdin</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
-                <span class="k">await</span> <span class="n">harvest</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">wait_closed</span><span class="p">(),</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">0.25</span><span class="p">,</span> <span class="n">trustee</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+                <span class="k">await</span> <span class="n">harvest</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">wait_closed</span><span class="p">(),</span>
+                    <span class="n">timeout</span><span class="o">=</span><span class="n">_CLOSE_TIMEOUT</span><span class="p">,</span>
+                    <span class="n">trustee</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span>
+                <span class="p">)</span>
 
         <span class="k">except</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">TimeoutError</span><span class="p">:</span>
             <span class="n">LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Runner._close </span><span class="si">%r</span><span class="s2"> timeout&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Return string representation of Runner.&quot;</span>
+        <span class="n">cancelled</span> <span class="o">=</span> <span class="s2">&quot; cancelled&quot;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cancelled</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="p">:</span>
-            <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;&lt;Runner </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">!r}</span><span class="s2"> pid=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">pid</span><span class="si">}</span><span class="s2"> exit_code=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">returncode</span><span class="si">}</span><span class="s2">&gt;&quot;</span>
-        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;&lt;Runner </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">!r}</span><span class="s2"> pid=None&gt;&quot;</span>
+            <span class="n">procinfo</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot; pid=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">pid</span><span class="si">}</span><span class="s2"> exit_code=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">returncode</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">procinfo</span> <span class="o">=</span> <span class="s2">&quot; pid=None&quot;</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;&lt;Runner </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">!r}{</span><span class="n">cancelled</span><span class="si">}{</span><span class="n">procinfo</span><span class="si">}</span><span class="s2">&gt;&quot;</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">_readlines</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;Iterate over lines in stdout/stderr&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">stdin</span> <span class="ow">or</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stdout</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">stderr</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;multiple capture not supported in iterator&quot;</span><span class="p">)</span>
+
+        <span class="n">encoding</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">encoding</span>
+        <span class="n">stream</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stdout</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">stderr</span>
+        <span class="k">if</span> <span class="n">stream</span><span class="p">:</span>
+            <span class="k">async</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">stream</span><span class="p">:</span>
+                <span class="k">yield</span> <span class="n">decode</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="n">encoding</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__aiter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;Return asynchronous iterator over stdout/stderr.&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_readlines</span><span class="p">()</span>
 </pre></div>
 
         </details>
@@ -1140,7 +1164,7 @@ result = run.result()
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">PipeRunner</span><span class="p">:</span>
+            <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">PipeRunner</span><span class="p">:</span>  <span class="c1"># pylint: disable=too-many-instance-attributes</span>
     <span class="sd">&quot;&quot;&quot;PipeRunner is an asynchronous context manager that runs a pipeline.</span>
 
 <span class="sd">    ```</span>
@@ -1303,6 +1327,21 @@ result = run.result()
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">:</span>
             <span class="n">result_info</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot; results=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="si">!r}</span><span class="s2">&quot;</span>
         <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;&lt;PipeRunner </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">!r}{</span><span class="n">result_info</span><span class="si">}</span><span class="s2">&gt;&quot;</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">_readlines</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;Iterate over lines in stdout/stderr&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">stdin</span> <span class="ow">or</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stdout</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">stderr</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;multiple capture not supported in iterator&quot;</span><span class="p">)</span>
+
+        <span class="n">encoding</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoding</span>
+        <span class="n">stream</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stdout</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">stderr</span>
+        <span class="k">if</span> <span class="n">stream</span><span class="p">:</span>
+            <span class="k">async</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">stream</span><span class="p">:</span>
+                <span class="k">yield</span> <span class="n">decode</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="n">encoding</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__aiter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;Return asynchronous iterator over stdout/stderr.&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_readlines</span><span class="p">()</span>
 </pre></div>
 
         </details>
@@ -1426,38 +1465,6 @@ client needs to access <code>stdin</code> and <code>stderr</code> streams.</p>
 
 
                 </section>
-                <section id="run_cmd_iter">
-                            <div class="attr function"><a class="headerlink" href="#run_cmd_iter">#&nbsp;&nbsp</a>
-
-        
-            <span class="def">async def</span>
-            <span class="name">run_cmd_iter</span><span class="signature">(command)</span>:
-    </div>
-
-                <details>
-            <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span><span class="k">async</span> <span class="k">def</span> <span class="nf">run_cmd_iter</span><span class="p">(</span><span class="n">command</span><span class="p">):</span>
-    <span class="s2">&quot;Run a command and iterate over its output lines.&quot;</span>
-    <span class="k">if</span> <span class="n">command</span><span class="o">.</span><span class="n">multiple_capture</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;multiple capture requires &#39;async with&#39;&quot;</span><span class="p">)</span>
-
-    <span class="k">async</span> <span class="k">with</span> <span class="n">command</span><span class="o">.</span><span class="n">run</span><span class="p">()</span> <span class="k">as</span> <span class="n">run</span><span class="p">:</span>
-        <span class="n">encoding</span> <span class="o">=</span> <span class="n">run</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">encoding</span>
-        <span class="n">stream</span> <span class="o">=</span> <span class="n">run</span><span class="o">.</span><span class="n">stdout</span> <span class="ow">or</span> <span class="n">run</span><span class="o">.</span><span class="n">stderr</span>
-        <span class="k">if</span> <span class="n">stream</span><span class="p">:</span>
-            <span class="k">async</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">stream</span><span class="p">:</span>
-                <span class="k">yield</span> <span class="n">decode</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="n">encoding</span><span class="p">)</span>
-
-    <span class="n">run</span><span class="o">.</span><span class="n">result</span><span class="p">()</span>  <span class="c1"># No return value; raises exception if needed</span>
-</pre></div>
-
-        </details>
-
-            <div class="docstring"><p>Run a command and iterate over its output lines.</p>
-</div>
-
-
-                </section>
                 <section id="run_pipe">
                             <div class="attr function"><a class="headerlink" href="#run_pipe">#&nbsp;&nbsp</a>
 
@@ -1485,40 +1492,6 @@ client needs to access <code>stdin</code> and <code>stderr</code> streams.</p>
         </details>
 
             <div class="docstring"><p>Run a pipeline</p>
-</div>
-
-
-                </section>
-                <section id="run_pipe_iter">
-                            <div class="attr function"><a class="headerlink" href="#run_pipe_iter">#&nbsp;&nbsp</a>
-
-        
-            <span class="def">async def</span>
-            <span class="name">run_pipe_iter</span><span class="signature">(pipe)</span>:
-    </div>
-
-                <details>
-            <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span><span class="k">async</span> <span class="k">def</span> <span class="nf">run_pipe_iter</span><span class="p">(</span><span class="n">pipe</span><span class="p">):</span>
-    <span class="s2">&quot;Run a pipeline and iterate over its output lines.&quot;</span>
-    <span class="k">if</span> <span class="n">pipe</span><span class="o">.</span><span class="n">multiple_capture</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;multiple capture requires &#39;async with&#39;&quot;</span><span class="p">)</span>
-
-    <span class="n">run</span> <span class="o">=</span> <span class="n">PipeRunner</span><span class="p">(</span><span class="n">pipe</span><span class="p">,</span> <span class="n">capturing</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="k">async</span> <span class="k">with</span> <span class="n">run</span><span class="p">:</span>
-        <span class="k">assert</span> <span class="n">run</span><span class="o">.</span><span class="n">stdin</span> <span class="ow">is</span> <span class="kc">None</span>
-        <span class="k">assert</span> <span class="n">run</span><span class="o">.</span><span class="n">stderr</span> <span class="ow">is</span> <span class="kc">None</span>
-
-        <span class="n">encoding</span> <span class="o">=</span> <span class="n">run</span><span class="o">.</span><span class="n">encoding</span>
-        <span class="k">async</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">run</span><span class="o">.</span><span class="n">stdout</span><span class="p">:</span>
-            <span class="k">yield</span> <span class="n">decode</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="n">encoding</span><span class="p">)</span>
-
-    <span class="n">run</span><span class="o">.</span><span class="n">result</span><span class="p">()</span>  <span class="c1"># No return value; raises exception if needed</span>
-</pre></div>
-
-        </details>
-
-            <div class="docstring"><p>Run a pipeline and iterate over its output lines.</p>
 </div>
 
 
