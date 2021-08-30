@@ -1,7 +1,6 @@
 "Implements support for Pipelines."
 
 import asyncio
-import contextlib
 import dataclasses
 import os
 from dataclasses import dataclass
@@ -108,19 +107,3 @@ class Pipeline:
 
     def __await__(self):
         return run_pipe(self).__await__()
-
-    @contextlib.asynccontextmanager
-    async def __iter(self):
-        """Async context manager to return a "safe" async iterator.
-
-        ```
-        async with cmd.iter() as iter:
-            async for line in iter:
-                # do something with line
-        ```
-        """
-        aiter = run_pipe_iter(self)
-        try:
-            yield aiter
-        finally:
-            await aiter.aclose()

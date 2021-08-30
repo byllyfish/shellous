@@ -5,7 +5,6 @@
 """
 
 import asyncio
-import contextlib
 import dataclasses
 import enum
 import os
@@ -377,22 +376,6 @@ class Command:
         ```
         """
         return Runner(self)
-
-    @contextlib.asynccontextmanager
-    async def __iter(self):
-        """Async context manager to return a "safe" async iterator.
-
-        ```
-        async with cmd.iter() as iter:
-            async for line in iter:
-                # do something with line
-        ```
-        """
-        aiter = run_cmd_iter(self)
-        try:
-            yield aiter
-        finally:
-            await aiter.aclose()
 
     def __await__(self):
         "Run process and return the standard output."

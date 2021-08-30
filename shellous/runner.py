@@ -433,7 +433,7 @@ class Runner:
         return self._readlines()
 
 
-class PipeRunner:
+class PipeRunner:  # pylint: disable=too-many-instance-attributes
     """PipeRunner is an asynchronous context manager that runs a pipeline.
 
     ```
