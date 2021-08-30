@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from shellous.command import Command
-from shellous.runner import PipeRunner, run_pipe, run_pipe_iter
+from shellous.runner import PipeRunner, run_pipe
 
 
 @dataclass(frozen=True)
@@ -107,7 +107,3 @@ class Pipeline:
 
     def __await__(self):
         return run_pipe(self).__await__()
-
-    def __aiter__(self):
-        "Return an asynchronous iterator over the standard output."
-        return run_pipe_iter(self)

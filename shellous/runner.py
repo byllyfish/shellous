@@ -14,6 +14,9 @@ from shellous.util import close_fds, decode, log_method, platform_info
 
 _DETAILED_LOGGING = True
 
+_KILL_TIMEOUT = 3.0
+_CLOSE_TIMEOUT = 0.25
+
 
 def _exc():
     "Return the current exception value. Useful in logging."
@@ -273,7 +276,7 @@ class Runner:
             return
 
         self.proc.kill()
-        await self.proc.wait()  # FIXME: needs timeout...
+        await harvest(self.proc.wait(), timeout=_KILL_TIMEOUT, trustee=self)
 
     async def __aenter__(self):
         "Set up redirections and launch subprocess."
@@ -396,19 +399,41 @@ class Runner:
             # will raise a BrokenPipeError if not all input was properly written.
             if self.proc.stdin is not None:
                 self.proc.stdin.close()
-                await harvest(self.proc.stdin.wait_closed(), timeout=0.25, trustee=self)
+                await harvest(
+                    self.proc.stdin.wait_closed(),
+                    timeout=_CLOSE_TIMEOUT,
+                    trustee=self,
+                )
 
         except asyncio.TimeoutError:
             LOGGER.error("Runner._close %r timeout", self)
 
     def __repr__(self):
         "Return string representation of Runner."
+        cancelled = " cancelled" if self.cancelled else ""
         if self.proc:
-            return f"<Runner {self.name!r} pid={self.proc.pid} exit_code={self.proc.returncode}>"
-        return f"<Runner {self.name!r} pid=None>"
+            procinfo = f" pid={self.proc.pid} exit_code={self.proc.returncode}"
+        else:
+            procinfo = " pid=None"
+        return f"<Runner {self.name!r}{cancelled}{procinfo}>"
+
+    async def _readlines(self):
+        "Iterate over lines in stdout/stderr"
+        if self.stdin or (self.stdout and self.stderr):
+            raise RuntimeError("multiple capture not supported in iterator")
+
+        encoding = self.options.encoding
+        stream = self.stdout or self.stderr
+        if stream:
+            async for line in stream:
+                yield decode(line, encoding)
+
+    def __aiter__(self):
+        "Return asynchronous iterator over stdout/stderr."
+        return self._readlines()
 
 
-class PipeRunner:
+class PipeRunner:  # pylint: disable=too-many-instance-attributes
     """PipeRunner is an asynchronous context manager that runs a pipeline.
 
     ```
@@ -572,6 +597,21 @@ class PipeRunner:
             result_info = f" results={self.results!r}"
         return f"<PipeRunner {self.name!r}{result_info}>"
 
+    async def _readlines(self):
+        "Iterate over lines in stdout/stderr"
+        if self.stdin or (self.stdout and self.stderr):
+            raise RuntimeError("multiple capture not supported in iterator")
+
+        encoding = self.encoding
+        stream = self.stdout or self.stderr
+        if stream:
+            async for line in stream:
+                yield decode(line, encoding)
+
+    def __aiter__(self):
+        "Return asynchronous iterator over stdout/stderr."
+        return self._readlines()
+
 
 async def run_cmd(command, *, _run_future=None):
     "Run a command."
@@ -600,21 +640,6 @@ async def run_cmd(command, *, _run_future=None):
     return run.result(output_bytes)
 
 
-async def run_cmd_iter(command):
-    "Run a command and iterate over its output lines."
-    if command.multiple_capture:
-        raise ValueError("multiple capture requires 'async with'")
-
-    async with command.run() as run:
-        encoding = run.options.encoding
-        stream = run.stdout or run.stderr
-        if stream:
-            async for line in stream:
-                yield decode(line, encoding)
-
-    run.result()  # No return value; raises exception if needed
-
-
 async def run_pipe(pipe):
     "Run a pipeline"
 
@@ -627,20 +652,3 @@ async def run_pipe(pipe):
     async with run:
         pass
     return run.result()
-
-
-async def run_pipe_iter(pipe):
-    "Run a pipeline and iterate over its output lines."
-    if pipe.multiple_capture:
-        raise ValueError("multiple capture requires 'async with'")
-
-    run = PipeRunner(pipe, capturing=True)
-    async with run:
-        assert run.stdin is None
-        assert run.stderr is None
-
-        encoding = run.encoding
-        async for line in run.stdout:
-            yield decode(line, encoding)
-
-    run.result()  # No return value; raises exception if needed

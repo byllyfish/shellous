@@ -5,7 +5,6 @@
 """
 
 import asyncio
-import contextlib
 import dataclasses
 import enum
 import os
@@ -16,7 +15,7 @@ from typing import Any, Optional, TypeVar, Union
 from immutables import Map as ImmutableDict
 
 from shellous.redirect import Redirect
-from shellous.runner import Runner, run_cmd, run_cmd_iter
+from shellous.runner import Runner, run_cmd
 from shellous.util import coerce_env
 
 # Sentinel used in "mergable" keyword arguments to indicate that a value
@@ -378,29 +377,9 @@ class Command:
         """
         return Runner(self)
 
-    @contextlib.asynccontextmanager
-    async def iter(self):
-        """Async context manager to return a "safe" async iterator.
-
-        ```
-        async with cmd.iter() as iter:
-            async for line in iter:
-                # do something with line
-        ```
-        """
-        aiter = run_cmd_iter(self)
-        try:
-            yield aiter
-        finally:
-            await aiter.aclose()
-
     def __await__(self):
         "Run process and return the standard output."
         return run_cmd(self).__await__()
-
-    def __aiter__(self):
-        "Return an asynchronous iterator over the standard output."
-        return run_cmd_iter(self)
 
     def __call__(self, *args):
         "Apply more arguments to the end of the command."

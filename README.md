@@ -112,7 +112,7 @@ To redirect stdin using a file's contents, use a `Path` object from `pathlib`.
 >>> from pathlib import Path
 >>> cmd = Path("README.md") | sh("wc", "-l")
 >>> await cmd
-'     209\n'
+'     207\n'
 ```
 
 [More on redirection...](docs/redirection.md)
@@ -182,20 +182,8 @@ You can create a pipeline by combining commands using the `|` operator.
 'README.md\n'
 ```
 
-Iteration
----------
-
-You can loop over a command's output.
-
-```python-repl
->>> async for line in pipe:
-...   print(line.rstrip())
-... 
-README.md
-```
-
-Async With
-----------
+Async With & Iteration
+----------------------
 
 You can use `async with` to interact with the process streams directly. You have to be careful; you
 are responsible for correctly reading and writing multiple streams at the same time.
@@ -206,4 +194,14 @@ are responsible for correctly reading and writing multiple streams at the same t
 ...   print(data)
 ... 
 b'README.md\n'
+```
+
+You can loop over a command's output by using the context manager as an iterator.
+
+```python-repl
+>>> async with pipe.run() as run:
+...   async for line in run:
+...     print(line.rstrip())
+... 
+README.md
 ```
