@@ -619,23 +619,17 @@ async def run_cmd(command, *, _run_future=None):
         raise ValueError("multiple capture requires 'async with'")
 
     output_bytes = None
-    run = command.run()
 
-    try:
-        async with run:
-            if _run_future is not None:
-                # Return streams to caller in another task.
-                _run_future.set_result(run)
+    async with command.run() as run:
+        if _run_future is not None:
+            # Return streams to caller in another task.
+            _run_future.set_result(run)
 
-            else:
-                # Read the output here and return it.
-                stream = run.stdout or run.stderr
-                if stream:
-                    output_bytes = await stream.read()
-
-    except asyncio.CancelledError:
-        # FIXME: This needs to be nailed down!
-        LOGGER.error("run_cmd %r cancelled inside enter", command.name)
+        else:
+            # Read the output here and return it.
+            stream = run.stdout or run.stderr
+            if stream:
+                output_bytes = await stream.read()
 
     return run.result(output_bytes)
 
