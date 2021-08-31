@@ -19,9 +19,8 @@ _KILL_TIMEOUT = 3.0
 _CLOSE_TIMEOUT = 0.25
 
 
-def _exc():
-    "Return the current exception value. Useful in logging."
-    return sys.exc_info()[1]
+def _is_cancelled(ex):
+    return isinstance(ex, asyncio.CancelledError)
 
 
 class _RunOptions:
@@ -251,6 +250,8 @@ class Runner:
 
         except (asyncio.CancelledError, asyncio.TimeoutError) as ex:
             LOGGER.warning("Runner.kill %r (ex)=%r", self, ex)
+            if _is_cancelled(ex):
+                self.cancelled = True
             await self._kill_wait()
 
         except Exception as ex:
@@ -322,7 +323,8 @@ class Runner:
 
         except (Exception, asyncio.CancelledError) as ex:
             LOGGER.warning("Runner.start %r ex=%r", self, ex)
-            self.cancelled = isinstance(ex, asyncio.CancelledError)
+            if _is_cancelled(ex):
+                self.cancelled = True
             if self.proc:
                 await self._kill()
             raise
@@ -356,6 +358,7 @@ class Runner:
             suppress = await self._finish(exc_value)
         except asyncio.CancelledError:
             LOGGER.warning("Runner cancelled inside _finish %r", self)
+            self.cancelled = True
         return suppress
 
     @log_method(_DETAILED_LOGGING)
@@ -365,7 +368,8 @@ class Runner:
 
         try:
             if exc_value is not None:
-                self.cancelled = isinstance(exc_value, asyncio.CancelledError)
+                if _is_cancelled(exc_value):
+                    self.cancelled = True
                 await self._kill()
                 return self.cancelled
 
@@ -476,6 +480,8 @@ class PipeRunner:  # pylint: disable=too-many-instance-attributes
             return await self._start()
         except (Exception, asyncio.CancelledError) as ex:
             LOGGER.warning("PipeRunner enter %r ex=%r", self, ex)
+            if _is_cancelled(ex):
+                self.cancelled = True
             await self._wait(kill=True)  # FIXME
             raise
 
@@ -489,8 +495,8 @@ class PipeRunner:  # pylint: disable=too-many-instance-attributes
     @log_method(_DETAILED_LOGGING)
     async def _cleanup(self, exc_value):
         "Clean up when there is an exception."
-
-        self.cancelled = isinstance(exc_value, asyncio.CancelledError)
+        if _is_cancelled(exc_value):
+            self.cancelled = True
         await self._wait(kill=True)
 
         return self.cancelled
