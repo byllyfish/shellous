@@ -31,16 +31,10 @@
                     <h2>API Documentation</h2>
                         <ul class="memberlist">
             <li>
-                    <a class="function" href="#log_method">log_method</a>
-            </li>
-            <li>
                     <a class="function" href="#decode">decode</a>
             </li>
             <li>
                     <a class="function" href="#coerce_env">coerce_env</a>
-            </li>
-            <li>
-                    <a class="function" href="#platform_info">platform_info</a>
             </li>
             <li>
                     <a class="function" href="#close_fds">close_fds</a>
@@ -68,66 +62,8 @@
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span><span class="s2">&quot;Implements various utility functions.&quot;</span>
 
-<span class="kn">import</span> <span class="nn">asyncio</span>
-<span class="kn">import</span> <span class="nn">functools</span>
 <span class="kn">import</span> <span class="nn">os</span>
-<span class="kn">import</span> <span class="nn">platform</span>
-<span class="kn">import</span> <span class="nn">sys</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
-
-<span class="kn">from</span> <span class="nn">shellous.log</span> <span class="kn">import</span> <span class="n">LOGGER</span>
-
-
-<span class="k">def</span> <span class="nf">log_method</span><span class="p">(</span><span class="n">enabled</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;`log_method` logs when an async method call is entered and exited.</span>
-
-<span class="sd">    &lt;method-name&gt; stepin &lt;self&gt;</span>
-<span class="sd">    &lt;method-name&gt; stepout &lt;self&gt;</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-
-    <span class="k">def</span> <span class="nf">_decorator</span><span class="p">(</span><span class="n">func</span><span class="p">):</span>
-        <span class="s2">&quot;Decorator to log method call entry and exit.&quot;</span>
-
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">enabled</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">func</span>
-
-        <span class="k">assert</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">iscoroutinefunction</span><span class="p">(</span>
-            <span class="n">func</span>
-        <span class="p">),</span> <span class="sa">f</span><span class="s2">&quot;Decorator expects </span><span class="si">{</span><span class="n">func</span><span class="o">.</span><span class="vm">__qualname__</span><span class="si">}</span><span class="s2"> to be coroutine function&quot;</span>
-
-        <span class="k">if</span> <span class="s2">&quot;.&quot;</span> <span class="ow">in</span> <span class="n">func</span><span class="o">.</span><span class="vm">__qualname__</span><span class="p">:</span>
-            <span class="c1"># Use _method_wrapper which incldues value of `self` arg.</span>
-            <span class="nd">@functools</span><span class="o">.</span><span class="n">wraps</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
-            <span class="k">async</span> <span class="k">def</span> <span class="nf">_method_wrapper</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-                <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> stepin </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">func</span><span class="o">.</span><span class="vm">__qualname__</span><span class="p">,</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-                <span class="k">try</span><span class="p">:</span>
-                    <span class="k">return</span> <span class="k">await</span> <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-                <span class="k">finally</span><span class="p">:</span>
-                    <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-                        <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> stepout </span><span class="si">%r</span><span class="s2"> ex=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span>
-                        <span class="n">func</span><span class="o">.</span><span class="vm">__qualname__</span><span class="p">,</span>
-                        <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
-                        <span class="n">sys</span><span class="o">.</span><span class="n">exc_info</span><span class="p">()[</span><span class="mi">1</span><span class="p">],</span>
-                    <span class="p">)</span>
-
-            <span class="k">return</span> <span class="n">_method_wrapper</span>
-
-        <span class="c1"># Use _function_wrapper which ignores arguments.</span>
-        <span class="nd">@functools</span><span class="o">.</span><span class="n">wraps</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
-        <span class="k">async</span> <span class="k">def</span> <span class="nf">_function_wrapper</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-            <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> stepin&quot;</span><span class="p">,</span> <span class="n">func</span><span class="o">.</span><span class="vm">__qualname__</span><span class="p">)</span>
-            <span class="k">try</span><span class="p">:</span>
-                <span class="k">return</span> <span class="k">await</span> <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-            <span class="k">finally</span><span class="p">:</span>
-                <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-                    <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> stepout ex=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span>
-                    <span class="n">func</span><span class="o">.</span><span class="vm">__qualname__</span><span class="p">,</span>
-                    <span class="n">sys</span><span class="o">.</span><span class="n">exc_info</span><span class="p">()[</span><span class="mi">1</span><span class="p">],</span>
-                <span class="p">)</span>
-
-        <span class="k">return</span> <span class="n">_function_wrapper</span>
-
-    <span class="k">return</span> <span class="n">_decorator</span>
 
 
 <span class="k">def</span> <span class="nf">decode</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bytes</span><span class="p">],</span> <span class="n">encoding</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">]:</span>
@@ -156,29 +92,6 @@
     <span class="k">return</span> <span class="p">{</span><span class="nb">str</span><span class="p">(</span><span class="n">key</span><span class="p">):</span> <span class="n">_coerce</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">env</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
 
 
-<span class="k">def</span> <span class="nf">platform_info</span><span class="p">():</span>
-    <span class="s2">&quot;Return platform information for use in logging.&quot;</span>
-
-    <span class="n">platform_vers</span> <span class="o">=</span> <span class="n">platform</span><span class="o">.</span><span class="n">platform</span><span class="p">(</span><span class="n">terse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">python_impl</span> <span class="o">=</span> <span class="n">platform</span><span class="o">.</span><span class="n">python_implementation</span><span class="p">()</span>
-    <span class="n">python_vers</span> <span class="o">=</span> <span class="n">platform</span><span class="o">.</span><span class="n">python_version</span><span class="p">()</span>
-
-    <span class="c1"># Include module name with name of loop class.</span>
-    <span class="n">loop_cls</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">get_running_loop</span><span class="p">()</span><span class="o">.</span><span class="vm">__class__</span>
-    <span class="n">loop_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">loop_cls</span><span class="o">.</span><span class="vm">__module__</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="n">loop_cls</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">&quot;</span>
-
-    <span class="k">try</span><span class="p">:</span>
-        <span class="c1"># Child watcher is only implemented on Unix.</span>
-        <span class="n">child_watcher</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">get_child_watcher</span><span class="p">()</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span>
-    <span class="k">except</span> <span class="ne">NotImplementedError</span><span class="p">:</span>
-        <span class="n">child_watcher</span> <span class="o">=</span> <span class="kc">None</span>
-
-    <span class="n">info</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">platform_vers</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">python_impl</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">python_vers</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">loop_name</span><span class="si">}</span><span class="s2">&quot;</span>
-    <span class="k">if</span> <span class="n">child_watcher</span><span class="p">:</span>
-        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">info</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">child_watcher</span><span class="si">}</span><span class="s2">&quot;</span>
-    <span class="k">return</span> <span class="n">info</span>
-
-
 <span class="k">def</span> <span class="nf">close_fds</span><span class="p">(</span><span class="n">open_fds</span><span class="p">):</span>
     <span class="s2">&quot;Close open file descriptors or file objects.&quot;</span>
     <span class="k">try</span><span class="p">:</span>
@@ -198,78 +111,6 @@
         </details>
 
             </section>
-                <section id="log_method">
-                            <div class="attr function"><a class="headerlink" href="#log_method">#&nbsp;&nbsp</a>
-
-        
-            <span class="def">def</span>
-            <span class="name">log_method</span><span class="signature">(enabled)</span>:
-    </div>
-
-                <details>
-            <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">log_method</span><span class="p">(</span><span class="n">enabled</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;`log_method` logs when an async method call is entered and exited.</span>
-
-<span class="sd">    &lt;method-name&gt; stepin &lt;self&gt;</span>
-<span class="sd">    &lt;method-name&gt; stepout &lt;self&gt;</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-
-    <span class="k">def</span> <span class="nf">_decorator</span><span class="p">(</span><span class="n">func</span><span class="p">):</span>
-        <span class="s2">&quot;Decorator to log method call entry and exit.&quot;</span>
-
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">enabled</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">func</span>
-
-        <span class="k">assert</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">iscoroutinefunction</span><span class="p">(</span>
-            <span class="n">func</span>
-        <span class="p">),</span> <span class="sa">f</span><span class="s2">&quot;Decorator expects </span><span class="si">{</span><span class="n">func</span><span class="o">.</span><span class="vm">__qualname__</span><span class="si">}</span><span class="s2"> to be coroutine function&quot;</span>
-
-        <span class="k">if</span> <span class="s2">&quot;.&quot;</span> <span class="ow">in</span> <span class="n">func</span><span class="o">.</span><span class="vm">__qualname__</span><span class="p">:</span>
-            <span class="c1"># Use _method_wrapper which incldues value of `self` arg.</span>
-            <span class="nd">@functools</span><span class="o">.</span><span class="n">wraps</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
-            <span class="k">async</span> <span class="k">def</span> <span class="nf">_method_wrapper</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-                <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> stepin </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">func</span><span class="o">.</span><span class="vm">__qualname__</span><span class="p">,</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-                <span class="k">try</span><span class="p">:</span>
-                    <span class="k">return</span> <span class="k">await</span> <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-                <span class="k">finally</span><span class="p">:</span>
-                    <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-                        <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> stepout </span><span class="si">%r</span><span class="s2"> ex=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span>
-                        <span class="n">func</span><span class="o">.</span><span class="vm">__qualname__</span><span class="p">,</span>
-                        <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
-                        <span class="n">sys</span><span class="o">.</span><span class="n">exc_info</span><span class="p">()[</span><span class="mi">1</span><span class="p">],</span>
-                    <span class="p">)</span>
-
-            <span class="k">return</span> <span class="n">_method_wrapper</span>
-
-        <span class="c1"># Use _function_wrapper which ignores arguments.</span>
-        <span class="nd">@functools</span><span class="o">.</span><span class="n">wraps</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
-        <span class="k">async</span> <span class="k">def</span> <span class="nf">_function_wrapper</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-            <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> stepin&quot;</span><span class="p">,</span> <span class="n">func</span><span class="o">.</span><span class="vm">__qualname__</span><span class="p">)</span>
-            <span class="k">try</span><span class="p">:</span>
-                <span class="k">return</span> <span class="k">await</span> <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-            <span class="k">finally</span><span class="p">:</span>
-                <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-                    <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> stepout ex=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span>
-                    <span class="n">func</span><span class="o">.</span><span class="vm">__qualname__</span><span class="p">,</span>
-                    <span class="n">sys</span><span class="o">.</span><span class="n">exc_info</span><span class="p">()[</span><span class="mi">1</span><span class="p">],</span>
-                <span class="p">)</span>
-
-        <span class="k">return</span> <span class="n">_function_wrapper</span>
-
-    <span class="k">return</span> <span class="n">_decorator</span>
-</pre></div>
-
-        </details>
-
-            <div class="docstring"><p><code><a href="#log_method">log_method</a></code> logs when an async method call is entered and exited.</p>
-
-<p><method-name> stepin <self>
-<method-name> stepout <self></p>
-</div>
-
-
-                </section>
                 <section id="decode">
                             <div class="attr function"><a class="headerlink" href="#decode">#&nbsp;&nbsp</a>
 
@@ -329,46 +170,6 @@
 
 <p>If the value of an environment variable is <code>...</code>, grab the value from the
 parent environment.</p>
-</div>
-
-
-                </section>
-                <section id="platform_info">
-                            <div class="attr function"><a class="headerlink" href="#platform_info">#&nbsp;&nbsp</a>
-
-        
-            <span class="def">def</span>
-            <span class="name">platform_info</span><span class="signature">()</span>:
-    </div>
-
-                <details>
-            <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">platform_info</span><span class="p">():</span>
-    <span class="s2">&quot;Return platform information for use in logging.&quot;</span>
-
-    <span class="n">platform_vers</span> <span class="o">=</span> <span class="n">platform</span><span class="o">.</span><span class="n">platform</span><span class="p">(</span><span class="n">terse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">python_impl</span> <span class="o">=</span> <span class="n">platform</span><span class="o">.</span><span class="n">python_implementation</span><span class="p">()</span>
-    <span class="n">python_vers</span> <span class="o">=</span> <span class="n">platform</span><span class="o">.</span><span class="n">python_version</span><span class="p">()</span>
-
-    <span class="c1"># Include module name with name of loop class.</span>
-    <span class="n">loop_cls</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">get_running_loop</span><span class="p">()</span><span class="o">.</span><span class="vm">__class__</span>
-    <span class="n">loop_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">loop_cls</span><span class="o">.</span><span class="vm">__module__</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="n">loop_cls</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">&quot;</span>
-
-    <span class="k">try</span><span class="p">:</span>
-        <span class="c1"># Child watcher is only implemented on Unix.</span>
-        <span class="n">child_watcher</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">get_child_watcher</span><span class="p">()</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span>
-    <span class="k">except</span> <span class="ne">NotImplementedError</span><span class="p">:</span>
-        <span class="n">child_watcher</span> <span class="o">=</span> <span class="kc">None</span>
-
-    <span class="n">info</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">platform_vers</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">python_impl</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">python_vers</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">loop_name</span><span class="si">}</span><span class="s2">&quot;</span>
-    <span class="k">if</span> <span class="n">child_watcher</span><span class="p">:</span>
-        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">info</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">child_watcher</span><span class="si">}</span><span class="s2">&quot;</span>
-    <span class="k">return</span> <span class="n">info</span>
-</pre></div>
-
-        </details>
-
-            <div class="docstring"><p>Return platform information for use in logging.</p>
 </div>
 
 
