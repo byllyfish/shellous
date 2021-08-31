@@ -74,4 +74,4 @@ jobs:
       if: matrix.os == 'windows-latest'
       run: |
         # Re-run "test_broken_pipe_in_failed_pipeline"
-        $POETRY_RUN python -m pytest -vv -s --timeout=10 --color=yes --log-cli-level=INFO --log-cli-format="%(created).03f %(levelname)s %(message)s" -k test_broken_pipe_in_failed_pipeline
+        $POETRY_RUN python -m pytest -vv -s --timeout=10 --color=yes --log-cli-level=DEBUG --log-cli-format="%(created).03f %(levelname)s %(message)s" -k test_broken_pipe_in_failed_pipeline
