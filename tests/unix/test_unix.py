@@ -555,7 +555,7 @@ async def test_cancelled_antipattern(sh):
     task = asyncio.create_task(_subtask())
 
     # Wait for task to start, then inject a CancelledError.
-    await asyncio.sleep(0.01)
+    await asyncio.sleep(0.1)
     task.cancel()
 
     # Catch ResultError from second sleep command. We have to use a timeout,
@@ -590,7 +590,7 @@ async def test_cancelled_antipattern_fix(sh):
     task = asyncio.create_task(_subtask())
 
     # Wait for task to start, then inject a CancelledError.
-    await asyncio.sleep(0.01)
+    await asyncio.sleep(0.1)
     task.cancel()
 
     # Wait for task to report it is cancelled.

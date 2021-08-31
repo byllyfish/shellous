@@ -445,3 +445,13 @@ async def test_pipe_exception_in_async_iter(env_cmd, tr_cmd):
             async for _ in run:
                 raise ValueError(1)
     # report_orphan_tasks
+
+
+async def test_pipe_with_exception_in_middle(env_cmd, tr_cmd):
+    "Test pipe context manager failing with exception."
+    cmd = env_cmd | tr_cmd
+
+    with pytest.raises(ValueError):
+        async with cmd.run() as run:
+            raise ValueError(1)
+    # report_orphan_tasks

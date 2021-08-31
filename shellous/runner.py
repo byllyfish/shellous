@@ -7,20 +7,20 @@ import sys
 
 import shellous.redirect as redir
 from shellous.harvest import harvest, harvest_results
-from shellous.log import LOGGER
+from shellous.log import LOGGER, log_method
 from shellous.redirect import Redirect
 from shellous.result import Result, make_result
-from shellous.util import close_fds, decode, log_method, platform_info
+from shellous.util import close_fds, decode
 
+_NORMAL_LOGGING = True
 _DETAILED_LOGGING = True
 
 _KILL_TIMEOUT = 3.0
 _CLOSE_TIMEOUT = 0.25
 
 
-def _exc():
-    "Return the current exception value. Useful in logging."
-    return sys.exc_info()[1]
+def _is_cancelled(ex):
+    return isinstance(ex, asyncio.CancelledError)
 
 
 class _RunOptions:
@@ -250,6 +250,8 @@ class Runner:
 
         except (asyncio.CancelledError, asyncio.TimeoutError) as ex:
             LOGGER.warning("Runner.kill %r (ex)=%r", self, ex)
+            if _is_cancelled(ex):
+                self.cancelled = True
             await self._kill_wait()
 
         except Exception as ex:
@@ -278,15 +280,12 @@ class Runner:
         self.proc.kill()
         await harvest(self.proc.wait(), timeout=_KILL_TIMEOUT, trustee=self)
 
+    @log_method(_NORMAL_LOGGING, _info=True)
     async def __aenter__(self):
         "Set up redirections and launch subprocess."
-        LOGGER.info("Runner entering %r (%s)", self, platform_info())
-        try:
-            return await self._start()
+        return await self._start()
 
-        finally:
-            LOGGER.info("Runner entered %r ex=%r", self, _exc())
-
+    @log_method(_DETAILED_LOGGING)
     async def _start(self):
         "Set up redirections and launch subprocess."
         assert self.proc is None
@@ -324,7 +323,8 @@ class Runner:
 
         except (Exception, asyncio.CancelledError) as ex:
             LOGGER.warning("Runner.start %r ex=%r", self, ex)
-            self.cancelled = isinstance(ex, asyncio.CancelledError)
+            if _is_cancelled(ex):
+                self.cancelled = True
             if self.proc:
                 await self._kill()
             raise
@@ -350,32 +350,26 @@ class Runner:
             stream = None
         return stream
 
+    @log_method(_NORMAL_LOGGING, exc_value=2)
     async def __aexit__(self, _exc_type, exc_value, _exc_tb):
         "Wait for process to exit and handle cancellation."
-
-        LOGGER.info("Runner exiting %r exc_value=%r", self, exc_value)
         suppress = False
         try:
             suppress = await self._finish(exc_value)
         except asyncio.CancelledError:
             LOGGER.warning("Runner cancelled inside _finish %r", self)
-        finally:
-            LOGGER.info(
-                "Runner exited %r ex=%r exc_value=%r suppress=%r",
-                self,
-                _exc(),
-                exc_value,
-                suppress,
-            )
+            self.cancelled = True
         return suppress
 
+    @log_method(_DETAILED_LOGGING)
     async def _finish(self, exc_value):
         "Finish the run. Return True only if `exc_value` should be suppressed."
         assert self.proc
 
         try:
             if exc_value is not None:
-                self.cancelled = isinstance(exc_value, asyncio.CancelledError)
+                if _is_cancelled(exc_value):
+                    self.cancelled = True
                 await self._kill()
                 return self.cancelled
 
@@ -479,38 +473,30 @@ class PipeRunner:  # pylint: disable=too-many-instance-attributes
 
         self.results = await harvest_results(*self.tasks, trustee=self)
 
+    @log_method(_NORMAL_LOGGING)
     async def __aenter__(self):
         "Set up redirections and launch pipeline."
-        LOGGER.info("PipeRunner entering %r", self)
         try:
             return await self._start()
         except (Exception, asyncio.CancelledError) as ex:
             LOGGER.warning("PipeRunner enter %r ex=%r", self, ex)
+            if _is_cancelled(ex):
+                self.cancelled = True
             await self._wait(kill=True)  # FIXME
             raise
-        finally:
-            LOGGER.info("PipeRunner entered %r ex=%r", self, _exc())
 
+    @log_method(_NORMAL_LOGGING, exc_value=2)
     async def __aexit__(self, _exc_type, exc_value, _exc_tb):
         "Wait for pipeline to exit and handle cancellation."
-        LOGGER.info("PipeRunner exiting %r exc_value=%r", self, exc_value)
-        try:
-            if exc_value is not None:
-                return await self._cleanup(exc_value)
-            await self._wait()
-        finally:
-            LOGGER.info(
-                "PipeRunner exited %r exc_value=%r ex=%r",
-                self,
-                exc_value,
-                _exc(),
-            )
+        if exc_value is not None:
+            return await self._cleanup(exc_value)
+        await self._wait()
 
     @log_method(_DETAILED_LOGGING)
     async def _cleanup(self, exc_value):
         "Clean up when there is an exception."
-
-        self.cancelled = isinstance(exc_value, asyncio.CancelledError)
+        if _is_cancelled(exc_value):
+            self.cancelled = True
         await self._wait(kill=True)
 
         return self.cancelled
@@ -619,23 +605,17 @@ async def run_cmd(command, *, _run_future=None):
         raise ValueError("multiple capture requires 'async with'")
 
     output_bytes = None
-    run = command.run()
 
-    try:
-        async with run:
-            if _run_future is not None:
-                # Return streams to caller in another task.
-                _run_future.set_result(run)
+    async with command.run() as run:
+        if _run_future is not None:
+            # Return streams to caller in another task.
+            _run_future.set_result(run)
 
-            else:
-                # Read the output here and return it.
-                stream = run.stdout or run.stderr
-                if stream:
-                    output_bytes = await stream.read()
-
-    except asyncio.CancelledError:
-        # FIXME: This needs to be nailed down!
-        LOGGER.error("run_cmd %r cancelled inside enter", command.name)
+        else:
+            # Read the output here and return it.
+            stream = run.stdout or run.stderr
+            if stream:
+                output_bytes = await stream.read()
 
     return run.result(output_bytes)
 
