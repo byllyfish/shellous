@@ -283,7 +283,12 @@ class Runner:
     @log_method(_NORMAL_LOGGING, _info=True)
     async def __aenter__(self):
         "Set up redirections and launch subprocess."
-        return await self._start()
+        try:
+            return await self._start()
+        finally:
+            if self.cancelled and self.command.options.incomplete_result:
+                # Raises ResultError instead of CancelledError.
+                self.result()
 
     @log_method(_DETAILED_LOGGING)
     async def _start(self):
@@ -471,7 +476,9 @@ class PipeRunner:  # pylint: disable=too-many-instance-attributes
             for task in self.tasks:
                 task.cancel()
 
-        self.results = await harvest_results(*self.tasks, trustee=self)
+        cancelled, self.results = await harvest_results(*self.tasks, trustee=self)
+        if cancelled:
+            self.cancelled = True
 
     @log_method(_NORMAL_LOGGING)
     async def __aenter__(self):
@@ -488,18 +495,24 @@ class PipeRunner:  # pylint: disable=too-many-instance-attributes
     @log_method(_NORMAL_LOGGING, exc_value=2)
     async def __aexit__(self, _exc_type, exc_value, _exc_tb):
         "Wait for pipeline to exit and handle cancellation."
-        if exc_value is not None:
-            return await self._cleanup(exc_value)
-        await self._wait()
+        suppress = False
+        try:
+            suppress = await self._finish(exc_value)
+        except asyncio.CancelledError:
+            LOGGER.warning("PipeRunner cancelled inside _finish %r", self)
+            self.cancelled = True
+        return suppress
 
     @log_method(_DETAILED_LOGGING)
-    async def _cleanup(self, exc_value):
-        "Clean up when there is an exception."
-        if _is_cancelled(exc_value):
-            self.cancelled = True
-        await self._wait(kill=True)
+    async def _finish(self, exc_value):
+        "Wait for pipeline to exit and handle cancellation."
+        if exc_value is not None:
+            if _is_cancelled(exc_value):
+                self.cancelled = True
+            await self._wait(kill=True)
+            return self.cancelled
 
-        return self.cancelled
+        await self._wait()
 
     @log_method(_DETAILED_LOGGING)
     async def _start(self):
@@ -564,9 +577,7 @@ class PipeRunner:  # pylint: disable=too-many-instance-attributes
 
         # When capturing, we need the first and last commands in the
         # pipe to signal when they are ready.
-        first_ready, last_ready = await harvest_results(
-            first_fut, last_fut, trustee=self
-        )
+        first_ready, last_ready = await asyncio.gather(first_fut, last_fut)
 
         stdin, stdout, stderr = (
             first_ready.stdin,
@@ -578,10 +589,13 @@ class PipeRunner:  # pylint: disable=too-many-instance-attributes
 
     def __repr__(self):
         "Return string representation of PipeRunner."
+        cancelled_info = ""
+        if self.cancelled:
+            cancelled_info = " cancelled"
         result_info = ""
         if self.results:
             result_info = f" results={self.results!r}"
-        return f"<PipeRunner {self.name!r}{result_info}>"
+        return f"<PipeRunner {self.name!r}{cancelled_info}{result_info}>"
 
     async def _readlines(self):
         "Iterate over lines in stdout/stderr"

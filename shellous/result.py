@@ -54,6 +54,7 @@ def make_result(command, result):
 
     `result` can be a list of Result, ResultError or another Exception.
     """
+    assert result is not None
 
     if isinstance(result, list):
         # Check result list for other exceptions.

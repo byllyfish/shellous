@@ -427,8 +427,9 @@ async def test_many_short_programs_parallel(echo_cmd):
     COUNT = 10
 
     cmds = [echo_cmd("abcd") for i in range(COUNT)]
-    results = await harvest_results(*cmds)
+    cancelled, results = await harvest_results(*cmds)
 
+    assert not cancelled
     assert results == ["abcd"] * COUNT
 
 

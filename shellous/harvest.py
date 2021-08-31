@@ -35,7 +35,11 @@ async def harvest(*aws, timeout=None, trustee=None):
 
 
 async def harvest_results(*aws, timeout=None, trustee=None):
-    """Run a bunch of awaitables as tasks and return the results.
+    """Run a bunch of awaitables as tasks and return (cancelled, results).
+
+    ```
+    cancelled, results = harvest_results(aws)
+    ```
 
     After the harvest returns, all of the awaitables are guaranteed to be done.
 
@@ -50,12 +54,16 @@ async def harvest_results(*aws, timeout=None, trustee=None):
     `asyncio.TimeoutError`.
 
     If `harvest_results` is cancelled itself, all awaitables are cancelled and
-    consumed before raising CancelledError.
+    `cancelled` is returned as True.
     """
 
     tasks = [asyncio.ensure_future(item) for item in aws]
-    await harvest_wait(tasks, timeout=timeout, trustee=trustee)
-    return [_to_result(task) for task in tasks]
+    cancelled = False
+    try:
+        await harvest_wait(tasks, timeout=timeout, trustee=trustee)
+    except asyncio.CancelledError:
+        cancelled = True
+    return cancelled, [_to_result(task) for task in tasks]
 
 
 async def harvest_wait(tasks, *, timeout=None, trustee=None):
