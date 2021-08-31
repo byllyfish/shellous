@@ -188,7 +188,6 @@ async def test_pipe_cancel(echo_cmd, tr_cmd):
         await asyncio.wait_for(cmd, timeout=0.2)
 
 
-@pytest.mark.xfail(True, reason="FIXME")
 async def test_pipe_cancel_incomplete(echo_cmd, cat_cmd):
     "When a pipe is cancelled, we should see partial output."
     echo_cmd = echo_cmd("abc")
@@ -201,11 +200,11 @@ async def test_pipe_cancel_incomplete(echo_cmd, cat_cmd):
     assert exc_info.type is ResultError
     assert exc_info.value.result == Result(
         output_bytes=None,
-        exit_code=3,
-        cancelled=False,
+        exit_code=0,
+        cancelled=True,
         encoding="utf-8",
         extra=(
-            PipeResult(exit_code=3, cancelled=False),
+            PipeResult(exit_code=0, cancelled=False),
             PipeResult(exit_code=CANCELLED_EXIT_CODE, cancelled=True),
         ),
     )

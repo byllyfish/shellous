@@ -205,7 +205,7 @@ class Runner:
             self.options.encoding,
         )
 
-        return make_result(self.command, result)
+        return make_result(self.command, result, self.cancelled)
 
     def add_task(self, coro, tag=None):
         "Add a background task."
@@ -463,7 +463,7 @@ class PipeRunner:  # pylint: disable=too-many-instance-attributes
 
     def result(self):
         "Return `Result` object for PipeRunner."
-        return make_result(self.pipe, self.results)
+        return make_result(self.pipe, self.results, self.cancelled)
 
     @log_method(_DETAILED_LOGGING)
     async def _wait(self, *, kill=False):

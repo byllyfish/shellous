@@ -652,8 +652,11 @@ async def test_shell_cmd(sh):
     await asyncio.sleep(0.25)
     task.cancel()
 
-    result = await task
-    assert result == Result(
+    with pytest.raises(ResultError) as exc_info:
+        await task
+
+    assert exc_info.type is ResultError
+    assert exc_info.value.result == Result(
         output_bytes=None,
         exit_code=_CANCELLED_EXIT_CODE,
         cancelled=True,
