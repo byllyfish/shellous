@@ -239,13 +239,15 @@ class Runner:
         cancel_signal = self.command.options.cancel_signal
 
         try:
+            done = self.proc.returncode is not None
+
             # If not already done, send cancel signal.
-            if self.proc.returncode is None:
+            if not done:
                 self._send_signal(cancel_signal)
 
             if self.tasks:
                 await harvest(*self.tasks, timeout=cancel_timeout, trustee=self)
-            else:
+            elif not done:
                 await harvest(self.proc.wait(), timeout=cancel_timeout, trustee=self)
 
         except (asyncio.CancelledError, asyncio.TimeoutError) as ex:
