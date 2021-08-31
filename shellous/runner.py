@@ -545,7 +545,7 @@ class PipeRunner:  # pylint: disable=too-many-instance-attributes
             cmds[i + 1] = cmds[i + 1].stdin(read_fd, close=True)
 
         for i in range(cmd_count):
-            cmds[i] = cmds[i].set(return_result=True)
+            cmds[i] = cmds[i].set(return_result=True, incomplete_result=True)
 
         return cmds
 

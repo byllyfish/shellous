@@ -15,11 +15,6 @@ class ResultError(Exception):
         "Return the `Result` object."
         return self.args[0]
 
-    def raise_cancel(self):
-        "Re-raise CancelledError if necessary."
-        if self.result.cancelled:
-            raise asyncio.CancelledError() from self
-
 
 @dataclass(frozen=True)
 class Result:
@@ -84,6 +79,9 @@ def make_result(command, result):
         )
 
     assert isinstance(result, Result)
+
+    if result.cancelled and not command.options.incomplete_result:
+        raise asyncio.CancelledError()
 
     exit_codes = command.options.exit_codes or {0}
     if result.exit_code not in exit_codes:
