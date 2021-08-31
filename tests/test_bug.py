@@ -31,15 +31,18 @@ async def test_bug():
     data = b"a" * PIPE_MAX_SIZE
     proc.stdin.write(data)
     try:
-        await proc.stdin.drain()
-    except BrokenPipeError:
-        print("BrokenPipe 1")
+        await asyncio.wait_for(proc.stdin.drain(), 1.0)
+    except asyncio.TimeoutError:
+        print("TimeoutError")
+    finally:
+        proc.stdin.close()
 
-    proc.stdin.close()
+    await asyncio.sleep(2)
+
     try:
         # Check if wait_closed() hangs...
         await proc.stdin.wait_closed()
     except BrokenPipeError:
-        print("BrokenPipe 2")
+        print("BrokenPipe")
 
     await task
