@@ -66,7 +66,8 @@
 
 <span class="kn">from</span> <span class="nn">shellous.log</span> <span class="kn">import</span> <span class="n">LOGGER</span>
 
-<span class="n">_CANCEL_TIMEOUT</span> <span class="o">=</span> <span class="mf">1.0</span>  <span class="c1"># seconds to wait for cancelled task to finish</span>
+<span class="c1"># FIXME: Pass the cancel_timeout into harvest_results as an arg.</span>
+<span class="n">_CANCEL_TIMEOUT</span> <span class="o">=</span> <span class="mf">5.0</span>  <span class="c1"># seconds to wait for cancelled task to finish</span>
 
 
 <span class="k">async</span> <span class="k">def</span> <span class="nf">harvest</span><span class="p">(</span><span class="o">*</span><span class="n">aws</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">trustee</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
@@ -97,7 +98,11 @@
 
 
 <span class="k">async</span> <span class="k">def</span> <span class="nf">harvest_results</span><span class="p">(</span><span class="o">*</span><span class="n">aws</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">trustee</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Run a bunch of awaitables as tasks and return the results.</span>
+    <span class="sd">&quot;&quot;&quot;Run a bunch of awaitables as tasks and return (cancelled, results).</span>
+
+<span class="sd">    ```</span>
+<span class="sd">    cancelled, results = harvest_results(aws)</span>
+<span class="sd">    ```</span>
 
 <span class="sd">    After the harvest returns, all of the awaitables are guaranteed to be done.</span>
 
@@ -112,12 +117,16 @@
 <span class="sd">    `asyncio.TimeoutError`.</span>
 
 <span class="sd">    If `harvest_results` is cancelled itself, all awaitables are cancelled and</span>
-<span class="sd">    consumed before raising CancelledError.</span>
+<span class="sd">    `cancelled` is returned as True.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">tasks</span> <span class="o">=</span> <span class="p">[</span><span class="n">asyncio</span><span class="o">.</span><span class="n">ensure_future</span><span class="p">(</span><span class="n">item</span><span class="p">)</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">aws</span><span class="p">]</span>
-    <span class="k">await</span> <span class="n">harvest_wait</span><span class="p">(</span><span class="n">tasks</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">,</span> <span class="n">trustee</span><span class="o">=</span><span class="n">trustee</span><span class="p">)</span>
-    <span class="k">return</span> <span class="p">[</span><span class="n">_to_result</span><span class="p">(</span><span class="n">task</span><span class="p">)</span> <span class="k">for</span> <span class="n">task</span> <span class="ow">in</span> <span class="n">tasks</span><span class="p">]</span>
+    <span class="n">cancelled</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">await</span> <span class="n">harvest_wait</span><span class="p">(</span><span class="n">tasks</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">,</span> <span class="n">trustee</span><span class="o">=</span><span class="n">trustee</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">CancelledError</span><span class="p">:</span>
+        <span class="n">cancelled</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="k">return</span> <span class="n">cancelled</span><span class="p">,</span> <span class="p">[</span><span class="n">_to_result</span><span class="p">(</span><span class="n">task</span><span class="p">)</span> <span class="k">for</span> <span class="n">task</span> <span class="ow">in</span> <span class="n">tasks</span><span class="p">]</span>
 
 
 <span class="k">async</span> <span class="k">def</span> <span class="nf">harvest_wait</span><span class="p">(</span><span class="n">tasks</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">trustee</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
@@ -185,11 +194,12 @@
 
         <span class="k">if</span> <span class="n">pending</span><span class="p">:</span>
             <span class="n">LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
-                <span class="s2">&quot;harvest._cancel_wait pending=</span><span class="si">%r</span><span class="s2"> all_tasks=</span><span class="si">%r</span><span class="s2"> trustee=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;harvest._cancel_wait pending=</span><span class="si">%r</span><span class="s2"> trustee=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span>
                 <span class="n">pending</span><span class="p">,</span>
-                <span class="n">asyncio</span><span class="o">.</span><span class="n">all_tasks</span><span class="p">(),</span>
                 <span class="n">trustee</span><span class="p">,</span>
             <span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Harvest._cancel_wait failed&quot;</span><span class="p">)</span>
+
     <span class="k">except</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">CancelledError</span><span class="p">:</span>
         <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
             <span class="s2">&quot;harvest._cancel_wait cancelled itself? trustee=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span>
@@ -285,7 +295,11 @@ consumed before raising <code>CancelledError</code>.</p>
                 <details>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span><span class="k">async</span> <span class="k">def</span> <span class="nf">harvest_results</span><span class="p">(</span><span class="o">*</span><span class="n">aws</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">trustee</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Run a bunch of awaitables as tasks and return the results.</span>
+    <span class="sd">&quot;&quot;&quot;Run a bunch of awaitables as tasks and return (cancelled, results).</span>
+
+<span class="sd">    ```</span>
+<span class="sd">    cancelled, results = harvest_results(aws)</span>
+<span class="sd">    ```</span>
 
 <span class="sd">    After the harvest returns, all of the awaitables are guaranteed to be done.</span>
 
@@ -300,17 +314,24 @@ consumed before raising <code>CancelledError</code>.</p>
 <span class="sd">    `asyncio.TimeoutError`.</span>
 
 <span class="sd">    If `harvest_results` is cancelled itself, all awaitables are cancelled and</span>
-<span class="sd">    consumed before raising CancelledError.</span>
+<span class="sd">    `cancelled` is returned as True.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">tasks</span> <span class="o">=</span> <span class="p">[</span><span class="n">asyncio</span><span class="o">.</span><span class="n">ensure_future</span><span class="p">(</span><span class="n">item</span><span class="p">)</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">aws</span><span class="p">]</span>
-    <span class="k">await</span> <span class="n">harvest_wait</span><span class="p">(</span><span class="n">tasks</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">,</span> <span class="n">trustee</span><span class="o">=</span><span class="n">trustee</span><span class="p">)</span>
-    <span class="k">return</span> <span class="p">[</span><span class="n">_to_result</span><span class="p">(</span><span class="n">task</span><span class="p">)</span> <span class="k">for</span> <span class="n">task</span> <span class="ow">in</span> <span class="n">tasks</span><span class="p">]</span>
+    <span class="n">cancelled</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">await</span> <span class="n">harvest_wait</span><span class="p">(</span><span class="n">tasks</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">,</span> <span class="n">trustee</span><span class="o">=</span><span class="n">trustee</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">CancelledError</span><span class="p">:</span>
+        <span class="n">cancelled</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="k">return</span> <span class="n">cancelled</span><span class="p">,</span> <span class="p">[</span><span class="n">_to_result</span><span class="p">(</span><span class="n">task</span><span class="p">)</span> <span class="k">for</span> <span class="n">task</span> <span class="ow">in</span> <span class="n">tasks</span><span class="p">]</span>
 </pre></div>
 
         </details>
 
-            <div class="docstring"><p>Run a bunch of awaitables as tasks and return the results.</p>
+            <div class="docstring"><p>Run a bunch of awaitables as tasks and return (cancelled, results).</p>
+
+<pre><code>cancelled, results = harvest_results(aws)
+</code></pre>
 
 <p>After the harvest returns, all of the awaitables are guaranteed to be done.</p>
 
@@ -325,7 +346,7 @@ all awaitables are cancelled and consumed before raising a
 <code>asyncio.TimeoutError</code>.</p>
 
 <p>If <code><a href="#harvest_results">harvest_results</a></code> is cancelled itself, all awaitables are cancelled and
-consumed before raising CancelledError.</p>
+<code>cancelled</code> is returned as True.</p>
 </div>
 
 

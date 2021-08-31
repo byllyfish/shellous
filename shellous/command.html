@@ -76,6 +76,9 @@
                                 <a class="variable" href="#Options.return_result">return_result</a>
                         </li>
                         <li>
+                                <a class="variable" href="#Options.incomplete_result">incomplete_result</a>
+                        </li>
+                        <li>
                                 <a class="variable" href="#Options.exit_codes">exit_codes</a>
                         </li>
                         <li>
@@ -277,6 +280,9 @@
     <span class="n">return_result</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="s2">&quot;True if we should return `Result` object instead of the output text/bytes.&quot;</span>
 
+    <span class="n">incomplete_result</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="s2">&quot;True if we should raise `ResultError` after clean up from cancelled task.&quot;</span>
+
     <span class="n">exit_codes</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">set</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="s2">&quot;Set of exit codes that do not raise a `ResultError`. None means </span><span class="si">{0}</span><span class="s2">.&quot;</span>
 
@@ -389,6 +395,7 @@
         <span class="n">inherit_env</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">encoding</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">return_result</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">incomplete_result</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">exit_codes</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">cancel_timeout</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">cancel_signal</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
@@ -536,6 +543,7 @@
         <span class="n">inherit_env</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">encoding</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">return_result</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">incomplete_result</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">exit_codes</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">set</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">cancel_timeout</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">cancel_signal</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
@@ -549,6 +557,8 @@
 <span class="sd">        If `encoding` is None, use raw bytes.</span>
 <span class="sd">        - Set `return_result` to True to return a `Result` object instead of</span>
 <span class="sd">        the standard output. The `Result` object includes the exit code.</span>
+<span class="sd">        - Set `incomplete_result` to True to return a `ResultError` object when</span>
+<span class="sd">        the command is cancelled, instead of a CancelledError.</span>
 <span class="sd">        - Set `exit_codes` to the set of allowed exit codes that will not raise</span>
 <span class="sd">        a `ResultError`. None means {0}.</span>
 <span class="sd">        - Set `cancel_timeout` to the timeout in seconds to wait for a process</span>
@@ -679,6 +689,9 @@
     <span class="n">return_result</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="s2">&quot;True if we should return `Result` object instead of the output text/bytes.&quot;</span>
 
+    <span class="n">incomplete_result</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="s2">&quot;True if we should raise `ResultError` after clean up from cancelled task.&quot;</span>
+
     <span class="n">exit_codes</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">set</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="s2">&quot;Set of exit codes that do not raise a `ResultError`. None means </span><span class="si">{0}</span><span class="s2">.&quot;</span>
 
@@ -778,6 +791,7 @@
     error_close: bool = False,
     encoding: Optional[str] = &#39;utf-8&#39;,
     return_result: bool = False,
+    incomplete_result: bool = False,
     exit_codes: Optional[set] = None,
     cancel_timeout: float = 3.0,
     cancel_signal: Optional[Any] = &lt;Signals.SIGTERM: 15&gt;,
@@ -928,6 +942,17 @@
     </div>
 
             <div class="docstring"><p>True if we should return <code>Result</code> object instead of the output text/bytes.</p>
+</div>
+
+
+                            </div>
+                            <div id="Options.incomplete_result" class="classattr">
+                                            <div class="attr variable"><a class="headerlink" href="#Options.incomplete_result">#&nbsp;&nbsp</a>
+
+        <span class="name">incomplete_result</span><span class="annotation">: bool</span><span class="default_value"> = False</span>
+    </div>
+
+            <div class="docstring"><p>True if we should raise <code>ResultError</code> after clean up from cancelled task.</p>
 </div>
 
 
@@ -1196,6 +1221,7 @@
         <span class="n">inherit_env</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">encoding</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">return_result</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">incomplete_result</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">exit_codes</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">cancel_timeout</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">cancel_signal</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
@@ -1379,6 +1405,7 @@
     inherit_env=&lt;UNSET.UNSET: 1&gt;,
     encoding=&lt;UNSET.UNSET: 1&gt;,
     return_result=&lt;UNSET.UNSET: 1&gt;,
+    incomplete_result=&lt;UNSET.UNSET: 1&gt;,
     exit_codes=&lt;UNSET.UNSET: 1&gt;,
     cancel_timeout=&lt;UNSET.UNSET: 1&gt;,
     cancel_signal=&lt;UNSET.UNSET: 1&gt;,
@@ -1394,6 +1421,7 @@
         <span class="n">inherit_env</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">encoding</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">return_result</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">incomplete_result</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">exit_codes</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">cancel_timeout</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">cancel_signal</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
@@ -1552,6 +1580,7 @@
         <span class="n">inherit_env</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">encoding</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">return_result</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">incomplete_result</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">exit_codes</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">set</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">cancel_timeout</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">cancel_signal</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
@@ -1565,6 +1594,8 @@
 <span class="sd">        If `encoding` is None, use raw bytes.</span>
 <span class="sd">        - Set `return_result` to True to return a `Result` object instead of</span>
 <span class="sd">        the standard output. The `Result` object includes the exit code.</span>
+<span class="sd">        - Set `incomplete_result` to True to return a `ResultError` object when</span>
+<span class="sd">        the command is cancelled, instead of a CancelledError.</span>
 <span class="sd">        - Set `exit_codes` to the set of allowed exit codes that will not raise</span>
 <span class="sd">        a `ResultError`. None means {0}.</span>
 <span class="sd">        - Set `cancel_timeout` to the timeout in seconds to wait for a process</span>
@@ -1791,6 +1822,7 @@ stdout, stderr is set to CAPTURE.</p>
     inherit_env: Union[bool, <a href="#UNSET">shellous.command.UNSET</a>] = &lt;UNSET.UNSET: 1&gt;,
     encoding: Union[str, NoneType, <a href="#UNSET">shellous.command.UNSET</a>] = &lt;UNSET.UNSET: 1&gt;,
     return_result: Union[bool, <a href="#UNSET">shellous.command.UNSET</a>] = &lt;UNSET.UNSET: 1&gt;,
+    incomplete_result: Union[bool, <a href="#UNSET">shellous.command.UNSET</a>] = &lt;UNSET.UNSET: 1&gt;,
     exit_codes: Union[set, NoneType, <a href="#UNSET">shellous.command.UNSET</a>] = &lt;UNSET.UNSET: 1&gt;,
     cancel_timeout: Union[float, <a href="#UNSET">shellous.command.UNSET</a>] = &lt;UNSET.UNSET: 1&gt;,
     cancel_signal: Union[Any, <a href="#UNSET">shellous.command.UNSET</a>] = &lt;UNSET.UNSET: 1&gt;,
@@ -1806,6 +1838,7 @@ stdout, stderr is set to CAPTURE.</p>
         <span class="n">inherit_env</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">encoding</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">return_result</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">incomplete_result</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">exit_codes</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">set</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">cancel_timeout</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">cancel_signal</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
@@ -1819,6 +1852,8 @@ stdout, stderr is set to CAPTURE.</p>
 <span class="sd">        If `encoding` is None, use raw bytes.</span>
 <span class="sd">        - Set `return_result` to True to return a `Result` object instead of</span>
 <span class="sd">        the standard output. The `Result` object includes the exit code.</span>
+<span class="sd">        - Set `incomplete_result` to True to return a `ResultError` object when</span>
+<span class="sd">        the command is cancelled, instead of a CancelledError.</span>
 <span class="sd">        - Set `exit_codes` to the set of allowed exit codes that will not raise</span>
 <span class="sd">        a `ResultError`. None means {0}.</span>
 <span class="sd">        - Set `cancel_timeout` to the timeout in seconds to wait for a process</span>
@@ -1845,6 +1880,8 @@ the parent environment.</li>
 If <code>encoding</code> is None, use raw bytes.</li>
 <li>Set <code>return_result</code> to True to return a <code>Result</code> object instead of
 the standard output. The <code>Result</code> object includes the exit code.</li>
+<li>Set <code>incomplete_result</code> to True to return a <code>ResultError</code> object when
+the command is cancelled, instead of a CancelledError.</li>
 <li>Set <code>exit_codes</code> to the set of allowed exit codes that will not raise
 a <code>ResultError</code>. None means {0}.</li>
 <li>Set <code>cancel_timeout</code> to the timeout in seconds to wait for a process
