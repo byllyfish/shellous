@@ -4,7 +4,8 @@ import asyncio
 
 from shellous.log import LOGGER
 
-_CANCEL_TIMEOUT = 1.0  # seconds to wait for cancelled task to finish
+# FIXME: Pass the cancel_timeout into harvest_results as an arg.
+_CANCEL_TIMEOUT = 5.0  # seconds to wait for cancelled task to finish
 
 
 async def harvest(*aws, timeout=None, trustee=None):
@@ -131,11 +132,12 @@ async def _cancel_wait(tasks, trustee):
 
         if pending:
             LOGGER.error(
-                "harvest._cancel_wait pending=%r all_tasks=%r trustee=%r",
+                "harvest._cancel_wait pending=%r trustee=%r",
                 pending,
-                asyncio.all_tasks(),
                 trustee,
             )
+            raise RuntimeError("Harvest._cancel_wait failed")
+
     except asyncio.CancelledError:
         LOGGER.warning(
             "harvest._cancel_wait cancelled itself? trustee=%r",
