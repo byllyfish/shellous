@@ -61,7 +61,7 @@ class _RunOptions:
         "Make sure those file descriptors are cleaned up."
         self.close_fds()
         if exc_value:
-            LOGGER.warning(
+            LOGGER.info(
                 "_RunOptions.exit %r exc_value=%r", self.command.name, exc_value
             )
 
@@ -205,7 +205,7 @@ class Runner:
             self.options.encoding,
         )
 
-        return make_result(self.command, result)
+        return make_result(self.command, result, self.cancelled)
 
     def add_task(self, coro, tag=None):
         "Add a background task."
@@ -283,7 +283,12 @@ class Runner:
     @log_method(_NORMAL_LOGGING, _info=True)
     async def __aenter__(self):
         "Set up redirections and launch subprocess."
-        return await self._start()
+        try:
+            return await self._start()
+        finally:
+            if self.cancelled and self.command.options.incomplete_result:
+                # Raises ResultError instead of CancelledError.
+                self.result()
 
     @log_method(_DETAILED_LOGGING)
     async def _start(self):
@@ -322,7 +327,7 @@ class Runner:
                     stdin = None
 
         except (Exception, asyncio.CancelledError) as ex:
-            LOGGER.warning("Runner.start %r ex=%r", self, ex)
+            LOGGER.info("Runner.start %r ex=%r", self, ex)
             if _is_cancelled(ex):
                 self.cancelled = True
             if self.proc:
@@ -458,7 +463,7 @@ class PipeRunner:  # pylint: disable=too-many-instance-attributes
 
     def result(self):
         "Return `Result` object for PipeRunner."
-        return make_result(self.pipe, self.results)
+        return make_result(self.pipe, self.results, self.cancelled)
 
     @log_method(_DETAILED_LOGGING)
     async def _wait(self, *, kill=False):
@@ -471,7 +476,9 @@ class PipeRunner:  # pylint: disable=too-many-instance-attributes
             for task in self.tasks:
                 task.cancel()
 
-        self.results = await harvest_results(*self.tasks, trustee=self)
+        cancelled, self.results = await harvest_results(*self.tasks, trustee=self)
+        if cancelled:
+            self.cancelled = True
 
     @log_method(_NORMAL_LOGGING)
     async def __aenter__(self):
@@ -488,18 +495,24 @@ class PipeRunner:  # pylint: disable=too-many-instance-attributes
     @log_method(_NORMAL_LOGGING, exc_value=2)
     async def __aexit__(self, _exc_type, exc_value, _exc_tb):
         "Wait for pipeline to exit and handle cancellation."
-        if exc_value is not None:
-            return await self._cleanup(exc_value)
-        await self._wait()
+        suppress = False
+        try:
+            suppress = await self._finish(exc_value)
+        except asyncio.CancelledError:
+            LOGGER.warning("PipeRunner cancelled inside _finish %r", self)
+            self.cancelled = True
+        return suppress
 
     @log_method(_DETAILED_LOGGING)
-    async def _cleanup(self, exc_value):
-        "Clean up when there is an exception."
-        if _is_cancelled(exc_value):
-            self.cancelled = True
-        await self._wait(kill=True)
+    async def _finish(self, exc_value):
+        "Wait for pipeline to exit and handle cancellation."
+        if exc_value is not None:
+            if _is_cancelled(exc_value):
+                self.cancelled = True
+            await self._wait(kill=True)
+            return self.cancelled
 
-        return self.cancelled
+        await self._wait()
 
     @log_method(_DETAILED_LOGGING)
     async def _start(self):
@@ -545,7 +558,7 @@ class PipeRunner:  # pylint: disable=too-many-instance-attributes
             cmds[i + 1] = cmds[i + 1].stdin(read_fd, close=True)
 
         for i in range(cmd_count):
-            cmds[i] = cmds[i].set(return_result=True)
+            cmds[i] = cmds[i].set(return_result=True, incomplete_result=True)
 
         return cmds
 
@@ -564,9 +577,7 @@ class PipeRunner:  # pylint: disable=too-many-instance-attributes
 
         # When capturing, we need the first and last commands in the
         # pipe to signal when they are ready.
-        first_ready, last_ready = await harvest_results(
-            first_fut, last_fut, trustee=self
-        )
+        first_ready, last_ready = await asyncio.gather(first_fut, last_fut)
 
         stdin, stdout, stderr = (
             first_ready.stdin,
@@ -578,10 +589,13 @@ class PipeRunner:  # pylint: disable=too-many-instance-attributes
 
     def __repr__(self):
         "Return string representation of PipeRunner."
+        cancelled_info = ""
+        if self.cancelled:
+            cancelled_info = " cancelled"
         result_info = ""
         if self.results:
             result_info = f" results={self.results!r}"
-        return f"<PipeRunner {self.name!r}{result_info}>"
+        return f"<PipeRunner {self.name!r}{cancelled_info}{result_info}>"
 
     async def _readlines(self):
         "Iterate over lines in stdout/stderr"

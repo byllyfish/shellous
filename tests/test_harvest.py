@@ -54,8 +54,9 @@ async def test_harvest_results():
             pass
         return 99
 
-    result = await harvest_results(_coro1(), _coro2())
+    cancelled, result = await harvest_results(_coro1(), _coro2())
 
+    assert not cancelled
     assert isinstance(result[0], ValueError)
     assert result[0].args[0] == 7
     assert result[1] == 99

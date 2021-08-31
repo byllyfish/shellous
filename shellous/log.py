@@ -39,7 +39,7 @@ def log_method(enabled, *, _info=False, **kwds):
             # Use _method_wrapper which incldues value of `self` arg.
             @functools.wraps(func)
             async def _method_wrapper(*args, **kwargs):
-                more_args = [f" {key}={args[value]}" for key, value in kwds.items()]
+                more_args = [f" {key}={args[value]!r}" for key, value in kwds.items()]
                 more_info = "".join(more_args)
 
                 if _info:

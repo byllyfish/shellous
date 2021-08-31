@@ -4,7 +4,8 @@ import asyncio
 
 from shellous.log import LOGGER
 
-_CANCEL_TIMEOUT = 1.0  # seconds to wait for cancelled task to finish
+# FIXME: Pass the cancel_timeout into harvest_results as an arg.
+_CANCEL_TIMEOUT = 5.0  # seconds to wait for cancelled task to finish
 
 
 async def harvest(*aws, timeout=None, trustee=None):
@@ -35,7 +36,11 @@ async def harvest(*aws, timeout=None, trustee=None):
 
 
 async def harvest_results(*aws, timeout=None, trustee=None):
-    """Run a bunch of awaitables as tasks and return the results.
+    """Run a bunch of awaitables as tasks and return (cancelled, results).
+
+    ```
+    cancelled, results = harvest_results(aws)
+    ```
 
     After the harvest returns, all of the awaitables are guaranteed to be done.
 
@@ -50,12 +55,16 @@ async def harvest_results(*aws, timeout=None, trustee=None):
     `asyncio.TimeoutError`.
 
     If `harvest_results` is cancelled itself, all awaitables are cancelled and
-    consumed before raising CancelledError.
+    `cancelled` is returned as True.
     """
 
     tasks = [asyncio.ensure_future(item) for item in aws]
-    await harvest_wait(tasks, timeout=timeout, trustee=trustee)
-    return [_to_result(task) for task in tasks]
+    cancelled = False
+    try:
+        await harvest_wait(tasks, timeout=timeout, trustee=trustee)
+    except asyncio.CancelledError:
+        cancelled = True
+    return cancelled, [_to_result(task) for task in tasks]
 
 
 async def harvest_wait(tasks, *, timeout=None, trustee=None):
@@ -123,11 +132,12 @@ async def _cancel_wait(tasks, trustee):
 
         if pending:
             LOGGER.error(
-                "harvest._cancel_wait pending=%r all_tasks=%r trustee=%r",
+                "harvest._cancel_wait pending=%r trustee=%r",
                 pending,
-                asyncio.all_tasks(),
                 trustee,
             )
+            raise RuntimeError("Harvest._cancel_wait failed")
+
     except asyncio.CancelledError:
         LOGGER.warning(
             "harvest._cancel_wait cancelled itself? trustee=%r",

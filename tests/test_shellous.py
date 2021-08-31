@@ -121,8 +121,15 @@ async def test_echo_exit_code(echo_cmd):
 
 async def test_echo_cancel(echo_cmd):
     "When a command is cancelled, we should see partial output."
-
     cmd = echo_cmd("abc").env(SHELLOUS_EXIT_SLEEP=2)
+    with pytest.raises(asyncio.TimeoutError):
+        await asyncio.wait_for(cmd, timeout=0.2)
+
+
+async def test_echo_cancel_incomplete(echo_cmd):
+    "When a command is cancelled, we should see partial output."
+
+    cmd = echo_cmd("abc").env(SHELLOUS_EXIT_SLEEP=2).set(incomplete_result=True)
     with pytest.raises(ResultError) as exc_info:
         await asyncio.wait_for(cmd, timeout=0.2)
 
@@ -141,6 +148,22 @@ async def test_echo_cancel_stringio(echo_cmd):
 
     buf = io.StringIO()
     cmd = echo_cmd("abc").env(SHELLOUS_EXIT_SLEEP=2).stdout(buf)
+    with pytest.raises(asyncio.TimeoutError) as exc_info:
+        await asyncio.wait_for(cmd, timeout=0.2)
+
+    assert buf.getvalue() == "abc"
+
+
+async def test_echo_cancel_stringio_incomplete(echo_cmd):
+    "When a command is cancelled, we should see partial output."
+
+    buf = io.StringIO()
+    cmd = (
+        echo_cmd("abc")
+        .env(SHELLOUS_EXIT_SLEEP=2)
+        .stdout(buf)
+        .set(incomplete_result=True)
+    )
     with pytest.raises(ResultError) as exc_info:
         await asyncio.wait_for(cmd, timeout=0.2)
 
@@ -152,6 +175,38 @@ async def test_echo_cancel_stringio(echo_cmd):
         cancelled=True,
         encoding="utf-8",
         extra=None,
+    )
+
+
+async def test_pipe_cancel(echo_cmd, tr_cmd):
+    "When a pipe is cancelled, we should see partial output."
+    echo_cmd = echo_cmd("abc")
+    tr_cmd = tr_cmd.env(SHELLOUS_EXIT_SLEEP=2)
+
+    cmd = echo_cmd | tr_cmd
+    with pytest.raises(asyncio.TimeoutError):
+        await asyncio.wait_for(cmd, timeout=0.2)
+
+
+async def test_pipe_cancel_incomplete(echo_cmd, cat_cmd):
+    "When a pipe is cancelled, we should see partial output."
+    echo_cmd = echo_cmd("abc")
+    cat_cmd = cat_cmd.env(SHELLOUS_EXIT_SLEEP=2).set(incomplete_result=True)
+
+    cmd = echo_cmd | cat_cmd
+    with pytest.raises(ResultError) as exc_info:
+        await asyncio.wait_for(cmd, timeout=0.2)
+
+    assert exc_info.type is ResultError
+    assert exc_info.value.result == Result(
+        output_bytes=None,
+        exit_code=0,
+        cancelled=True,
+        encoding="utf-8",
+        extra=(
+            PipeResult(exit_code=0, cancelled=False),
+            PipeResult(exit_code=CANCELLED_EXIT_CODE, cancelled=True),
+        ),
     )
 
 
@@ -371,8 +426,9 @@ async def test_many_short_programs_parallel(echo_cmd):
     COUNT = 10
 
     cmds = [echo_cmd("abcd") for i in range(COUNT)]
-    results = await harvest_results(*cmds)
+    cancelled, results = await harvest_results(*cmds)
 
+    assert not cancelled
     assert results == ["abcd"] * COUNT
 
 

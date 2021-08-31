@@ -146,7 +146,18 @@ async def test_task_cancel(sh):
 
     # Cancel task and wait for it to exit.
     task.cancel()
-    with pytest.raises(ResultError):  # FIXME: no exception expected?
+    with pytest.raises(asyncio.CancelledError):
+        await task
+
+
+async def test_task_cancel_incomplete_result(sh):
+    "Test that we can cancel a running command task."
+    task = sh("sleep", "5").set(incomplete_result=True).task()
+    await asyncio.sleep(0.1)
+
+    # Cancel task and wait for it to exit.
+    task.cancel()
+    with pytest.raises(ResultError):
         await task
 
 
@@ -161,8 +172,9 @@ async def test_task_immediate_cancel(sh):
 
 async def test_timeout_fail(sh):
     "Test that an awaitable command can be called with a timeout."
+    cmd = sh("sleep", "5").set(incomplete_result=True)
     with pytest.raises(ResultError) as exc_info:
-        await asyncio.wait_for(sh("sleep", "5"), 0.1)
+        await asyncio.wait_for(cmd, 0.1)
 
     assert exc_info.type is ResultError
     assert exc_info.value.result == Result(
@@ -176,7 +188,8 @@ async def test_timeout_fail(sh):
 
 async def test_timeout_fail_no_capturing(sh):
     "Test that an awaitable command can be called with a timeout."
-    cmd = sh("sleep", "5").stdin(DEVNULL).stdout(DEVNULL)
+    cmd = sh("sleep", "5").stdin(DEVNULL).stdout(DEVNULL).set(incomplete_result=True)
+
     with pytest.raises(ResultError) as exc_info:
         await asyncio.wait_for(cmd, 0.1)
 
@@ -538,18 +551,21 @@ async def test_gather_same_cmd(sh):
 async def test_cancelled_antipattern(sh):
     """Test the ResultError/cancellation anti-pattern.
 
+    This occurs *only* when incomplete_result=True.
+
     Catching `ResultError` using try/except conceals the `CancelledError`
     when you want to cancel the current task.
     """
 
-    sleep_cmd = sh("sleep", 3600).set(return_result=True)
+    sleep_cmd = sh("sleep", 3600).set(return_result=True, incomplete_result=True)
 
     async def _subtask():
         try:
             await sleep_cmd
         except ResultError as ex:
+            # sleep_cmd has incomplete_result set to True.
             assert ex.result.cancelled
-            # First, CancelledError is lost!
+            # CancelledError is lost!
         await sleep_cmd
 
     task = asyncio.create_task(_subtask())
@@ -572,18 +588,19 @@ async def test_cancelled_antipattern_fix(sh):
     Catching `ResultError` using try/except conceals the `CancelledError`
     when you want to cancel the current task.
 
-    The fix is to call `ex.raise_cancel()` when you are done with the
-    `ResultError`.
+    The fix is to explicitly re-raise the CancelledError when you are done with
+    the `ResultError`.
     """
 
-    sleep_cmd = sh("sleep", 3600).set(return_result=True)
+    sleep_cmd = sh("sleep", 3600).set(return_result=True, incomplete_result=True)
 
     async def _subtask():
         try:
             await sleep_cmd
         except ResultError as ex:
             assert ex.result.cancelled
-            ex.raise_cancel()  # Re-raises CancelledError when necessary
+            if ex.result.cancelled:
+                raise asyncio.CancelledError() from ex
 
         await sleep_cmd
 
@@ -619,7 +636,7 @@ async def test_cancel_timeout(sh):
         cancel_timeout=0.25,
         cancel_signal=signal.SIGHUP,
     )
-    with pytest.raises(ResultError):
+    with pytest.raises(asyncio.TimeoutError):
         await asyncio.wait_for(sleep(10.0), 0.25)
 
 
@@ -627,6 +644,7 @@ async def test_shell_cmd(sh):
     "Test a shell command.  (https://bugs.python.org/issue43884)"
     shell = sh("/bin/sh", "-c").set(
         return_result=True,
+        incomplete_result=True,
         exit_codes={0, _CANCELLED_EXIT_CODE},
     )
 
@@ -634,8 +652,11 @@ async def test_shell_cmd(sh):
     await asyncio.sleep(0.25)
     task.cancel()
 
-    result = await task
-    assert result == Result(
+    with pytest.raises(ResultError) as exc_info:
+        await task
+
+    assert exc_info.type is ResultError
+    assert exc_info.value.result == Result(
         output_bytes=None,
         exit_code=_CANCELLED_EXIT_CODE,
         cancelled=True,

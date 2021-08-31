@@ -15,11 +15,6 @@ class ResultError(Exception):
         "Return the `Result` object."
         return self.args[0]
 
-    def raise_cancel(self):
-        "Re-raise CancelledError if necessary."
-        if self.result.cancelled:
-            raise asyncio.CancelledError() from self
-
 
 @dataclass(frozen=True)
 class Result:
@@ -54,11 +49,12 @@ class PipeResult:
         return PipeResult(result.exit_code, result.cancelled)
 
 
-def make_result(command, result):
+def make_result(command, result, cancelled):
     """Convert list of results into a single pipe result.
 
     `result` can be a list of Result, ResultError or another Exception.
     """
+    assert result is not None
 
     if isinstance(result, list):
         # Check result list for other exceptions.
@@ -78,15 +74,18 @@ def make_result(command, result):
         result = Result(
             last.output_bytes,
             key_result.exit_code,
-            key_result.cancelled,
+            cancelled,
             last.encoding,
             tuple(PipeResult.from_result(r) for r in result),
         )
 
     assert isinstance(result, Result)
 
+    if cancelled and not command.options.incomplete_result:
+        raise asyncio.CancelledError()
+
     exit_codes = command.options.exit_codes or {0}
-    if result.exit_code not in exit_codes:
+    if cancelled or result.exit_code not in exit_codes:
         raise ResultError(result)
 
     if command.options.return_result:

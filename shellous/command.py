@@ -72,6 +72,9 @@ class Options:  # pylint: disable=too-many-instance-attributes
     return_result: bool = False
     "True if we should return `Result` object instead of the output text/bytes."
 
+    incomplete_result: bool = False
+    "True if we should raise `ResultError` after clean up from cancelled task."
+
     exit_codes: Optional[set] = None
     "Set of exit codes that do not raise a `ResultError`. None means {0}."
 
@@ -184,6 +187,7 @@ class Context:
         inherit_env=_UNSET,
         encoding=_UNSET,
         return_result=_UNSET,
+        incomplete_result=_UNSET,
         exit_codes=_UNSET,
         cancel_timeout=_UNSET,
         cancel_signal=_UNSET,
@@ -331,6 +335,7 @@ class Command:
         inherit_env: Unset[bool] = _UNSET,
         encoding: Unset[Optional[str]] = _UNSET,
         return_result: Unset[bool] = _UNSET,
+        incomplete_result: Unset[bool] = _UNSET,
         exit_codes: Unset[Optional[set]] = _UNSET,
         cancel_timeout: Unset[float] = _UNSET,
         cancel_signal: Unset[Any] = _UNSET,
@@ -344,6 +349,8 @@ class Command:
         If `encoding` is None, use raw bytes.
         - Set `return_result` to True to return a `Result` object instead of
         the standard output. The `Result` object includes the exit code.
+        - Set `incomplete_result` to True to return a `ResultError` object when
+        the command is cancelled, instead of a CancelledError.
         - Set `exit_codes` to the set of allowed exit codes that will not raise
         a `ResultError`. None means {0}.
         - Set `cancel_timeout` to the timeout in seconds to wait for a process
