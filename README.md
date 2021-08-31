@@ -112,7 +112,7 @@ To redirect stdin using a file's contents, use a `Path` object from `pathlib`.
 >>> from pathlib import Path
 >>> cmd = Path("README.md") | sh("wc", "-l")
 >>> await cmd
-'     207\n'
+'     230\n'
 ```
 
 [More on redirection...](docs/redirection.md)
@@ -182,8 +182,8 @@ You can create a pipeline by combining commands using the `|` operator.
 'README.md\n'
 ```
 
-Async With & Iteration
-----------------------
+Async With & For
+----------------
 
 You can use `async with` to interact with the process streams directly. You have to be careful; you
 are responsible for correctly reading and writing multiple streams at the same time.
@@ -205,3 +205,26 @@ You can loop over a command's output by using the context manager as an iterator
 ... 
 README.md
 ```
+
+
+Incomplete Results
+------------------
+
+When a command is cancelled, shellous normally cleans up after itself and re-raises a `CancelledError`.
+
+You can retrieve the partial result by setting `incomplete_result` to True. Shellous will return a
+`ResultError` when the specified command is cancelled.
+
+```python-repl
+>>> sleep = sh("sleep", 60).set(incomplete_result=True)
+>>> t = sleep.task()
+>>> t.cancel()
+True
+>>> await t
+Traceback (most recent call last):
+  ...
+shellous.result.ResultError: Result(output_bytes=None, exit_code=-15, cancelled=True, encoding='utf-8', extra=None)
+```
+
+When you use `incomplete_result`, your code should respect the `cancelled` attribute in the Result object. 
+Otherwise, your code may swallow the CancelledError.

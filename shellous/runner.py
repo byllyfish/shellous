@@ -61,7 +61,7 @@ class _RunOptions:
         "Make sure those file descriptors are cleaned up."
         self.close_fds()
         if exc_value:
-            LOGGER.warning(
+            LOGGER.info(
                 "_RunOptions.exit %r exc_value=%r", self.command.name, exc_value
             )
 
@@ -327,7 +327,7 @@ class Runner:
                     stdin = None
 
         except (Exception, asyncio.CancelledError) as ex:
-            LOGGER.warning("Runner.start %r ex=%r", self, ex)
+            LOGGER.info("Runner.start %r ex=%r", self, ex)
             if _is_cancelled(ex):
                 self.cancelled = True
             if self.proc:

@@ -70,6 +70,9 @@ async def run_asyncio_repl(cmds):
         output = []
         for cmd in cmds:
             output.append(await p.prompt(cmd))
+            # Give tasks a chance to get started.
+            if cmd.endswith(".task()"):
+                await asyncio.sleep(0.1)
 
         run.stdin.close()
 
@@ -133,6 +136,10 @@ def test_parse_readme():
         "async with pipe.run() as run:\n"
         "  async for line in run:\n"
         "    print(line.rstrip())\n",
+        'sleep = sh("sleep", 60).set(incomplete_result=True)',
+        "t = sleep.task()",
+        "t.cancel()",
+        "await t",
     ]
 
 
@@ -148,7 +155,9 @@ async def test_readme():
         # Replace ... with .*?
         pattern = re.escape(output)
         pattern = pattern.replace(r"\.\.\.", ".*")
-        assert re.fullmatch(pattern, results[i], re.DOTALL)
+        if not re.fullmatch(pattern, results[i], re.DOTALL):
+            msg = f"result does not match pattern\n\nresult={results[i]}\n\npattern={output}\n"
+            pytest.fail(msg)
 
 
 def _parse_readme(filename):
