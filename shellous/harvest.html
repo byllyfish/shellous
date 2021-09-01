@@ -67,7 +67,7 @@
 <span class="kn">from</span> <span class="nn">shellous.log</span> <span class="kn">import</span> <span class="n">LOGGER</span>
 
 <span class="c1"># FIXME: Pass the cancel_timeout into harvest_results as an arg.</span>
-<span class="n">_CANCEL_TIMEOUT</span> <span class="o">=</span> <span class="mf">5.0</span>  <span class="c1"># seconds to wait for cancelled task to finish</span>
+<span class="n">_CANCEL_TIMEOUT</span> <span class="o">=</span> <span class="mf">10.0</span>  <span class="c1"># seconds to wait for cancelled task to finish</span>
 
 
 <span class="k">async</span> <span class="k">def</span> <span class="nf">harvest</span><span class="p">(</span><span class="o">*</span><span class="n">aws</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">trustee</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
