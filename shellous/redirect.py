@@ -34,8 +34,10 @@ async def write_stream(input_bytes, stream):
         # Catch these errors and quietly stop.
         # See "_feed_stdin" in /3.9/Lib/asyncio/subprocess.py
         pass
-    finally:
-        stream.close()
+
+    # If `stream.drain()`` is cancelled, we do NOT close the stream here.
+    # See https://bugs.python.org/issue45074
+    stream.close()
 
 
 @log_method(_DETAILED_LOGGING)
