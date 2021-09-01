@@ -329,7 +329,7 @@ async def test_broken_pipe_in_pipeline(cat_cmd, echo_cmd):
         await (data | cat_cmd | echo_cmd("abc"))
 
 
-# @pytest.mark.xfail(True, reason="latent bug")
+@pytest.mark.xfail(True, reason="latent bug")
 async def test_broken_pipe_in_failed_pipeline(cat_cmd, echo_cmd):
     "Test broken pipe error within a pipeline; last command fails."
     data = b"c" * PIPE_MAX_SIZE

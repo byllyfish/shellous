@@ -15,6 +15,7 @@ async def _kill(pid, timeout):
     os.kill(pid, signal.SIGTERM)
 
 
+@pytest.mark.xfail(sys.platform == "win32", reason="latent bug")
 async def test_bug():
     # t=0: Start the process and begin writing PIPE_MAX_SIZE bytes.
     # t=1: Cancel drain() and close stdin.
@@ -43,7 +44,7 @@ async def test_bug():
     await asyncio.sleep(2)
 
     try:
-        # Check if wait_closed() hangs...
+        # wait_closed() hangs here on Windows... and triggers a TimeoutError.
         await asyncio.wait_for(proc.stdin.wait_closed(), 5)
     except BrokenPipeError:
         print("BrokenPipe")
