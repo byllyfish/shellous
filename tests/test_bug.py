@@ -16,7 +16,10 @@ async def _kill(pid, timeout):
 
 
 async def test_bug():
-    # Write a ton of data to "sleep". Kill the command.
+    # t=0: Start the process and begin writing PIPE_MAX_SIZE bytes.
+    # t=1: Cancel drain() and close stdin.
+    # t=2: Kill the process. Causes "Fatal write error on pipe transport"
+    # t=3: Call stdin.wait_closed(). This hangs on Windows.
 
     proc = await asyncio.create_subprocess_exec(
         sys.executable,
@@ -25,7 +28,7 @@ async def test_bug():
         stdin=asyncio.subprocess.PIPE,
     )
 
-    # Create a task to kill process in 2 seconds.
+    # Start task to kill process in 2 seconds.
     task = asyncio.create_task(_kill(proc.pid, 2))
 
     data = b"a" * PIPE_MAX_SIZE
@@ -33,7 +36,7 @@ async def test_bug():
     try:
         await asyncio.wait_for(proc.stdin.drain(), 1.0)
     except asyncio.TimeoutError:
-        print("TimeoutError")
+        pass
     finally:
         proc.stdin.close()
 
@@ -41,7 +44,7 @@ async def test_bug():
 
     try:
         # Check if wait_closed() hangs...
-        await proc.stdin.wait_closed()
+        await asyncio.wait_for(proc.stdin.wait_closed(), 5)
     except BrokenPipeError:
         print("BrokenPipe")
 
