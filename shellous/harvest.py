@@ -5,7 +5,7 @@ import asyncio
 from shellous.log import LOGGER
 
 # FIXME: Pass the cancel_timeout into harvest_results as an arg.
-_CANCEL_TIMEOUT = 5.0  # seconds to wait for cancelled task to finish
+_CANCEL_TIMEOUT = 10.0  # seconds to wait for cancelled task to finish
 
 
 async def harvest(*aws, timeout=None, trustee=None):
