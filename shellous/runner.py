@@ -407,7 +407,7 @@ class Runner:
                 )
 
         except asyncio.TimeoutError:
-            LOGGER.error("Runner._close %r timeout stdin=%r", self, self.proc.stdin)
+            LOGGER.critical("Runner._close %r timeout stdin=%r", self, self.proc.stdin)
 
     def __repr__(self):
         "Return string representation of Runner."
