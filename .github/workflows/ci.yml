@@ -23,7 +23,7 @@ jobs:
     env:
       POETRY_RUN: python -m poetry run
       POETRY_ADD: python -m poetry add
-      LOG_LEVEL: DEBUG
+      LOG_LEVEL: INFO
 
     steps:
     - uses: actions/checkout@v2
@@ -71,8 +71,3 @@ jobs:
         $POETRY_RUN python -m pytest -vv -s --timeout=10 --color=yes --log-cli-level=$LOG_LEVEL --log-cli-format="%(created).03f %(levelname)s %(message)s"
       env:
         SHELLOUS_LOOP_TYPE: "uvloop"
-    - name: Re-run troublesome tests one at a time (Windows)
-      if: matrix.os == 'windows-latest'
-      run: |
-        # Re-run "test_broken_pipe_in_failed_pipeline"
-        $POETRY_RUN python -m pytest -vv -s --timeout=10 --color=yes --log-cli-level=$LOG_LEVEL --log-cli-format="%(created).03f %(levelname)s %(message)s" -k test_broken_pipe_in_failed_pipeline
