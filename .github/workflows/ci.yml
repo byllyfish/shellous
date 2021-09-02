@@ -22,7 +22,6 @@ jobs:
 
     env:
       POETRY_RUN: python -m poetry run
-      POETRY_ADD: python -m poetry add
       LOG_LEVEL: INFO
 
     steps:
@@ -39,6 +38,7 @@ jobs:
             python -m poetry config experimental.new-installer false
         fi
         python -m poetry install --no-root --no-interaction
+        python -m poetry add uvloop
     - name: Lint
       run: |
         # Run flake8 and pylint.
@@ -50,7 +50,7 @@ jobs:
     - name: Run Tests
       run: |
         # Run pytest.
-        $POETRY_RUN python -m pytest -vv -s --timeout=10 --color=yes --log-cli-level=$LOG_LEVEL --log-cli-format="%(created).03f %(levelname)s %(message)s" --durations=20
+        $POETRY_RUN python -m pytest -vv -s --durations=20
     - name: Run Code Coverage (Linux)
       if: matrix.os == 'ubuntu-latest'
       run: |
@@ -60,21 +60,19 @@ jobs:
     - name: Run Tests with uvloop (Linux and MacOS)
       if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
       run: |
-        # Run pytest under uvloop.
-        $POETRY_ADD uvloop
-        $POETRY_RUN python -m pytest -vv -s --timeout=10 --color=yes --log-cli-level=$LOG_LEVEL --log-cli-format="%(created).03f %(levelname)s %(message)s"
+        $POETRY_RUN python -m pytest -vv -s
       env:
         SHELLOUS_LOOP_TYPE: "uvloop"
     - name: Run Tests with SafeChildWatcher (Linux and MacOS)
       if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
       run: |
-        $POETRY_RUN python -m pytest -vv -s --timeout=10 --color=yes --log-cli-level=DEBUG --log-cli-format="%(created).03f %(levelname)s %(message)s"
+        $POETRY_RUN python -m pytest -vv -s
       env:
         SHELLOUS_CHILDWATCHER_TYPE: "safe"
     - name: Run Tests with FastChildWatcher (Linux and MacOS)
       if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
       run: |
-        $POETRY_RUN python -m pytest -vv -s --timeout=10 --color=yes --log-cli-level=DEBUG --log-cli-format="%(created).03f %(levelname)s %(message)s"
+        $POETRY_RUN python -m pytest -vv -s --log-cli-level=DEBUG
       env:
         SHELLOUS_CHILDWATCHER_TYPE: "fast"
       continue-on-error: true  # FastChildWatcher is unreliable
