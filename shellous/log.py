@@ -45,7 +45,7 @@ def log_method(enabled, *, _info=False, **kwds):
 
                 if _info:
                     LOGGER.info(
-                        "%s stepin %r (%r)%s",
+                        "%s stepin %r (%s)%s",
                         func.__qualname__,
                         args[0],
                         _platform_info(),

@@ -368,7 +368,7 @@ class Runner:
         try:
             suppress = await self._finish(exc_value)
         except asyncio.CancelledError:
-            LOGGER.warning("Runner cancelled inside _finish %r", self)
+            LOGGER.info("Runner cancelled inside _finish %r", self)
             self.cancelled = True
         return suppress
 
