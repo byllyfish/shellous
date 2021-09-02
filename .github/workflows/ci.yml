@@ -38,7 +38,9 @@ jobs:
             python -m poetry config experimental.new-installer false
         fi
         python -m poetry install --no-root --no-interaction
-        python -m poetry add uvloop
+        if [ "${{ matrix.os }}" != "windows-latest" ]; then
+            python -m poetry add uvloop
+        fi
     - name: Lint
       run: |
         # Run flake8 and pylint.
@@ -63,6 +65,12 @@ jobs:
         $POETRY_RUN python -m pytest -vv -s
       env:
         SHELLOUS_LOOP_TYPE: "uvloop"
+    - name: Run Tests with PidfdWatcher (Linux)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        $POETRY_RUN python -m pytest -vv -s
+      env:
+        SHELLOUS_CHILDWATCHER_TYPE: "pidfd"
     - name: Run Tests with SafeChildWatcher (Linux and MacOS)
       if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
       run: |
