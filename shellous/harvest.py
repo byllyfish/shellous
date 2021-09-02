@@ -149,7 +149,13 @@ def _to_result(task):
     "Return task's result, or its exception object."
     if task.cancelled():
         return asyncio.CancelledError()
-    return task.exception() or task.result()
+    ex = task.exception()
+    if ex:
+        # Re-raise certain exceptions that are too important to wait.
+        if isinstance(ex, (AssertionError, RuntimeError)):
+            raise ex
+        return ex
+    return task.result()
 
 
 def _consume_exceptions(tasks):

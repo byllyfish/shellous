@@ -279,8 +279,12 @@ class Runner:
         if self.proc.returncode is not None:
             return
 
-        self.proc.kill()
-        await harvest(self.proc.wait(), timeout=_KILL_TIMEOUT, trustee=self)
+        try:
+            self.proc.kill()
+            await harvest(self.proc.wait(), timeout=_KILL_TIMEOUT, trustee=self)
+        except asyncio.TimeoutError as ex:
+            LOGGER.error("%r failed to kill process %r", self, self.proc)
+            raise RuntimeError(f"Unable to kill process {self.proc!r}") from ex
 
     @log_method(_NORMAL_LOGGING, _info=True)
     async def __aenter__(self):
@@ -390,7 +394,12 @@ class Runner:
     async def _close(self):
         "Make sure that our resources are properly closed."
         assert self.proc
-        assert self.proc.returncode is not None
+
+        # _close can be called when unwinding exceptions. We need to handle
+        # the case that the process has not exited yet.
+        if self.proc.returncode is None:
+            LOGGER.critical("Runner._close process still running %r", self.proc)
+            return
 
         try:
             # Make sure the transport is closed (for asyncio and uvloop).
