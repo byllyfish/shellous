@@ -148,7 +148,7 @@ async def test_echo_cancel_stringio(echo_cmd):
 
     buf = io.StringIO()
     cmd = echo_cmd("abc").env(SHELLOUS_EXIT_SLEEP=2).stdout(buf)
-    with pytest.raises(asyncio.TimeoutError) as exc_info:
+    with pytest.raises(asyncio.TimeoutError):
         await asyncio.wait_for(cmd, timeout=0.2)
 
     assert buf.getvalue() == "abc"
@@ -507,6 +507,6 @@ async def test_pipe_with_exception_in_middle(env_cmd, tr_cmd):
     cmd = env_cmd | tr_cmd
 
     with pytest.raises(ValueError):
-        async with cmd.run() as run:
+        async with cmd.run():
             raise ValueError(1)
     # report_orphan_tasks

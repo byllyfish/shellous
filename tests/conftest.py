@@ -3,6 +3,7 @@
 import asyncio
 import gc
 import os
+import threading
 
 import pytest
 
@@ -43,11 +44,19 @@ else:
 def _init_child_watcher():
     if childwatcher_type == "fast":
         asyncio.set_child_watcher(asyncio.FastChildWatcher())
+    elif childwatcher_type == "safe":
+        asyncio.set_child_watcher(asyncio.SafeChildWatcher())
+    elif childwatcher_type == "pidfd":
+        asyncio.set_child_watcher(asyncio.PidfdChildWatcher())
 
 
 @pytest.fixture(autouse=True)
 async def report_orphan_tasks():
     "Make sure that all async tests exit with only a single task running."
+    # Only run asyncio tests on the main thread. There may be limitations on
+    # the childwatcher.
+    assert threading.current_thread() is threading.main_thread()
+
     yield
     tasks = asyncio.all_tasks()
 

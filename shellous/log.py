@@ -5,6 +5,7 @@ import functools
 import logging
 import platform
 import sys
+import threading
 
 LOGGER = logging.getLogger(__package__)
 
@@ -44,7 +45,7 @@ def log_method(enabled, *, _info=False, **kwds):
 
                 if _info:
                     LOGGER.info(
-                        "%s stepin %r (%r)%s",
+                        "%s stepin %r (%s)%s",
                         func.__qualname__,
                         args[0],
                         _platform_info(),
@@ -95,13 +96,21 @@ def _platform_info():
     loop_cls = asyncio.get_running_loop().__class__
     loop_name = f"{loop_cls.__module__}.{loop_cls.__name__}"
 
+    # Include name of current thread. If current thread is not the main thread,
+    # put a "!!" in front of its name.
+    current_thread = threading.current_thread()
+    if current_thread is threading.main_thread():
+        thread_name = current_thread.name
+    else:
+        thread_name = f"!!{current_thread.name}"
+
     try:
         # Child watcher is only implemented on Unix.
         child_watcher = asyncio.get_child_watcher().__class__.__name__
     except NotImplementedError:
         child_watcher = None
 
-    info = f"{platform_vers} {python_impl} {python_vers} {loop_name}"
+    info = f"{platform_vers} {python_impl} {python_vers} {loop_name} {thread_name}"
     if child_watcher:
         return f"{info} {child_watcher}"
     return info
