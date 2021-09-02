@@ -396,9 +396,11 @@ class Runner:
         assert self.proc
 
         # _close can be called when unwinding exceptions. We need to handle
-        # the case that the process has not exited yet.
+        # the case that the process has not exited yet. Remember to close the
+        # transport.
         if self.proc.returncode is None:
             LOGGER.critical("Runner._close process still running %r", self.proc)
+            self.proc._transport.close()
             return
 
         try:

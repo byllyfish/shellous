@@ -44,6 +44,8 @@ else:
 def _init_child_watcher():
     if childwatcher_type == "fast":
         asyncio.set_child_watcher(asyncio.FastChildWatcher())
+    elif childwatcher_type == "safe":
+        asyncio.set_child_watcher(asyncio.SafeChildWatcher())
 
 
 @pytest.fixture(autouse=True)

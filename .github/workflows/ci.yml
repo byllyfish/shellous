@@ -65,9 +65,16 @@ jobs:
         $POETRY_RUN python -m pytest -vv -s --timeout=10 --color=yes --log-cli-level=$LOG_LEVEL --log-cli-format="%(created).03f %(levelname)s %(message)s"
       env:
         SHELLOUS_LOOP_TYPE: "uvloop"
+    - name: Run Tests with SafeChildWatcher (Linux and MacOS)
+      if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
+      run: |
+        $POETRY_RUN python -m pytest -vv -s --timeout=10 --color=yes --log-cli-level=DEBUG --log-cli-format="%(created).03f %(levelname)s %(message)s"
+      env:
+        SHELLOUS_CHILDWATCHER_TYPE: "safe"
     - name: Run Tests with FastChildWatcher (Linux and MacOS)
       if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
       run: |
         $POETRY_RUN python -m pytest -vv -s --timeout=10 --color=yes --log-cli-level=DEBUG --log-cli-format="%(created).03f %(levelname)s %(message)s"
       env:
         SHELLOUS_CHILDWATCHER_TYPE: "fast"
+      continue-on-error: true  # FastChildWatcher is unreliable
