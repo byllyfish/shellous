@@ -317,14 +317,6 @@ async def test_cat_large_data(cat_cmd):
     assert result == data
 
 
-def _is_fast_cw():
-    "Return true if FastChildWatcher being used."
-    import os
-
-    return os.environ.get("SHELLOUS_CHILDWATCHER_TYPE") == "fast"
-
-
-@pytest.mark.xfail(_is_fast_cw(), reason="fastchildwatcher")
 async def test_broken_pipe_in_pipeline(cat_cmd, echo_cmd):
     """Test broken pipe error within a pipeline.
 
@@ -337,6 +329,14 @@ async def test_broken_pipe_in_pipeline(cat_cmd, echo_cmd):
         await (data | cat_cmd | echo_cmd("abc"))
 
 
+def _is_fast_cw():
+    "Return true if FastChildWatcher being used."
+    import os
+
+    return os.environ.get("SHELLOUS_CHILDWATCHER_TYPE") == "fast"
+
+
+@pytest.mark.xfail(_is_fast_cw(), reason="fastchildwatcher")
 async def test_broken_pipe_in_failed_pipeline(cat_cmd, echo_cmd):
     "Test broken pipe error within a pipeline; last command fails."
     data = b"c" * PIPE_MAX_SIZE
