@@ -554,6 +554,8 @@
         <span class="sd">&quot;&quot;&quot;`capturing=True` indicates we are within an `async with` block and</span>
 <span class="sd">        client needs to access `stdin` and `stderr` streams.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">pipe</span><span class="o">.</span><span class="n">commands</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">pipe</span> <span class="o">=</span> <span class="n">pipe</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">cancelled</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span> <span class="o">=</span> <span class="kc">None</span>
@@ -744,11 +746,6 @@
 
 <span class="k">async</span> <span class="k">def</span> <span class="nf">run_pipe</span><span class="p">(</span><span class="n">pipe</span><span class="p">):</span>
     <span class="s2">&quot;Run a pipeline&quot;</span>
-
-    <span class="c1"># FIXME: Make it harder to create single command pipes.</span>
-    <span class="n">cmd_count</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">pipe</span><span class="o">.</span><span class="n">commands</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">cmd_count</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-        <span class="k">return</span> <span class="k">await</span> <span class="n">run_cmd</span><span class="p">(</span><span class="n">pipe</span><span class="o">.</span><span class="n">commands</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
 
     <span class="n">run</span> <span class="o">=</span> <span class="n">PipeRunner</span><span class="p">(</span><span class="n">pipe</span><span class="p">,</span> <span class="n">capturing</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
     <span class="k">async</span> <span class="k">with</span> <span class="n">run</span><span class="p">:</span>
@@ -1197,6 +1194,8 @@ result = run.result()
         <span class="sd">&quot;&quot;&quot;`capturing=True` indicates we are within an `async with` block and</span>
 <span class="sd">        client needs to access `stdin` and `stderr` streams.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">pipe</span><span class="o">.</span><span class="n">commands</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">pipe</span> <span class="o">=</span> <span class="n">pipe</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">cancelled</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span> <span class="o">=</span> <span class="kc">None</span>
@@ -1388,6 +1387,8 @@ result = run.result()
         <span class="sd">&quot;&quot;&quot;`capturing=True` indicates we are within an `async with` block and</span>
 <span class="sd">        client needs to access `stdin` and `stderr` streams.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">pipe</span><span class="o">.</span><span class="n">commands</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">pipe</span> <span class="o">=</span> <span class="n">pipe</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">cancelled</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span> <span class="o">=</span> <span class="kc">None</span>
@@ -1491,11 +1492,6 @@ client needs to access <code>stdin</code> and <code>stderr</code> streams.</p>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span><span class="k">async</span> <span class="k">def</span> <span class="nf">run_pipe</span><span class="p">(</span><span class="n">pipe</span><span class="p">):</span>
     <span class="s2">&quot;Run a pipeline&quot;</span>
-
-    <span class="c1"># FIXME: Make it harder to create single command pipes.</span>
-    <span class="n">cmd_count</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">pipe</span><span class="o">.</span><span class="n">commands</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">cmd_count</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-        <span class="k">return</span> <span class="k">await</span> <span class="n">run_cmd</span><span class="p">(</span><span class="n">pipe</span><span class="o">.</span><span class="n">commands</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
 
     <span class="n">run</span> <span class="o">=</span> <span class="n">PipeRunner</span><span class="p">(</span><span class="n">pipe</span><span class="p">,</span> <span class="n">capturing</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
     <span class="k">async</span> <span class="k">with</span> <span class="n">run</span><span class="p">:</span>
