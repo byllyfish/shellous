@@ -207,3 +207,14 @@ def test_pipeline_redirect_stringio(sh):
     buf = io.StringIO()
     cmd = sh("echo") | buf
     assert cmd == sh("echo").stdout(buf)
+
+
+def test_pipeline_len_getitem(sh):
+    "Test access to individual pipeline commands."
+    pipe = sh("cmd1") | sh("cmd2") | sh("cmd3")
+    assert len(pipe) == 3
+    assert pipe[0] == sh("cmd1")
+    assert pipe[1] == sh("cmd2")
+    assert pipe[2] == sh("cmd3")
+    assert pipe[-1] == sh("cmd3")
+    assert pipe[-2] == sh("cmd2")

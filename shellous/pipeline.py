@@ -82,6 +82,14 @@ class Pipeline:
             )
         raise TypeError("unsupported type")
 
+    def __len__(self):
+        "Return number of commands in pipe."
+        return len(self.commands)
+
+    def __getitem__(self, key):
+        "Return specified command by index."
+        return self.commands[key]
+
     def __call__(self, *args):
         if len(args) == 0:
             return self
