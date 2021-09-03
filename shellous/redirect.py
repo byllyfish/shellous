@@ -3,6 +3,7 @@
 import asyncio
 import enum
 import io
+import os
 
 from shellous.log import log_method
 from shellous.util import decode
@@ -21,6 +22,12 @@ class Redirect(enum.IntEnum):
     def is_custom(self):
         "Return true if this redirect option is not built into asyncio."
         return self in {Redirect.CAPTURE, Redirect.INHERIT}
+
+
+# Used in Command and Pipeline to implement operator overloading.
+STDIN_TYPES = (str, bytes, os.PathLike, bytearray, io.IOBase, int, Redirect)
+STDOUT_TYPES = (str, bytes, os.PathLike, bytearray, io.IOBase, int, Redirect)
+STDOUT_APPEND_TYPES = (str, bytes, os.PathLike)
 
 
 @log_method(_DETAILED_LOGGING)
