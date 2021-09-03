@@ -1,4 +1,7 @@
-"shellous provides a concise API for running subprocesses."
+"""
+.. include:: ../README.md
+"""
+__docformat__ = "restructuredtext"
 
 __version__ = "0.3.0"
 
