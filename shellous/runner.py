@@ -459,6 +459,8 @@ class PipeRunner:  # pylint: disable=too-many-instance-attributes
         """`capturing=True` indicates we are within an `async with` block and
         client needs to access `stdin` and `stderr` streams.
         """
+        assert len(pipe.commands) > 1
+
         self.pipe = pipe
         self.cancelled = False
         self.tasks = None
@@ -649,11 +651,6 @@ async def run_cmd(command, *, _run_future=None):
 
 async def run_pipe(pipe):
     "Run a pipeline"
-
-    # FIXME: Make it harder to create single command pipes.
-    cmd_count = len(pipe.commands)
-    if cmd_count == 1:
-        return await run_cmd(pipe.commands[0])
 
     run = PipeRunner(pipe, capturing=False)
     async with run:

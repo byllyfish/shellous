@@ -2,6 +2,7 @@
 
 # pylint: disable=redefined-outer-name,invalid-name
 
+import io
 from pathlib import Path
 
 import pytest
@@ -42,17 +43,17 @@ def test_pipeline(sh):
 
 def test_pipeline_unsupported_rhs(sh):
     with pytest.raises(TypeError, match=r"unsupported operand type\(s\) for \|"):
-        pipeline(sh("echo")) | 43
+        pipeline(sh("echo")) | (1 + 2j)
 
 
 def test_pipeline_unsupported_lhs(sh):
     with pytest.raises(TypeError, match=r"unsupported operand type\(s\) for \|"):
-        _ = 44 | pipeline(sh("echo"))
+        _ = (1 + 2j) | pipeline(sh("echo"))
 
 
 def test_pipeline_unsupported_rhs_append(sh):
     with pytest.raises(TypeError, match=r"unsupported operand type\(s\) for >>"):
-        _ = pipeline(sh("echo")) >> 43
+        _ = pipeline(sh("echo")) >> (1 + 2j)
 
 
 def test_pipeline_input(sh):
@@ -151,27 +152,26 @@ def test_pipeline_or_eq_input_commands(sh):
     pipe = "/tmp/input"
     pipe |= sh("grep")
     pipe |= "/tmp/output"
-    assert pipe == pipeline(sh("grep").stdin("/tmp/input").stdout("/tmp/output"))
+    assert pipe == sh("grep").stdin("/tmp/input").stdout("/tmp/output")
 
 
 def test_pipeline_path_input(sh):
     pipe = Path("/tmp/input") | sh("wc")
-    assert pipe == pipeline(sh("wc").stdin(Path("/tmp/input")))
+    assert pipe == sh("wc").stdin(Path("/tmp/input"))
 
 
 def test_pipeline_path_output(sh):
     pipe = sh("wc") | Path("/tmp/output")
-    assert pipe == pipeline(sh("wc").stdout(Path("/tmp/output")))
+    assert pipe == sh("wc").stdout(Path("/tmp/output"))
 
 
 def test_pipeline_vs_command(sh):
-    """In the current implementation, commands and pipelines are different
-    objects and classes."""
+    """In the current implementation, commands and pipelines are the same."""
     cmd1 = sh("echo").stdin("abc")
     cmd2 = "abc" | sh("echo")  # single command pipeline
-    assert cmd1 != cmd2
+    assert cmd1 == cmd2
     assert isinstance(cmd1, Command)
-    assert isinstance(cmd2, Pipeline)
+    assert isinstance(cmd2, Command)
 
 
 def test_pipeline_call(sh):
@@ -203,3 +203,10 @@ def test_invalid_pipeline_operators(sh):
     "Test >> in the middle of a pipeline."
     with pytest.raises(ValueError):
         sh("echo") >> "/tmp/tmp_file" | sh("cat")
+
+
+def test_pipeline_redirect_stringio(sh):
+    "Test use of StringIO in pipeline."
+    buf = io.StringIO()
+    cmd = sh("echo") | buf
+    assert cmd == sh("echo").stdout(buf)

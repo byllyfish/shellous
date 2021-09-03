@@ -14,7 +14,7 @@ from typing import Any, Optional, TypeVar, Union
 
 from immutables import Map as ImmutableDict
 
-from shellous.redirect import Redirect
+from shellous.redirect import STDIN_TYPES, STDOUT_APPEND_TYPES, STDOUT_TYPES, Redirect
 from shellous.runner import Runner, run_cmd
 from shellous.util import coerce_env
 
@@ -404,20 +404,23 @@ class Command:
 
     def __or__(self, rhs):
         "Bitwise or operator is used to build pipelines."
+        if isinstance(rhs, STDOUT_TYPES):
+            return self.stdout(rhs)
         return pipeline(self) | rhs
 
     def __ror__(self, lhs):
         "Bitwise or operator is used to build pipelines."
-        return lhs | pipeline(self)
+        if isinstance(lhs, STDIN_TYPES):
+            return self.stdin(lhs)
+        return NotImplemented
 
     def __rshift__(self, rhs):
         "Right shift operator is used to build pipelines."
-        return pipeline(self) >> rhs
-
-
-_SUPPORTS_APPEND = (str, bytes, os.PathLike)
+        if isinstance(rhs, STDOUT_APPEND_TYPES):
+            return self.stdout(rhs, append=True)
+        return NotImplemented
 
 
 def _check_args(out, append):
-    if append and not isinstance(out, _SUPPORTS_APPEND):
+    if append and not isinstance(out, STDOUT_APPEND_TYPES):
         raise TypeError(f"{type(out)} does not support append")

@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from shellous.command import Command
+from shellous.redirect import STDIN_TYPES, STDOUT_APPEND_TYPES, STDOUT_TYPES
 from shellous.runner import PipeRunner, run_pipe
 
 
@@ -91,17 +92,17 @@ class Pipeline:
     def __or__(self, rhs):
         if isinstance(rhs, (Command, Pipeline)):
             return self._add(rhs)
-        if isinstance(rhs, (str, bytes, os.PathLike)):
+        if isinstance(rhs, STDOUT_TYPES):
             return self.stdout(rhs)
         return NotImplemented
 
     def __ror__(self, lhs):
-        if isinstance(lhs, (str, bytes, os.PathLike)):
+        if isinstance(lhs, STDIN_TYPES):
             return self.stdin(lhs)
         return NotImplemented
 
     def __rshift__(self, rhs):
-        if isinstance(rhs, (str, bytes, os.PathLike)):
+        if isinstance(rhs, STDOUT_APPEND_TYPES):
             return self.stdout(rhs, append=True)
         return NotImplemented
 
