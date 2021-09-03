@@ -301,15 +301,6 @@ async def test_broken_pipe(sh):
         await cmd.stdin(data)
 
 
-async def test_unread_stdin_unreported(sh):
-    """Test tiny data passed to stdin of process that doesn't read it."""
-    data = b"b" * 64
-    cmd = sh(sys.executable, "-c", "pass")
-
-    result = await cmd.stdin(data)
-    assert result == ""
-
-
 async def test_cat_large_data(cat_cmd):
     "Test cat with large data."
     data = "a" * PIPE_MAX_SIZE
