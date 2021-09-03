@@ -28,6 +28,23 @@
                         <input type="search" placeholder="Search..." role="searchbox" aria-label="search"
                                pattern=".+" required>
 
+                    <h2>Contents</h2>
+                    <ul>
+  <li><a href="#async-processes-and-pipelines">Async Processes and Pipelines</a>
+  <ul>
+    <li><a href="#benefits">Benefits</a></li>
+    <li><a href="#requirements">Requirements</a></li>
+    <li><a href="#basic-usage">Basic Usage</a></li>
+    <li><a href="#results-and-exit-codes">Results and Exit Codes</a></li>
+    <li><a href="#redirecting-standard-input">Redirecting Standard Input</a></li>
+    <li><a href="#redirecting-standard-output">Redirecting Standard Output</a></li>
+    <li><a href="#redirecting-standard-error">Redirecting Standard Error</a></li>
+    <li><a href="#pipelines">Pipelines</a></li>
+    <li><a href="#async-with-for">Async With &amp; For</a></li>
+    <li><a href="#incomplete-results">Incomplete Results</a></li>
+  </ul></li>
+</ul>
+
 
                     <h2>Submodules</h2>
                     <ul>
@@ -55,12 +72,219 @@
                     <h1 class="modulename">
 shellous    </h1>
 
-                        <div class="docstring"><p>shellous provides a concise API for running subprocesses.</p>
+                        <div class="docstring"><h1 id="async-processes-and-pipelines">Async Processes and Pipelines</h1>
+
+<p><a href="https://pypi.org/project/shellous/"><img src="https://img.shields.io/pypi/v/shellous" alt="PyPI" /></a> <a href="https://github.com/byllyfish/shellous/actions/workflows/ci.yml"><img src="https://github.com/byllyfish/shellous/actions/workflows/ci.yml/badge.svg" alt="CI" /></a> <a href="https://codecov.io/gh/byllyfish/shellous"><img src="https://codecov.io/gh/byllyfish/shellous/branch/main/graph/badge.svg?token=W44NZE89AW" alt="codecov" /></a></p>
+
+<p>shellous provides a concise API for running subprocesses using asyncio. It is 
+similar to and inspired by <code>sh</code>.</p>
+
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span> <span class="nn">asyncio</span>
+<span class="kn">import</span> <span class="nn">shellous</span>
+
+<span class="n">sh</span> <span class="o">=</span> <span class="n">shellous</span><span class="o">.</span><span class="n">context</span><span class="p">()</span>
+
+<span class="k">async</span> <span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="p">(</span><span class="n">sh</span><span class="p">(</span><span class="s2">&quot;ls&quot;</span><span class="p">)</span> <span class="o">|</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;grep&quot;</span><span class="p">,</span> <span class="s2">&quot;README&quot;</span><span class="p">))</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+
+<span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">main</span><span class="p">())</span>
+</code></pre></div>
+
+<h2 id="benefits">Benefits</h2>
+
+<ul>
+<li>Run programs asychronously in a single line.</li>
+<li>Easily capture output or redirect stdin, stdout and stderr to files.</li>
+<li>Easily construct pipelines.</li>
+<li>Runs on Linux, MacOS and Windows.</li>
+</ul>
+
+<h2 id="requirements">Requirements</h2>
+
+<ul>
+<li>Requires Python 3.9 or later.</li>
+<li>Requires an asyncio event loop.</li>
+</ul>
+
+<h2 id="basic-usage">Basic Usage</h2>
+
+<p>Start the asyncio REPL by typing <code>python3 -m asyncio</code>, and import the <strong>shellous</strong> module:</p>
+
+<pre><code>&gt;&gt;&gt; import shellous
+</code></pre>
+
+<p>Before we can do anything else, we need to create a <strong>context</strong>. Store the context in a 
+short variable name like <code>sh</code> because we'll be typing it a lot.</p>
+
+<pre><code>&gt;&gt;&gt; sh = <a href="#context">shellous.context()</a>
+</code></pre>
+
+<p>Now, we're ready to run our first command. Here's one that runs <code>echo "hello, world"</code>.</p>
+
+<pre><code>&gt;&gt;&gt; await sh("echo", "hello, world")
+'hello, world\n'
+</code></pre>
+
+<p>The first argument is the program name. It is followed by zero or more separate arguments.</p>
+
+<p>A command does not run until you <code>await</code> it. Here, we create our own echo command with "-n"
+to omit the newline. Note, <code>echo("abc")</code> is the same as <code>echo -n "abc"</code>.</p>
+
+<pre><code>&gt;&gt;&gt; echo = sh("echo", "-n")
+&gt;&gt;&gt; await echo("abc")
+'abc'
+</code></pre>
+
+<p><a href="docs/commands.md">More on commands...</a></p>
+
+<h2 id="results-and-exit-codes">Results and Exit Codes</h2>
+
+<p>When you <code>await</code> a command, it captures the standard output and returns it. You can optionally have the
+command return a <code>Result</code> object. The <code>Result</code> object will contain more information about the command 
+execution including the <code>exit_code</code>. To return a result object, set <code>return_result</code> option to <code>True</code>.</p>
+
+<pre><code>&gt;&gt;&gt; await echo("abc").set(return_result=True)
+Result(output_bytes=b'abc', exit_code=0, cancelled=False, encoding='utf-8', extra=None)
+</code></pre>
+
+<p>The above command had an exit_code of 0.</p>
+
+<p>If a command exits with a non-zero exit code, it raises a <code>ResultError</code> exception that contains
+the <code>Result</code> object.</p>
+
+<pre><code>&gt;&gt;&gt; await sh("cat", "does_not_exist")
+Traceback (most recent call last):
+  ...
+<a href="shellous/result.html#ResultError">shellous.result.ResultError</a>: Result(output_bytes=b'', exit_code=1, cancelled=False, encoding='utf-8', extra=None)
+</code></pre>
+
+<p><a href="docs/results.md">More on results...</a></p>
+
+<h2 id="redirecting-standard-input">Redirecting Standard Input</h2>
+
+<p>You can change the standard input of a command by using the <code>|</code> operator.</p>
+
+<pre><code>&gt;&gt;&gt; cmd = "abc" | sh("wc", "-c")
+&gt;&gt;&gt; await cmd
+'       3\n'
+</code></pre>
+
+<p>To redirect stdin using a file's contents, use a <code>Path</code> object from <code>pathlib</code>.</p>
+
+<pre><code>&gt;&gt;&gt; from pathlib import Path
+&gt;&gt;&gt; cmd = Path("README.md") | sh("wc", "-l")
+&gt;&gt;&gt; await cmd
+'     230\n'
+</code></pre>
+
+<p><a href="docs/redirection.md">More on redirection...</a></p>
+
+<h2 id="redirecting-standard-output">Redirecting Standard Output</h2>
+
+<p>To redirect standard output, use the <code>|</code> operator.</p>
+
+<pre><code>&gt;&gt;&gt; output_file = Path("/tmp/output_file")
+&gt;&gt;&gt; cmd = sh("echo", "abc") | output_file
+&gt;&gt;&gt; await cmd
+''
+&gt;&gt;&gt; output_file.read_bytes()
+b'abc\n'
+</code></pre>
+
+<p>To redirect standard output with append, use the <code>&gt;&gt;</code> operator.</p>
+
+<pre><code>&gt;&gt;&gt; cmd = sh("echo", "def") &gt;&gt; output_file
+&gt;&gt;&gt; await cmd
+''
+&gt;&gt;&gt; output_file.read_bytes()
+b'abc\ndef\n'
+</code></pre>
+
+<p><a href="docs/redirection.md">More on redirection...</a></p>
+
+<h2 id="redirecting-standard-error">Redirecting Standard Error</h2>
+
+<p>By default, standard error is not captured. To redirect standard error, use the <code>stderr</code>
+method.</p>
+
+<pre><code>&gt;&gt;&gt; cmd = sh("cat", "does_not_exist").stderr(<a href="#STDOUT">shellous.STDOUT</a>)
+&gt;&gt;&gt; await cmd.set(exit_codes={0,1})
+'cat: does_not_exist: No such file or directory\n'
+</code></pre>
+
+<p>You can redirect standard error to a file or path. </p>
+
+<p>To redirect standard error to the hosting program's <code>sys.stderr</code>, use the INHERIT redirect
+option.</p>
+
+<pre><code>&gt;&gt;&gt; cmd = sh("cat", "does_not_exist").stderr(<a href="#INHERIT">shellous.INHERIT</a>)
+&gt;&gt;&gt; await cmd
+cat: does_not_exist: No such file or directory
+Traceback (most recent call last):
+  ...
+<a href="shellous/result.html#ResultError">shellous.result.ResultError</a>: Result(output_bytes=b'', exit_code=1, cancelled=False, encoding='utf-8', extra=None)
+</code></pre>
+
+<p><a href="docs/redirection.md">More on redirection...</a></p>
+
+<h2 id="pipelines">Pipelines</h2>
+
+<p>You can create a pipeline by combining commands using the <code>|</code> operator.</p>
+
+<pre><code>&gt;&gt;&gt; pipe = sh("ls") | sh("grep", "README")
+&gt;&gt;&gt; await pipe
+'README.md\n'
+</code></pre>
+
+<h2 id="async-with-for">Async With &amp; For</h2>
+
+<p>You can use <code>async with</code> to interact with the process streams directly. You have to be careful; you
+are responsible for correctly reading and writing multiple streams at the same time.</p>
+
+<pre><code>&gt;&gt;&gt; async with pipe.run() as run:
+...   data = await run.stdout.readline()
+...   print(data)
+... 
+b'README.md\n'
+</code></pre>
+
+<p>You can loop over a command's output by using the context manager as an iterator.</p>
+
+<pre><code>&gt;&gt;&gt; async with pipe.run() as run:
+...   async for line in run:
+...     print(line.rstrip())
+... 
+README.md
+</code></pre>
+
+<h2 id="incomplete-results">Incomplete Results</h2>
+
+<p>When a command is cancelled, shellous normally cleans up after itself and re-raises a <code>CancelledError</code>.</p>
+
+<p>You can retrieve the partial result by setting <code>incomplete_result</code> to True. Shellous will return a
+<code>ResultError</code> when the specified command is cancelled.</p>
+
+<pre><code>&gt;&gt;&gt; sleep = sh("sleep", 60).set(incomplete_result=True)
+&gt;&gt;&gt; t = sleep.task()
+&gt;&gt;&gt; t.cancel()
+True
+&gt;&gt;&gt; await t
+Traceback (most recent call last):
+  ...
+<a href="shellous/result.html#ResultError">shellous.result.ResultError</a>: Result(output_bytes=None, exit_code=-15, cancelled=True, encoding='utf-8', extra=None)
+</code></pre>
+
+<p>When you use <code>incomplete_result</code>, your code should respect the <code>cancelled</code> attribute in the Result object. 
+Otherwise, your code may swallow the CancelledError.</p>
 </div>
 
                         <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span><span class="s2">&quot;shellous provides a concise API for running subprocesses.&quot;</span>
+            <div class="codehilite"><pre><span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">.. include:: ../README.md</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="n">__docformat__</span> <span class="o">=</span> <span class="s2">&quot;restructuredtext&quot;</span>
 
 <span class="n">__version__</span> <span class="o">=</span> <span class="s2">&quot;0.3.0&quot;</span>
 
