@@ -687,3 +687,16 @@ async def test_env_ellipsis_unix_wrong_case(sh):
     # Fails because actual env is named "PATH", not "path"
     with pytest.raises(KeyError):
         sh("env").set(inherit_env=False).env(path=...)
+
+
+async def test_process_substitution(sh):
+    """Test process substitution.
+
+    ```
+    diff <(echo a) <(echo b)
+    ```
+    """
+
+    cmd = sh("diff", sh("echo", "a"), sh("echo", "b")).set(exit_codes={0, 1})
+    result = await cmd
+    assert result == "1c1\n< a\n---\n> b\n"
