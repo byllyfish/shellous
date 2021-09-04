@@ -6,7 +6,7 @@ import io
 from pathlib import Path
 
 import pytest
-from shellous import context, pipeline
+from shellous import Pipeline, context
 from shellous.command import Command
 
 
@@ -17,56 +17,56 @@ def sh():
 
 def test_empty_pipeline(sh):
     with pytest.raises(ValueError, match="must include at least one command"):
-        pipeline()
+        Pipeline.create()
 
 
 def test_pipeline_cmd(sh):
-    pipe = pipeline(sh("cmd1"), sh("cmd2"))
+    pipe = Pipeline.create(sh("cmd1"), sh("cmd2"))
     assert pipe.commands == (sh("cmd1"), sh("cmd2"))
 
 
 def test_pipeline_name(sh):
-    pipe = pipeline(sh("cmd1"), sh("cmd2"))
+    pipe = Pipeline.create(sh("cmd1"), sh("cmd2"))
     assert pipe.name == "cmd1|cmd2"
 
 
 def test_pipeline_cmd_append(sh):
-    pipe = pipeline(sh("cmd1").stdin("a"), sh("cmd2").stdout("b", append=True))
+    pipe = Pipeline.create(sh("cmd1").stdin("a"), sh("cmd2").stdout("b", append=True))
     assert pipe.commands == (sh("cmd1").stdin("a"), sh("cmd2").stdout("b", append=True))
 
 
 def test_pipeline(sh):
-    pipe = pipeline(sh("echo")) | sh("cat")
+    pipe = Pipeline.create(sh("echo")) | sh("cat")
     assert pipe.commands == (sh("echo"), sh("cat"))
 
 
 def test_pipeline_unsupported_rhs(sh):
     with pytest.raises(TypeError, match=r"unsupported operand type\(s\) for \|"):
-        pipeline(sh("echo")) | (1 + 2j)
+        Pipeline.create(sh("echo")) | (1 + 2j)
 
 
 def test_pipeline_unsupported_lhs(sh):
     with pytest.raises(TypeError, match=r"unsupported operand type\(s\) for \|"):
-        _ = (1 + 2j) | pipeline(sh("echo"))
+        _ = (1 + 2j) | Pipeline.create(sh("echo"))
 
 
 def test_pipeline_unsupported_rhs_append(sh):
     with pytest.raises(TypeError, match=r"unsupported operand type\(s\) for >>"):
-        _ = pipeline(sh("echo")) >> (1 + 2j)
+        _ = Pipeline.create(sh("echo")) >> (1 + 2j)
 
 
 def test_pipeline_input(sh):
-    pipe = "random input" | pipeline(sh("echo"))
+    pipe = "random input" | Pipeline.create(sh("echo"))
     assert pipe.commands == (sh("echo").stdin("random input"),)
 
 
 def test_pipeline_output(sh):
-    pipe = pipeline(sh("echo")) | "/tmp/somefile"
+    pipe = Pipeline.create(sh("echo")) | "/tmp/somefile"
     assert pipe.commands == (sh("echo").stdout("/tmp/somefile"),)
 
 
 def test_pipeline_output_append(sh):
-    pipe = pipeline(sh("echo")) >> "/tmp/somefile"
+    pipe = Pipeline.create(sh("echo")) >> "/tmp/somefile"
     assert pipe.commands == (sh("echo").stdout("/tmp/somefile", append=True),)
 
 
@@ -74,9 +74,9 @@ def test_pipeline_full(sh):
     "Test operator overloading in Pipeline only."
     pipe = (
         "/tmp/input"
-        | pipeline(sh("cmd1"))
+        | Pipeline.create(sh("cmd1"))
         | sh("cmd2")
-        | pipeline(sh("cmd3")) >> "/tmp/output"
+        | Pipeline.create(sh("cmd3")) >> "/tmp/output"
     )
     assert pipe.commands == (
         sh("cmd1").stdin("/tmp/input"),
@@ -86,8 +86,8 @@ def test_pipeline_full(sh):
 
 
 def test_pipeline_pieces(sh):
-    input = "/tmp/input" | pipeline(sh("cmd1"))
-    output = pipeline(sh("cmd2")) >> "/tmp/output"
+    input = "/tmp/input" | Pipeline.create(sh("cmd1"))
+    output = Pipeline.create(sh("cmd2")) >> "/tmp/output"
     pipe = input | output
     assert pipe.commands == (
         sh("cmd1").stdin("/tmp/input"),
@@ -96,18 +96,18 @@ def test_pipeline_pieces(sh):
 
 
 def test_pipeline_or_eq(sh):
-    pipe1 = pipeline(sh("ls"))
+    pipe1 = Pipeline.create(sh("ls"))
     pipe2 = pipe1
     pipe2 |= sh("grep", ".")
     assert pipe2 is not pipe1
-    assert pipe1 == pipeline(sh("ls"))
-    assert pipe2 == pipeline(sh("ls"), sh("grep", "."))
+    assert pipe1 == Pipeline.create(sh("ls"))
+    assert pipe2 == Pipeline.create(sh("ls"), sh("grep", "."))
 
 
 def test_pipeline_rshift_eq(sh):
-    pipe = pipeline(sh("ls"))
+    pipe = Pipeline.create(sh("ls"))
     pipe >>= "/tmp/output"
-    assert pipe == pipeline(
+    assert pipe == Pipeline.create(
         sh("ls").stdout("/tmp/output", append=True),
     )
 
@@ -124,7 +124,7 @@ def test_pipeline_full_commands(sh):
         | sh("cmd3")
         | sh("cmd4") >> "/tmp/output"
     )
-    assert pipe == pipeline(
+    assert pipe == Pipeline.create(
         sh("cmd1").stdin("/tmp/input"),
         sh("cmd2"),
         sh("cmd3"),
@@ -135,13 +135,13 @@ def test_pipeline_full_commands(sh):
 def test_pipeline_or_eq_commands(sh):
     pipe = sh("ls")
     pipe |= sh("grep")
-    assert pipe == pipeline(sh("ls"), sh("grep"))
+    assert pipe == Pipeline.create(sh("ls"), sh("grep"))
 
 
 def test_pipeline_rshift_eq_commands(sh):
     pipe = sh("ls") | sh("grep")
     pipe >>= "/tmp/output"
-    assert pipe == pipeline(
+    assert pipe == Pipeline.create(
         sh("ls"),
         sh("grep").stdout("/tmp/output", append=True),
     )
@@ -185,20 +185,22 @@ def test_invalid_pipeline_override_stdout(sh):
     """A Pipeline will override existing stdout redirections."""
     echo = sh("echo").stdout("/tmp/tmp_file")
     pipe = echo | sh("grep")
-    assert pipe == pipeline(sh("echo").stdout("/tmp/tmp_file"), sh("grep"))
+    assert pipe == Pipeline.create(sh("echo").stdout("/tmp/tmp_file"), sh("grep"))
 
 
 def test_invalid_pipeline_override_stdin(sh):
     """A Pipeline will override existing stdin redirections."""
     grep = sh("grep").stdin("/tmp/tmp_file")
     pipe = sh("echo") | grep
-    assert pipe == pipeline(sh("echo"), sh("grep").stdin("/tmp/tmp_file"))
+    assert pipe == Pipeline.create(sh("echo"), sh("grep").stdin("/tmp/tmp_file"))
 
 
 def test_invalid_pipeline_operators(sh):
     "Test >> in the middle of a pipeline."
     pipe = sh("echo") >> "/tmp/tmp_file" | sh("cat")
-    assert pipe == pipeline(sh("echo").stdout("/tmp/tmp_file", append=True), sh("cat"))
+    assert pipe == Pipeline.create(
+        sh("echo").stdout("/tmp/tmp_file", append=True), sh("cat")
+    )
 
 
 def test_pipeline_redirect_stringio(sh):

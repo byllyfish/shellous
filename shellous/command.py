@@ -429,7 +429,7 @@ class Command:
         "Bitwise or operator is used to build pipelines."
         if isinstance(rhs, STDOUT_TYPES):
             return self.stdout(rhs)
-        return shellous.pipeline(self) | rhs
+        return shellous.Pipeline.create(self) | rhs
 
     def __ror__(self, lhs):
         "Bitwise or operator is used to build pipelines."

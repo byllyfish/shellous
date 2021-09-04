@@ -17,6 +17,11 @@ class Pipeline:
 
     commands: Any = ()
 
+    @staticmethod
+    def create(*commands):
+        "Create a new Pipeline."
+        return Pipeline(commands)
+
     def __post_init__(self):
         "Validate the pipeline."
         if len(self.commands) == 0:
@@ -122,8 +127,3 @@ class Pipeline:
 
     def __await__(self):
         return self.coro().__await__()
-
-
-def pipeline(*commands):
-    "Construct a new Pipeline object."
-    return Pipeline(commands)
