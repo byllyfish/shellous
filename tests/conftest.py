@@ -90,6 +90,6 @@ def _check_open_fds():
 
 def _count_fds():
     "Return number of open file descriptors. (Not implemented on Windows)."
-    if sys.platform == "win32":
+    if sys.platform == "win32" or loop_type == "uvloop":
         return 0
     return len(os.listdir("/dev/fd"))
