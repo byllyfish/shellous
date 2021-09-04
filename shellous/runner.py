@@ -631,6 +631,8 @@ class PipeRunner:  # pylint: disable=too-many-instance-attributes
 async def run_cmd(command, *, _run_future=None):
     "Run a command."
     if not _run_future and command.multiple_capture:
+        LOGGER.warning("run_cmd: multiple capture requires 'async with'")
+        _cleanup(command)
         raise ValueError("multiple capture requires 'async with'")
 
     output_bytes = None
@@ -656,3 +658,23 @@ async def run_pipe(pipe):
     async with run:
         pass
     return run.result()
+
+
+def _cleanup(command):
+    "Close remaining file descriptors that need to be closed."
+
+    def _add_close(close, fd):
+        if close:
+            if isinstance(fd, (int, io.IOBase)):
+                open_fds.append(fd)
+
+    open_fds = []
+
+    _add_close(command.options.input_close, command.options.input)
+    _add_close(command.options.output_close, command.options.output)
+    _add_close(command.options.error_close, command.options.error)
+
+    if command.options.pass_fds_close:
+        open_fds.extend(command.options.pass_fds)
+
+    close_fds(open_fds)
