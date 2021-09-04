@@ -14,6 +14,7 @@ from typing import Any, Optional, TypeVar, Union
 
 from immutables import Map as ImmutableDict
 
+import shellous
 from shellous.redirect import STDIN_TYPES, STDOUT_APPEND_TYPES, STDOUT_TYPES, Redirect
 from shellous.runner import Runner, run_cmd
 from shellous.util import coerce_env
@@ -235,7 +236,9 @@ class Context:
         """
         result = []
         for arg in args:
-            if isinstance(arg, (str, bytes, bytearray, os.PathLike, Command)):
+            if isinstance(
+                arg, (str, bytes, bytearray, os.PathLike, Command, shellous.Pipeline)
+            ):
                 result.append(arg)
             elif isinstance(arg, (list, tuple)):
                 result.extend(self._coerce(arg))
@@ -253,14 +256,6 @@ class Context:
 def context() -> Context:
     "Construct a new execution context."
     return Context()
-
-
-def pipeline(*commands):
-    "Construct a new Pipeline object."
-    # pylint: disable=import-outside-toplevel,cyclic-import
-    from shellous.pipeline import Pipeline
-
-    return Pipeline(commands)
 
 
 @dataclass(frozen=True)
@@ -314,11 +309,6 @@ class Command:
             self.options.output == Redirect.CAPTURE
             and self.options.error == Redirect.CAPTURE
         )
-
-    @property
-    def process_substitution(self) -> bool:
-        """Return true if any argument is a command or pipeline."""
-        return any(isinstance(cmd, Command) for cmd in self.args)
 
     def stdin(self, input_, *, close=False):
         "Pass `input` to command's standard input."
@@ -415,8 +405,6 @@ class Command:
         result = run.result()
         ```
         """
-        # if self.process_substitution:
-        #    return ProcessSubRunner(self)
         return Runner(self)
 
     def __await__(self):
@@ -441,7 +429,7 @@ class Command:
         "Bitwise or operator is used to build pipelines."
         if isinstance(rhs, STDOUT_TYPES):
             return self.stdout(rhs)
-        return pipeline(self) | rhs
+        return shellous.pipeline(self) | rhs
 
     def __ror__(self, lhs):
         "Bitwise or operator is used to build pipelines."

@@ -24,6 +24,10 @@ def _is_cancelled(ex):
     return isinstance(ex, asyncio.CancelledError)
 
 
+def _is_cmd(cmd):
+    return isinstance(cmd, (shellous.Command, shellous.Pipeline))
+
+
 class _RunOptions:
     """_RunOptions is context manager to assist in running a command.
 
@@ -70,14 +74,14 @@ class _RunOptions:
 
     def _setup_proc_sub(self):
         "Set up process substitution."
-        if not self.command.process_substitution:
+        if not any(_is_cmd(arg) for arg in self.command.args):
             return
 
         new_args = []
         pass_fds = []
 
         for arg in self.command.args:
-            if not isinstance(arg, shellous.Command):
+            if not _is_cmd(arg):
                 new_args.append(arg)
                 continue
 

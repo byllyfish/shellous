@@ -8,7 +8,6 @@ from pathlib import Path
 import pytest
 from shellous import context, pipeline
 from shellous.command import Command
-from shellous.pipeline import Pipeline
 
 
 @pytest.fixture

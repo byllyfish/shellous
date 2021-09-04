@@ -700,3 +700,18 @@ async def test_process_substitution(sh):
     cmd = sh("diff", sh("echo", "a"), sh("echo", "b")).set(exit_codes={0, 1})
     result = await cmd
     assert result == "1c1\n< a\n---\n> b\n"
+
+
+async def test_process_substitution_with_pipe(sh):
+    """Test process substitution.
+
+    ```
+    diff <(echo a | cat) <(echo b | cat)
+    ```
+    """
+
+    pipe1 = sh("echo", "a") | sh("cat")
+    pipe2 = sh("echo", "b") | sh("cat")
+    cmd = sh("diff", pipe1, pipe2).set(exit_codes={0, 1})
+    result = await cmd
+    assert result == "1c1\n< a\n---\n> b\n"
