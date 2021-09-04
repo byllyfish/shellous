@@ -674,7 +674,7 @@ def _cleanup(command):
     _add_close(command.options.output_close, command.options.output)
     _add_close(command.options.error_close, command.options.error)
 
-    if command.options.pass_fds_close:
-        open_fds.extend(command.options.pass_fds)
+    # if command.options.pass_fds_close:
+    #    open_fds.extend(command.options.pass_fds)
 
     close_fds(open_fds)
