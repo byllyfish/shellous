@@ -100,6 +100,7 @@
 <span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">import</span> <span class="nn">sys</span>
 
+<span class="kn">import</span> <span class="nn">shellous</span>
 <span class="kn">import</span> <span class="nn">shellous.redirect</span> <span class="k">as</span> <span class="nn">redir</span>
 <span class="kn">from</span> <span class="nn">shellous.harvest</span> <span class="kn">import</span> <span class="n">harvest</span><span class="p">,</span> <span class="n">harvest_results</span>
 <span class="kn">from</span> <span class="nn">shellous.log</span> <span class="kn">import</span> <span class="n">LOGGER</span><span class="p">,</span> <span class="n">log_method</span>
@@ -116,6 +117,10 @@
 
 <span class="k">def</span> <span class="nf">_is_cancelled</span><span class="p">(</span><span class="n">ex</span><span class="p">):</span>
     <span class="k">return</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ex</span><span class="p">,</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">CancelledError</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_is_cmd</span><span class="p">(</span><span class="n">cmd</span><span class="p">):</span>
+    <span class="k">return</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="p">(</span><span class="n">shellous</span><span class="o">.</span><span class="n">Command</span><span class="p">,</span> <span class="n">shellous</span><span class="o">.</span><span class="n">Pipeline</span><span class="p">))</span>
 
 
 <span class="k">class</span> <span class="nc">_RunOptions</span><span class="p">:</span>
@@ -138,6 +143,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">input_bytes</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">args</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">kwd_args</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">subcmds</span> <span class="o">=</span> <span class="p">[]</span>
 
     <span class="k">def</span> <span class="nf">close_fds</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Close all open file descriptors in `open_fds`.&quot;</span>
@@ -146,7 +152,8 @@
     <span class="k">def</span> <span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Set up I/O redirections.&quot;</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_setup</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_setup_proc_sub</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_setup_redirects</span><span class="p">()</span>
             <span class="k">return</span> <span class="bp">self</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>
             <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;_RunOptions.enter </span><span class="si">%r</span><span class="s2"> ex=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">command</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">ex</span><span class="p">)</span>
@@ -160,7 +167,33 @@
                 <span class="s2">&quot;_RunOptions.exit </span><span class="si">%r</span><span class="s2"> exc_value=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">command</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">exc_value</span>
             <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_setup</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_setup_proc_sub</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;Set up process substitution.&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">any</span><span class="p">(</span><span class="n">_is_cmd</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span> <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">command</span><span class="o">.</span><span class="n">args</span><span class="p">):</span>
+            <span class="k">return</span>
+
+        <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span> <span class="o">==</span> <span class="s2">&quot;win32&quot;</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;process substitution not supported on Windows&quot;</span><span class="p">)</span>
+
+        <span class="n">new_args</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">pass_fds</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">command</span><span class="o">.</span><span class="n">args</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">_is_cmd</span><span class="p">(</span><span class="n">arg</span><span class="p">):</span>
+                <span class="n">new_args</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span>
+                <span class="k">continue</span>
+
+            <span class="p">(</span><span class="n">read_fd</span><span class="p">,</span> <span class="n">write_fd</span><span class="p">)</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">pipe</span><span class="p">()</span>
+            <span class="n">new_args</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;/dev/fd/</span><span class="si">{</span><span class="n">read_fd</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">pass_fds</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">read_fd</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">subcmds</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">arg</span><span class="o">.</span><span class="n">stdout</span><span class="p">(</span><span class="n">write_fd</span><span class="p">,</span> <span class="n">close</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">command</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">command</span><span class="o">.</span><span class="n">_replace_args</span><span class="p">(</span><span class="n">new_args</span><span class="p">)</span><span class="o">.</span><span class="n">set</span><span class="p">(</span>
+            <span class="n">pass_fds</span><span class="o">=</span><span class="n">pass_fds</span><span class="p">,</span>
+            <span class="n">pass_fds_close</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_setup_redirects</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Set up I/O redirections.&quot;</span>
         <span class="n">options</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">command</span><span class="o">.</span><span class="n">options</span>
 
@@ -190,6 +223,11 @@
             <span class="s2">&quot;stderr&quot;</span><span class="p">:</span> <span class="n">stderr</span><span class="p">,</span>
             <span class="s2">&quot;env&quot;</span><span class="p">:</span> <span class="n">options</span><span class="o">.</span><span class="n">merge_env</span><span class="p">(),</span>
         <span class="p">}</span>
+
+        <span class="k">if</span> <span class="n">options</span><span class="o">.</span><span class="n">pass_fds</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">kwd_args</span><span class="p">[</span><span class="s2">&quot;pass_fds&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">options</span><span class="o">.</span><span class="n">pass_fds</span>
+            <span class="k">if</span> <span class="n">options</span><span class="o">.</span><span class="n">pass_fds_close</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">open_fds</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">options</span><span class="o">.</span><span class="n">pass_fds</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_setup_input</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_</span><span class="p">,</span> <span class="n">close</span><span class="p">,</span> <span class="n">encoding</span><span class="p">):</span>
         <span class="s2">&quot;Set up process input.&quot;</span>
@@ -400,10 +438,15 @@
         <span class="k">try</span><span class="p">:</span>
             <span class="c1"># Set up subprocess arguments and launch subprocess.</span>
             <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span> <span class="k">as</span> <span class="n">opts</span><span class="p">:</span>
+                <span class="c1"># Launch the main subprocess.</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">proc</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_subprocess_exec</span><span class="p">(</span>
                     <span class="o">*</span><span class="n">opts</span><span class="o">.</span><span class="n">args</span><span class="p">,</span>
                     <span class="o">**</span><span class="n">opts</span><span class="o">.</span><span class="n">kwd_args</span><span class="p">,</span>
                 <span class="p">)</span>
+
+                <span class="c1"># Tee up the process substitution commands (if any).</span>
+                <span class="k">for</span> <span class="n">cmd</span> <span class="ow">in</span> <span class="n">opts</span><span class="o">.</span><span class="n">subcmds</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">add_task</span><span class="p">(</span><span class="n">cmd</span><span class="o">.</span><span class="n">coro</span><span class="p">(),</span> <span class="s2">&quot;procsub&quot;</span><span class="p">)</span>
 
             <span class="c1"># Add a task to monitor for when the process finishes.</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">add_task</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">wait</span><span class="p">(),</span> <span class="s2">&quot;proc.wait&quot;</span><span class="p">)</span>
@@ -506,7 +549,7 @@
             <span class="c1"># will raise a BrokenPipeError if not all input was properly written.</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">stdin</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
-                <span class="k">await</span> <span class="n">harvest</span><span class="p">(</span>
+                <span class="k">await</span> <span class="n">harvest</span><span class="p">(</span>  <span class="c1"># FIXME: retry if cancelled?</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">wait_closed</span><span class="p">(),</span>
                     <span class="n">timeout</span><span class="o">=</span><span class="n">_CLOSE_TIMEOUT</span><span class="p">,</span>
                     <span class="n">trustee</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span>
@@ -726,6 +769,8 @@
 <span class="k">async</span> <span class="k">def</span> <span class="nf">run_cmd</span><span class="p">(</span><span class="n">command</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">_run_future</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="s2">&quot;Run a command.&quot;</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">_run_future</span> <span class="ow">and</span> <span class="n">command</span><span class="o">.</span><span class="n">multiple_capture</span><span class="p">:</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;run_cmd: multiple capture requires &#39;async with&#39;&quot;</span><span class="p">)</span>
+        <span class="n">_cleanup</span><span class="p">(</span><span class="n">command</span><span class="p">)</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;multiple capture requires &#39;async with&#39;&quot;</span><span class="p">)</span>
 
     <span class="n">output_bytes</span> <span class="o">=</span> <span class="kc">None</span>
@@ -751,6 +796,26 @@
     <span class="k">async</span> <span class="k">with</span> <span class="n">run</span><span class="p">:</span>
         <span class="k">pass</span>
     <span class="k">return</span> <span class="n">run</span><span class="o">.</span><span class="n">result</span><span class="p">()</span>
+
+
+<span class="k">def</span> <span class="nf">_cleanup</span><span class="p">(</span><span class="n">command</span><span class="p">):</span>
+    <span class="s2">&quot;Close remaining file descriptors that need to be closed.&quot;</span>
+
+    <span class="k">def</span> <span class="nf">_add_close</span><span class="p">(</span><span class="n">close</span><span class="p">,</span> <span class="n">fd</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">close</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">io</span><span class="o">.</span><span class="n">IOBase</span><span class="p">)):</span>
+                <span class="n">open_fds</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fd</span><span class="p">)</span>
+
+    <span class="n">open_fds</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="n">_add_close</span><span class="p">(</span><span class="n">command</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">input_close</span><span class="p">,</span> <span class="n">command</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">input</span><span class="p">)</span>
+    <span class="n">_add_close</span><span class="p">(</span><span class="n">command</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">output_close</span><span class="p">,</span> <span class="n">command</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">output</span><span class="p">)</span>
+    <span class="n">_add_close</span><span class="p">(</span><span class="n">command</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">error_close</span><span class="p">,</span> <span class="n">command</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">error</span><span class="p">)</span>
+
+    <span class="c1"># if command.options.pass_fds_close:</span>
+    <span class="c1">#    open_fds.extend(command.options.pass_fds)</span>
+
+    <span class="n">close_fds</span><span class="p">(</span><span class="n">open_fds</span><span class="p">)</span>
 </pre></div>
 
         </details>
@@ -910,10 +975,15 @@
         <span class="k">try</span><span class="p">:</span>
             <span class="c1"># Set up subprocess arguments and launch subprocess.</span>
             <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span> <span class="k">as</span> <span class="n">opts</span><span class="p">:</span>
+                <span class="c1"># Launch the main subprocess.</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">proc</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_subprocess_exec</span><span class="p">(</span>
                     <span class="o">*</span><span class="n">opts</span><span class="o">.</span><span class="n">args</span><span class="p">,</span>
                     <span class="o">**</span><span class="n">opts</span><span class="o">.</span><span class="n">kwd_args</span><span class="p">,</span>
                 <span class="p">)</span>
+
+                <span class="c1"># Tee up the process substitution commands (if any).</span>
+                <span class="k">for</span> <span class="n">cmd</span> <span class="ow">in</span> <span class="n">opts</span><span class="o">.</span><span class="n">subcmds</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">add_task</span><span class="p">(</span><span class="n">cmd</span><span class="o">.</span><span class="n">coro</span><span class="p">(),</span> <span class="s2">&quot;procsub&quot;</span><span class="p">)</span>
 
             <span class="c1"># Add a task to monitor for when the process finishes.</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">add_task</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">wait</span><span class="p">(),</span> <span class="s2">&quot;proc.wait&quot;</span><span class="p">)</span>
@@ -1016,7 +1086,7 @@
             <span class="c1"># will raise a BrokenPipeError if not all input was properly written.</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">stdin</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
-                <span class="k">await</span> <span class="n">harvest</span><span class="p">(</span>
+                <span class="k">await</span> <span class="n">harvest</span><span class="p">(</span>  <span class="c1"># FIXME: retry if cancelled?</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">wait_closed</span><span class="p">(),</span>
                     <span class="n">timeout</span><span class="o">=</span><span class="n">_CLOSE_TIMEOUT</span><span class="p">,</span>
                     <span class="n">trustee</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span>
@@ -1455,6 +1525,8 @@ client needs to access <code>stdin</code> and <code>stderr</code> streams.</p>
             <div class="codehilite"><pre><span></span><span class="k">async</span> <span class="k">def</span> <span class="nf">run_cmd</span><span class="p">(</span><span class="n">command</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">_run_future</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="s2">&quot;Run a command.&quot;</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">_run_future</span> <span class="ow">and</span> <span class="n">command</span><span class="o">.</span><span class="n">multiple_capture</span><span class="p">:</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;run_cmd: multiple capture requires &#39;async with&#39;&quot;</span><span class="p">)</span>
+        <span class="n">_cleanup</span><span class="p">(</span><span class="n">command</span><span class="p">)</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;multiple capture requires &#39;async with&#39;&quot;</span><span class="p">)</span>
 
     <span class="n">output_bytes</span> <span class="o">=</span> <span class="kc">None</span>
