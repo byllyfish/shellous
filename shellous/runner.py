@@ -77,6 +77,9 @@ class _RunOptions:
         if not any(_is_cmd(arg) for arg in self.command.args):
             return
 
+        if sys.platform == "win32":
+            raise RuntimeError("process substitution not supported on Windows")
+
         new_args = []
         pass_fds = []
 
