@@ -340,15 +340,15 @@ class Runner:
         try:
             # Set up subprocess arguments and launch subprocess.
             with self.options as opts:
-                # Tee up the process substitution commands (if any).
-                for cmd in opts.subcmds:
-                    self.add_task(cmd.coro(), "procsub")
-
                 # Launch the main subprocess.
                 self.proc = await asyncio.create_subprocess_exec(
                     *opts.args,
                     **opts.kwd_args,
                 )
+
+                # Tee up the process substitution commands (if any).
+                for cmd in opts.subcmds:
+                    self.add_task(cmd.coro(), "procsub")
 
             # Add a task to monitor for when the process finishes.
             self.add_task(self.proc.wait(), "proc.wait")
