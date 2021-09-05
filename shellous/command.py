@@ -94,6 +94,9 @@ class Options:  # pylint: disable=too-many-instance-attributes
     pass_fds_close: bool = False
     "True if pass_fds should be closed after subprocess launch."
 
+    write_mode: bool = False
+    "True if using process substitution in write mode."
+
     def merge_env(self):
         "Return our `env` merged with the global environment."
         if self.inherit_env:
@@ -201,6 +204,7 @@ class Context:
         alt_name=_UNSET,
         pass_fds=_UNSET,
         pass_fds_closed=_UNSET,
+        write_mode=_UNSET,
     ):
         "Return new context with custom options set."
         kwargs = locals()
@@ -300,16 +304,6 @@ class Command:
             return f"...{name[-31:]}"
         return name
 
-    @property
-    def multiple_capture(self) -> bool:
-        """Return true if the stdin is set to CAPTURE or more than one of
-        stdout, stderr is set to CAPTURE.
-        """
-        return self.options.input == Redirect.CAPTURE or (
-            self.options.output == Redirect.CAPTURE
-            and self.options.error == Redirect.CAPTURE
-        )
-
     def stdin(self, input_, *, close=False):
         "Pass `input` to command's standard input."
         new_options = self.options.set_stdin(input_, close)
@@ -345,6 +339,7 @@ class Command:
         alt_name: Unset[Optional[str]] = _UNSET,
         pass_fds: Unset[tuple[int]] = _UNSET,
         pass_fds_close: Unset[bool] = _UNSET,
+        write_mode: Unset[bool] = _UNSET,
     ):
         """Return new command with custom options set.
 
@@ -367,6 +362,7 @@ class Command:
         scripting language.
         - Set `pass_fds` to pass open file descriptors to the command.
         - Set `pass_fds_close` to True to auto-close the `pass_fds`.
+        - Set `write_mode` to True when using process substitution for writing.
         """
         kwargs = locals()
         del kwargs["self"]
@@ -440,6 +436,10 @@ class Command:
         if isinstance(rhs, STDOUT_APPEND_TYPES):
             return self.stdout(rhs, append=True)
         return NotImplemented
+
+    def __invert__(self):
+        "Unary ~ operator sets write_mode to True."
+        return self.set(write_mode=True)
 
 
 def _check_args(out, append):

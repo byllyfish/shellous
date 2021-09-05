@@ -124,20 +124,6 @@ def test_none_arg(sh):
         sh("echo", None)
 
 
-@pytest.mark.xfail(reason="WIP")
-def test_command_as_arg(sh):
-    """Test passing a command as an argument to another command.
-
-    This syntax is reserved for process substitution. The default is to
-    read from the process stdout (mode='r'). The alternative is to write to
-    the process stdin (mode='w'). We will need an option to disable process
-    substitution for commands like 'sudo' where we want to insert the
-    command's arguments."""
-    with pytest.raises(NotImplementedError, match="reserved"):
-        # same as `cat <(ls)`
-        sh("cat", sh("ls"))
-
-
 def test_ellipsis_as_arg(sh):
     """Test passing Ellipsis as an argument.
 

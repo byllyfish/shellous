@@ -28,6 +28,14 @@ def _is_cmd(cmd):
     return isinstance(cmd, (shellous.Command, shellous.Pipeline))
 
 
+def _is_write_mode(cmd):
+    "Return true if command/pipeline has write_mode set."
+    if isinstance(cmd, shellous.Pipeline):
+        # Pipelines need to check both the last/first commands.
+        return cmd.options.write_mode or cmd[0].options.write_mode
+    return cmd.options.write_mode
+
+
 class _RunOptions:
     """_RunOptions is context manager to assist in running a command.
 
@@ -89,9 +97,16 @@ class _RunOptions:
                 continue
 
             (read_fd, write_fd) = os.pipe()
-            new_args.append(f"/dev/fd/{read_fd}")
-            pass_fds.append(read_fd)
-            self.subcmds.append(arg.stdout(write_fd, close=True))
+            if _is_write_mode(arg):
+                new_args.append(f"/dev/fd/{write_fd}")
+                pass_fds.append(write_fd)
+                subcmd = arg.stdin(read_fd, close=True)
+            else:
+                new_args.append(f"/dev/fd/{read_fd}")
+                pass_fds.append(read_fd)
+                subcmd = arg.stdout(write_fd, close=True)
+
+            self.subcmds.append(subcmd)
 
         self.command = self.command._replace_args(new_args).set(
             pass_fds=pass_fds,
@@ -349,7 +364,7 @@ class Runner:
                     **opts.kwd_args,
                 )
 
-                # Tee up the process substitution commands (if any).
+                # Launch the process substitution commands (if any).
                 for cmd in opts.subcmds:
                     self.add_task(cmd.coro(), "procsub")
 
@@ -509,7 +524,7 @@ class PipeRunner:  # pylint: disable=too-many-instance-attributes
         self.tasks = None
         self.results = None
         self.capturing = capturing
-        self.encoding = pipe.commands[-1].options.encoding
+        self.encoding = pipe.options.encoding
         self.stdin = None
         self.stdout = None
         self.stderr = None
@@ -673,7 +688,7 @@ class PipeRunner:  # pylint: disable=too-many-instance-attributes
 
 async def run_cmd(command, *, _run_future=None):
     "Run a command."
-    if not _run_future and command.multiple_capture:
+    if not _run_future and _is_multiple_capture(command):
         LOGGER.warning("run_cmd: multiple capture requires 'async with'")
         _cleanup(command)
         raise ValueError("multiple capture requires 'async with'")
@@ -701,6 +716,13 @@ async def run_pipe(pipe):
     async with run:
         pass
     return run.result()
+
+
+def _is_multiple_capture(cmd):
+    "Return true if stdin is CAPTURE or both stdout and stderr are CAPTURE."
+    return cmd.options.input == Redirect.CAPTURE or (
+        cmd.options.output == Redirect.CAPTURE and cmd.options.error == Redirect.CAPTURE
+    )
 
 
 def _cleanup(command):

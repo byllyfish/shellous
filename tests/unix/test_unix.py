@@ -715,3 +715,56 @@ async def test_process_substitution_with_pipe(sh):
     cmd = sh("diff", pipe1, pipe2).set(exit_codes={0, 1})
     result = await cmd
     assert result == "1c1\n< a\n---\n> b\n"
+
+
+async def test_process_substitution_write(sh, tmp_path):
+    """Test process substitution with write_mode.
+
+    ```
+    echo a | tee >(cat > tmpfile)
+    ```
+    """
+
+    out = tmp_path / "test_process_sub_write"
+    cat = sh("cat") | out
+    pipe = sh("echo", "a") | sh("tee", ~cat())
+
+    result = await pipe
+    assert result == "a\n"
+    assert out.read_bytes() == b"a\n"
+
+
+async def test_process_substitution_write_pipe(sh, tmp_path):
+    """Test process substitution with write_mode.
+
+    ```
+    echo b | tee >(cat | cat > tmpfile)
+    ```
+    """
+
+    out = tmp_path / "test_process_sub_write"
+    cat = sh("cat") | sh("cat") | out
+    pipe = sh("echo", "b") | sh("tee", ~cat())
+
+    result = await pipe
+    assert result == "b\n"
+    assert out.read_bytes() == b"b\n"
+
+
+async def test_process_substitution_write_pipe_alt(sh, tmp_path):
+    """Test process substitution with write_mode.
+
+    Change where the ~ appears; put it on the first command of the pipe.
+
+    ```
+    echo b | tee >(cat | cat > tmpfile)
+    ```
+    """
+
+    out = tmp_path / "test_process_sub_write"
+    cat = ~sh("cat") | sh("cat") | out
+    pipe = sh("echo", "b") | sh("tee", cat()).stderr(INHERIT)
+
+    result = await pipe
+    assert result == "b\n"
+    assert out.read_bytes() == b"b\n"
