@@ -688,7 +688,7 @@ class PipeRunner:  # pylint: disable=too-many-instance-attributes
 
 async def run_cmd(command, *, _run_future=None):
     "Run a command."
-    if not _run_future and command.multiple_capture:
+    if not _run_future and _is_multiple_capture(command):
         LOGGER.warning("run_cmd: multiple capture requires 'async with'")
         _cleanup(command)
         raise ValueError("multiple capture requires 'async with'")
@@ -716,6 +716,13 @@ async def run_pipe(pipe):
     async with run:
         pass
     return run.result()
+
+
+def _is_multiple_capture(cmd):
+    "Return true if stdin is CAPTURE or both stdout and stderr are CAPTURE."
+    return cmd.options.input == Redirect.CAPTURE or (
+        cmd.options.output == Redirect.CAPTURE and cmd.options.error == Redirect.CAPTURE
+    )
 
 
 def _cleanup(command):

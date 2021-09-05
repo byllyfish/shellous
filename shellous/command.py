@@ -304,16 +304,6 @@ class Command:
             return f"...{name[-31:]}"
         return name
 
-    @property
-    def multiple_capture(self) -> bool:
-        """Return true if the stdin is set to CAPTURE or more than one of
-        stdout, stderr is set to CAPTURE.
-        """
-        return self.options.input == Redirect.CAPTURE or (
-            self.options.output == Redirect.CAPTURE
-            and self.options.error == Redirect.CAPTURE
-        )
-
     def stdin(self, input_, *, close=False):
         "Pass `input` to command's standard input."
         new_options = self.options.set_stdin(input_, close)
