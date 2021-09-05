@@ -97,6 +97,9 @@
                                 <a class="variable" href="#Options.pass_fds_close">pass_fds_close</a>
                         </li>
                         <li>
+                                <a class="variable" href="#Options.write_mode">write_mode</a>
+                        </li>
+                        <li>
                                 <a class="function" href="#Options.merge_env">merge_env</a>
                         </li>
                         <li>
@@ -155,9 +158,6 @@
                         </li>
                         <li>
                                 <a class="variable" href="#Command.name">name</a>
-                        </li>
-                        <li>
-                                <a class="variable" href="#Command.multiple_capture">multiple_capture</a>
                         </li>
                         <li>
                                 <a class="function" href="#Command.stdin">stdin</a>
@@ -308,6 +308,9 @@
     <span class="n">pass_fds_close</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="s2">&quot;True if pass_fds should be closed after subprocess launch.&quot;</span>
 
+    <span class="n">write_mode</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="s2">&quot;True if using process substitution in write mode.&quot;</span>
+
     <span class="k">def</span> <span class="nf">merge_env</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Return our `env` merged with the global environment.&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">inherit_env</span><span class="p">:</span>
@@ -415,6 +418,7 @@
         <span class="n">alt_name</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">pass_fds</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">pass_fds_closed</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">write_mode</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="s2">&quot;Return new context with custom options set.&quot;</span>
         <span class="n">kwargs</span> <span class="o">=</span> <span class="nb">locals</span><span class="p">()</span>
@@ -514,16 +518,6 @@
             <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;...</span><span class="si">{</span><span class="n">name</span><span class="p">[</span><span class="o">-</span><span class="mi">31</span><span class="p">:]</span><span class="si">}</span><span class="s2">&quot;</span>
         <span class="k">return</span> <span class="n">name</span>
 
-    <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">multiple_capture</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Return true if the stdin is set to CAPTURE or more than one of</span>
-<span class="sd">        stdout, stderr is set to CAPTURE.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">input</span> <span class="o">==</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">CAPTURE</span> <span class="ow">or</span> <span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">output</span> <span class="o">==</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">CAPTURE</span>
-            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">error</span> <span class="o">==</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">CAPTURE</span>
-        <span class="p">)</span>
-
     <span class="k">def</span> <span class="nf">stdin</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">close</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="s2">&quot;Pass `input` to command&#39;s standard input.&quot;</span>
         <span class="n">new_options</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">set_stdin</span><span class="p">(</span><span class="n">input_</span><span class="p">,</span> <span class="n">close</span><span class="p">)</span>
@@ -559,6 +553,7 @@
         <span class="n">alt_name</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">pass_fds</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">pass_fds_close</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">write_mode</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Return new command with custom options set.</span>
 
@@ -581,6 +576,7 @@
 <span class="sd">        scripting language.</span>
 <span class="sd">        - Set `pass_fds` to pass open file descriptors to the command.</span>
 <span class="sd">        - Set `pass_fds_close` to True to auto-close the `pass_fds`.</span>
+<span class="sd">        - Set `write_mode` to True when using process substitution for writing.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">kwargs</span> <span class="o">=</span> <span class="nb">locals</span><span class="p">()</span>
         <span class="k">del</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;self&quot;</span><span class="p">]</span>
@@ -654,6 +650,10 @@
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rhs</span><span class="p">,</span> <span class="n">STDOUT_APPEND_TYPES</span><span class="p">):</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">stdout</span><span class="p">(</span><span class="n">rhs</span><span class="p">,</span> <span class="n">append</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">NotImplemented</span>
+
+    <span class="k">def</span> <span class="fm">__invert__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;Unary ~ operator sets write_mode to True.&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">write_mode</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
 
 <span class="k">def</span> <span class="nf">_check_args</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="n">append</span><span class="p">):</span>
@@ -739,6 +739,9 @@
 
     <span class="n">pass_fds_close</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="s2">&quot;True if pass_fds should be closed after subprocess launch.&quot;</span>
+
+    <span class="n">write_mode</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="s2">&quot;True if using process substitution in write mode.&quot;</span>
 
     <span class="k">def</span> <span class="nf">merge_env</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Return our `env` merged with the global environment.&quot;</span>
@@ -833,7 +836,8 @@
     cancel_signal: Optional[Any] = &lt;Signals.SIGTERM: 15&gt;,
     alt_name: Optional[str] = None,
     pass_fds: tuple = (),
-    pass_fds_close: bool = False
+    pass_fds_close: bool = False,
+    write_mode: bool = False
 )</span>
     </div>
 
@@ -1057,6 +1061,17 @@
     </div>
 
             <div class="docstring"><p>True if pass_fds should be closed after subprocess launch.</p>
+</div>
+
+
+                            </div>
+                            <div id="Options.write_mode" class="classattr">
+                                            <div class="attr variable"><a class="headerlink" href="#Options.write_mode">#&nbsp;&nbsp</a>
+
+        <span class="name">write_mode</span><span class="annotation">: bool</span><span class="default_value"> = False</span>
+    </div>
+
+            <div class="docstring"><p>True if using process substitution in write mode.</p>
 </div>
 
 
@@ -1288,6 +1303,7 @@
         <span class="n">alt_name</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">pass_fds</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">pass_fds_closed</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">write_mode</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="s2">&quot;Return new context with custom options set.&quot;</span>
         <span class="n">kwargs</span> <span class="o">=</span> <span class="nb">locals</span><span class="p">()</span>
@@ -1475,7 +1491,8 @@
     cancel_signal=&lt;UNSET.UNSET: 1&gt;,
     alt_name=&lt;UNSET.UNSET: 1&gt;,
     pass_fds=&lt;UNSET.UNSET: 1&gt;,
-    pass_fds_closed=&lt;UNSET.UNSET: 1&gt;
+    pass_fds_closed=&lt;UNSET.UNSET: 1&gt;,
+    write_mode=&lt;UNSET.UNSET: 1&gt;
 )</span>:
     </div>
 
@@ -1494,6 +1511,7 @@
         <span class="n">alt_name</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">pass_fds</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">pass_fds_closed</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">write_mode</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="s2">&quot;Return new context with custom options set.&quot;</span>
         <span class="n">kwargs</span> <span class="o">=</span> <span class="nb">locals</span><span class="p">()</span>
@@ -1585,16 +1603,6 @@
             <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;...</span><span class="si">{</span><span class="n">name</span><span class="p">[</span><span class="o">-</span><span class="mi">31</span><span class="p">:]</span><span class="si">}</span><span class="s2">&quot;</span>
         <span class="k">return</span> <span class="n">name</span>
 
-    <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">multiple_capture</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Return true if the stdin is set to CAPTURE or more than one of</span>
-<span class="sd">        stdout, stderr is set to CAPTURE.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">input</span> <span class="o">==</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">CAPTURE</span> <span class="ow">or</span> <span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">output</span> <span class="o">==</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">CAPTURE</span>
-            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">error</span> <span class="o">==</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">CAPTURE</span>
-        <span class="p">)</span>
-
     <span class="k">def</span> <span class="nf">stdin</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">close</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="s2">&quot;Pass `input` to command&#39;s standard input.&quot;</span>
         <span class="n">new_options</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">set_stdin</span><span class="p">(</span><span class="n">input_</span><span class="p">,</span> <span class="n">close</span><span class="p">)</span>
@@ -1630,6 +1638,7 @@
         <span class="n">alt_name</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">pass_fds</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">pass_fds_close</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">write_mode</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Return new command with custom options set.</span>
 
@@ -1652,6 +1661,7 @@
 <span class="sd">        scripting language.</span>
 <span class="sd">        - Set `pass_fds` to pass open file descriptors to the command.</span>
 <span class="sd">        - Set `pass_fds_close` to True to auto-close the `pass_fds`.</span>
+<span class="sd">        - Set `write_mode` to True when using process substitution for writing.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">kwargs</span> <span class="o">=</span> <span class="nb">locals</span><span class="p">()</span>
         <span class="k">del</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;self&quot;</span><span class="p">]</span>
@@ -1725,6 +1735,10 @@
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rhs</span><span class="p">,</span> <span class="n">STDOUT_APPEND_TYPES</span><span class="p">):</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">stdout</span><span class="p">(</span><span class="n">rhs</span><span class="p">,</span> <span class="n">append</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">NotImplemented</span>
+
+    <span class="k">def</span> <span class="fm">__invert__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;Unary ~ operator sets write_mode to True.&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">write_mode</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 
         </details>
@@ -1768,18 +1782,6 @@ result = await echo
 
 <p>Names longer than 31 characters are truncated. If <code>alt_name</code> option
 is set, return that instead.</p>
-</div>
-
-
-                            </div>
-                            <div id="Command.multiple_capture" class="classattr">
-                                            <div class="attr variable"><a class="headerlink" href="#Command.multiple_capture">#&nbsp;&nbsp</a>
-
-        <span class="name">multiple_capture</span><span class="annotation">: bool</span>
-    </div>
-
-            <div class="docstring"><p>Return true if the stdin is set to CAPTURE or more than one of
-stdout, stderr is set to CAPTURE.</p>
 </div>
 
 
@@ -1895,7 +1897,8 @@ stdout, stderr is set to CAPTURE.</p>
     cancel_signal: Union[Any, <a href="#UNSET">shellous.command.UNSET</a>] = &lt;UNSET.UNSET: 1&gt;,
     alt_name: Union[str, NoneType, <a href="#UNSET">shellous.command.UNSET</a>] = &lt;UNSET.UNSET: 1&gt;,
     pass_fds: Union[tuple[int], <a href="#UNSET">shellous.command.UNSET</a>] = &lt;UNSET.UNSET: 1&gt;,
-    pass_fds_close: Union[bool, <a href="#UNSET">shellous.command.UNSET</a>] = &lt;UNSET.UNSET: 1&gt;
+    pass_fds_close: Union[bool, <a href="#UNSET">shellous.command.UNSET</a>] = &lt;UNSET.UNSET: 1&gt;,
+    write_mode: Union[bool, <a href="#UNSET">shellous.command.UNSET</a>] = &lt;UNSET.UNSET: 1&gt;
 )</span>:
     </div>
 
@@ -1914,6 +1917,7 @@ stdout, stderr is set to CAPTURE.</p>
         <span class="n">alt_name</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">pass_fds</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">pass_fds_close</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">write_mode</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Return new command with custom options set.</span>
 
@@ -1936,6 +1940,7 @@ stdout, stderr is set to CAPTURE.</p>
 <span class="sd">        scripting language.</span>
 <span class="sd">        - Set `pass_fds` to pass open file descriptors to the command.</span>
 <span class="sd">        - Set `pass_fds_close` to True to auto-close the `pass_fds`.</span>
+<span class="sd">        - Set `write_mode` to True when using process substitution for writing.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">kwargs</span> <span class="o">=</span> <span class="nb">locals</span><span class="p">()</span>
         <span class="k">del</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;self&quot;</span><span class="p">]</span>
@@ -1966,6 +1971,7 @@ in logs. Used to resolve ambiguity when the actual command name is a
 scripting language.</li>
 <li>Set <code>pass_fds</code> to pass open file descriptors to the command.</li>
 <li>Set <code>pass_fds_close</code> to True to auto-close the <code>pass_fds</code>.</li>
+<li>Set <code>write_mode</code> to True when using process substitution for writing.</li>
 </ul>
 </div>
 

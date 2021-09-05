@@ -123,6 +123,14 @@
     <span class="k">return</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="p">(</span><span class="n">shellous</span><span class="o">.</span><span class="n">Command</span><span class="p">,</span> <span class="n">shellous</span><span class="o">.</span><span class="n">Pipeline</span><span class="p">))</span>
 
 
+<span class="k">def</span> <span class="nf">_is_write_mode</span><span class="p">(</span><span class="n">cmd</span><span class="p">):</span>
+    <span class="s2">&quot;Return true if command/pipeline has write_mode set.&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">shellous</span><span class="o">.</span><span class="n">Pipeline</span><span class="p">):</span>
+        <span class="c1"># Pipelines need to check both the last/first commands.</span>
+        <span class="k">return</span> <span class="n">cmd</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">write_mode</span> <span class="ow">or</span> <span class="n">cmd</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">write_mode</span>
+    <span class="k">return</span> <span class="n">cmd</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">write_mode</span>
+
+
 <span class="k">class</span> <span class="nc">_RunOptions</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;_RunOptions is context manager to assist in running a command.</span>
 
@@ -184,9 +192,16 @@
                 <span class="k">continue</span>
 
             <span class="p">(</span><span class="n">read_fd</span><span class="p">,</span> <span class="n">write_fd</span><span class="p">)</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">pipe</span><span class="p">()</span>
-            <span class="n">new_args</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;/dev/fd/</span><span class="si">{</span><span class="n">read_fd</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-            <span class="n">pass_fds</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">read_fd</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">subcmds</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">arg</span><span class="o">.</span><span class="n">stdout</span><span class="p">(</span><span class="n">write_fd</span><span class="p">,</span> <span class="n">close</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">_is_write_mode</span><span class="p">(</span><span class="n">arg</span><span class="p">):</span>
+                <span class="n">new_args</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;/dev/fd/</span><span class="si">{</span><span class="n">write_fd</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">pass_fds</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">write_fd</span><span class="p">)</span>
+                <span class="n">subcmd</span> <span class="o">=</span> <span class="n">arg</span><span class="o">.</span><span class="n">stdin</span><span class="p">(</span><span class="n">read_fd</span><span class="p">,</span> <span class="n">close</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">new_args</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;/dev/fd/</span><span class="si">{</span><span class="n">read_fd</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">pass_fds</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">read_fd</span><span class="p">)</span>
+                <span class="n">subcmd</span> <span class="o">=</span> <span class="n">arg</span><span class="o">.</span><span class="n">stdout</span><span class="p">(</span><span class="n">write_fd</span><span class="p">,</span> <span class="n">close</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">subcmds</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">subcmd</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">command</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">command</span><span class="o">.</span><span class="n">_replace_args</span><span class="p">(</span><span class="n">new_args</span><span class="p">)</span><span class="o">.</span><span class="n">set</span><span class="p">(</span>
             <span class="n">pass_fds</span><span class="o">=</span><span class="n">pass_fds</span><span class="p">,</span>
@@ -444,7 +459,7 @@
                     <span class="o">**</span><span class="n">opts</span><span class="o">.</span><span class="n">kwd_args</span><span class="p">,</span>
                 <span class="p">)</span>
 
-                <span class="c1"># Tee up the process substitution commands (if any).</span>
+                <span class="c1"># Launch the process substitution commands (if any).</span>
                 <span class="k">for</span> <span class="n">cmd</span> <span class="ow">in</span> <span class="n">opts</span><span class="o">.</span><span class="n">subcmds</span><span class="p">:</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">add_task</span><span class="p">(</span><span class="n">cmd</span><span class="o">.</span><span class="n">coro</span><span class="p">(),</span> <span class="s2">&quot;procsub&quot;</span><span class="p">)</span>
 
@@ -604,7 +619,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">capturing</span> <span class="o">=</span> <span class="n">capturing</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">encoding</span> <span class="o">=</span> <span class="n">pipe</span><span class="o">.</span><span class="n">commands</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">encoding</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">encoding</span> <span class="o">=</span> <span class="n">pipe</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">encoding</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">stdin</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">stdout</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">stderr</span> <span class="o">=</span> <span class="kc">None</span>
@@ -768,7 +783,7 @@
 
 <span class="k">async</span> <span class="k">def</span> <span class="nf">run_cmd</span><span class="p">(</span><span class="n">command</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">_run_future</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="s2">&quot;Run a command.&quot;</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">_run_future</span> <span class="ow">and</span> <span class="n">command</span><span class="o">.</span><span class="n">multiple_capture</span><span class="p">:</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">_run_future</span> <span class="ow">and</span> <span class="n">_is_multiple_capture</span><span class="p">(</span><span class="n">command</span><span class="p">):</span>
         <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;run_cmd: multiple capture requires &#39;async with&#39;&quot;</span><span class="p">)</span>
         <span class="n">_cleanup</span><span class="p">(</span><span class="n">command</span><span class="p">)</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;multiple capture requires &#39;async with&#39;&quot;</span><span class="p">)</span>
@@ -796,6 +811,13 @@
     <span class="k">async</span> <span class="k">with</span> <span class="n">run</span><span class="p">:</span>
         <span class="k">pass</span>
     <span class="k">return</span> <span class="n">run</span><span class="o">.</span><span class="n">result</span><span class="p">()</span>
+
+
+<span class="k">def</span> <span class="nf">_is_multiple_capture</span><span class="p">(</span><span class="n">cmd</span><span class="p">):</span>
+    <span class="s2">&quot;Return true if stdin is CAPTURE or both stdout and stderr are CAPTURE.&quot;</span>
+    <span class="k">return</span> <span class="n">cmd</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">input</span> <span class="o">==</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">CAPTURE</span> <span class="ow">or</span> <span class="p">(</span>
+        <span class="n">cmd</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">output</span> <span class="o">==</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">CAPTURE</span> <span class="ow">and</span> <span class="n">cmd</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">error</span> <span class="o">==</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">CAPTURE</span>
+    <span class="p">)</span>
 
 
 <span class="k">def</span> <span class="nf">_cleanup</span><span class="p">(</span><span class="n">command</span><span class="p">):</span>
@@ -981,7 +1003,7 @@
                     <span class="o">**</span><span class="n">opts</span><span class="o">.</span><span class="n">kwd_args</span><span class="p">,</span>
                 <span class="p">)</span>
 
-                <span class="c1"># Tee up the process substitution commands (if any).</span>
+                <span class="c1"># Launch the process substitution commands (if any).</span>
                 <span class="k">for</span> <span class="n">cmd</span> <span class="ow">in</span> <span class="n">opts</span><span class="o">.</span><span class="n">subcmds</span><span class="p">:</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">add_task</span><span class="p">(</span><span class="n">cmd</span><span class="o">.</span><span class="n">coro</span><span class="p">(),</span> <span class="s2">&quot;procsub&quot;</span><span class="p">)</span>
 
@@ -1271,7 +1293,7 @@ result = run.result()
         <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">capturing</span> <span class="o">=</span> <span class="n">capturing</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">encoding</span> <span class="o">=</span> <span class="n">pipe</span><span class="o">.</span><span class="n">commands</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">encoding</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">encoding</span> <span class="o">=</span> <span class="n">pipe</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">encoding</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">stdin</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">stdout</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">stderr</span> <span class="o">=</span> <span class="kc">None</span>
@@ -1464,7 +1486,7 @@ result = run.result()
         <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">capturing</span> <span class="o">=</span> <span class="n">capturing</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">encoding</span> <span class="o">=</span> <span class="n">pipe</span><span class="o">.</span><span class="n">commands</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">encoding</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">encoding</span> <span class="o">=</span> <span class="n">pipe</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">encoding</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">stdin</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">stdout</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">stderr</span> <span class="o">=</span> <span class="kc">None</span>
@@ -1524,7 +1546,7 @@ client needs to access <code>stdin</code> and <code>stderr</code> streams.</p>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span><span class="k">async</span> <span class="k">def</span> <span class="nf">run_cmd</span><span class="p">(</span><span class="n">command</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">_run_future</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="s2">&quot;Run a command.&quot;</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">_run_future</span> <span class="ow">and</span> <span class="n">command</span><span class="o">.</span><span class="n">multiple_capture</span><span class="p">:</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">_run_future</span> <span class="ow">and</span> <span class="n">_is_multiple_capture</span><span class="p">(</span><span class="n">command</span><span class="p">):</span>
         <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;run_cmd: multiple capture requires &#39;async with&#39;&quot;</span><span class="p">)</span>
         <span class="n">_cleanup</span><span class="p">(</span><span class="n">command</span><span class="p">)</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;multiple capture requires &#39;async with&#39;&quot;</span><span class="p">)</span>
