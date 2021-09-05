@@ -82,14 +82,14 @@ async def report_orphan_tasks():
 @contextlib.contextmanager
 def _check_open_fds():
     "Check for growth in number of open file descriptors."
-    initial_count = _count_fds()
+    initial_set = _get_fds()
     yield
-    final_count = _count_fds()
-    assert final_count == initial_count
+    extra_fds = _get_fds() - initial_set
+    assert not extra_fds, f"file descriptors still open: {extra_fds}"
 
 
-def _count_fds():
-    "Return number of open file descriptors. (Not implemented on Windows)."
+def _get_fds():
+    "Return set of open file descriptors. (Not implemented on Windows)."
     if sys.platform == "win32" or loop_type == "uvloop":
-        return 0
-    return len(os.listdir("/dev/fd"))
+        return set()
+    return set(os.listdir("/dev/fd"))

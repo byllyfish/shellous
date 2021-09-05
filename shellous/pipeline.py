@@ -44,21 +44,23 @@ class Pipeline:
 
     def stdin(self, input_, *, close=False):
         "Set stdin on the first command of the pipeline."
-        if not self.commands:
-            raise ValueError("invalid pipeline")
-        new_first = self.commands[0].stdin(input_, close=False)
+        new_first = self.commands[0].stdin(input_, close=close)
         new_commands = (new_first,) + self.commands[1:]
         return dataclasses.replace(self, commands=new_commands)
 
     def stdout(self, output, *, append=False, close=False):
         "Set stdout on the last command of the pipeline."
-        if not self.commands:
-            raise ValueError("invalid pipeline")
         new_last = self.commands[-1].stdout(output, append=append, close=close)
         new_commands = self.commands[0:-1] + (new_last,)
         return dataclasses.replace(self, commands=new_commands)
 
     # FIXME: add stderr method
+
+    def _set_write_mode(self):
+        "Set write_mode=True on last command of the pipeline."
+        new_last = self.commands[-1].set(write_mode=True)
+        new_commands = self.commands[0:-1] + (new_last,)
+        return dataclasses.replace(self, commands=new_commands)
 
     def task(self):
         "Wrap the command in a new asyncio task."
@@ -124,6 +126,10 @@ class Pipeline:
         if isinstance(rhs, STDOUT_APPEND_TYPES):
             return self.stdout(rhs, append=True)
         return NotImplemented
+
+    def __invert__(self):
+        "Set write_mode=True option on last command of pipeline."
+        return self._set_write_mode()
 
     def __await__(self):
         return self.coro().__await__()
