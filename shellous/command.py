@@ -372,15 +372,13 @@ class Command:
         del kwargs["self"]
         return Command(self.args, self.options.set(kwargs))
 
-    def set_args(self, new_args):
-        """Return command with replaced arguments.
+    def _replace_args(self, new_args):
+        """Return new command with arguments replaced by `new_args`.
 
-        Arguments are not type-checked by the context. Program name must be the
+        Arguments are NOT type-checked by the context. Program name must be the
         exact same object.
         """
-        if not new_args:
-            raise ValueError("Command must include program name")
-
+        assert new_args
         assert new_args[0] is self.args[0]
         return Command(tuple(new_args), self.options)
 

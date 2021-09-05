@@ -155,7 +155,7 @@ def test_dict_arg(sh):
         sh("echo", dict(a="b"))
 
 
-def test_set_arg(sh):
+def test_set_type_as_arg(sh):
     """Test passing a set as an argument.
 
     This syntax is reserved.
@@ -250,3 +250,15 @@ def test_arg_checks_append(sh):
 
     with pytest.raises(TypeError, match="append"):
         echo.stdout(DEVNULL, append=True)
+
+
+def test_replace_args_method(sh):
+    "Test the Command set_args method."
+    echo = sh("echo", 1, 2, 3)
+    cmd = echo._replace_args(("echo", "4", "5"))
+    assert cmd == sh("echo", "4", "5")
+
+    # _replace_args does not stringify anything.
+    cmd = cmd._replace_args(("echo", 6))
+    assert cmd.args == ("echo", 6)
+    assert cmd.options == echo.options

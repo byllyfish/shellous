@@ -90,7 +90,7 @@ class _RunOptions:
             pass_fds.append(read_fd)
             self.subcmds.append(arg.stdout(write_fd, close=True))
 
-        self.command = self.command.set_args(new_args).set(
+        self.command = self.command._replace_args(new_args).set(
             pass_fds=pass_fds,
             pass_fds_close=True,
         )

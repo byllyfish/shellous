@@ -501,3 +501,10 @@ async def test_pipe_with_exception_in_middle(env_cmd, tr_cmd):
         async with cmd.run():
             raise ValueError(1)
     # report_orphan_tasks
+
+
+async def test_process_substitution(echo_cmd, cat_cmd):
+    "Test process substitution."
+    cmd = cat_cmd(echo_cmd("abc"))
+    result = await cmd
+    assert result == "abc"
