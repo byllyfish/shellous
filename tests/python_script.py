@@ -20,8 +20,13 @@ if SHELLOUS_CMD == "echo":
     _write(data)
 
 elif SHELLOUS_CMD == "cat":
-    while data := sys.stdin.buffer.read(4096):
-        _write(data)
+    if len(sys.argv) > 1:
+        with open(sys.argv[1], "rb") as afile:
+            while data := afile.read(4096):
+                _write(data)
+    else:
+        while data := sys.stdin.buffer.read(4096):
+            _write(data)
 
 elif SHELLOUS_CMD == "sleep":
     time.sleep(float(sys.argv[1]))

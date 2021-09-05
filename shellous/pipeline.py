@@ -17,6 +17,11 @@ class Pipeline:
 
     commands: Any = ()
 
+    @staticmethod
+    def create(*commands):
+        "Create a new Pipeline."
+        return Pipeline(commands)
+
     def __post_init__(self):
         "Validate the pipeline."
         if len(self.commands) == 0:
@@ -37,21 +42,23 @@ class Pipeline:
         "Return true if pipe uses multiple capture."
         return any(cmd.multiple_capture for cmd in self.commands)
 
-    def stdin(self, input_):
+    def stdin(self, input_, *, close=False):
         "Set stdin on the first command of the pipeline."
         if not self.commands:
             raise ValueError("invalid pipeline")
-        new_first = self.commands[0].stdin(input_)
+        new_first = self.commands[0].stdin(input_, close=False)
         new_commands = (new_first,) + self.commands[1:]
         return dataclasses.replace(self, commands=new_commands)
 
-    def stdout(self, output, *, append=False):
+    def stdout(self, output, *, append=False, close=False):
         "Set stdout on the last command of the pipeline."
         if not self.commands:
             raise ValueError("invalid pipeline")
-        new_last = self.commands[-1].stdout(output, append=append)
+        new_last = self.commands[-1].stdout(output, append=append, close=close)
         new_commands = self.commands[0:-1] + (new_last,)
         return dataclasses.replace(self, commands=new_commands)
+
+    # FIXME: add stderr method
 
     def task(self):
         "Wrap the command in a new asyncio task."
@@ -59,6 +66,10 @@ class Pipeline:
             run_pipe(self),
             name=f"{self.name}-{id(self)}",
         )
+
+    def coro(self):
+        "Return coroutine object for pipeline."
+        return run_pipe(self)
 
     def run(self):
         """Return a `Runner` to help run the pipeline incrementally.
@@ -115,4 +126,4 @@ class Pipeline:
         return NotImplemented
 
     def __await__(self):
-        return run_pipe(self).__await__()
+        return self.coro().__await__()

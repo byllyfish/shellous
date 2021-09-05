@@ -5,6 +5,7 @@ import io
 import os
 import sys
 
+import shellous
 import shellous.redirect as redir
 from shellous.harvest import harvest, harvest_results
 from shellous.log import LOGGER, log_method
@@ -21,6 +22,10 @@ _CLOSE_TIMEOUT = 0.25
 
 def _is_cancelled(ex):
     return isinstance(ex, asyncio.CancelledError)
+
+
+def _is_cmd(cmd):
+    return isinstance(cmd, (shellous.Command, shellous.Pipeline))
 
 
 class _RunOptions:
@@ -43,6 +48,7 @@ class _RunOptions:
         self.input_bytes = None
         self.args = None
         self.kwd_args = None
+        self.subcmds = []
 
     def close_fds(self):
         "Close all open file descriptors in `open_fds`."
@@ -51,7 +57,8 @@ class _RunOptions:
     def __enter__(self):
         "Set up I/O redirections."
         try:
-            self._setup()
+            self._setup_proc_sub()
+            self._setup_redirects()
             return self
         except Exception as ex:
             LOGGER.warning("_RunOptions.enter %r ex=%r", self.command.name, ex)
@@ -65,7 +72,33 @@ class _RunOptions:
                 "_RunOptions.exit %r exc_value=%r", self.command.name, exc_value
             )
 
-    def _setup(self):
+    def _setup_proc_sub(self):
+        "Set up process substitution."
+        if not any(_is_cmd(arg) for arg in self.command.args):
+            return
+
+        if sys.platform == "win32":
+            raise RuntimeError("process substitution not supported on Windows")
+
+        new_args = []
+        pass_fds = []
+
+        for arg in self.command.args:
+            if not _is_cmd(arg):
+                new_args.append(arg)
+                continue
+
+            (read_fd, write_fd) = os.pipe()
+            new_args.append(f"/dev/fd/{read_fd}")
+            pass_fds.append(read_fd)
+            self.subcmds.append(arg.stdout(write_fd, close=True))
+
+        self.command = self.command._replace_args(new_args).set(
+            pass_fds=pass_fds,
+            pass_fds_close=True,
+        )
+
+    def _setup_redirects(self):
         "Set up I/O redirections."
         options = self.command.options
 
@@ -95,6 +128,11 @@ class _RunOptions:
             "stderr": stderr,
             "env": options.merge_env(),
         }
+
+        if options.pass_fds:
+            self.kwd_args["pass_fds"] = options.pass_fds
+            if options.pass_fds_close:
+                self.open_fds.extend(options.pass_fds)
 
     def _setup_input(self, input_, close, encoding):
         "Set up process input."
@@ -305,10 +343,15 @@ class Runner:
         try:
             # Set up subprocess arguments and launch subprocess.
             with self.options as opts:
+                # Launch the main subprocess.
                 self.proc = await asyncio.create_subprocess_exec(
                     *opts.args,
                     **opts.kwd_args,
                 )
+
+                # Tee up the process substitution commands (if any).
+                for cmd in opts.subcmds:
+                    self.add_task(cmd.coro(), "procsub")
 
             # Add a task to monitor for when the process finishes.
             self.add_task(self.proc.wait(), "proc.wait")
@@ -411,7 +454,7 @@ class Runner:
             # will raise a BrokenPipeError if not all input was properly written.
             if self.proc.stdin is not None:
                 self.proc.stdin.close()
-                await harvest(
+                await harvest(  # FIXME: retry if cancelled?
                     self.proc.stdin.wait_closed(),
                     timeout=_CLOSE_TIMEOUT,
                     trustee=self,
@@ -631,6 +674,8 @@ class PipeRunner:  # pylint: disable=too-many-instance-attributes
 async def run_cmd(command, *, _run_future=None):
     "Run a command."
     if not _run_future and command.multiple_capture:
+        LOGGER.warning("run_cmd: multiple capture requires 'async with'")
+        _cleanup(command)
         raise ValueError("multiple capture requires 'async with'")
 
     output_bytes = None
@@ -656,3 +701,23 @@ async def run_pipe(pipe):
     async with run:
         pass
     return run.result()
+
+
+def _cleanup(command):
+    "Close remaining file descriptors that need to be closed."
+
+    def _add_close(close, fd):
+        if close:
+            if isinstance(fd, (int, io.IOBase)):
+                open_fds.append(fd)
+
+    open_fds = []
+
+    _add_close(command.options.input_close, command.options.input)
+    _add_close(command.options.output_close, command.options.output)
+    _add_close(command.options.error_close, command.options.error)
+
+    # if command.options.pass_fds_close:
+    #    open_fds.extend(command.options.pass_fds)
+
+    close_fds(open_fds)

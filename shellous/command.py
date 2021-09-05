@@ -14,6 +14,7 @@ from typing import Any, Optional, TypeVar, Union
 
 from immutables import Map as ImmutableDict
 
+import shellous
 from shellous.redirect import STDIN_TYPES, STDOUT_APPEND_TYPES, STDOUT_TYPES, Redirect
 from shellous.runner import Runner, run_cmd
 from shellous.util import coerce_env
@@ -86,6 +87,12 @@ class Options:  # pylint: disable=too-many-instance-attributes
 
     alt_name: Optional[str] = None
     "Alternate name for the command to use when logging."
+
+    pass_fds: tuple[int] = ()
+    "File descriptors to pass to the command."
+
+    pass_fds_close: bool = False
+    "True if pass_fds should be closed after subprocess launch."
 
     def merge_env(self):
         "Return our `env` merged with the global environment."
@@ -192,6 +199,8 @@ class Context:
         cancel_timeout=_UNSET,
         cancel_signal=_UNSET,
         alt_name=_UNSET,
+        pass_fds=_UNSET,
+        pass_fds_closed=_UNSET,
     ):
         "Return new context with custom options set."
         kwargs = locals()
@@ -227,11 +236,13 @@ class Context:
         """
         result = []
         for arg in args:
-            if isinstance(arg, (str, bytes, bytearray, os.PathLike)):
+            if isinstance(
+                arg, (str, bytes, bytearray, os.PathLike, Command, shellous.Pipeline)
+            ):
                 result.append(arg)
             elif isinstance(arg, (list, tuple)):
                 result.extend(self._coerce(arg))
-            elif isinstance(arg, (Command, dict, set)):
+            elif isinstance(arg, (dict, set)):
                 raise NotImplementedError("syntax is reserved")
             elif arg is Ellipsis:
                 raise NotImplementedError("syntax is reserved")
@@ -245,14 +256,6 @@ class Context:
 def context() -> Context:
     "Construct a new execution context."
     return Context()
-
-
-def pipeline(*commands):
-    "Construct a new Pipeline object."
-    # pylint: disable=import-outside-toplevel,cyclic-import
-    from shellous.pipeline import Pipeline
-
-    return Pipeline(commands)
 
 
 @dataclass(frozen=True)
@@ -340,6 +343,8 @@ class Command:
         cancel_timeout: Unset[float] = _UNSET,
         cancel_signal: Unset[Any] = _UNSET,
         alt_name: Unset[Optional[str]] = _UNSET,
+        pass_fds: Unset[tuple[int]] = _UNSET,
+        pass_fds_close: Unset[bool] = _UNSET,
     ):
         """Return new command with custom options set.
 
@@ -360,17 +365,33 @@ class Command:
         - Set `alt_name` to an alternative name of the command to be displayed
         in logs. Used to resolve ambiguity when the actual command name is a
         scripting language.
+        - Set `pass_fds` to pass open file descriptors to the command.
+        - Set `pass_fds_close` to True to auto-close the `pass_fds`.
         """
         kwargs = locals()
         del kwargs["self"]
         return Command(self.args, self.options.set(kwargs))
 
+    def _replace_args(self, new_args):
+        """Return new command with arguments replaced by `new_args`.
+
+        Arguments are NOT type-checked by the context. Program name must be the
+        exact same object.
+        """
+        assert new_args
+        assert new_args[0] is self.args[0]
+        return Command(tuple(new_args), self.options)
+
     def task(self, *, _run_future=None):
         "Wrap the command in a new asyncio task."
         return asyncio.create_task(
-            run_cmd(self, _run_future=_run_future),
+            self.coro(_run_future=_run_future),
             name=f"{self.name}-{id(self)}",
         )
+
+    def coro(self, *, _run_future=None):
+        "Return coroutine object to run awaitable."
+        return run_cmd(self, _run_future=_run_future)
 
     def run(self):
         """Return a `Runner` to run the process incrementally.
@@ -386,7 +407,7 @@ class Command:
 
     def __await__(self):
         "Run process and return the standard output."
-        return run_cmd(self).__await__()
+        return self.coro().__await__()
 
     def __call__(self, *args):
         "Apply more arguments to the end of the command."
@@ -406,7 +427,7 @@ class Command:
         "Bitwise or operator is used to build pipelines."
         if isinstance(rhs, STDOUT_TYPES):
             return self.stdout(rhs)
-        return pipeline(self) | rhs
+        return shellous.Pipeline.create(self) | rhs
 
     def __ror__(self, lhs):
         "Bitwise or operator is used to build pipelines."
