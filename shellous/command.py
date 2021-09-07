@@ -259,11 +259,6 @@ class Context:
         return tuple(result)
 
 
-def context() -> Context:
-    "Construct a new execution context."
-    return Context()
-
-
 @dataclass(frozen=True)
 class Command:
     """A Command instance is lightweight and immutable object that specifies the
