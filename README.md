@@ -112,7 +112,7 @@ To redirect stdin using a file's contents, use a `Path` object from `pathlib`.
 >>> from pathlib import Path
 >>> cmd = Path("README.md") | sh("wc", "-l")
 >>> await cmd
-'     230\n'
+'     252\n'
 ```
 
 [More on redirection...](docs/redirection.md)
@@ -180,6 +180,28 @@ You can create a pipeline by combining commands using the `|` operator.
 >>> pipe = sh("ls") | sh("grep", "README")
 >>> await pipe
 'README.md\n'
+```
+
+Process Substitution (Unix Only)
+--------------------------------
+
+You can pass a shell command as an argument to another.
+
+```python-repl
+>>> cmd = sh("grep", "README", sh("ls"))
+>>> await cmd
+'README.md\n'
+```
+
+Use ~ to write to a command instead.
+
+```python-repl
+>>> buf = bytearray()
+>>> cmd = sh("ls") | sh("tee", ~sh("grep", "README") | buf) | shellous.DEVNULL
+>>> await cmd
+''
+>>> buf
+bytearray(b'README.md\n')
 ```
 
 Async With & For
