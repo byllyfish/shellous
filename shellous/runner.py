@@ -108,6 +108,7 @@ class _RunOptions:
 
             self.subcmds.append(subcmd)
 
+        # pylint: disable=protected-access
         self.command = self.command._replace_args(new_args).set(
             pass_fds=pass_fds,
             pass_fds_close=True,
@@ -458,12 +459,12 @@ class Runner:
         # transport.
         if self.proc.returncode is None:
             LOGGER.critical("Runner._close process still running %r", self.proc)
-            self.proc._transport.close()
+            self.proc._transport.close()  # pylint: disable=protected-access
             return
 
         try:
             # Make sure the transport is closed (for asyncio and uvloop).
-            self.proc._transport.close()
+            self.proc._transport.close()  # pylint: disable=protected-access
 
             # Make sure that original stdin is properly closed. `wait_closed`
             # will raise a BrokenPipeError if not all input was properly written.
@@ -729,10 +730,10 @@ def _is_multiple_capture(cmd):
 def _cleanup(command):
     "Close remaining file descriptors that need to be closed."
 
-    def _add_close(close, fd):
+    def _add_close(close, fdesc):
         if close:
-            if isinstance(fd, (int, io.IOBase)):
-                open_fds.append(fd)
+            if isinstance(fdesc, (int, io.IOBase)):
+                open_fds.append(fdesc)
 
     open_fds = []
 
@@ -740,7 +741,7 @@ def _cleanup(command):
     _add_close(command.options.output_close, command.options.output)
     _add_close(command.options.error_close, command.options.error)
 
-    # if command.options.pass_fds_close:
-    #    open_fds.extend(command.options.pass_fds)
+    if command.options.pass_fds_close:
+        open_fds.extend(command.options.pass_fds)
 
     close_fds(open_fds)

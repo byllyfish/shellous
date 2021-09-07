@@ -173,22 +173,22 @@ class Context:
             # Initialize `context` in Options to `self`.
             object.__setattr__(self, "options", Options(self))
 
-    def stdin(self, input_, *, close=False):
+    def stdin(self, input_, *, close=False) -> "Context":
         "Return new context with updated `input` settings."
         new_options = self.options.set_stdin(input_, close)
         return Context(new_options)
 
-    def stdout(self, output, *, append=False, close=False):
+    def stdout(self, output, *, append=False, close=False) -> "Context":
         "Return new context with updated `output` settings."
         new_options = self.options.set_stdout(output, append, close)
         return Context(new_options)
 
-    def stderr(self, error, *, append=False, close=False):
+    def stderr(self, error, *, append=False, close=False) -> "Context":
         "Return new context with updated `error` settings."
         new_options = self.options.set_stderr(error, append, close)
         return Context(new_options)
 
-    def env(self, **kwds):
+    def env(self, **kwds) -> "Context":
         """Return new context with augmented environment."""
         new_options = self.options.set_env(kwds)
         return Context(new_options)
@@ -207,7 +207,7 @@ class Context:
         pass_fds=_UNSET,
         pass_fds_closed=_UNSET,
         write_mode=_UNSET,
-    ):
+    ) -> "Context":
         "Return new context with custom options set."
         kwargs = locals()
         del kwargs["self"]
@@ -284,7 +284,7 @@ class Command:
     ```
     """
 
-    args: tuple[Union[str, bytes, os.PathLike]]
+    args: tuple[Union[str, bytes, os.PathLike], ...]
     "Command arguments including the program name as first argument."
 
     options: Options
@@ -309,24 +309,24 @@ class Command:
             return f"...{name[-31:]}"
         return name
 
-    def stdin(self, input_, *, close=False):
+    def stdin(self, input_, *, close=False) -> "Command":
         "Pass `input` to command's standard input."
         new_options = self.options.set_stdin(input_, close)
         return Command(self.args, new_options)
 
-    def stdout(self, output, *, append=False, close=False):
+    def stdout(self, output, *, append=False, close=False) -> "Command":
         "Redirect standard output to `output`."
         _check_args(output, append)
         new_options = self.options.set_stdout(output, append, close)
         return Command(self.args, new_options)
 
-    def stderr(self, error, *, append=False, close=False):
+    def stderr(self, error, *, append=False, close=False) -> "Command":
         "Redirect standard error to `error`."
         _check_args(error, append)
         new_options = self.options.set_stderr(error, append, close)
         return Command(self.args, new_options)
 
-    def env(self, **kwds):
+    def env(self, **kwds) -> "Command":
         """Return new command with augmented environment."""
         new_options = self.options.set_env(kwds)
         return Command(self.args, new_options)
@@ -345,7 +345,7 @@ class Command:
         pass_fds: Unset[Iterable[int]] = _UNSET,
         pass_fds_close: Unset[bool] = _UNSET,
         write_mode: Unset[bool] = _UNSET,
-    ):
+    ) -> "Command":
         """Return new command with custom options set.
 
         - Set `inherit_env` to False to prevent the command from inheriting
@@ -394,7 +394,7 @@ class Command:
         "Return coroutine object to run awaitable."
         return run_cmd(self, _run_future=_run_future)
 
-    def run(self):
+    def run(self) -> Runner:
         """Return a `Runner` to run the process incrementally.
 
         ```

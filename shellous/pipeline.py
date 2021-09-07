@@ -2,11 +2,9 @@
 
 import asyncio
 import dataclasses
-import os
 from dataclasses import dataclass
-from typing import Any
 
-from shellous.command import Command
+import shellous
 from shellous.redirect import STDIN_TYPES, STDOUT_APPEND_TYPES, STDOUT_TYPES
 from shellous.runner import PipeRunner, run_pipe
 
@@ -15,10 +13,10 @@ from shellous.runner import PipeRunner, run_pipe
 class Pipeline:
     "A Pipeline is a sequence of commands."
 
-    commands: Any = ()
+    commands: tuple[shellous.Command, ...] = ()
 
     @staticmethod
-    def create(*commands):
+    def create(*commands) -> "Pipeline":
         "Create a new Pipeline."
         return Pipeline(commands)
 
@@ -33,23 +31,27 @@ class Pipeline:
         return "|".join(cmd.name for cmd in self.commands)
 
     @property
-    def options(self):
+    def options(self) -> shellous.Options:
         "Return last command's options."
         return self.commands[-1].options
 
-    def stdin(self, input_, *, close=False):
+    def stdin(self, input_, *, close=False) -> "Pipeline":
         "Set stdin on the first command of the pipeline."
         new_first = self.commands[0].stdin(input_, close=close)
         new_commands = (new_first,) + self.commands[1:]
         return dataclasses.replace(self, commands=new_commands)
 
-    def stdout(self, output, *, append=False, close=False):
+    def stdout(self, output, *, append=False, close=False) -> "Pipeline":
         "Set stdout on the last command of the pipeline."
         new_last = self.commands[-1].stdout(output, append=append, close=close)
         new_commands = self.commands[0:-1] + (new_last,)
         return dataclasses.replace(self, commands=new_commands)
 
-    # FIXME: add stderr method
+    def stderr(self, error, *, append=False, close=False) -> "Pipeline":
+        "Set stderr on the last command of the pipeline."
+        new_last = self.commands[-1].stderr(error, append=append, close=close)
+        new_commands = self.commands[0:-1] + (new_last,)
+        return dataclasses.replace(self, commands=new_commands)
 
     def _set_write_mode(self):
         "Set write_mode=True on last command of the pipeline."
@@ -68,7 +70,7 @@ class Pipeline:
         "Return coroutine object for pipeline."
         return run_pipe(self)
 
-    def run(self):
+    def run(self) -> "PipeRunner":
         """Return a `Runner` to help run the pipeline incrementally.
 
         ```
@@ -81,7 +83,7 @@ class Pipeline:
         return PipeRunner(self, capturing=True)
 
     def _add(self, item):
-        if isinstance(item, Command):
+        if isinstance(item, shellous.Command):
             return dataclasses.replace(self, commands=self.commands + (item,))
         if isinstance(item, Pipeline):
             return dataclasses.replace(
@@ -106,7 +108,7 @@ class Pipeline:
         return context._pipe_apply(self, args)
 
     def __or__(self, rhs):
-        if isinstance(rhs, (Command, Pipeline)):
+        if isinstance(rhs, (shellous.Command, Pipeline)):
             return self._add(rhs)
         if isinstance(rhs, STDOUT_TYPES):
             return self.stdout(rhs)
