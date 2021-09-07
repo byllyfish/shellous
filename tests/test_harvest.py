@@ -119,3 +119,50 @@ async def test_harvest_wait_timeout():
 
     assert tasks[0].done()
     assert tasks[0].cancelled()
+
+
+async def test_harvest_wait_cancel_finish():
+    "Test the harvest_wait function with cancel_finish=True."
+
+    _finished = False
+
+    async def _coro1():
+        nonlocal _finished
+        await asyncio.sleep(0.1)
+        _finished = True
+
+    async def _harvest():
+        tasks = [asyncio.create_task(_coro1())]
+        await harvest_wait(tasks, cancel_finish=True)
+
+    task = asyncio.create_task(_harvest())
+
+    await asyncio.sleep(0)
+    task.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await task
+
+    assert _finished
+
+
+async def test_harvest_cancel_finish():
+    "Test the harvest function with cancel_finish=True."
+
+    _finished = False
+
+    async def _coro1():
+        nonlocal _finished
+        await asyncio.sleep(0.1)
+        _finished = True
+
+    async def _harvest():
+        await harvest(_coro1(), cancel_finish=True)
+
+    task = asyncio.create_task(_harvest())
+
+    await asyncio.sleep(0)
+    task.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await task
+
+    assert _finished

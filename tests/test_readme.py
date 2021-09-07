@@ -130,6 +130,12 @@ def test_parse_readme():
         "await cmd",
         'pipe = sh("ls") | sh("grep", "README")',
         "await pipe",
+        'cmd = sh("grep", "README", sh("ls"))',
+        "await cmd",
+        "buf = bytearray()",
+        'cmd = sh("ls") | sh("tee", ~sh("grep", "README") | buf) | shellous.DEVNULL',
+        "await cmd",
+        "buf",
         "async with pipe.run() as run:\n"
         "  data = await run.stdout.readline()\n"
         "  print(data)\n",
