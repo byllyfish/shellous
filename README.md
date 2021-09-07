@@ -4,7 +4,7 @@ Async Processes and Pipelines
 [![PyPI](https://img.shields.io/pypi/v/shellous)](https://pypi.org/project/shellous/) [![CI](https://github.com/byllyfish/shellous/actions/workflows/ci.yml/badge.svg)](https://github.com/byllyfish/shellous/actions/workflows/ci.yml) [![codecov](https://codecov.io/gh/byllyfish/shellous/branch/main/graph/badge.svg?token=W44NZE89AW)](https://codecov.io/gh/byllyfish/shellous)
 
 shellous provides a concise API for running subprocesses using asyncio. It is 
-similar to and inspired by `sh`.
+similar to and inspired by [sh](https://pypi.org/project/sh/).
 
 ```python
 import asyncio
@@ -24,7 +24,7 @@ Benefits
 
 - Run programs asychronously in a single line.
 - Easily capture output or redirect stdin, stdout and stderr to files.
-- Easily construct pipelines.
+- Easily construct [pipelines](https://en.wikipedia.org/wiki/Pipeline_(Unix)) and use [process substitution](https://en.wikipedia.org/wiki/Process_substitution).
 - Runs on Linux, MacOS and Windows.
 
 Requirements
@@ -32,6 +32,7 @@ Requirements
 
 - Requires Python 3.9 or later.
 - Requires an asyncio event loop.
+- Process substitution requires a Unix system with /dev/fd support.
 
 Basic Usage
 -----------
@@ -112,7 +113,7 @@ To redirect stdin using a file's contents, use a `Path` object from `pathlib`.
 >>> from pathlib import Path
 >>> cmd = Path("README.md") | sh("wc", "-l")
 >>> await cmd
-'     252\n'
+'     253\n'
 ```
 
 [More on redirection...](docs/redirection.md)
