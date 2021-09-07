@@ -469,9 +469,10 @@ class Runner:
             # will raise a BrokenPipeError if not all input was properly written.
             if self.proc.stdin is not None:
                 self.proc.stdin.close()
-                await harvest(  # FIXME: retry if cancelled?
+                await harvest(
                     self.proc.stdin.wait_closed(),
                     timeout=_CLOSE_TIMEOUT,
+                    cancel_finish=True,  # finish `wait_closed` if cancelled
                     trustee=self,
                 )
 

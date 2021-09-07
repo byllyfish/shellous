@@ -8,7 +8,7 @@ from shellous.log import LOGGER
 _CANCEL_TIMEOUT = 10.0  # seconds to wait for cancelled task to finish
 
 
-async def harvest(*aws, timeout=None, trustee=None):
+async def harvest(*aws, timeout=None, trustee=None, cancel_finish=False):
     """Run a bunch of awaitables as tasks. Do not return results.
 
     After the harvest returns, all of the awaitables are guaranteed to be done.
@@ -24,11 +24,17 @@ async def harvest(*aws, timeout=None, trustee=None):
     `asyncio.TimeoutError`.
 
     If `harvest` is cancelled itself, all awaitables are cancelled and
-    consumed before raising `CancelledError`.
+    consumed before raising `CancelledError`. If `cancel_finish` is True, the
+    tasks are not cancelled, but allowed to finish.
     """
 
     tasks = [asyncio.ensure_future(item) for item in aws]
-    await harvest_wait(tasks, timeout=timeout, trustee=trustee)
+    await harvest_wait(
+        tasks,
+        timeout=timeout,
+        cancel_finish=cancel_finish,
+        trustee=trustee,
+    )
     _consume_exceptions(tasks)
     for task in tasks:
         if not task.cancelled():
@@ -67,7 +73,7 @@ async def harvest_results(*aws, timeout=None, trustee=None):
     return cancelled, [_to_result(task) for task in tasks]
 
 
-async def harvest_wait(tasks, *, timeout=None, trustee=None):
+async def harvest_wait(tasks, *, timeout=None, cancel_finish=False, trustee=None):
     """Wait for tasks to finish or raise an exception.
 
     After the harvest returns, all of the tasks are guaranteed to be done.
@@ -80,7 +86,8 @@ async def harvest_wait(tasks, *, timeout=None, trustee=None):
     `asyncio.TimeoutError`.
 
     If `harvest_wait` is cancelled itself, all tasks are cancelled and
-    consumed before raising `CancelledError`.
+    consumed before raising `CancelledError`. If `cancel_finish` is True,
+    the tasks are not cancelled, but allowed to finish.
     """
 
     try:
@@ -102,8 +109,12 @@ async def harvest_wait(tasks, *, timeout=None, trustee=None):
 
     except asyncio.CancelledError:
         # Cancel all tasks and wait for them to finish.
-        LOGGER.info("harvest_wait cancelled trustee=%r", trustee)
-        await _cancel_wait(tasks, trustee)
+        LOGGER.info(
+            "harvest_wait cancelled trustee=%r cancel_finish=%r",
+            trustee,
+            cancel_finish,
+        )
+        await _cancel_wait(tasks, trustee, cancel_finish)
         _consume_exceptions(tasks)
         raise
 
@@ -118,11 +129,13 @@ async def harvest_wait(tasks, *, timeout=None, trustee=None):
         raise asyncio.TimeoutError()
 
 
-async def _cancel_wait(tasks, trustee):
+async def _cancel_wait(tasks, trustee, cancel_finish=False):
     "Cancel tasks and wait for them to finish."
     try:
-        for task in tasks:
-            task.cancel()
+        if not cancel_finish:
+            # Cancel all tasks.
+            for task in tasks:
+                task.cancel()
 
         _, pending = await asyncio.wait(
             tasks,
