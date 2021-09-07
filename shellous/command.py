@@ -9,6 +9,7 @@ import dataclasses
 import enum
 import os
 import signal
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from typing import Any, Optional, TypeVar, Union
 
@@ -88,7 +89,7 @@ class Options:  # pylint: disable=too-many-instance-attributes
     alt_name: Optional[str] = None
     "Alternate name for the command to use when logging."
 
-    pass_fds: tuple[int] = ()
+    pass_fds: Iterable[int] = ()
     "File descriptors to pass to the command."
 
     pass_fds_close: bool = False
@@ -165,6 +166,7 @@ class Context:
     """Concrete class for an immutable execution context."""
 
     options: Options = None  # type: ignore
+    "Default command options."
 
     def __post_init__(self):
         if self.options is None:
@@ -282,8 +284,11 @@ class Command:
     ```
     """
 
-    args: Any
+    args: tuple[Union[str, bytes, os.PathLike]]
+    "Command arguments including the program name as first argument."
+
     options: Options
+    "Command options."
 
     def __post_init__(self):
         "Validate the command."
@@ -337,7 +342,7 @@ class Command:
         cancel_timeout: Unset[float] = _UNSET,
         cancel_signal: Unset[Any] = _UNSET,
         alt_name: Unset[Optional[str]] = _UNSET,
-        pass_fds: Unset[tuple[int]] = _UNSET,
+        pass_fds: Unset[Iterable[int]] = _UNSET,
         pass_fds_close: Unset[bool] = _UNSET,
         write_mode: Unset[bool] = _UNSET,
     ):
