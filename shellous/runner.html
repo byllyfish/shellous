@@ -564,9 +564,10 @@
             <span class="c1"># will raise a BrokenPipeError if not all input was properly written.</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">stdin</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
-                <span class="k">await</span> <span class="n">harvest</span><span class="p">(</span>  <span class="c1"># FIXME: retry if cancelled?</span>
+                <span class="k">await</span> <span class="n">harvest</span><span class="p">(</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">wait_closed</span><span class="p">(),</span>
                     <span class="n">timeout</span><span class="o">=</span><span class="n">_CLOSE_TIMEOUT</span><span class="p">,</span>
+                    <span class="n">cancel_finish</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># finish `wait_closed` if cancelled</span>
                     <span class="n">trustee</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span>
                 <span class="p">)</span>
 
@@ -1108,9 +1109,10 @@
             <span class="c1"># will raise a BrokenPipeError if not all input was properly written.</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">stdin</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
-                <span class="k">await</span> <span class="n">harvest</span><span class="p">(</span>  <span class="c1"># FIXME: retry if cancelled?</span>
+                <span class="k">await</span> <span class="n">harvest</span><span class="p">(</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">wait_closed</span><span class="p">(),</span>
                     <span class="n">timeout</span><span class="o">=</span><span class="n">_CLOSE_TIMEOUT</span><span class="p">,</span>
+                    <span class="n">cancel_finish</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># finish `wait_closed` if cancelled</span>
                     <span class="n">trustee</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span>
                 <span class="p">)</span>
 

@@ -40,6 +40,7 @@
     <li><a href="#redirecting-standard-output">Redirecting Standard Output</a></li>
     <li><a href="#redirecting-standard-error">Redirecting Standard Error</a></li>
     <li><a href="#pipelines">Pipelines</a></li>
+    <li><a href="#process-substitution-unix-only">Process Substitution (Unix Only)</a></li>
     <li><a href="#async-with-for">Async With &amp; For</a></li>
     <li><a href="#incomplete-results">Incomplete Results</a></li>
   </ul></li>
@@ -77,7 +78,7 @@ shellous    </h1>
 <p><a href="https://pypi.org/project/shellous/"><img src="https://img.shields.io/pypi/v/shellous" alt="PyPI" /></a> <a href="https://github.com/byllyfish/shellous/actions/workflows/ci.yml"><img src="https://github.com/byllyfish/shellous/actions/workflows/ci.yml/badge.svg" alt="CI" /></a> <a href="https://codecov.io/gh/byllyfish/shellous"><img src="https://codecov.io/gh/byllyfish/shellous/branch/main/graph/badge.svg?token=W44NZE89AW" alt="codecov" /></a></p>
 
 <p>shellous provides a concise API for running subprocesses using asyncio. It is 
-similar to and inspired by <code>sh</code>.</p>
+similar to and inspired by <a href="https://pypi.org/project/sh/">sh</a>.</p>
 
 <div class="codehilite"><pre><span></span><code><span class="kn">import</span> <span class="nn">asyncio</span>
 <span class="kn">import</span> <span class="nn">shellous</span>
@@ -96,7 +97,7 @@ similar to and inspired by <code>sh</code>.</p>
 <ul>
 <li>Run programs asychronously in a single line.</li>
 <li>Easily capture output or redirect stdin, stdout and stderr to files.</li>
-<li>Easily construct pipelines.</li>
+<li>Easily construct <a href="https://en.wikipedia.org/wiki/Pipeline_(Unix)">pipelines</a> and use <a href="https://en.wikipedia.org/wiki/Process_substitution">process substitution</a>.</li>
 <li>Runs on Linux, MacOS and Windows.</li>
 </ul>
 
@@ -105,6 +106,7 @@ similar to and inspired by <code>sh</code>.</p>
 <ul>
 <li>Requires Python 3.9 or later.</li>
 <li>Requires an asyncio event loop.</li>
+<li>Process substitution requires a Unix system with /dev/fd support.</li>
 </ul>
 
 <h2 id="basic-usage">Basic Usage</h2>
@@ -175,7 +177,7 @@ Traceback (most recent call last):
 <pre><code>&gt;&gt;&gt; from pathlib import Path
 &gt;&gt;&gt; cmd = Path("README.md") | sh("wc", "-l")
 &gt;&gt;&gt; await cmd
-'     230\n'
+'     253\n'
 </code></pre>
 
 <p><a href="docs/redirection.md">More on redirection...</a></p>
@@ -235,6 +237,25 @@ Traceback (most recent call last):
 <pre><code>&gt;&gt;&gt; pipe = sh("ls") | sh("grep", "README")
 &gt;&gt;&gt; await pipe
 'README.md\n'
+</code></pre>
+
+<h2 id="process-substitution-unix-only">Process Substitution (Unix Only)</h2>
+
+<p>You can pass a shell command as an argument to another.</p>
+
+<pre><code>&gt;&gt;&gt; cmd = sh("grep", "README", sh("ls"))
+&gt;&gt;&gt; await cmd
+'README.md\n'
+</code></pre>
+
+<p>Use ~ to write to a command instead.</p>
+
+<pre><code>&gt;&gt;&gt; buf = bytearray()
+&gt;&gt;&gt; cmd = sh("ls") | sh("tee", ~sh("grep", "README") | buf) | <a href="#DEVNULL">shellous.DEVNULL</a>
+&gt;&gt;&gt; await cmd
+''
+&gt;&gt;&gt; buf
+bytearray(b'README.md\n')
 </code></pre>
 
 <h2 id="async-with-for">Async With &amp; For</h2>
