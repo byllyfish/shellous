@@ -108,6 +108,7 @@ class _RunOptions:
 
             self.subcmds.append(subcmd)
 
+        # pylint: disable=protected-access
         self.command = self.command._replace_args(new_args).set(
             pass_fds=pass_fds,
             pass_fds_close=True,
@@ -458,12 +459,12 @@ class Runner:
         # transport.
         if self.proc.returncode is None:
             LOGGER.critical("Runner._close process still running %r", self.proc)
-            self.proc._transport.close()
+            self.proc._transport.close()  # pylint: disable=protected-access
             return
 
         try:
             # Make sure the transport is closed (for asyncio and uvloop).
-            self.proc._transport.close()
+            self.proc._transport.close()  # pylint: disable=protected-access
 
             # Make sure that original stdin is properly closed. `wait_closed`
             # will raise a BrokenPipeError if not all input was properly written.
@@ -522,7 +523,7 @@ class PipeRunner:  # pylint: disable=too-many-instance-attributes
 
         self.pipe = pipe
         self.cancelled = False
-        self.tasks = None
+        self.tasks = []
         self.results = None
         self.capturing = capturing
         self.encoding = pipe.options.encoding
@@ -538,6 +539,15 @@ class PipeRunner:  # pylint: disable=too-many-instance-attributes
     def result(self):
         "Return `Result` object for PipeRunner."
         return make_result(self.pipe, self.results, self.cancelled)
+
+    def add_task(self, coro, tag=None):
+        "Add a background task."
+        if tag:
+            task_name = f"{self.name}#{tag}"
+        else:
+            task_name = self.name
+        task = asyncio.create_task(coro, name=task_name)
+        self.tasks.append(task)
 
     @log_method(_DETAILED_LOGGING)
     async def _wait(self, *, kill=False):
@@ -603,7 +613,8 @@ class PipeRunner:  # pylint: disable=too-many-instance-attributes
             if self.capturing:
                 stdin, stdout, stderr = await self._setup_capturing(cmds)
             else:
-                self.tasks = [cmd.task() for cmd in cmds]
+                for cmd in cmds:
+                    self.add_task(cmd.coro())
 
             self.stdin = stdin
             self.stdout = stdout
@@ -643,11 +654,15 @@ class PipeRunner:  # pylint: disable=too-many-instance-attributes
         loop = asyncio.get_event_loop()
         first_fut = loop.create_future()
         last_fut = loop.create_future()
-        first_task = cmds[0].task(_run_future=first_fut)
-        last_task = cmds[-1].task(_run_future=last_fut)
 
-        middle_tasks = [cmd.task() for cmd in cmds[1:-1]]
-        self.tasks = [first_task] + middle_tasks + [last_task]
+        first_coro = cmds[0].coro(_run_future=first_fut)
+        last_coro = cmds[-1].coro(_run_future=last_fut)
+        middle_coros = [cmd.coro() for cmd in cmds[1:-1]]
+
+        self.add_task(first_coro)
+        for coro in middle_coros:
+            self.add_task(coro)
+        self.add_task(last_coro)
 
         # When capturing, we need the first and last commands in the
         # pipe to signal when they are ready.
@@ -729,10 +744,10 @@ def _is_multiple_capture(cmd):
 def _cleanup(command):
     "Close remaining file descriptors that need to be closed."
 
-    def _add_close(close, fd):
+    def _add_close(close, fdesc):
         if close:
-            if isinstance(fd, (int, io.IOBase)):
-                open_fds.append(fd)
+            if isinstance(fdesc, (int, io.IOBase)):
+                open_fds.append(fdesc)
 
     open_fds = []
 
@@ -740,7 +755,7 @@ def _cleanup(command):
     _add_close(command.options.output_close, command.options.output)
     _add_close(command.options.error_close, command.options.error)
 
-    # if command.options.pass_fds_close:
-    #    open_fds.extend(command.options.pass_fds)
+    if command.options.pass_fds_close:
+        open_fds.extend(command.options.pass_fds)
 
     close_fds(open_fds)

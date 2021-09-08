@@ -240,7 +240,7 @@ You can retrieve the partial result by setting `incomplete_result` to True. Shel
 
 ```python-repl
 >>> sleep = sh("sleep", 60).set(incomplete_result=True)
->>> t = sleep.task()
+>>> t = asyncio.create_task(sleep.coro())
 >>> t.cancel()
 True
 >>> await t

@@ -133,15 +133,14 @@ async def test_missing_executable(sh):
 
 async def test_task(sh):
     "Test converting an awaitable command into an asyncio Task object."
-    task = sh("echo", "***").task()
-    assert task.get_name().startswith("echo-")
+    task = asyncio.create_task(sh("echo", "***").coro())
     result = await task
     assert result == "***\n"
 
 
 async def test_task_cancel(sh):
     "Test that we can cancel a running command task."
-    task = sh("sleep", "5").task()
+    task = asyncio.create_task(sh("sleep", "5").coro())
     await asyncio.sleep(0.1)
 
     # Cancel task and wait for it to exit.
@@ -152,7 +151,7 @@ async def test_task_cancel(sh):
 
 async def test_task_cancel_incomplete_result(sh):
     "Test that we can cancel a running command task."
-    task = sh("sleep", "5").set(incomplete_result=True).task()
+    task = asyncio.create_task(sh("sleep", "5").set(incomplete_result=True).coro())
     await asyncio.sleep(0.1)
 
     # Cancel task and wait for it to exit.
@@ -163,7 +162,7 @@ async def test_task_cancel_incomplete_result(sh):
 
 async def test_task_immediate_cancel(sh):
     "Test that we can cancel a running command task."
-    task = sh("sleep", "5").task()
+    task = asyncio.create_task(sh("sleep", "5").coro())
     task.cancel()
 
     with pytest.raises(asyncio.CancelledError):
@@ -648,7 +647,7 @@ async def test_shell_cmd(sh):
         exit_codes={0, _CANCELLED_EXIT_CODE},
     )
 
-    task = shell("sleep 2 && echo done").task()
+    task = asyncio.create_task(shell("sleep 2 && echo done").coro())
     await asyncio.sleep(0.25)
     task.cancel()
 

@@ -1,14 +1,14 @@
-"""Implements the Context and Command classes.
+"""Implements the CmdContext and Command classes.
 
-- A Context creates new command objects.
+- A CmdContext creates new command objects.
 - A Command specifies the arguments and options used to run a program.
 """
 
-import asyncio
 import dataclasses
 import enum
 import os
 import signal
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from typing import Any, Optional, TypeVar, Union
 
@@ -34,7 +34,7 @@ Unset = Union[_T, _UnsetEnum]
 class Options:  # pylint: disable=too-many-instance-attributes
     "Concrete class for per-command options."
 
-    context: "Context" = field(compare=False, repr=False)
+    context: "CmdContext" = field(compare=False, repr=False)
     "Root context object."
 
     env: Optional[ImmutableDict] = field(default=None, repr=False)
@@ -88,7 +88,7 @@ class Options:  # pylint: disable=too-many-instance-attributes
     alt_name: Optional[str] = None
     "Alternate name for the command to use when logging."
 
-    pass_fds: tuple[int] = ()
+    pass_fds: Iterable[int] = ()
     "File descriptors to pass to the command."
 
     pass_fds_close: bool = False
@@ -161,35 +161,36 @@ class Options:  # pylint: disable=too-many-instance-attributes
 
 
 @dataclass(frozen=True)
-class Context:
+class CmdContext:
     """Concrete class for an immutable execution context."""
 
     options: Options = None  # type: ignore
+    "Default command options."
 
     def __post_init__(self):
         if self.options is None:
             # Initialize `context` in Options to `self`.
             object.__setattr__(self, "options", Options(self))
 
-    def stdin(self, input_, *, close=False):
+    def stdin(self, input_, *, close=False) -> "CmdContext":
         "Return new context with updated `input` settings."
         new_options = self.options.set_stdin(input_, close)
-        return Context(new_options)
+        return CmdContext(new_options)
 
-    def stdout(self, output, *, append=False, close=False):
+    def stdout(self, output, *, append=False, close=False) -> "CmdContext":
         "Return new context with updated `output` settings."
         new_options = self.options.set_stdout(output, append, close)
-        return Context(new_options)
+        return CmdContext(new_options)
 
-    def stderr(self, error, *, append=False, close=False):
+    def stderr(self, error, *, append=False, close=False) -> "CmdContext":
         "Return new context with updated `error` settings."
         new_options = self.options.set_stderr(error, append, close)
-        return Context(new_options)
+        return CmdContext(new_options)
 
-    def env(self, **kwds):
+    def env(self, **kwds) -> "CmdContext":
         """Return new context with augmented environment."""
         new_options = self.options.set_env(kwds)
-        return Context(new_options)
+        return CmdContext(new_options)
 
     def set(  # pylint: disable=unused-argument
         self,
@@ -205,11 +206,11 @@ class Context:
         pass_fds=_UNSET,
         pass_fds_closed=_UNSET,
         write_mode=_UNSET,
-    ):
+    ) -> "CmdContext":
         "Return new context with custom options set."
         kwargs = locals()
         del kwargs["self"]
-        return Context(self.options.set(kwargs))
+        return CmdContext(self.options.set(kwargs))
 
     def __call__(self, *args):
         "Construct a new command."
@@ -257,18 +258,13 @@ class Context:
         return tuple(result)
 
 
-def context() -> Context:
-    "Construct a new execution context."
-    return Context()
-
-
 @dataclass(frozen=True)
 class Command:
     """A Command instance is lightweight and immutable object that specifies the
     arguments and options used to run a program. Commands do not do anything
     until they are awaited.
 
-    Commands are always created by a Context.
+    Commands are always created by a CmdContext.
 
     ```
     # Create a context.
@@ -282,8 +278,11 @@ class Command:
     ```
     """
 
-    args: Any
+    args: tuple[Union[str, bytes, os.PathLike], ...]
+    "Command arguments including the program name as first argument."
+
     options: Options
+    "Command options."
 
     def __post_init__(self):
         "Validate the command."
@@ -304,24 +303,24 @@ class Command:
             return f"...{name[-31:]}"
         return name
 
-    def stdin(self, input_, *, close=False):
+    def stdin(self, input_, *, close=False) -> "Command":
         "Pass `input` to command's standard input."
         new_options = self.options.set_stdin(input_, close)
         return Command(self.args, new_options)
 
-    def stdout(self, output, *, append=False, close=False):
+    def stdout(self, output, *, append=False, close=False) -> "Command":
         "Redirect standard output to `output`."
         _check_args(output, append)
         new_options = self.options.set_stdout(output, append, close)
         return Command(self.args, new_options)
 
-    def stderr(self, error, *, append=False, close=False):
+    def stderr(self, error, *, append=False, close=False) -> "Command":
         "Redirect standard error to `error`."
         _check_args(error, append)
         new_options = self.options.set_stderr(error, append, close)
         return Command(self.args, new_options)
 
-    def env(self, **kwds):
+    def env(self, **kwds) -> "Command":
         """Return new command with augmented environment."""
         new_options = self.options.set_env(kwds)
         return Command(self.args, new_options)
@@ -337,10 +336,10 @@ class Command:
         cancel_timeout: Unset[float] = _UNSET,
         cancel_signal: Unset[Any] = _UNSET,
         alt_name: Unset[Optional[str]] = _UNSET,
-        pass_fds: Unset[tuple[int]] = _UNSET,
+        pass_fds: Unset[Iterable[int]] = _UNSET,
         pass_fds_close: Unset[bool] = _UNSET,
         write_mode: Unset[bool] = _UNSET,
-    ):
+    ) -> "Command":
         """Return new command with custom options set.
 
         - Set `inherit_env` to False to prevent the command from inheriting
@@ -378,18 +377,11 @@ class Command:
         assert new_args[0] is self.args[0]
         return Command(tuple(new_args), self.options)
 
-    def task(self, *, _run_future=None):
-        "Wrap the command in a new asyncio task."
-        return asyncio.create_task(
-            self.coro(_run_future=_run_future),
-            name=f"{self.name}-{id(self)}",
-        )
-
     def coro(self, *, _run_future=None):
         "Return coroutine object to run awaitable."
         return run_cmd(self, _run_future=_run_future)
 
-    def run(self):
+    def run(self) -> Runner:
         """Return a `Runner` to run the process incrementally.
 
         ```

@@ -447,7 +447,7 @@ async def test_pipe_redirect_stdin_capture_iter(cat_cmd, tr_cmd):
 async def test_pipe_immediate_cancel(cat_cmd, tr_cmd):
     "Test running a pipe that is immediately cancelled."
     cmd = cat_cmd | tr_cmd
-    task = cmd.task()
+    task = asyncio.create_task(cmd.coro())
     await asyncio.sleep(0)
     task.cancel()
     with pytest.raises(asyncio.CancelledError):
