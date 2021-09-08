@@ -1,6 +1,5 @@
 "Implements support for Pipelines."
 
-import asyncio
 import dataclasses
 from dataclasses import dataclass
 
@@ -58,13 +57,6 @@ class Pipeline:
         new_last = self.commands[-1].set(write_mode=True)
         new_commands = self.commands[0:-1] + (new_last,)
         return dataclasses.replace(self, commands=new_commands)
-
-    def task(self):
-        "Wrap the command in a new asyncio task."
-        return asyncio.create_task(
-            run_pipe(self),
-            name=f"{self.name}-{id(self)}",
-        )
 
     def coro(self):
         "Return coroutine object for pipeline."

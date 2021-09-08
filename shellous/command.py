@@ -4,7 +4,6 @@
 - A Command specifies the arguments and options used to run a program.
 """
 
-import asyncio
 import dataclasses
 import enum
 import os
@@ -377,13 +376,6 @@ class Command:
         assert new_args
         assert new_args[0] is self.args[0]
         return Command(tuple(new_args), self.options)
-
-    def task(self, *, _run_future=None):
-        "Wrap the command in a new asyncio task."
-        return asyncio.create_task(
-            self.coro(_run_future=_run_future),
-            name=f"{self.name}-{id(self)}",
-        )
 
     def coro(self, *, _run_future=None):
         "Return coroutine object to run awaitable."

@@ -71,7 +71,7 @@ async def run_asyncio_repl(cmds):
         for cmd in cmds:
             output.append(await p.prompt(cmd))
             # Give tasks a chance to get started.
-            if cmd.endswith(".task()"):
+            if ".create_task(" in cmd:
                 await asyncio.sleep(0.1)
 
         run.stdin.close()
@@ -143,7 +143,7 @@ def test_parse_readme():
         "  async for line in run:\n"
         "    print(line.rstrip())\n",
         'sleep = sh("sleep", 60).set(incomplete_result=True)',
-        "t = sleep.task()",
+        "t = asyncio.create_task(sleep.coro())",
         "t.cancel()",
         "await t",
     ]

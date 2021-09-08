@@ -523,7 +523,7 @@ class PipeRunner:  # pylint: disable=too-many-instance-attributes
 
         self.pipe = pipe
         self.cancelled = False
-        self.tasks = None
+        self.tasks = []
         self.results = None
         self.capturing = capturing
         self.encoding = pipe.options.encoding
@@ -539,6 +539,15 @@ class PipeRunner:  # pylint: disable=too-many-instance-attributes
     def result(self):
         "Return `Result` object for PipeRunner."
         return make_result(self.pipe, self.results, self.cancelled)
+
+    def add_task(self, coro, tag=None):
+        "Add a background task."
+        if tag:
+            task_name = f"{self.name}#{tag}"
+        else:
+            task_name = self.name
+        task = asyncio.create_task(coro, name=task_name)
+        self.tasks.append(task)
 
     @log_method(_DETAILED_LOGGING)
     async def _wait(self, *, kill=False):
@@ -604,7 +613,8 @@ class PipeRunner:  # pylint: disable=too-many-instance-attributes
             if self.capturing:
                 stdin, stdout, stderr = await self._setup_capturing(cmds)
             else:
-                self.tasks = [cmd.task() for cmd in cmds]
+                for cmd in cmds:
+                    self.add_task(cmd.coro())
 
             self.stdin = stdin
             self.stdout = stdout
@@ -644,11 +654,15 @@ class PipeRunner:  # pylint: disable=too-many-instance-attributes
         loop = asyncio.get_event_loop()
         first_fut = loop.create_future()
         last_fut = loop.create_future()
-        first_task = cmds[0].task(_run_future=first_fut)
-        last_task = cmds[-1].task(_run_future=last_fut)
 
-        middle_tasks = [cmd.task() for cmd in cmds[1:-1]]
-        self.tasks = [first_task] + middle_tasks + [last_task]
+        first_coro = cmds[0].coro(_run_future=first_fut)
+        last_coro = cmds[-1].coro(_run_future=last_fut)
+        middle_coros = [cmd.coro() for cmd in cmds[1:-1]]
+
+        self.add_task(first_coro)
+        for coro in middle_coros:
+            self.add_task(coro)
+        self.add_task(last_coro)
 
         # When capturing, we need the first and last commands in the
         # pipe to signal when they are ready.
