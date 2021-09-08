@@ -16,11 +16,11 @@ cmd1 = sh("echo")
 cmd2 = cmd1.env(DEBUG=1)
 ```
 
-Context
--------
+CmdContext
+----------
 
-Commands are created by a `Context`. The `Context` object manages how arguments are converted to strings
+Commands are created by a `CmdContext`. The `CmdContext` object manages how arguments are converted to strings
 and how arguments are applied to existing commands.
 
-You can also specify defaults in the context using the same methods as `Command`. `Context` objects are
+You can also specify defaults in the context using the same methods as `Command`. `CmdContext` objects are
 immutable.

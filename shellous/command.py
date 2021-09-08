@@ -1,6 +1,6 @@
-"""Implements the Context and Command classes.
+"""Implements the CmdContext and Command classes.
 
-- A Context creates new command objects.
+- A CmdContext creates new command objects.
 - A Command specifies the arguments and options used to run a program.
 """
 
@@ -35,7 +35,7 @@ Unset = Union[_T, _UnsetEnum]
 class Options:  # pylint: disable=too-many-instance-attributes
     "Concrete class for per-command options."
 
-    context: "Context" = field(compare=False, repr=False)
+    context: "CmdContext" = field(compare=False, repr=False)
     "Root context object."
 
     env: Optional[ImmutableDict] = field(default=None, repr=False)
@@ -162,7 +162,7 @@ class Options:  # pylint: disable=too-many-instance-attributes
 
 
 @dataclass(frozen=True)
-class Context:
+class CmdContext:
     """Concrete class for an immutable execution context."""
 
     options: Options = None  # type: ignore
@@ -173,25 +173,25 @@ class Context:
             # Initialize `context` in Options to `self`.
             object.__setattr__(self, "options", Options(self))
 
-    def stdin(self, input_, *, close=False) -> "Context":
+    def stdin(self, input_, *, close=False) -> "CmdContext":
         "Return new context with updated `input` settings."
         new_options = self.options.set_stdin(input_, close)
-        return Context(new_options)
+        return CmdContext(new_options)
 
-    def stdout(self, output, *, append=False, close=False) -> "Context":
+    def stdout(self, output, *, append=False, close=False) -> "CmdContext":
         "Return new context with updated `output` settings."
         new_options = self.options.set_stdout(output, append, close)
-        return Context(new_options)
+        return CmdContext(new_options)
 
-    def stderr(self, error, *, append=False, close=False) -> "Context":
+    def stderr(self, error, *, append=False, close=False) -> "CmdContext":
         "Return new context with updated `error` settings."
         new_options = self.options.set_stderr(error, append, close)
-        return Context(new_options)
+        return CmdContext(new_options)
 
-    def env(self, **kwds) -> "Context":
+    def env(self, **kwds) -> "CmdContext":
         """Return new context with augmented environment."""
         new_options = self.options.set_env(kwds)
-        return Context(new_options)
+        return CmdContext(new_options)
 
     def set(  # pylint: disable=unused-argument
         self,
@@ -207,11 +207,11 @@ class Context:
         pass_fds=_UNSET,
         pass_fds_closed=_UNSET,
         write_mode=_UNSET,
-    ) -> "Context":
+    ) -> "CmdContext":
         "Return new context with custom options set."
         kwargs = locals()
         del kwargs["self"]
-        return Context(self.options.set(kwargs))
+        return CmdContext(self.options.set(kwargs))
 
     def __call__(self, *args):
         "Construct a new command."
@@ -265,7 +265,7 @@ class Command:
     arguments and options used to run a program. Commands do not do anything
     until they are awaited.
 
-    Commands are always created by a Context.
+    Commands are always created by a CmdContext.
 
     ```
     # Create a context.

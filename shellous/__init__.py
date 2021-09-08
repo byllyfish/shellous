@@ -6,7 +6,7 @@ __docformat__ = "restructuredtext"
 __version__ = "0.3.0"
 
 # pylint: disable=cyclic-import
-from .command import Command, Context, Options  # noqa: F401
+from .command import CmdContext, Command, Options  # noqa: F401
 from .pipeline import Pipeline  # noqa: F401
 from .redirect import Redirect
 from .result import PipeResult, Result, ResultError  # noqa: F401
@@ -17,6 +17,6 @@ CAPTURE = Redirect.CAPTURE
 INHERIT = Redirect.INHERIT
 
 
-def context() -> Context:
+def context() -> CmdContext:
     "Construct a new execution context."
-    return Context()
+    return CmdContext()
