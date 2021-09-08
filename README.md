@@ -115,7 +115,7 @@ To redirect stdin using a file's contents, use a `Path` object from `pathlib`.
 >>> from pathlib import Path
 >>> cmd = Path("README.md") | sh("wc", "-l")
 >>> await cmd
-'     253\n'
+'     255\n'
 ```
 
 [More on redirection...](docs/redirection.md)
