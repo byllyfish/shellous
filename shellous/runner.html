@@ -63,6 +63,9 @@
                         <li>
                                 <a class="function" href="#PipeRunner.result">result</a>
                         </li>
+                        <li>
+                                <a class="function" href="#PipeRunner.add_task">add_task</a>
+                        </li>
                 </ul>
 
             </li>
@@ -203,6 +206,7 @@
 
             <span class="bp">self</span><span class="o">.</span><span class="n">subcmds</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">subcmd</span><span class="p">)</span>
 
+        <span class="c1"># pylint: disable=protected-access</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">command</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">command</span><span class="o">.</span><span class="n">_replace_args</span><span class="p">(</span><span class="n">new_args</span><span class="p">)</span><span class="o">.</span><span class="n">set</span><span class="p">(</span>
             <span class="n">pass_fds</span><span class="o">=</span><span class="n">pass_fds</span><span class="p">,</span>
             <span class="n">pass_fds_close</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
@@ -553,12 +557,12 @@
         <span class="c1"># transport.</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">returncode</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">LOGGER</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;Runner._close process still running </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">_transport</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">_transport</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>  <span class="c1"># pylint: disable=protected-access</span>
             <span class="k">return</span>
 
         <span class="k">try</span><span class="p">:</span>
             <span class="c1"># Make sure the transport is closed (for asyncio and uvloop).</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">_transport</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">_transport</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>  <span class="c1"># pylint: disable=protected-access</span>
 
             <span class="c1"># Make sure that original stdin is properly closed. `wait_closed`</span>
             <span class="c1"># will raise a BrokenPipeError if not all input was properly written.</span>
@@ -617,7 +621,7 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">pipe</span> <span class="o">=</span> <span class="n">pipe</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">cancelled</span> <span class="o">=</span> <span class="kc">False</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">capturing</span> <span class="o">=</span> <span class="n">capturing</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">encoding</span> <span class="o">=</span> <span class="n">pipe</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">encoding</span>
@@ -633,6 +637,15 @@
     <span class="k">def</span> <span class="nf">result</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Return `Result` object for PipeRunner.&quot;</span>
         <span class="k">return</span> <span class="n">make_result</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pipe</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cancelled</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">add_task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coro</span><span class="p">,</span> <span class="n">tag</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="s2">&quot;Add a background task.&quot;</span>
+        <span class="k">if</span> <span class="n">tag</span><span class="p">:</span>
+            <span class="n">task_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">#</span><span class="si">{</span><span class="n">tag</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">task_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+        <span class="n">task</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="n">coro</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">task_name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">task</span><span class="p">)</span>
 
     <span class="nd">@log_method</span><span class="p">(</span><span class="n">_DETAILED_LOGGING</span><span class="p">)</span>
     <span class="k">async</span> <span class="k">def</span> <span class="nf">_wait</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">kill</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
@@ -698,7 +711,8 @@
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">capturing</span><span class="p">:</span>
                 <span class="n">stdin</span><span class="p">,</span> <span class="n">stdout</span><span class="p">,</span> <span class="n">stderr</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_setup_capturing</span><span class="p">(</span><span class="n">cmds</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span> <span class="o">=</span> <span class="p">[</span><span class="n">cmd</span><span class="o">.</span><span class="n">task</span><span class="p">()</span> <span class="k">for</span> <span class="n">cmd</span> <span class="ow">in</span> <span class="n">cmds</span><span class="p">]</span>
+                <span class="k">for</span> <span class="n">cmd</span> <span class="ow">in</span> <span class="n">cmds</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">add_task</span><span class="p">(</span><span class="n">cmd</span><span class="o">.</span><span class="n">coro</span><span class="p">())</span>
 
             <span class="bp">self</span><span class="o">.</span><span class="n">stdin</span> <span class="o">=</span> <span class="n">stdin</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">stdout</span> <span class="o">=</span> <span class="n">stdout</span>
@@ -738,11 +752,15 @@
         <span class="n">loop</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">get_event_loop</span><span class="p">()</span>
         <span class="n">first_fut</span> <span class="o">=</span> <span class="n">loop</span><span class="o">.</span><span class="n">create_future</span><span class="p">()</span>
         <span class="n">last_fut</span> <span class="o">=</span> <span class="n">loop</span><span class="o">.</span><span class="n">create_future</span><span class="p">()</span>
-        <span class="n">first_task</span> <span class="o">=</span> <span class="n">cmds</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">task</span><span class="p">(</span><span class="n">_run_future</span><span class="o">=</span><span class="n">first_fut</span><span class="p">)</span>
-        <span class="n">last_task</span> <span class="o">=</span> <span class="n">cmds</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">task</span><span class="p">(</span><span class="n">_run_future</span><span class="o">=</span><span class="n">last_fut</span><span class="p">)</span>
 
-        <span class="n">middle_tasks</span> <span class="o">=</span> <span class="p">[</span><span class="n">cmd</span><span class="o">.</span><span class="n">task</span><span class="p">()</span> <span class="k">for</span> <span class="n">cmd</span> <span class="ow">in</span> <span class="n">cmds</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span> <span class="o">=</span> <span class="p">[</span><span class="n">first_task</span><span class="p">]</span> <span class="o">+</span> <span class="n">middle_tasks</span> <span class="o">+</span> <span class="p">[</span><span class="n">last_task</span><span class="p">]</span>
+        <span class="n">first_coro</span> <span class="o">=</span> <span class="n">cmds</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">coro</span><span class="p">(</span><span class="n">_run_future</span><span class="o">=</span><span class="n">first_fut</span><span class="p">)</span>
+        <span class="n">last_coro</span> <span class="o">=</span> <span class="n">cmds</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">coro</span><span class="p">(</span><span class="n">_run_future</span><span class="o">=</span><span class="n">last_fut</span><span class="p">)</span>
+        <span class="n">middle_coros</span> <span class="o">=</span> <span class="p">[</span><span class="n">cmd</span><span class="o">.</span><span class="n">coro</span><span class="p">()</span> <span class="k">for</span> <span class="n">cmd</span> <span class="ow">in</span> <span class="n">cmds</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_task</span><span class="p">(</span><span class="n">first_coro</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">coro</span> <span class="ow">in</span> <span class="n">middle_coros</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_task</span><span class="p">(</span><span class="n">coro</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_task</span><span class="p">(</span><span class="n">last_coro</span><span class="p">)</span>
 
         <span class="c1"># When capturing, we need the first and last commands in the</span>
         <span class="c1"># pipe to signal when they are ready.</span>
@@ -824,10 +842,10 @@
 <span class="k">def</span> <span class="nf">_cleanup</span><span class="p">(</span><span class="n">command</span><span class="p">):</span>
     <span class="s2">&quot;Close remaining file descriptors that need to be closed.&quot;</span>
 
-    <span class="k">def</span> <span class="nf">_add_close</span><span class="p">(</span><span class="n">close</span><span class="p">,</span> <span class="n">fd</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_add_close</span><span class="p">(</span><span class="n">close</span><span class="p">,</span> <span class="n">fdesc</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">close</span><span class="p">:</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">io</span><span class="o">.</span><span class="n">IOBase</span><span class="p">)):</span>
-                <span class="n">open_fds</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fd</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">fdesc</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">io</span><span class="o">.</span><span class="n">IOBase</span><span class="p">)):</span>
+                <span class="n">open_fds</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fdesc</span><span class="p">)</span>
 
     <span class="n">open_fds</span> <span class="o">=</span> <span class="p">[]</span>
 
@@ -835,8 +853,8 @@
     <span class="n">_add_close</span><span class="p">(</span><span class="n">command</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">output_close</span><span class="p">,</span> <span class="n">command</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">output</span><span class="p">)</span>
     <span class="n">_add_close</span><span class="p">(</span><span class="n">command</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">error_close</span><span class="p">,</span> <span class="n">command</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">error</span><span class="p">)</span>
 
-    <span class="c1"># if command.options.pass_fds_close:</span>
-    <span class="c1">#    open_fds.extend(command.options.pass_fds)</span>
+    <span class="k">if</span> <span class="n">command</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">pass_fds_close</span><span class="p">:</span>
+        <span class="n">open_fds</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">command</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">pass_fds</span><span class="p">)</span>
 
     <span class="n">close_fds</span><span class="p">(</span><span class="n">open_fds</span><span class="p">)</span>
 </pre></div>
@@ -1098,12 +1116,12 @@
         <span class="c1"># transport.</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">returncode</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">LOGGER</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;Runner._close process still running </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">_transport</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">_transport</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>  <span class="c1"># pylint: disable=protected-access</span>
             <span class="k">return</span>
 
         <span class="k">try</span><span class="p">:</span>
             <span class="c1"># Make sure the transport is closed (for asyncio and uvloop).</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">_transport</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">_transport</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>  <span class="c1"># pylint: disable=protected-access</span>
 
             <span class="c1"># Make sure that original stdin is properly closed. `wait_closed`</span>
             <span class="c1"># will raise a BrokenPipeError if not all input was properly written.</span>
@@ -1292,7 +1310,7 @@ result = run.result()
 
         <span class="bp">self</span><span class="o">.</span><span class="n">pipe</span> <span class="o">=</span> <span class="n">pipe</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">cancelled</span> <span class="o">=</span> <span class="kc">False</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">capturing</span> <span class="o">=</span> <span class="n">capturing</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">encoding</span> <span class="o">=</span> <span class="n">pipe</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">encoding</span>
@@ -1308,6 +1326,15 @@ result = run.result()
     <span class="k">def</span> <span class="nf">result</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Return `Result` object for PipeRunner.&quot;</span>
         <span class="k">return</span> <span class="n">make_result</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pipe</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cancelled</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">add_task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coro</span><span class="p">,</span> <span class="n">tag</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="s2">&quot;Add a background task.&quot;</span>
+        <span class="k">if</span> <span class="n">tag</span><span class="p">:</span>
+            <span class="n">task_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">#</span><span class="si">{</span><span class="n">tag</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">task_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+        <span class="n">task</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="n">coro</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">task_name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">task</span><span class="p">)</span>
 
     <span class="nd">@log_method</span><span class="p">(</span><span class="n">_DETAILED_LOGGING</span><span class="p">)</span>
     <span class="k">async</span> <span class="k">def</span> <span class="nf">_wait</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">kill</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
@@ -1373,7 +1400,8 @@ result = run.result()
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">capturing</span><span class="p">:</span>
                 <span class="n">stdin</span><span class="p">,</span> <span class="n">stdout</span><span class="p">,</span> <span class="n">stderr</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_setup_capturing</span><span class="p">(</span><span class="n">cmds</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span> <span class="o">=</span> <span class="p">[</span><span class="n">cmd</span><span class="o">.</span><span class="n">task</span><span class="p">()</span> <span class="k">for</span> <span class="n">cmd</span> <span class="ow">in</span> <span class="n">cmds</span><span class="p">]</span>
+                <span class="k">for</span> <span class="n">cmd</span> <span class="ow">in</span> <span class="n">cmds</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">add_task</span><span class="p">(</span><span class="n">cmd</span><span class="o">.</span><span class="n">coro</span><span class="p">())</span>
 
             <span class="bp">self</span><span class="o">.</span><span class="n">stdin</span> <span class="o">=</span> <span class="n">stdin</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">stdout</span> <span class="o">=</span> <span class="n">stdout</span>
@@ -1413,11 +1441,15 @@ result = run.result()
         <span class="n">loop</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">get_event_loop</span><span class="p">()</span>
         <span class="n">first_fut</span> <span class="o">=</span> <span class="n">loop</span><span class="o">.</span><span class="n">create_future</span><span class="p">()</span>
         <span class="n">last_fut</span> <span class="o">=</span> <span class="n">loop</span><span class="o">.</span><span class="n">create_future</span><span class="p">()</span>
-        <span class="n">first_task</span> <span class="o">=</span> <span class="n">cmds</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">task</span><span class="p">(</span><span class="n">_run_future</span><span class="o">=</span><span class="n">first_fut</span><span class="p">)</span>
-        <span class="n">last_task</span> <span class="o">=</span> <span class="n">cmds</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">task</span><span class="p">(</span><span class="n">_run_future</span><span class="o">=</span><span class="n">last_fut</span><span class="p">)</span>
 
-        <span class="n">middle_tasks</span> <span class="o">=</span> <span class="p">[</span><span class="n">cmd</span><span class="o">.</span><span class="n">task</span><span class="p">()</span> <span class="k">for</span> <span class="n">cmd</span> <span class="ow">in</span> <span class="n">cmds</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span> <span class="o">=</span> <span class="p">[</span><span class="n">first_task</span><span class="p">]</span> <span class="o">+</span> <span class="n">middle_tasks</span> <span class="o">+</span> <span class="p">[</span><span class="n">last_task</span><span class="p">]</span>
+        <span class="n">first_coro</span> <span class="o">=</span> <span class="n">cmds</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">coro</span><span class="p">(</span><span class="n">_run_future</span><span class="o">=</span><span class="n">first_fut</span><span class="p">)</span>
+        <span class="n">last_coro</span> <span class="o">=</span> <span class="n">cmds</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">coro</span><span class="p">(</span><span class="n">_run_future</span><span class="o">=</span><span class="n">last_fut</span><span class="p">)</span>
+        <span class="n">middle_coros</span> <span class="o">=</span> <span class="p">[</span><span class="n">cmd</span><span class="o">.</span><span class="n">coro</span><span class="p">()</span> <span class="k">for</span> <span class="n">cmd</span> <span class="ow">in</span> <span class="n">cmds</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_task</span><span class="p">(</span><span class="n">first_coro</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">coro</span> <span class="ow">in</span> <span class="n">middle_coros</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_task</span><span class="p">(</span><span class="n">coro</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_task</span><span class="p">(</span><span class="n">last_coro</span><span class="p">)</span>
 
         <span class="c1"># When capturing, we need the first and last commands in the</span>
         <span class="c1"># pipe to signal when they are ready.</span>
@@ -1485,7 +1517,7 @@ result = run.result()
 
         <span class="bp">self</span><span class="o">.</span><span class="n">pipe</span> <span class="o">=</span> <span class="n">pipe</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">cancelled</span> <span class="o">=</span> <span class="kc">False</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">capturing</span> <span class="o">=</span> <span class="n">capturing</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">encoding</span> <span class="o">=</span> <span class="n">pipe</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">encoding</span>
@@ -1531,6 +1563,33 @@ client needs to access <code>stdin</code> and <code>stderr</code> streams.</p>
         </details>
 
             <div class="docstring"><p>Return <code>Result</code> object for PipeRunner.</p>
+</div>
+
+
+                            </div>
+                            <div id="PipeRunner.add_task" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#PipeRunner.add_task">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">add_task</span><span class="signature">(self, coro, tag=None)</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">add_task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coro</span><span class="p">,</span> <span class="n">tag</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="s2">&quot;Add a background task.&quot;</span>
+        <span class="k">if</span> <span class="n">tag</span><span class="p">:</span>
+            <span class="n">task_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">#</span><span class="si">{</span><span class="n">tag</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">task_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+        <span class="n">task</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="n">coro</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">task_name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">task</span><span class="p">)</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Add a background task.</p>
 </div>
 
 

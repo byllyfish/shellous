@@ -121,40 +121,43 @@
 
             </li>
             <li>
-                    <a class="class" href="#Context">Context</a>
+                    <a class="class" href="#CmdContext">CmdContext</a>
                             <ul class="memberlist">
                         <li>
-                                <a class="function" href="#Context.__init__">Context</a>
+                                <a class="function" href="#CmdContext.__init__">CmdContext</a>
                         </li>
                         <li>
-                                <a class="variable" href="#Context.options">options</a>
+                                <a class="variable" href="#CmdContext.options">options</a>
                         </li>
                         <li>
-                                <a class="function" href="#Context.stdin">stdin</a>
+                                <a class="function" href="#CmdContext.stdin">stdin</a>
                         </li>
                         <li>
-                                <a class="function" href="#Context.stdout">stdout</a>
+                                <a class="function" href="#CmdContext.stdout">stdout</a>
                         </li>
                         <li>
-                                <a class="function" href="#Context.stderr">stderr</a>
+                                <a class="function" href="#CmdContext.stderr">stderr</a>
                         </li>
                         <li>
-                                <a class="function" href="#Context.env">env</a>
+                                <a class="function" href="#CmdContext.env">env</a>
                         </li>
                         <li>
-                                <a class="function" href="#Context.set">set</a>
+                                <a class="function" href="#CmdContext.set">set</a>
                         </li>
                 </ul>
 
-            </li>
-            <li>
-                    <a class="function" href="#context">context</a>
             </li>
             <li>
                     <a class="class" href="#Command">Command</a>
                             <ul class="memberlist">
                         <li>
                                 <a class="function" href="#Command.__init__">Command</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Command.args">args</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Command.options">options</a>
                         </li>
                         <li>
                                 <a class="variable" href="#Command.name">name</a>
@@ -173,9 +176,6 @@
                         </li>
                         <li>
                                 <a class="function" href="#Command.set">set</a>
-                        </li>
-                        <li>
-                                <a class="function" href="#Command.task">task</a>
                         </li>
                         <li>
                                 <a class="function" href="#Command.coro">coro</a>
@@ -202,27 +202,27 @@
                     <h1 class="modulename">
 <a href="./../shellous.html">shellous</a><wbr>.command    </h1>
 
-                        <div class="docstring"><p>Implements the Context and Command classes.</p>
+                        <div class="docstring"><p>Implements the CmdContext and Command classes.</p>
 
 <ul>
-<li>A Context creates new command objects.</li>
+<li>A CmdContext creates new command objects.</li>
 <li>A Command specifies the arguments and options used to run a program.</li>
 </ul>
 </div>
 
                         <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span><span class="sd">&quot;&quot;&quot;Implements the Context and Command classes.</span>
+            <div class="codehilite"><pre><span></span><span class="sd">&quot;&quot;&quot;Implements the CmdContext and Command classes.</span>
 
-<span class="sd">- A Context creates new command objects.</span>
+<span class="sd">- A CmdContext creates new command objects.</span>
 <span class="sd">- A Command specifies the arguments and options used to run a program.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">import</span> <span class="nn">asyncio</span>
 <span class="kn">import</span> <span class="nn">dataclasses</span>
 <span class="kn">import</span> <span class="nn">enum</span>
 <span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">import</span> <span class="nn">signal</span>
+<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Iterable</span>
 <span class="kn">from</span> <span class="nn">dataclasses</span> <span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">TypeVar</span><span class="p">,</span> <span class="n">Union</span>
 
@@ -248,7 +248,7 @@
 <span class="k">class</span> <span class="nc">Options</span><span class="p">:</span>  <span class="c1"># pylint: disable=too-many-instance-attributes</span>
     <span class="s2">&quot;Concrete class for per-command options.&quot;</span>
 
-    <span class="n">context</span><span class="p">:</span> <span class="s2">&quot;Context&quot;</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">compare</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="nb">repr</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">context</span><span class="p">:</span> <span class="s2">&quot;CmdContext&quot;</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">compare</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="nb">repr</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
     <span class="s2">&quot;Root context object.&quot;</span>
 
     <span class="n">env</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ImmutableDict</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="nb">repr</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
@@ -302,7 +302,7 @@
     <span class="n">alt_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="s2">&quot;Alternate name for the command to use when logging.&quot;</span>
 
-    <span class="n">pass_fds</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">()</span>
+    <span class="n">pass_fds</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">()</span>
     <span class="s2">&quot;File descriptors to pass to the command.&quot;</span>
 
     <span class="n">pass_fds_close</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
@@ -375,35 +375,36 @@
 
 
 <span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="k">class</span> <span class="nc">Context</span><span class="p">:</span>
+<span class="k">class</span> <span class="nc">CmdContext</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Concrete class for an immutable execution context.&quot;&quot;&quot;</span>
 
     <span class="n">options</span><span class="p">:</span> <span class="n">Options</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># type: ignore</span>
+    <span class="s2">&quot;Default command options.&quot;</span>
 
     <span class="k">def</span> <span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="c1"># Initialize `context` in Options to `self`.</span>
             <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;options&quot;</span><span class="p">,</span> <span class="n">Options</span><span class="p">(</span><span class="bp">self</span><span class="p">))</span>
 
-    <span class="k">def</span> <span class="nf">stdin</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">close</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">stdin</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">close</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;CmdContext&quot;</span><span class="p">:</span>
         <span class="s2">&quot;Return new context with updated `input` settings.&quot;</span>
         <span class="n">new_options</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">set_stdin</span><span class="p">(</span><span class="n">input_</span><span class="p">,</span> <span class="n">close</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">Context</span><span class="p">(</span><span class="n">new_options</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">CmdContext</span><span class="p">(</span><span class="n">new_options</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">stdout</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">append</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">close</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">stdout</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">append</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">close</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;CmdContext&quot;</span><span class="p">:</span>
         <span class="s2">&quot;Return new context with updated `output` settings.&quot;</span>
         <span class="n">new_options</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">set_stdout</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="n">append</span><span class="p">,</span> <span class="n">close</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">Context</span><span class="p">(</span><span class="n">new_options</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">CmdContext</span><span class="p">(</span><span class="n">new_options</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">stderr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">error</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">append</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">close</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">stderr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">error</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">append</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">close</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;CmdContext&quot;</span><span class="p">:</span>
         <span class="s2">&quot;Return new context with updated `error` settings.&quot;</span>
         <span class="n">new_options</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">set_stderr</span><span class="p">(</span><span class="n">error</span><span class="p">,</span> <span class="n">append</span><span class="p">,</span> <span class="n">close</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">Context</span><span class="p">(</span><span class="n">new_options</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">CmdContext</span><span class="p">(</span><span class="n">new_options</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">env</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">env</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;CmdContext&quot;</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Return new context with augmented environment.&quot;&quot;&quot;</span>
         <span class="n">new_options</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">set_env</span><span class="p">(</span><span class="n">kwds</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">Context</span><span class="p">(</span><span class="n">new_options</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">CmdContext</span><span class="p">(</span><span class="n">new_options</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">set</span><span class="p">(</span>  <span class="c1"># pylint: disable=unused-argument</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -419,11 +420,11 @@
         <span class="n">pass_fds</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">pass_fds_closed</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">write_mode</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
-    <span class="p">):</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;CmdContext&quot;</span><span class="p">:</span>
         <span class="s2">&quot;Return new context with custom options set.&quot;</span>
         <span class="n">kwargs</span> <span class="o">=</span> <span class="nb">locals</span><span class="p">()</span>
         <span class="k">del</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;self&quot;</span><span class="p">]</span>
-        <span class="k">return</span> <span class="n">Context</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">kwargs</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">CmdContext</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">kwargs</span><span class="p">))</span>
 
     <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
         <span class="s2">&quot;Construct a new command.&quot;</span>
@@ -471,18 +472,13 @@
         <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
 
 
-<span class="k">def</span> <span class="nf">context</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Context</span><span class="p">:</span>
-    <span class="s2">&quot;Construct a new execution context.&quot;</span>
-    <span class="k">return</span> <span class="n">Context</span><span class="p">()</span>
-
-
 <span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">class</span> <span class="nc">Command</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;A Command instance is lightweight and immutable object that specifies the</span>
 <span class="sd">    arguments and options used to run a program. Commands do not do anything</span>
 <span class="sd">    until they are awaited.</span>
 
-<span class="sd">    Commands are always created by a Context.</span>
+<span class="sd">    Commands are always created by a CmdContext.</span>
 
 <span class="sd">    ```</span>
 <span class="sd">    # Create a context.</span>
@@ -496,8 +492,11 @@
 <span class="sd">    ```</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="n">args</span><span class="p">:</span> <span class="n">Any</span>
+    <span class="n">args</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">],</span> <span class="o">...</span><span class="p">]</span>
+    <span class="s2">&quot;Command arguments including the program name as first argument.&quot;</span>
+
     <span class="n">options</span><span class="p">:</span> <span class="n">Options</span>
+    <span class="s2">&quot;Command options.&quot;</span>
 
     <span class="k">def</span> <span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Validate the command.&quot;</span>
@@ -518,24 +517,24 @@
             <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;...</span><span class="si">{</span><span class="n">name</span><span class="p">[</span><span class="o">-</span><span class="mi">31</span><span class="p">:]</span><span class="si">}</span><span class="s2">&quot;</span>
         <span class="k">return</span> <span class="n">name</span>
 
-    <span class="k">def</span> <span class="nf">stdin</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">close</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">stdin</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">close</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Command&quot;</span><span class="p">:</span>
         <span class="s2">&quot;Pass `input` to command&#39;s standard input.&quot;</span>
         <span class="n">new_options</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">set_stdin</span><span class="p">(</span><span class="n">input_</span><span class="p">,</span> <span class="n">close</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">Command</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">,</span> <span class="n">new_options</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">stdout</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">append</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">close</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">stdout</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">append</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">close</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Command&quot;</span><span class="p">:</span>
         <span class="s2">&quot;Redirect standard output to `output`.&quot;</span>
         <span class="n">_check_args</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="n">append</span><span class="p">)</span>
         <span class="n">new_options</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">set_stdout</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="n">append</span><span class="p">,</span> <span class="n">close</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">Command</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">,</span> <span class="n">new_options</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">stderr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">error</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">append</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">close</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">stderr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">error</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">append</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">close</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Command&quot;</span><span class="p">:</span>
         <span class="s2">&quot;Redirect standard error to `error`.&quot;</span>
         <span class="n">_check_args</span><span class="p">(</span><span class="n">error</span><span class="p">,</span> <span class="n">append</span><span class="p">)</span>
         <span class="n">new_options</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">set_stderr</span><span class="p">(</span><span class="n">error</span><span class="p">,</span> <span class="n">append</span><span class="p">,</span> <span class="n">close</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">Command</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">,</span> <span class="n">new_options</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">env</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">env</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Command&quot;</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Return new command with augmented environment.&quot;&quot;&quot;</span>
         <span class="n">new_options</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">set_env</span><span class="p">(</span><span class="n">kwds</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">Command</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">,</span> <span class="n">new_options</span><span class="p">)</span>
@@ -551,10 +550,10 @@
         <span class="n">cancel_timeout</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">cancel_signal</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">alt_name</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
-        <span class="n">pass_fds</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">pass_fds</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Iterable</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">pass_fds_close</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">write_mode</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
-    <span class="p">):</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Command&quot;</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Return new command with custom options set.</span>
 
 <span class="sd">        - Set `inherit_env` to False to prevent the command from inheriting</span>
@@ -592,18 +591,11 @@
         <span class="k">assert</span> <span class="n">new_args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">is</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">Command</span><span class="p">(</span><span class="nb">tuple</span><span class="p">(</span><span class="n">new_args</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">_run_future</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="s2">&quot;Wrap the command in a new asyncio task.&quot;</span>
-        <span class="k">return</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">coro</span><span class="p">(</span><span class="n">_run_future</span><span class="o">=</span><span class="n">_run_future</span><span class="p">),</span>
-            <span class="n">name</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="nb">id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
-        <span class="p">)</span>
-
     <span class="k">def</span> <span class="nf">coro</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">_run_future</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="s2">&quot;Return coroutine object to run awaitable.&quot;</span>
         <span class="k">return</span> <span class="n">run_cmd</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_run_future</span><span class="o">=</span><span class="n">_run_future</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Runner</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Return a `Runner` to run the process incrementally.</span>
 
 <span class="sd">        ```</span>
@@ -680,7 +672,7 @@
 <span class="k">class</span> <span class="nc">Options</span><span class="p">:</span>  <span class="c1"># pylint: disable=too-many-instance-attributes</span>
     <span class="s2">&quot;Concrete class for per-command options.&quot;</span>
 
-    <span class="n">context</span><span class="p">:</span> <span class="s2">&quot;Context&quot;</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">compare</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="nb">repr</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">context</span><span class="p">:</span> <span class="s2">&quot;CmdContext&quot;</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">compare</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="nb">repr</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
     <span class="s2">&quot;Root context object.&quot;</span>
 
     <span class="n">env</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ImmutableDict</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="nb">repr</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
@@ -734,7 +726,7 @@
     <span class="n">alt_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="s2">&quot;Alternate name for the command to use when logging.&quot;</span>
 
-    <span class="n">pass_fds</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">()</span>
+    <span class="n">pass_fds</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">()</span>
     <span class="s2">&quot;File descriptors to pass to the command.&quot;</span>
 
     <span class="n">pass_fds_close</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
@@ -817,7 +809,7 @@
 
         
             <span class="name">Options</span><span class="signature">(
-    context: <a href="#Context">shellous.command.Context</a>,
+    context: <a href="#CmdContext">shellous.command.CmdContext</a>,
     env: Optional[immutables._map.Map] = None,
     inherit_env: bool = True,
     input: Any = b&#39;&#39;,
@@ -835,7 +827,7 @@
     cancel_timeout: float = 3.0,
     cancel_signal: Optional[Any] = &lt;Signals.SIGTERM: 15&gt;,
     alt_name: Optional[str] = None,
-    pass_fds: tuple = (),
+    pass_fds: collections.abc.Iterable = (),
     pass_fds_close: bool = False,
     write_mode: bool = False
 )</span>
@@ -848,7 +840,7 @@
                             <div id="Options.context" class="classattr">
                                             <div class="attr variable"><a class="headerlink" href="#Options.context">#&nbsp;&nbsp</a>
 
-        <span class="name">context</span><span class="annotation">: <a href="#Context">shellous.command.Context</a></span>
+        <span class="name">context</span><span class="annotation">: <a href="#CmdContext">shellous.command.CmdContext</a></span>
     </div>
 
             <div class="docstring"><p>Root context object.</p>
@@ -1046,7 +1038,7 @@
                             <div id="Options.pass_fds" class="classattr">
                                             <div class="attr variable"><a class="headerlink" href="#Options.pass_fds">#&nbsp;&nbsp</a>
 
-        <span class="name">pass_fds</span><span class="annotation">: tuple[int]</span><span class="default_value"> = ()</span>
+        <span class="name">pass_fds</span><span class="annotation">: collections.abc.Iterable[int]</span><span class="default_value"> = ()</span>
     </div>
 
             <div class="docstring"><p>File descriptors to pass to the command.</p>
@@ -1247,48 +1239,49 @@
 
                             </div>
                 </section>
-                <section id="Context">
+                <section id="CmdContext">
                                 <div class="attr class">
-        <a class="headerlink" href="#Context">#&nbsp;&nbsp</a>
+        <a class="headerlink" href="#CmdContext">#&nbsp;&nbsp</a>
 
                 <div class="decorator">@dataclass(frozen=True)</div>
 
         <span class="def">class</span>
-        <span class="name">Context</span>:
+        <span class="name">CmdContext</span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="k">class</span> <span class="nc">Context</span><span class="p">:</span>
+<span class="k">class</span> <span class="nc">CmdContext</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Concrete class for an immutable execution context.&quot;&quot;&quot;</span>
 
     <span class="n">options</span><span class="p">:</span> <span class="n">Options</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># type: ignore</span>
+    <span class="s2">&quot;Default command options.&quot;</span>
 
     <span class="k">def</span> <span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="c1"># Initialize `context` in Options to `self`.</span>
             <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;options&quot;</span><span class="p">,</span> <span class="n">Options</span><span class="p">(</span><span class="bp">self</span><span class="p">))</span>
 
-    <span class="k">def</span> <span class="nf">stdin</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">close</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">stdin</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">close</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;CmdContext&quot;</span><span class="p">:</span>
         <span class="s2">&quot;Return new context with updated `input` settings.&quot;</span>
         <span class="n">new_options</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">set_stdin</span><span class="p">(</span><span class="n">input_</span><span class="p">,</span> <span class="n">close</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">Context</span><span class="p">(</span><span class="n">new_options</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">CmdContext</span><span class="p">(</span><span class="n">new_options</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">stdout</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">append</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">close</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">stdout</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">append</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">close</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;CmdContext&quot;</span><span class="p">:</span>
         <span class="s2">&quot;Return new context with updated `output` settings.&quot;</span>
         <span class="n">new_options</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">set_stdout</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="n">append</span><span class="p">,</span> <span class="n">close</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">Context</span><span class="p">(</span><span class="n">new_options</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">CmdContext</span><span class="p">(</span><span class="n">new_options</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">stderr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">error</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">append</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">close</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">stderr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">error</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">append</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">close</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;CmdContext&quot;</span><span class="p">:</span>
         <span class="s2">&quot;Return new context with updated `error` settings.&quot;</span>
         <span class="n">new_options</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">set_stderr</span><span class="p">(</span><span class="n">error</span><span class="p">,</span> <span class="n">append</span><span class="p">,</span> <span class="n">close</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">Context</span><span class="p">(</span><span class="n">new_options</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">CmdContext</span><span class="p">(</span><span class="n">new_options</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">env</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">env</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;CmdContext&quot;</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Return new context with augmented environment.&quot;&quot;&quot;</span>
         <span class="n">new_options</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">set_env</span><span class="p">(</span><span class="n">kwds</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">Context</span><span class="p">(</span><span class="n">new_options</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">CmdContext</span><span class="p">(</span><span class="n">new_options</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">set</span><span class="p">(</span>  <span class="c1"># pylint: disable=unused-argument</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -1304,11 +1297,11 @@
         <span class="n">pass_fds</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">pass_fds_closed</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">write_mode</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
-    <span class="p">):</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;CmdContext&quot;</span><span class="p">:</span>
         <span class="s2">&quot;Return new context with custom options set.&quot;</span>
         <span class="n">kwargs</span> <span class="o">=</span> <span class="nb">locals</span><span class="p">()</span>
         <span class="k">del</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;self&quot;</span><span class="p">]</span>
-        <span class="k">return</span> <span class="n">Context</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">kwargs</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">CmdContext</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">kwargs</span><span class="p">))</span>
 
     <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
         <span class="s2">&quot;Construct a new command.&quot;</span>
@@ -1362,40 +1355,42 @@
 </div>
 
 
-                            <div id="Context.__init__" class="classattr">
-                                        <div class="attr function"><a class="headerlink" href="#Context.__init__">#&nbsp;&nbsp</a>
+                            <div id="CmdContext.__init__" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#CmdContext.__init__">#&nbsp;&nbsp</a>
 
         
-            <span class="name">Context</span><span class="signature">(options: <a href="#Options">shellous.command.Options</a> = None)</span>
+            <span class="name">CmdContext</span><span class="signature">(options: <a href="#Options">shellous.command.Options</a> = None)</span>
     </div>
 
         
     
 
                             </div>
-                            <div id="Context.options" class="classattr">
-                                            <div class="attr variable"><a class="headerlink" href="#Context.options">#&nbsp;&nbsp</a>
+                            <div id="CmdContext.options" class="classattr">
+                                            <div class="attr variable"><a class="headerlink" href="#CmdContext.options">#&nbsp;&nbsp</a>
 
         <span class="name">options</span><span class="annotation">: <a href="#Options">shellous.command.Options</a></span><span class="default_value"> = None</span>
     </div>
 
-    
+            <div class="docstring"><p>Default command options.</p>
+</div>
+
 
                             </div>
-                            <div id="Context.stdin" class="classattr">
-                                        <div class="attr function"><a class="headerlink" href="#Context.stdin">#&nbsp;&nbsp</a>
+                            <div id="CmdContext.stdin" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#CmdContext.stdin">#&nbsp;&nbsp</a>
 
         
             <span class="def">def</span>
-            <span class="name">stdin</span><span class="signature">(self, input_, *, close=False)</span>:
+            <span class="name">stdin</span><span class="signature">(self, input_, *, close=False) -&gt; <a href="#CmdContext">shellous.command.CmdContext</a></span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">stdin</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">close</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">stdin</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">close</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;CmdContext&quot;</span><span class="p">:</span>
         <span class="s2">&quot;Return new context with updated `input` settings.&quot;</span>
         <span class="n">new_options</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">set_stdin</span><span class="p">(</span><span class="n">input_</span><span class="p">,</span> <span class="n">close</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">Context</span><span class="p">(</span><span class="n">new_options</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">CmdContext</span><span class="p">(</span><span class="n">new_options</span><span class="p">)</span>
 </pre></div>
 
         </details>
@@ -1405,20 +1400,26 @@
 
 
                             </div>
-                            <div id="Context.stdout" class="classattr">
-                                        <div class="attr function"><a class="headerlink" href="#Context.stdout">#&nbsp;&nbsp</a>
+                            <div id="CmdContext.stdout" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#CmdContext.stdout">#&nbsp;&nbsp</a>
 
         
             <span class="def">def</span>
-            <span class="name">stdout</span><span class="signature">(self, output, *, append=False, close=False)</span>:
+            <span class="name">stdout</span><span class="signature">(
+    self,
+    output,
+    *,
+    append=False,
+    close=False
+) -&gt; <a href="#CmdContext">shellous.command.CmdContext</a></span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">stdout</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">append</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">close</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">stdout</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">append</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">close</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;CmdContext&quot;</span><span class="p">:</span>
         <span class="s2">&quot;Return new context with updated `output` settings.&quot;</span>
         <span class="n">new_options</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">set_stdout</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="n">append</span><span class="p">,</span> <span class="n">close</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">Context</span><span class="p">(</span><span class="n">new_options</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">CmdContext</span><span class="p">(</span><span class="n">new_options</span><span class="p">)</span>
 </pre></div>
 
         </details>
@@ -1428,20 +1429,26 @@
 
 
                             </div>
-                            <div id="Context.stderr" class="classattr">
-                                        <div class="attr function"><a class="headerlink" href="#Context.stderr">#&nbsp;&nbsp</a>
+                            <div id="CmdContext.stderr" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#CmdContext.stderr">#&nbsp;&nbsp</a>
 
         
             <span class="def">def</span>
-            <span class="name">stderr</span><span class="signature">(self, error, *, append=False, close=False)</span>:
+            <span class="name">stderr</span><span class="signature">(
+    self,
+    error,
+    *,
+    append=False,
+    close=False
+) -&gt; <a href="#CmdContext">shellous.command.CmdContext</a></span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">stderr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">error</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">append</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">close</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">stderr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">error</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">append</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">close</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;CmdContext&quot;</span><span class="p">:</span>
         <span class="s2">&quot;Return new context with updated `error` settings.&quot;</span>
         <span class="n">new_options</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">set_stderr</span><span class="p">(</span><span class="n">error</span><span class="p">,</span> <span class="n">append</span><span class="p">,</span> <span class="n">close</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">Context</span><span class="p">(</span><span class="n">new_options</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">CmdContext</span><span class="p">(</span><span class="n">new_options</span><span class="p">)</span>
 </pre></div>
 
         </details>
@@ -1451,20 +1458,20 @@
 
 
                             </div>
-                            <div id="Context.env" class="classattr">
-                                        <div class="attr function"><a class="headerlink" href="#Context.env">#&nbsp;&nbsp</a>
+                            <div id="CmdContext.env" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#CmdContext.env">#&nbsp;&nbsp</a>
 
         
             <span class="def">def</span>
-            <span class="name">env</span><span class="signature">(self, **kwds)</span>:
+            <span class="name">env</span><span class="signature">(self, **kwds) -&gt; <a href="#CmdContext">shellous.command.CmdContext</a></span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">env</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">):</span>
+            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">env</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;CmdContext&quot;</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Return new context with augmented environment.&quot;&quot;&quot;</span>
         <span class="n">new_options</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">set_env</span><span class="p">(</span><span class="n">kwds</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">Context</span><span class="p">(</span><span class="n">new_options</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">CmdContext</span><span class="p">(</span><span class="n">new_options</span><span class="p">)</span>
 </pre></div>
 
         </details>
@@ -1474,8 +1481,8 @@
 
 
                             </div>
-                            <div id="Context.set" class="classattr">
-                                        <div class="attr function"><a class="headerlink" href="#Context.set">#&nbsp;&nbsp</a>
+                            <div id="CmdContext.set" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#CmdContext.set">#&nbsp;&nbsp</a>
 
         
             <span class="def">def</span>
@@ -1493,7 +1500,7 @@
     pass_fds=&lt;UNSET.UNSET: 1&gt;,
     pass_fds_closed=&lt;UNSET.UNSET: 1&gt;,
     write_mode=&lt;UNSET.UNSET: 1&gt;
-)</span>:
+) -&gt; <a href="#CmdContext">shellous.command.CmdContext</a></span>:
     </div>
 
                 <details>
@@ -1512,11 +1519,11 @@
         <span class="n">pass_fds</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">pass_fds_closed</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">write_mode</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
-    <span class="p">):</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;CmdContext&quot;</span><span class="p">:</span>
         <span class="s2">&quot;Return new context with custom options set.&quot;</span>
         <span class="n">kwargs</span> <span class="o">=</span> <span class="nb">locals</span><span class="p">()</span>
         <span class="k">del</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;self&quot;</span><span class="p">]</span>
-        <span class="k">return</span> <span class="n">Context</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">kwargs</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">CmdContext</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">kwargs</span><span class="p">))</span>
 </pre></div>
 
         </details>
@@ -1526,28 +1533,6 @@
 
 
                             </div>
-                </section>
-                <section id="context">
-                            <div class="attr function"><a class="headerlink" href="#context">#&nbsp;&nbsp</a>
-
-        
-            <span class="def">def</span>
-            <span class="name">context</span><span class="signature">() -&gt; <a href="#Context">shellous.command.Context</a></span>:
-    </div>
-
-                <details>
-            <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">context</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Context</span><span class="p">:</span>
-    <span class="s2">&quot;Construct a new execution context.&quot;</span>
-    <span class="k">return</span> <span class="n">Context</span><span class="p">()</span>
-</pre></div>
-
-        </details>
-
-            <div class="docstring"><p>Construct a new execution context.</p>
-</div>
-
-
                 </section>
                 <section id="Command">
                                 <div class="attr class">
@@ -1567,7 +1552,7 @@
 <span class="sd">    arguments and options used to run a program. Commands do not do anything</span>
 <span class="sd">    until they are awaited.</span>
 
-<span class="sd">    Commands are always created by a Context.</span>
+<span class="sd">    Commands are always created by a CmdContext.</span>
 
 <span class="sd">    ```</span>
 <span class="sd">    # Create a context.</span>
@@ -1581,8 +1566,11 @@
 <span class="sd">    ```</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="n">args</span><span class="p">:</span> <span class="n">Any</span>
+    <span class="n">args</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">],</span> <span class="o">...</span><span class="p">]</span>
+    <span class="s2">&quot;Command arguments including the program name as first argument.&quot;</span>
+
     <span class="n">options</span><span class="p">:</span> <span class="n">Options</span>
+    <span class="s2">&quot;Command options.&quot;</span>
 
     <span class="k">def</span> <span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Validate the command.&quot;</span>
@@ -1603,24 +1591,24 @@
             <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;...</span><span class="si">{</span><span class="n">name</span><span class="p">[</span><span class="o">-</span><span class="mi">31</span><span class="p">:]</span><span class="si">}</span><span class="s2">&quot;</span>
         <span class="k">return</span> <span class="n">name</span>
 
-    <span class="k">def</span> <span class="nf">stdin</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">close</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">stdin</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">close</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Command&quot;</span><span class="p">:</span>
         <span class="s2">&quot;Pass `input` to command&#39;s standard input.&quot;</span>
         <span class="n">new_options</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">set_stdin</span><span class="p">(</span><span class="n">input_</span><span class="p">,</span> <span class="n">close</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">Command</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">,</span> <span class="n">new_options</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">stdout</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">append</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">close</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">stdout</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">append</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">close</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Command&quot;</span><span class="p">:</span>
         <span class="s2">&quot;Redirect standard output to `output`.&quot;</span>
         <span class="n">_check_args</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="n">append</span><span class="p">)</span>
         <span class="n">new_options</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">set_stdout</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="n">append</span><span class="p">,</span> <span class="n">close</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">Command</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">,</span> <span class="n">new_options</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">stderr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">error</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">append</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">close</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">stderr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">error</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">append</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">close</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Command&quot;</span><span class="p">:</span>
         <span class="s2">&quot;Redirect standard error to `error`.&quot;</span>
         <span class="n">_check_args</span><span class="p">(</span><span class="n">error</span><span class="p">,</span> <span class="n">append</span><span class="p">)</span>
         <span class="n">new_options</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">set_stderr</span><span class="p">(</span><span class="n">error</span><span class="p">,</span> <span class="n">append</span><span class="p">,</span> <span class="n">close</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">Command</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">,</span> <span class="n">new_options</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">env</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">env</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Command&quot;</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Return new command with augmented environment.&quot;&quot;&quot;</span>
         <span class="n">new_options</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">set_env</span><span class="p">(</span><span class="n">kwds</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">Command</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">,</span> <span class="n">new_options</span><span class="p">)</span>
@@ -1636,10 +1624,10 @@
         <span class="n">cancel_timeout</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">cancel_signal</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">alt_name</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
-        <span class="n">pass_fds</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">pass_fds</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Iterable</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">pass_fds_close</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">write_mode</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
-    <span class="p">):</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Command&quot;</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Return new command with custom options set.</span>
 
 <span class="sd">        - Set `inherit_env` to False to prevent the command from inheriting</span>
@@ -1677,18 +1665,11 @@
         <span class="k">assert</span> <span class="n">new_args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">is</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">Command</span><span class="p">(</span><span class="nb">tuple</span><span class="p">(</span><span class="n">new_args</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">_run_future</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="s2">&quot;Wrap the command in a new asyncio task.&quot;</span>
-        <span class="k">return</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">coro</span><span class="p">(</span><span class="n">_run_future</span><span class="o">=</span><span class="n">_run_future</span><span class="p">),</span>
-            <span class="n">name</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="nb">id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
-        <span class="p">)</span>
-
     <span class="k">def</span> <span class="nf">coro</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">_run_future</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="s2">&quot;Return coroutine object to run awaitable.&quot;</span>
         <span class="k">return</span> <span class="n">run_cmd</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_run_future</span><span class="o">=</span><span class="n">_run_future</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Runner</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Return a `Runner` to run the process incrementally.</span>
 
 <span class="sd">        ```</span>
@@ -1747,7 +1728,7 @@
 arguments and options used to run a program. Commands do not do anything
 until they are awaited.</p>
 
-<p>Commands are always created by a Context.</p>
+<p>Commands are always created by a CmdContext.</p>
 
 <pre><code># Create a context.
 sh = <a href="../shellous.html#context">shellous.context()</a>
@@ -1765,11 +1746,33 @@ result = await echo
                                         <div class="attr function"><a class="headerlink" href="#Command.__init__">#&nbsp;&nbsp</a>
 
         
-            <span class="name">Command</span><span class="signature">(args: Any, options: <a href="#Options">shellous.command.Options</a>)</span>
+            <span class="name">Command</span><span class="signature">(args: tuple, options: <a href="#Options">shellous.command.Options</a>)</span>
     </div>
 
         
     
+
+                            </div>
+                            <div id="Command.args" class="classattr">
+                                            <div class="attr variable"><a class="headerlink" href="#Command.args">#&nbsp;&nbsp</a>
+
+        <span class="name">args</span><span class="annotation">: tuple[typing.Union[str, bytes, os.PathLike], ...]</span>
+    </div>
+
+            <div class="docstring"><p>Command arguments including the program name as first argument.</p>
+</div>
+
+
+                            </div>
+                            <div id="Command.options" class="classattr">
+                                            <div class="attr variable"><a class="headerlink" href="#Command.options">#&nbsp;&nbsp</a>
+
+        <span class="name">options</span><span class="annotation">: <a href="#Options">shellous.command.Options</a></span>
+    </div>
+
+            <div class="docstring"><p>Command options.</p>
+</div>
+
 
                             </div>
                             <div id="Command.name" class="classattr">
@@ -1791,12 +1794,12 @@ is set, return that instead.</p>
 
         
             <span class="def">def</span>
-            <span class="name">stdin</span><span class="signature">(self, input_, *, close=False)</span>:
+            <span class="name">stdin</span><span class="signature">(self, input_, *, close=False) -&gt; <a href="#Command">shellous.command.Command</a></span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">stdin</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">close</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">stdin</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">close</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Command&quot;</span><span class="p">:</span>
         <span class="s2">&quot;Pass `input` to command&#39;s standard input.&quot;</span>
         <span class="n">new_options</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">set_stdin</span><span class="p">(</span><span class="n">input_</span><span class="p">,</span> <span class="n">close</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">Command</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">,</span> <span class="n">new_options</span><span class="p">)</span>
@@ -1814,12 +1817,18 @@ is set, return that instead.</p>
 
         
             <span class="def">def</span>
-            <span class="name">stdout</span><span class="signature">(self, output, *, append=False, close=False)</span>:
+            <span class="name">stdout</span><span class="signature">(
+    self,
+    output,
+    *,
+    append=False,
+    close=False
+) -&gt; <a href="#Command">shellous.command.Command</a></span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">stdout</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">append</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">close</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">stdout</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">append</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">close</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Command&quot;</span><span class="p">:</span>
         <span class="s2">&quot;Redirect standard output to `output`.&quot;</span>
         <span class="n">_check_args</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="n">append</span><span class="p">)</span>
         <span class="n">new_options</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">set_stdout</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="n">append</span><span class="p">,</span> <span class="n">close</span><span class="p">)</span>
@@ -1838,12 +1847,18 @@ is set, return that instead.</p>
 
         
             <span class="def">def</span>
-            <span class="name">stderr</span><span class="signature">(self, error, *, append=False, close=False)</span>:
+            <span class="name">stderr</span><span class="signature">(
+    self,
+    error,
+    *,
+    append=False,
+    close=False
+) -&gt; <a href="#Command">shellous.command.Command</a></span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">stderr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">error</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">append</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">close</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">stderr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">error</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">append</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">close</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Command&quot;</span><span class="p">:</span>
         <span class="s2">&quot;Redirect standard error to `error`.&quot;</span>
         <span class="n">_check_args</span><span class="p">(</span><span class="n">error</span><span class="p">,</span> <span class="n">append</span><span class="p">)</span>
         <span class="n">new_options</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">set_stderr</span><span class="p">(</span><span class="n">error</span><span class="p">,</span> <span class="n">append</span><span class="p">,</span> <span class="n">close</span><span class="p">)</span>
@@ -1862,12 +1877,12 @@ is set, return that instead.</p>
 
         
             <span class="def">def</span>
-            <span class="name">env</span><span class="signature">(self, **kwds)</span>:
+            <span class="name">env</span><span class="signature">(self, **kwds) -&gt; <a href="#Command">shellous.command.Command</a></span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">env</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">):</span>
+            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">env</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Command&quot;</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Return new command with augmented environment.&quot;&quot;&quot;</span>
         <span class="n">new_options</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">set_env</span><span class="p">(</span><span class="n">kwds</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">Command</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">,</span> <span class="n">new_options</span><span class="p">)</span>
@@ -1896,10 +1911,10 @@ is set, return that instead.</p>
     cancel_timeout: Union[float, <a href="#UNSET">shellous.command.UNSET</a>] = &lt;UNSET.UNSET: 1&gt;,
     cancel_signal: Union[Any, <a href="#UNSET">shellous.command.UNSET</a>] = &lt;UNSET.UNSET: 1&gt;,
     alt_name: Union[str, NoneType, <a href="#UNSET">shellous.command.UNSET</a>] = &lt;UNSET.UNSET: 1&gt;,
-    pass_fds: Union[tuple[int], <a href="#UNSET">shellous.command.UNSET</a>] = &lt;UNSET.UNSET: 1&gt;,
+    pass_fds: Union[collections.abc.Iterable[int], <a href="#UNSET">shellous.command.UNSET</a>] = &lt;UNSET.UNSET: 1&gt;,
     pass_fds_close: Union[bool, <a href="#UNSET">shellous.command.UNSET</a>] = &lt;UNSET.UNSET: 1&gt;,
     write_mode: Union[bool, <a href="#UNSET">shellous.command.UNSET</a>] = &lt;UNSET.UNSET: 1&gt;
-)</span>:
+) -&gt; <a href="#Command">shellous.command.Command</a></span>:
     </div>
 
                 <details>
@@ -1915,10 +1930,10 @@ is set, return that instead.</p>
         <span class="n">cancel_timeout</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">cancel_signal</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">alt_name</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
-        <span class="n">pass_fds</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">pass_fds</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Iterable</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">pass_fds_close</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">write_mode</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
-    <span class="p">):</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Command&quot;</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Return new command with custom options set.</span>
 
 <span class="sd">        - Set `inherit_env` to False to prevent the command from inheriting</span>
@@ -1977,31 +1992,6 @@ scripting language.</li>
 
 
                             </div>
-                            <div id="Command.task" class="classattr">
-                                        <div class="attr function"><a class="headerlink" href="#Command.task">#&nbsp;&nbsp</a>
-
-        
-            <span class="def">def</span>
-            <span class="name">task</span><span class="signature">(self, *, _run_future=None)</span>:
-    </div>
-
-                <details>
-            <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">_run_future</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="s2">&quot;Wrap the command in a new asyncio task.&quot;</span>
-        <span class="k">return</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">coro</span><span class="p">(</span><span class="n">_run_future</span><span class="o">=</span><span class="n">_run_future</span><span class="p">),</span>
-            <span class="n">name</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="nb">id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
-        <span class="p">)</span>
-</pre></div>
-
-        </details>
-
-            <div class="docstring"><p>Wrap the command in a new asyncio task.</p>
-</div>
-
-
-                            </div>
                             <div id="Command.coro" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#Command.coro">#&nbsp;&nbsp</a>
 
@@ -2029,12 +2019,12 @@ scripting language.</li>
 
         
             <span class="def">def</span>
-            <span class="name">run</span><span class="signature">(self)</span>:
+            <span class="name">run</span><span class="signature">(self) -&gt; <a href="runner.html#Runner">shellous.runner.Runner</a></span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Runner</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Return a `Runner` to run the process incrementally.</span>
 
 <span class="sd">        ```</span>
