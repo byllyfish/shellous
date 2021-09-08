@@ -767,3 +767,19 @@ async def test_process_substitution_write_pipe_alt(sh, tmp_path):
     result = await pipe
     assert result == "b\n"
     assert out.read_bytes() == b"b\n"
+
+
+async def test_start_new_session(sh):
+    """Test `start_new_session` option."""
+
+    script = """import os; print(os.getsid(0) == os.getpid())"""
+    cmd = sh(sys.executable, "-c", script)
+
+    result = await cmd
+    assert result == "False\n"
+
+    result = await cmd.set(start_new_session=False)
+    assert result == "False\n"
+
+    result = await cmd.set(start_new_session=True)
+    assert result == "True\n"

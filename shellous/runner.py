@@ -143,6 +143,7 @@ class _RunOptions:
             "stdout": stdout,
             "stderr": stderr,
             "env": options.merge_env(),
+            "start_new_session": options.start_new_session,
         }
 
         if options.pass_fds:
