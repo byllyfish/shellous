@@ -1,6 +1,15 @@
 Shellous Change Log
 ===================
 
+0.4.0
+-----
+
+- [FEATURE] Add support for process substitution on Unix.
+- [API] Rename Context to CmdContext.
+- [API] Remove task() method on Command/Pipeline.
+- [BUGFIX] Always finish stdin.wait_closed(), even if cancelled.
+- [BUGFIX] Add pypi classifiers to project.
+
 0.3.0
 -----
 
