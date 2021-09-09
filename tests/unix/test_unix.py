@@ -3,7 +3,6 @@
 import asyncio
 import io
 import os
-import pty
 import signal
 import sys
 
@@ -818,25 +817,27 @@ async def _get_streams(fd):
     return reader, writer
 
 
+@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
 async def test_manual_pty(sh):
     """Test setting up a pty manually."""
 
+    import pty  # import not supported on windows
+
     parent_fd, child_fd = pty.openpty()
 
+    tr = sh("tr", "[:lower:]", "[:upper:]")
     cmd = (
-        sh("cat")
-        .stdin(child_fd, close=True)
+        tr.stdin(child_fd, close=True)
         .stdout(child_fd, close=True)
-        .stderr(child_fd, close=True)
         .set(start_new_session=True)
     )
 
     reader, writer = await _get_streams(parent_fd)
 
     async with cmd.run() as run:
-        writer.write(b"abc")
+        writer.write(b"abc\n")
         await writer.drain()
         result = await reader.read(1024)
         writer.close()
 
-    assert result == b"abc"
+    assert result == b"abc\r\nABC\r\n"
