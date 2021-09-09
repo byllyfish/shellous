@@ -3,6 +3,7 @@
 import asyncio
 import io
 import os
+import pty
 import signal
 import sys
 
@@ -783,3 +784,59 @@ async def test_start_new_session(sh):
 
     result = await cmd.set(start_new_session=True)
     assert result == "True\n"
+
+
+async def _get_streams(fd):
+    "Wrap fd in a StreamReader, StreamWriter pair."
+
+    import fcntl
+
+    fcntl.fcntl(fd, fcntl.F_SETFL, os.O_NONBLOCK)
+    reader_pipe = os.fdopen(fd, "rb", 0, closefd=False)
+    writer_pipe = os.fdopen(fd, "wb", 0, closefd=True)
+
+    loop = asyncio.get_running_loop()
+    reader = asyncio.StreamReader(loop=loop)
+    reader_protocol = asyncio.StreamReaderProtocol(reader, loop=loop)
+    reader_transport, _ = await loop.connect_read_pipe(
+        lambda: reader_protocol,
+        reader_pipe,
+    )
+    writer_transport, writer_protocol = await loop.connect_write_pipe(
+        asyncio.streams.FlowControlMixin,
+        writer_pipe,
+    )
+    writer = asyncio.StreamWriter(writer_transport, writer_protocol, reader, loop)
+
+    # Patch writer_transport.close so it also closes the reader_transport.
+    def _close():
+        _orig_close()
+        reader_transport.close()
+
+    writer_transport.close, _orig_close = _close, writer_transport.close
+
+    return reader, writer
+
+
+async def test_manual_pty(sh):
+    """Test setting up a pty manually."""
+
+    parent_fd, child_fd = pty.openpty()
+
+    cmd = (
+        sh("cat")
+        .stdin(child_fd, close=True)
+        .stdout(child_fd, close=True)
+        .stderr(child_fd, close=True)
+        .set(start_new_session=True)
+    )
+
+    reader, writer = await _get_streams(parent_fd)
+
+    async with cmd.run() as run:
+        writer.write(b"abc")
+        await writer.drain()
+        result = await reader.read(1024)
+        writer.close()
+
+    assert result == b"abc"
