@@ -45,6 +45,9 @@ class PtyFds(NamedTuple):
     stdout: bool
     stderr: bool
 
+    def close(self):
+        os.close(self.child_fd)
+
 
 class _RunOptions:
     """_RunOptions is context manager to assist in running a command.
@@ -249,7 +252,7 @@ class _RunOptions:
         parent_fd, child_fd = _open_pty()
 
         # Close `child_fd` later.
-        self.open_fds.append(child_fd)
+        # self.open_fds.append(child_fd)
 
         if stdin == asyncio.subprocess.PIPE:
             stdin = child_fd
@@ -257,10 +260,10 @@ class _RunOptions:
         if stdout == asyncio.subprocess.PIPE:
             stdout = child_fd
 
-        if stderr == asyncio.subprocess.PIPE:
-            raise RuntimeError("pty can't separate stderr from stdout")
-        elif stderr == asyncio.subprocess.STDOUT:
+        if stderr == asyncio.subprocess.STDOUT:
             stderr = child_fd
+        elif stderr == asyncio.subprocess.PIPE:
+            raise RuntimeError("pty can't separate stderr from stdout")
 
         self.pty_fds = PtyFds(
             parent_fd,
@@ -567,6 +570,10 @@ class Runner:
         "Make sure that our resources are properly closed."
         assert self.proc
 
+        if self.options.pty_fds:
+            self.options.pty_fds.close()
+            self.stdin.close()
+
         # _close can be called when unwinding exceptions. We need to handle
         # the case that the process has not exited yet. Remember to close the
         # transport.
@@ -738,6 +745,7 @@ class PipeRunner:  # pylint: disable=too-many-instance-attributes
         except BaseException:  # pylint: disable=broad-except
             # Clean up after any exception *including* CancelledError.
             close_fds(open_fds)
+            raise
 
     def _setup_pipeline(self, open_fds):
         """Return the pipeline stitched together with pipe fd's.

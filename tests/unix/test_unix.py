@@ -3,6 +3,7 @@
 import asyncio
 import io
 import os
+import re
 import signal
 import sys
 
@@ -884,9 +885,13 @@ async def test_pty(sh):
 
 @pytest.mark.xfail(_is_uvloop(), reason="uvloop")
 async def test_pty_ctermid(sh):
-    "Test the `pty` option."
+    "Test the `pty` option and print out the ctermid, ttyname for stdin/stdout."
     cmd = (
-        sh(sys.executable, "-c", "import os; print(os.ctermid())")
+        sh(
+            sys.executable,
+            "-c",
+            "import os; print(os.ctermid(), os.ttyname(0), os.ttyname(1))",
+        )
         .stdin(CAPTURE)
         .set(pty=True)
     )
@@ -895,4 +900,59 @@ async def test_pty_ctermid(sh):
         result = await run.stdout.read(1024)
         run.stdin.close()
 
-    assert result == b"/dev/tty\r\n"
+    assert re.fullmatch(br"/dev/tty /dev/ttys(\d+) /dev/ttys\1\r\n", result)
+
+
+@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+async def test_pty_stty_all(sh, tmp_path):
+    "Test the `pty` option and print out the result of stty -a"
+
+    err = tmp_path / "test_pty_stty_all"
+    cmd = sh("stty", "-a").stdin(CAPTURE).stderr(err).set(pty=True)
+
+    async with cmd.run() as run:
+        result = await run.stdout.read(1024)
+        run.stdin.close()
+
+    assert err.read_bytes() == b""
+    assert result == (
+        b"speed 9600 baud; 0 rows; 0 columns;\r\n"
+        b"lflags: icanon isig iexten echo echoe -echok echoke -echonl echoctl\r\n"
+        b"\t-echoprt -altwerase -noflsh -tostop -flusho -pendin -nokerninfo\r\n"
+        b"\t-extproc\r\n"
+        b"iflags: -istrip icrnl -inlcr -igncr ixon -ixoff ixany imaxbel -iutf8\r\n"
+        b"\t-ignbrk brkint -inpck -ignpar -parmrk\r\n"
+        b"oflags: opost onlcr -oxtabs -onocr -onlret\r\n"
+        b"cflags: cread cs8 -parenb -parodd hupcl -clocal -cstopb -crtscts -dsrflow\r\n"
+        b"\t-dtrflow -mdmbuf\r\n"
+        b"cchars: discard = ^O; dsusp = ^Y; eof = ^D; eol = <undef>;\r\n"
+        b"\teol2 = <undef>; erase = ^?; intr = ^C; kill = ^U; lnext = ^V;\r\n"
+        b"\tmin = 1; quit = ^\\; reprint = ^R; start = ^Q; status = ^T;\r\n"
+        b"\tstop = ^S; susp = ^Z; time = 0; werase = ^W;\r\n"
+    )
+
+
+@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+async def test_pty_tr_eot(sh):
+    "Test the `pty` option with a control-D (EOT = 0x04)"
+    cmd = sh("tr", "[:lower:]", "[:upper:]").stdin(CAPTURE).set(pty=True)
+
+    async with cmd.run() as run:
+        run.stdin.write(b"abc\n\x04")
+        await run.stdin.drain()
+        result = await run.stdout.read(1024)
+
+    assert result == b"abc\r\n^D\x08\x08ABC\r\n"
+
+
+@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+async def test_pty_cat_eot(sh):
+    "Test the `pty` option with a control-D (EOT = 0x04)"
+    cmd = sh("cat").stdin(CAPTURE).set(pty=True)
+
+    async with cmd.run() as run:
+        run.stdin.write(b"abc\x04\x04")
+        await run.stdin.drain()
+        result = await run.stdout.read(1024)
+
+    assert result == b"abc^D\x08\x08^D\x08\x08abc"
