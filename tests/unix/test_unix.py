@@ -785,6 +785,31 @@ async def test_start_new_session(sh):
     assert result == "True\n"
 
 
+@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+async def test_manual_pty(sh):
+    """Test setting up a pty manually."""
+
+    import pty  # import not supported on windows
+
+    parent_fd, child_fd = pty.openpty()
+
+    tr = sh("tr", "[:lower:]", "[:upper:]")
+    cmd = (
+        tr.stdin(child_fd, close=True)
+        .stdout(child_fd, close=True)
+        .set(start_new_session=True)
+    )
+
+    async with cmd.run():
+        # Use synchronous functions to test pty directly.
+        os.write(parent_fd, b"abc\n")
+        await asyncio.sleep(0.1)
+        result = os.read(parent_fd, 1024)
+        os.close(parent_fd)
+
+    assert result == b"abc\r\nABC\r\n"
+
+
 async def _get_streams(fd):
     "Wrap fd in a StreamReader, StreamWriter pair."
 
@@ -818,7 +843,7 @@ async def _get_streams(fd):
 
 
 @pytest.mark.xfail(_is_uvloop(), reason="uvloop")
-async def test_manual_pty(sh):
+async def test_manual_pty_streams(sh):
     """Test setting up a pty manually."""
 
     import pty  # import not supported on windows
@@ -841,3 +866,33 @@ async def test_manual_pty(sh):
         writer.close()
 
     assert result == b"abc\r\nABC\r\n"
+
+
+@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+async def test_pty(sh):
+    "Test the `pty` option."
+    cmd = sh("tr", "[:lower:]", "[:upper:]").stdin(CAPTURE).set(pty=True)
+
+    async with cmd.run() as run:
+        run.stdin.write(b"abc\n")
+        await run.stdin.drain()
+        result = await run.stdout.read(1024)
+        run.stdin.close()
+
+    assert result == b"abc\r\nABC\r\n"
+
+
+@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+async def test_pty_ctermid(sh):
+    "Test the `pty` option."
+    cmd = (
+        sh(sys.executable, "-c", "import os; print(os.ctermid())")
+        .stdin(CAPTURE)
+        .set(pty=True)
+    )
+
+    async with cmd.run() as run:
+        result = await run.stdout.read(1024)
+        run.stdin.close()
+
+    assert result == b"/dev/tty\r\n"

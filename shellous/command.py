@@ -102,6 +102,9 @@ class Options:  # pylint: disable=too-many-instance-attributes
     start_new_session: bool = False
     "True if child process should start a new session with setsid()."
 
+    pty: bool = False
+    "True if child process should be controlled using a pseudo-terminal (pty)."
+
     def merge_env(self):
         "Return our `env` merged with the global environment."
         if self.inherit_env:
@@ -212,6 +215,7 @@ class CmdContext:
         pass_fds_closed=_UNSET,
         write_mode=_UNSET,
         start_new_session=_UNSET,
+        pty=_UNSET,
     ) -> "CmdContext":
         "Return new context with custom options set."
         kwargs = locals()
@@ -346,6 +350,7 @@ class Command:
         pass_fds_close: Unset[bool] = _UNSET,
         write_mode: Unset[bool] = _UNSET,
         start_new_session: Unset[bool] = _UNSET,
+        pty: Unset[bool] = _UNSET,
     ) -> "Command":
         """Return new command with custom options set.
 
@@ -370,6 +375,9 @@ class Command:
         - Set `pass_fds_close` to True to auto-close the `pass_fds`.
         - Set `write_mode` to True when using process substitution for writing.
         - Set `start_new_session` to True to start a new session.
+        - Set `pty` to True to use a pseudo-terminal (pty) to control the child
+        process. This setting forces `start_new_session` to
+        also be True.
         """
         kwargs = locals()
         del kwargs["self"]

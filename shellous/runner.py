@@ -4,6 +4,7 @@ import asyncio
 import io
 import os
 import sys
+from typing import NamedTuple
 
 import shellous
 import shellous.redirect as redir
@@ -36,6 +37,15 @@ def _is_write_mode(cmd):
     return cmd.options.write_mode
 
 
+class PtyFds(NamedTuple):
+    "Track parent/child fd's for pty."
+    parent_fd: int
+    child_fd: int
+    stdin: bool
+    stdout: bool
+    stderr: bool
+
+
 class _RunOptions:
     """_RunOptions is context manager to assist in running a command.
 
@@ -57,6 +67,7 @@ class _RunOptions:
         self.args = None
         self.kwd_args = None
         self.subcmds = []
+        self.pty_fds = None
 
     def close_fds(self):
         "Close all open file descriptors in `open_fds`."
@@ -136,6 +147,18 @@ class _RunOptions:
             sys.stderr,
         )
 
+        # Set up PTY here. This is the first half. Second half in `Runner`.
+        start_new_session = options.start_new_session
+        preexec_fn = None
+        if options.pty:
+            stdin, stdout, stderr, preexec_fn = self._setup_pty1(
+                stdin,
+                stdout,
+                stderr,
+                options.pty,
+            )
+            start_new_session = True
+
         self.input_bytes = input_bytes
         self.args = self.command.args
         self.kwd_args = {
@@ -143,7 +166,8 @@ class _RunOptions:
             "stdout": stdout,
             "stderr": stderr,
             "env": options.merge_env(),
-            "start_new_session": options.start_new_session,
+            "start_new_session": start_new_session,
+            "preexec_fn": preexec_fn,
         }
 
         if options.pass_fds:
@@ -215,6 +239,51 @@ class _RunOptions:
             raise TypeError(f"unsupported type: {output!r}")
 
         return stdout
+
+    def _setup_pty1(self, stdin, stdout, stderr, pty):
+        """Set up pseudo-terminal and return (stdin, stdout, stderr, preexec_fn).
+
+        Initializes `self.pty_fds`.
+        """
+
+        parent_fd, child_fd = _open_pty()
+
+        # Close `child_fd` later.
+        self.open_fds.append(child_fd)
+
+        if stdin == asyncio.subprocess.PIPE:
+            stdin = child_fd
+
+        if stdout == asyncio.subprocess.PIPE:
+            stdout = child_fd
+
+        if stderr == asyncio.subprocess.PIPE:
+            raise RuntimeError("pty can't separate stderr from stdout")
+        elif stderr == asyncio.subprocess.STDOUT:
+            stderr = child_fd
+
+        self.pty_fds = PtyFds(
+            parent_fd,
+            child_fd,
+            stdin == child_fd,
+            stdout == child_fd,
+            stderr == child_fd,
+        )
+
+        # If pty is a callable, call it here with PtyFds as argument. This
+        # gives the client an opportunity to configure the tty.
+        if callable(pty):
+            pty(self.pty_fds)
+
+        def _preexec_fn():
+            # Explicitly open the tty to make it become a controlling tty.
+            # See https://github.com/python/cpython/blob/3.9/Lib/pty.py
+            tmpfd = os.open(os.ttyname(1), os.O_RDWR)
+            os.close(tmpfd)
+
+        LOGGER.info("_setup_pty1: %r", self.pty_fds)
+
+        return stdin, stdout, stderr, _preexec_fn
 
 
 class Runner:
@@ -377,6 +446,15 @@ class Runner:
             stdout = self.proc.stdout
             stderr = self.proc.stderr
 
+            # Second half of pty setup.
+            if opts.pty_fds:
+                stdin, stdout, stderr = await self._setup_pty2(
+                    stdin,
+                    stdout,
+                    stderr,
+                    opts.pty_fds,
+                )
+
             if stderr is not None:
                 error = opts.command.options.error
                 stderr = self._setup_output_sink(stderr, error, opts.encoding, "stderr")
@@ -407,6 +485,40 @@ class Runner:
         self.stderr = stderr
 
         return self
+
+    async def _setup_pty2(self, stdin, stdout, stderr, pty_fds):
+        "Perform second half of pty setup. Return (stdin, stdout, stderr)."
+        assert stderr is None
+
+        import fcntl
+
+        fcntl.fcntl(pty_fds.parent_fd, fcntl.F_SETFL, os.O_NONBLOCK)
+        reader_pipe = os.fdopen(pty_fds.parent_fd, "rb", 0, closefd=False)
+        writer_pipe = os.fdopen(pty_fds.parent_fd, "wb", 0, closefd=True)
+
+        loop = asyncio.get_running_loop()
+        reader = asyncio.StreamReader(loop=loop)
+        reader_protocol = asyncio.StreamReaderProtocol(reader, loop=loop)
+        reader_transport, _ = await loop.connect_read_pipe(
+            lambda: reader_protocol,
+            reader_pipe,
+        )
+        writer_protocol = asyncio.streams.FlowControlMixin()
+        writer_transport, writer_protocol = await loop.connect_write_pipe(
+            lambda: writer_protocol,
+            writer_pipe,
+        )
+        writer = asyncio.StreamWriter(writer_transport, writer_protocol, reader, loop)
+
+        # Patch writer_transport.close so it also closes the reader_transport.
+        def _close():
+            _orig_close()
+            reader_transport.close()
+
+        writer_transport.close, _orig_close = _close, writer_transport.close
+
+        # FIXME: Should only return when stdin, stdout set in pty_fds.
+        return writer, reader, stderr
 
     def _setup_output_sink(self, stream, sink, encoding, tag):
         "Set up a task to write to custom output sink."
@@ -760,3 +872,11 @@ def _cleanup(command):
         open_fds.extend(command.options.pass_fds)
 
     close_fds(open_fds)
+
+
+def _open_pty():
+    "Open pseudo-terminal (pty) descriptors. Returns (parent_fd, child_fd)."
+
+    from pty import openpty
+
+    return openpty()
