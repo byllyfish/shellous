@@ -961,7 +961,10 @@ async def test_pty_tr_eot(sh):
         await run.stdin.drain()
         result = await run.stdout.read(1024)
 
-    assert result == b"abc\r\n^D\x08\x08ABC\r\n"
+    if sys.platform == "linux":
+        assert result == b"abc\r\nABC\r\n"
+    else:
+        assert result == b"abc\r\n^D\x08\x08ABC\r\n"
 
 
 @pytest.mark.xfail(_is_uvloop(), reason="uvloop")
@@ -974,4 +977,52 @@ async def test_pty_cat_eot(sh):
         await run.stdin.drain()
         result = await run.stdout.read(1024)
 
-    assert result == b"abc^D\x08\x08^D\x08\x08abc"
+    if sys.platform == "linux":
+        assert result == b"abcabc"
+    else:
+        assert result == b"abc^D\x08\x08^D\x08\x08abc"
+
+
+@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+async def test_pty_raw_size(sh):
+    "Test the `pty` option in raw mode."
+    from shellous.tty import raw
+
+    cmd = sh("stty", "size").set(pty=raw(rows=17, cols=41))
+    result = await cmd
+    assert result == "17 41\n"
+
+
+@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+async def test_pty_cbreak_size(sh):
+    "Test the `pty` option in cbreak mode."
+    from shellous.tty import cbreak
+
+    cmd = sh("stty", "size").set(pty=cbreak(rows=19, cols=43))
+    result = await cmd
+    assert result == "19 43\r\n"
+
+
+@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+async def test_pty_raw_ls(sh):
+    "Test the `pty` option in raw mode."
+    from shellous.tty import raw
+
+    cmd = sh("ls").set(pty=raw(rows=24, cols=40))
+    result = await cmd
+
+    assert "README.md" in result
+    for line in io.StringIO(result):
+        assert len(line.rstrip()) <= 40
+
+
+@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+async def test_pty_raw_size_inherited(sh):
+    "Test the `pty` option in raw mode."
+    from shellous.tty import raw
+
+    cmd = sh("stty", "size").set(pty=raw(rows=..., cols=...))
+    result = await cmd
+
+    rows, cols = (int(n) for n in result.rstrip().split())
+    assert rows >= 0 and cols >= 0
