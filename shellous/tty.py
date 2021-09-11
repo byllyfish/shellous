@@ -1,13 +1,59 @@
-import fcntl
+import asyncio
+import os
 import struct
-import termios
 import tty
+
+try:
+    import fcntl
+    import termios
+except ImportError:
+    pass
 
 from .log import LOGGER
 
 _STDIN_FILENO = 0
+_STDOUT_FILENO = 1
 _LFLAG = 3
 _CC = 6
+
+
+def set_ctty_preexec_fn():
+    "Explicitly open the tty to make it become a controlling tty."
+    # See https://github.com/python/cpython/blob/3.9/Lib/pty.py
+    tmpfd = os.open(os.ttyname(_STDOUT_FILENO), os.O_RDWR)
+    os.close(tmpfd)
+
+
+async def open_pty_streams(file_desc):
+    "Open reader, writer streams for pty file descriptor."
+    fcntl.fcntl(file_desc, fcntl.F_SETFL, os.O_NONBLOCK)
+
+    reader_pipe = os.fdopen(file_desc, "rb", 0, closefd=False)
+    writer_pipe = os.fdopen(file_desc, "wb", 0, closefd=True)
+
+    loop = asyncio.get_running_loop()
+    reader = asyncio.StreamReader(loop=loop)
+    reader_protocol = asyncio.StreamReaderProtocol(reader, loop=loop)
+    reader_transport, _ = await loop.connect_read_pipe(
+        lambda: reader_protocol,
+        reader_pipe,
+    )
+
+    writer_protocol = asyncio.streams.FlowControlMixin()
+    writer_transport, writer_protocol = await loop.connect_write_pipe(
+        lambda: writer_protocol,
+        writer_pipe,
+    )
+    writer = asyncio.StreamWriter(writer_transport, writer_protocol, reader, loop)
+
+    # Patch writer_transport.close so it also closes the reader_transport.
+    def _close():
+        _orig_close()
+        reader_transport.close()
+
+    writer_transport.close, _orig_close = _close, writer_transport.close
+
+    return reader, writer
 
 
 def raw(rows=0, cols=0, x=0, y=0):

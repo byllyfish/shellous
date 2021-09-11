@@ -297,15 +297,9 @@ class _RunOptions:
             tty.get_eof(child_fd),
         )
 
-        def _preexec_fn():
-            # Explicitly open the tty to make it become a controlling tty.
-            # See https://github.com/python/cpython/blob/3.9/Lib/pty.py
-            tmpfd = os.open(os.ttyname(1), os.O_RDWR)
-            os.close(tmpfd)
-
         LOGGER.info("_setup_pty1: %r", self.pty_fds)
 
-        return stdin, stdout, stderr, _preexec_fn
+        return stdin, stdout, stderr, tty.set_ctty_preexec_fn
 
 
 class Runner:
@@ -512,38 +506,12 @@ class Runner:
 
         return self
 
-    async def _setup_pty2(self, stdin, stdout, stderr, opts):
+    async def _setup_pty2(self, _stdin, _stdout, stderr, opts):
         "Perform second half of pty setup. Return (stdin, stdout, stderr)."
         assert stderr is None
 
-        import fcntl
-
         parent_fd = opts.pty_fds.parent_fd
-        fcntl.fcntl(parent_fd, fcntl.F_SETFL, os.O_NONBLOCK)
-        reader_pipe = os.fdopen(parent_fd, "rb", 0, closefd=False)
-        writer_pipe = os.fdopen(parent_fd, "wb", 0, closefd=True)
-
-        loop = asyncio.get_running_loop()
-        reader = asyncio.StreamReader(loop=loop)
-        reader_protocol = asyncio.StreamReaderProtocol(reader, loop=loop)
-        reader_transport, _ = await loop.connect_read_pipe(
-            lambda: reader_protocol,
-            reader_pipe,
-        )
-        writer_protocol = asyncio.streams.FlowControlMixin()
-        writer_transport, writer_protocol = await loop.connect_write_pipe(
-            lambda: writer_protocol,
-            writer_pipe,
-        )
-        writer = asyncio.StreamWriter(writer_transport, writer_protocol, reader, loop)
-
-        # Patch writer_transport.close so it also closes the reader_transport.
-        def _close():
-            _orig_close()
-            reader_transport.close()
-
-        writer_transport.close, _orig_close = _close, writer_transport.close
-
+        reader, writer = await tty.open_pty_streams(parent_fd)
         opts.pty_fds = opts.pty_fds.set_stdin(writer)
 
         # FIXME: Should only return when stdin, stdout set in pty_fds.
