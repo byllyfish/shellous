@@ -4,10 +4,11 @@ import asyncio
 import io
 import os
 import sys
-from typing import NamedTuple
+from typing import Any, NamedTuple, Optional
 
 import shellous
 import shellous.redirect as redir
+import shellous.tty as tty
 from shellous.harvest import harvest, harvest_results
 from shellous.log import LOGGER, log_method
 from shellous.redirect import Redirect
@@ -44,9 +45,26 @@ class PtyFds(NamedTuple):
     stdin: bool
     stdout: bool
     stderr: bool
+    eof: bytes
+    stdin_stream: Any = None
 
     def close(self):
         os.close(self.child_fd)
+        if self.stdin_stream:
+            self.stdin_stream.close()
+        # if not child_only:
+        #    os.close(self.parent_fd)
+
+    def set_stdin(self, stdin_stream):
+        return PtyFds(
+            self.parent_fd,
+            self.child_fd,
+            self.stdin,
+            self.stdout,
+            self.stderr,
+            self.eof,
+            stdin_stream,
+        )
 
 
 class _RunOptions:
@@ -265,18 +283,19 @@ class _RunOptions:
         elif stderr == asyncio.subprocess.PIPE:
             raise RuntimeError("pty can't separate stderr from stdout")
 
+        # If pty is a callable, call it here with `child_fd` as argument. This
+        # gives the client an opportunity to configure the tty.
+        if callable(pty):
+            pty(child_fd)
+
         self.pty_fds = PtyFds(
             parent_fd,
             child_fd,
             stdin == child_fd,
             stdout == child_fd,
             stderr == child_fd,
+            tty.get_eof(child_fd),
         )
-
-        # If pty is a callable, call it here with PtyFds as argument. This
-        # gives the client an opportunity to configure the tty.
-        if callable(pty):
-            pty(self.pty_fds)
 
         def _preexec_fn():
             # Explicitly open the tty to make it become a controlling tty.
@@ -455,7 +474,7 @@ class Runner:
                     stdin,
                     stdout,
                     stderr,
-                    opts.pty_fds,
+                    opts,
                 )
 
             if stderr is not None:
@@ -470,7 +489,11 @@ class Runner:
 
             if stdin is not None:
                 if opts.input_bytes is not None:
-                    self.add_task(redir.write_stream(opts.input_bytes, stdin), "stdin")
+                    eof = opts.pty_fds.eof if opts.pty_fds else None
+                    self.add_task(
+                        redir.write_stream(opts.input_bytes, stdin, eof),
+                        "stdin",
+                    )
                     stdin = None
 
         except (Exception, asyncio.CancelledError) as ex:
@@ -489,15 +512,16 @@ class Runner:
 
         return self
 
-    async def _setup_pty2(self, stdin, stdout, stderr, pty_fds):
+    async def _setup_pty2(self, stdin, stdout, stderr, opts):
         "Perform second half of pty setup. Return (stdin, stdout, stderr)."
         assert stderr is None
 
         import fcntl
 
-        fcntl.fcntl(pty_fds.parent_fd, fcntl.F_SETFL, os.O_NONBLOCK)
-        reader_pipe = os.fdopen(pty_fds.parent_fd, "rb", 0, closefd=False)
-        writer_pipe = os.fdopen(pty_fds.parent_fd, "wb", 0, closefd=True)
+        parent_fd = opts.pty_fds.parent_fd
+        fcntl.fcntl(parent_fd, fcntl.F_SETFL, os.O_NONBLOCK)
+        reader_pipe = os.fdopen(parent_fd, "rb", 0, closefd=False)
+        writer_pipe = os.fdopen(parent_fd, "wb", 0, closefd=True)
 
         loop = asyncio.get_running_loop()
         reader = asyncio.StreamReader(loop=loop)
@@ -519,6 +543,8 @@ class Runner:
             reader_transport.close()
 
         writer_transport.close, _orig_close = _close, writer_transport.close
+
+        opts.pty_fds = opts.pty_fds.set_stdin(writer)
 
         # FIXME: Should only return when stdin, stdout set in pty_fds.
         return writer, reader, stderr
@@ -572,8 +598,6 @@ class Runner:
 
         if self.options.pty_fds:
             self.options.pty_fds.close()
-            if self.stdin is not None:
-                self.stdin.close()
 
         # _close can be called when unwinding exceptions. We need to handle
         # the case that the process has not exited yet. Remember to close the

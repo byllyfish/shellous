@@ -31,7 +31,7 @@ STDOUT_APPEND_TYPES = (str, bytes, os.PathLike)
 
 
 @log_method(_DETAILED_LOGGING)
-async def write_stream(input_bytes, stream):
+async def write_stream(input_bytes, stream, eof=None):
     "Write input_bytes to stream."
     try:
         if input_bytes:
@@ -44,7 +44,20 @@ async def write_stream(input_bytes, stream):
 
     # If `stream.drain()`` is cancelled, we do NOT close the stream here.
     # See https://bugs.python.org/issue45074
-    stream.close()
+
+    if eof is not None:
+        if eof:
+            # When using a pty in canonical mode, send the EOF character instead
+            # of closing the pty. At the beginning of a line, we only need to
+            # send one EOF. Otherwise, we need to send one EOF to end the
+            # partial line and then another EOF to signal we are done.
+            if input_bytes and input_bytes[-1] != "\n":
+                stream.write(eof + eof)
+            else:
+                stream.write(eof)
+            await stream.drain()
+    else:
+        stream.close()
 
 
 @log_method(_DETAILED_LOGGING)

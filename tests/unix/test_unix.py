@@ -1026,3 +1026,28 @@ async def test_pty_raw_size_inherited(sh):
 
     rows, cols = (int(n) for n in result.rstrip().split())
     assert rows >= 0 and cols >= 0
+
+
+@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+async def test_pty_cat_auto_eof(sh):
+    "Test the `pty` option with string input and auto-EOF."
+    cmd = "abc" | sh("cat").set(pty=True)
+    result = await cmd
+
+    if sys.platform == "linux":
+        assert result == "abcabc"
+    else:
+        assert result == "abc^D\x08\x08^D\x08\x08abc"
+
+
+@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+async def test_pty_cat_iteration_no_echo(sh):
+    "Test the `pty` option with string input, iteration, and echo=False."
+    from shellous.tty import canonical
+
+    cmd = "abc\ndef\nghi" | sh("cat").set(pty=canonical(echo=False))
+
+    async with cmd.run() as run:
+        lines = [line async for line in run]
+
+    assert lines == ["abc\r\n", "def\r\n", "ghi"]

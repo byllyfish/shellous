@@ -1,10 +1,13 @@
 import fcntl
 import struct
+import termios
 import tty
 
 from .log import LOGGER
 
 _STDIN_FILENO = 0
+_LFLAG = 3
+_CC = 6
 
 
 def raw(rows=0, cols=0, x=0, y=0):
@@ -13,10 +16,11 @@ def raw(rows=0, cols=0, x=0, y=0):
     if Ellipsis in (rows, cols, x, y):
         rows, cols, x, y = _inherit_term_size(rows, cols, x, y)
 
-    def _pty_set_raw(pty_fds):
-        tty.setraw(pty_fds.child_fd)
+    def _pty_set_raw(fd):
+        tty.setraw(fd)
         if rows or cols or x or y:
-            _set_term_size(pty_fds.child_fd, rows, cols, x, y)
+            _set_term_size(fd, rows, cols, x, y)
+        assert get_eof(fd) == b""
 
     return _pty_set_raw
 
@@ -27,12 +31,43 @@ def cbreak(rows=0, cols=0, x=0, y=0):
     if Ellipsis in (rows, cols, x, y):
         rows, cols, x, y = _inherit_term_size(rows, cols, x, y)
 
-    def _pty_set_cbreak(pty_fds):
-        tty.setcbreak(pty_fds.child_fd)
+    def _pty_set_cbreak(fd):
+        tty.setcbreak(fd)
         if rows or cols or x or y:
-            _set_term_size(pty_fds.child_fd, rows, cols, x, y)
+            _set_term_size(fd, rows, cols, x, y)
+        assert get_eof(fd) == b""
 
     return _pty_set_cbreak
+
+
+def canonical(rows=0, cols=0, x=0, y=0, echo=True):
+    "Return a function that leaves PtyOptions.child_fd in canonical mode."
+
+    if Ellipsis in (rows, cols, x, y):
+        rows, cols, x, y = _inherit_term_size(rows, cols, x, y)
+
+    def _pty_set_canonical(fd):
+        if rows or cols or x or y:
+            _set_term_size(fd, rows, cols, x, y)
+        if not echo:
+            _set_term_echo(fd, False)
+        assert get_eof(fd) == b"\x04"
+
+    return _pty_set_canonical
+
+
+def _set_term_echo(fd, echo):
+    "Set pseudo-terminal echo."
+    attrs = termios.tcgetattr(fd)
+    curr_echo = (attrs[_LFLAG] & termios.ECHO) != 0
+    if echo != curr_echo:
+        if echo:
+            # Set the ECHO bit.
+            attrs[_LFLAG] = attrs[_LFLAG] | termios.ECHO
+        else:
+            # Clear the echo bit.
+            attrs[_LFLAG] = attrs[_LFLAG] & ~termios.ECHO
+        termios.tcsetattr(fd, termios.TCSADRAIN, attrs)
 
 
 def _set_term_size(fd, rows, cols, x, y):
@@ -64,3 +99,14 @@ def _inherit_term_size(rows, cols, x, y):
         y = winsz[3]
 
     return rows, cols, x, y
+
+
+def get_eof(fd):
+    "Return the End-of-file character (EOF) if tty is in canonical mode only."
+
+    eof = b""
+    attrs = termios.tcgetattr(fd)
+    if attrs[_LFLAG] & termios.ICANON:
+        eof = attrs[_CC][termios.VEOF]
+
+    return eof
