@@ -900,7 +900,37 @@ async def test_pty_ctermid(sh):
         result = await run.stdout.read(1024)
         run.stdin.close()
 
-    assert re.fullmatch(br"/dev/tty /dev/ttys(\d+) /dev/ttys\1\r\n", result)
+    assert re.fullmatch(br"/dev/tty (/dev/(?:ttys|pts/)\d+) \1\r\n", result)
+
+
+_STTY_DARWIN = (
+    b"speed 9600 baud; 0 rows; 0 columns;\r\n"
+    b"lflags: icanon isig iexten echo echoe -echok echoke -echonl echoctl\r\n"
+    b"\t-echoprt -altwerase -noflsh -tostop -flusho -pendin -nokerninfo\r\n"
+    b"\t-extproc\r\n"
+    b"iflags: -istrip icrnl -inlcr -igncr ixon -ixoff ixany imaxbel -iutf8\r\n"
+    b"\t-ignbrk brkint -inpck -ignpar -parmrk\r\n"
+    b"oflags: opost onlcr -oxtabs -onocr -onlret\r\n"
+    b"cflags: cread cs8 -parenb -parodd hupcl -clocal -cstopb -crtscts -dsrflow\r\n"
+    b"\t-dtrflow -mdmbuf\r\n"
+    b"cchars: discard = ^O; dsusp = ^Y; eof = ^D; eol = <undef>;\r\n"
+    b"\teol2 = <undef>; erase = ^?; intr = ^C; kill = ^U; lnext = ^V;\r\n"
+    b"\tmin = 1; quit = ^\\; reprint = ^R; start = ^Q; status = ^T;\r\n"
+    b"\tstop = ^S; susp = ^Z; time = 0; werase = ^W;\r\n"
+)
+
+_STTY_LINUX = (
+    b"speed 38400 baud; rows 0; columns 0; line = 0;\r\n"
+    b"intr = ^C; quit = ^\\; erase = ^?; kill = ^U; eof = ^D; eol = <undef>;\r\n"
+    b"eol2 = <undef>; swtch = <undef>; start = ^Q; stop = ^S; susp = ^Z; rprnt = ^R;\r\n"
+    b"werase = ^W; lnext = ^V; discard = ^O; min = 1; time = 0;\r\n"
+    b"-parenb -parodd -cmspar cs8 -hupcl -cstopb cread -clocal -crtscts\r\n"
+    b"-ignbrk -brkint -ignpar -parmrk -inpck -istrip -inlcr -igncr icrnl ixon -ixoff\r\n"
+    b"-iuclc -ixany -imaxbel -iutf8\r\n"
+    b"opost -olcuc -ocrnl onlcr -onocr -onlret -ofill -ofdel nl0 cr0 tab0 bs0 vt0 ff0\r\n"
+    b"isig icanon iexten echo echoe echok -echonl -noflsh -xcase -tostop -echoprt\r\n"
+    b"echoctl echoke -flusho -extproc\r\n"
+)
 
 
 @pytest.mark.xfail(_is_uvloop(), reason="uvloop")
@@ -915,21 +945,10 @@ async def test_pty_stty_all(sh, tmp_path):
         run.stdin.close()
 
     assert err.read_bytes() == b""
-    assert result == (
-        b"speed 9600 baud; 0 rows; 0 columns;\r\n"
-        b"lflags: icanon isig iexten echo echoe -echok echoke -echonl echoctl\r\n"
-        b"\t-echoprt -altwerase -noflsh -tostop -flusho -pendin -nokerninfo\r\n"
-        b"\t-extproc\r\n"
-        b"iflags: -istrip icrnl -inlcr -igncr ixon -ixoff ixany imaxbel -iutf8\r\n"
-        b"\t-ignbrk brkint -inpck -ignpar -parmrk\r\n"
-        b"oflags: opost onlcr -oxtabs -onocr -onlret\r\n"
-        b"cflags: cread cs8 -parenb -parodd hupcl -clocal -cstopb -crtscts -dsrflow\r\n"
-        b"\t-dtrflow -mdmbuf\r\n"
-        b"cchars: discard = ^O; dsusp = ^Y; eof = ^D; eol = <undef>;\r\n"
-        b"\teol2 = <undef>; erase = ^?; intr = ^C; kill = ^U; lnext = ^V;\r\n"
-        b"\tmin = 1; quit = ^\\; reprint = ^R; start = ^Q; status = ^T;\r\n"
-        b"\tstop = ^S; susp = ^Z; time = 0; werase = ^W;\r\n"
-    )
+    if sys.platform == "linux":
+        assert result == _STTY_LINUX
+    else:
+        assert result == _STTY_DARWIN
 
 
 @pytest.mark.xfail(_is_uvloop(), reason="uvloop")

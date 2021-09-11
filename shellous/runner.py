@@ -572,7 +572,8 @@ class Runner:
 
         if self.options.pty_fds:
             self.options.pty_fds.close()
-            self.stdin.close()
+            if self.stdin is not None:
+                self.stdin.close()
 
         # _close can be called when unwinding exceptions. We need to handle
         # the case that the process has not exited yet. Remember to close the
