@@ -1,11 +1,12 @@
 import asyncio
 import os
 import struct
-import tty
 
+# The following modules are not supported on Windows.
 try:
     import fcntl
     import termios
+    import tty
 except ImportError:
     pass
 
