@@ -863,6 +863,7 @@ async def test_manual_pty_streams(sh):
     async with cmd.run() as run:
         writer.write(b"abc\n")
         await writer.drain()
+        await asyncio.sleep(0.05)
         result = await reader.read(1024)
         writer.close()
 
@@ -900,7 +901,10 @@ async def test_pty_ctermid(sh):
         result = await run.stdout.read(1024)
         run.stdin.close()
 
-    assert re.fullmatch(br"/dev/tty (/dev/(?:ttys|pts/)\d+) \1\r\n", result)
+    ctermid, stdin_tty, stdout_tty = result.split()
+    assert ctermid == b"/dev/tty"
+    assert re.fullmatch(br"/dev/(?:ttys|pts/)\d+", stdin_tty), stdin_tty
+    assert re.fullmatch(br"/dev/(?:ttys|pts/)\d+", stdout_tty), stdout_tty
 
 
 _STTY_DARWIN = (

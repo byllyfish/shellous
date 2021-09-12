@@ -96,5 +96,4 @@ async def copy_bytearray(source, dest):
         data = await source.read(1024)
         if not data:
             break
-        LOGGER.debug("copy_bytearray read=%r", data)
         dest.extend(data)

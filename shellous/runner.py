@@ -456,7 +456,7 @@ class Runner:
                     self.add_task(cmd.coro(), "procsub")
 
             # Add a task to monitor for when the process finishes.
-            self.add_task(self.proc.wait(), "proc.wait")
+            self.add_task(self._waiter(), "waiter")
 
             stdin = self.proc.stdin
             stdout = self.proc.stdout
@@ -505,6 +505,12 @@ class Runner:
         self.stderr = stderr
 
         return self
+
+    async def _waiter(self):
+        "Run task that waits for process to exit."
+        await self.proc.wait()
+        if self.options.pty_fds and sys.platform == "linux":
+            self.stdout._transport.close()
 
     async def _setup_pty2(self, _stdin, _stdout, stderr, opts):
         "Perform second half of pty setup. Return (stdin, stdout, stderr)."
