@@ -823,7 +823,7 @@ async def run_cmd(command, *, _run_future=None):
         _cleanup(command)
         raise ValueError("multiple capture requires 'async with'")
 
-    output_bytes = None
+    output_bytes = bytearray()
 
     async with command.run() as run:
         if _run_future is not None:
@@ -834,9 +834,9 @@ async def run_cmd(command, *, _run_future=None):
             # Read the output here and return it.
             stream = run.stdout or run.stderr
             if stream:
-                output_bytes = await stream.read()
+                await redir.copy_bytearray(stream, output_bytes)
 
-    return run.result(output_bytes)
+    return run.result(bytes(output_bytes))
 
 
 async def run_pipe(pipe):

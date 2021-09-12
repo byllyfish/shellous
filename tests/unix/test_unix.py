@@ -178,7 +178,7 @@ async def test_timeout_fail(sh):
 
     assert exc_info.type is ResultError
     assert exc_info.value.result == Result(
-        output_bytes=None,
+        output_bytes=b"",
         exit_code=_CANCELLED_EXIT_CODE,
         cancelled=True,
         encoding="utf-8",
@@ -194,7 +194,7 @@ async def test_timeout_fail_no_capturing(sh):
         await asyncio.wait_for(cmd, 0.1)
 
     assert exc_info.value.result == Result(
-        output_bytes=None,
+        output_bytes=b"",
         exit_code=_CANCELLED_EXIT_CODE,
         cancelled=True,
         encoding="utf-8",
@@ -533,8 +533,8 @@ async def test_pipeline_async_context_manager(sh):
     assert run.name == "tr|cat"
     assert (
         repr(run) == "<PipeRunner 'tr|cat' results=["
-        "Result(output_bytes=None, exit_code=0, cancelled=False, encoding='utf-8', extra=None), "
-        "Result(output_bytes=None, exit_code=0, cancelled=False, encoding='utf-8', extra=None)]>"
+        "Result(output_bytes=b'', exit_code=0, cancelled=False, encoding='utf-8', extra=None), "
+        "Result(output_bytes=b'', exit_code=0, cancelled=False, encoding='utf-8', extra=None)]>"
     )
 
 
@@ -657,7 +657,7 @@ async def test_shell_cmd(sh):
 
     assert exc_info.type is ResultError
     assert exc_info.value.result == Result(
-        output_bytes=None,
+        output_bytes=b"",
         exit_code=_CANCELLED_EXIT_CODE,
         cancelled=True,
         encoding="utf-8",

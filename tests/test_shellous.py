@@ -135,7 +135,7 @@ async def test_echo_cancel_incomplete(echo_cmd):
 
     assert exc_info.type is ResultError
     assert exc_info.value.result == Result(
-        output_bytes=None,  # FIXME: Should contain partial output?
+        output_bytes=b"abc",
         exit_code=CANCELLED_EXIT_CODE,
         cancelled=True,
         encoding="utf-8",
@@ -170,7 +170,7 @@ async def test_echo_cancel_stringio_incomplete(echo_cmd):
     assert buf.getvalue() == "abc"
     assert exc_info.type is ResultError
     assert exc_info.value.result == Result(
-        output_bytes=None,
+        output_bytes=b"",
         exit_code=CANCELLED_EXIT_CODE,
         cancelled=True,
         encoding="utf-8",
@@ -199,7 +199,7 @@ async def test_pipe_cancel_incomplete(echo_cmd, cat_cmd):
 
     assert exc_info.type is ResultError
     assert exc_info.value.result == Result(
-        output_bytes=None,
+        output_bytes=b"abc",
         exit_code=0,
         cancelled=True,
         encoding="utf-8",
@@ -213,14 +213,14 @@ async def test_pipe_cancel_incomplete(echo_cmd, cat_cmd):
 async def test_pipe_error_cmd1(echo_cmd, tr_cmd):
     "Test a pipe where the first command fails with an error."
 
-    echo_cmd = echo_cmd("abc").env(SHELLOUS_EXIT_CODE=3)
+    echo_cmd = echo_cmd("abc").env(SHELLOUS_EXIT_SLEEP=1, SHELLOUS_EXIT_CODE=3)
     tr_cmd = tr_cmd.env(SHELLOUS_EXIT_SLEEP=2)
 
     with pytest.raises(ResultError) as exc_info:
         await (echo_cmd | tr_cmd)
 
     assert exc_info.value.result == Result(
-        output_bytes=None,
+        output_bytes=b"ABC",
         exit_code=3,
         cancelled=False,
         encoding="utf-8",
