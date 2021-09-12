@@ -91,7 +91,7 @@
 <span class="kn">import</span> <span class="nn">io</span>
 <span class="kn">import</span> <span class="nn">os</span>
 
-<span class="kn">from</span> <span class="nn">shellous.log</span> <span class="kn">import</span> <span class="n">log_method</span>
+<span class="kn">from</span> <span class="nn">shellous.log</span> <span class="kn">import</span> <span class="n">LOGGER</span><span class="p">,</span> <span class="n">log_method</span>
 <span class="kn">from</span> <span class="nn">shellous.util</span> <span class="kn">import</span> <span class="n">decode</span>
 
 <span class="n">_DETAILED_LOGGING</span> <span class="o">=</span> <span class="kc">True</span>
@@ -117,7 +117,7 @@
 
 
 <span class="nd">@log_method</span><span class="p">(</span><span class="n">_DETAILED_LOGGING</span><span class="p">)</span>
-<span class="k">async</span> <span class="k">def</span> <span class="nf">write_stream</span><span class="p">(</span><span class="n">input_bytes</span><span class="p">,</span> <span class="n">stream</span><span class="p">):</span>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">write_stream</span><span class="p">(</span><span class="n">input_bytes</span><span class="p">,</span> <span class="n">stream</span><span class="p">,</span> <span class="n">eof</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="s2">&quot;Write input_bytes to stream.&quot;</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">input_bytes</span><span class="p">:</span>
@@ -130,7 +130,20 @@
 
     <span class="c1"># If `stream.drain()`` is cancelled, we do NOT close the stream here.</span>
     <span class="c1"># See https://bugs.python.org/issue45074</span>
-    <span class="n">stream</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">eof</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">eof</span><span class="p">:</span>
+            <span class="c1"># When using a pty in canonical mode, send the EOF character instead</span>
+            <span class="c1"># of closing the pty. At the beginning of a line, we only need to</span>
+            <span class="c1"># send one EOF. Otherwise, we need to send one EOF to end the</span>
+            <span class="c1"># partial line and then another EOF to signal we are done.</span>
+            <span class="k">if</span> <span class="n">input_bytes</span> <span class="ow">and</span> <span class="n">input_bytes</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">:</span>
+                <span class="n">stream</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">eof</span> <span class="o">+</span> <span class="n">eof</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">stream</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">eof</span><span class="p">)</span>
+            <span class="k">await</span> <span class="n">stream</span><span class="o">.</span><span class="n">drain</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">stream</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 
 
 <span class="nd">@log_method</span><span class="p">(</span><span class="n">_DETAILED_LOGGING</span><span class="p">)</span>
@@ -292,13 +305,13 @@
                 <div class="decorator">@log_method(_DETAILED_LOGGING)</div>
 
             <span class="def">async def</span>
-            <span class="name">write_stream</span><span class="signature">(input_bytes, stream)</span>:
+            <span class="name">write_stream</span><span class="signature">(input_bytes, stream, eof=None)</span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span><span class="nd">@log_method</span><span class="p">(</span><span class="n">_DETAILED_LOGGING</span><span class="p">)</span>
-<span class="k">async</span> <span class="k">def</span> <span class="nf">write_stream</span><span class="p">(</span><span class="n">input_bytes</span><span class="p">,</span> <span class="n">stream</span><span class="p">):</span>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">write_stream</span><span class="p">(</span><span class="n">input_bytes</span><span class="p">,</span> <span class="n">stream</span><span class="p">,</span> <span class="n">eof</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="s2">&quot;Write input_bytes to stream.&quot;</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">input_bytes</span><span class="p">:</span>
@@ -311,7 +324,20 @@
 
     <span class="c1"># If `stream.drain()`` is cancelled, we do NOT close the stream here.</span>
     <span class="c1"># See https://bugs.python.org/issue45074</span>
-    <span class="n">stream</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">eof</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">eof</span><span class="p">:</span>
+            <span class="c1"># When using a pty in canonical mode, send the EOF character instead</span>
+            <span class="c1"># of closing the pty. At the beginning of a line, we only need to</span>
+            <span class="c1"># send one EOF. Otherwise, we need to send one EOF to end the</span>
+            <span class="c1"># partial line and then another EOF to signal we are done.</span>
+            <span class="k">if</span> <span class="n">input_bytes</span> <span class="ow">and</span> <span class="n">input_bytes</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">:</span>
+                <span class="n">stream</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">eof</span> <span class="o">+</span> <span class="n">eof</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">stream</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">eof</span><span class="p">)</span>
+            <span class="k">await</span> <span class="n">stream</span><span class="o">.</span><span class="n">drain</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">stream</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 </pre></div>
 
         </details>

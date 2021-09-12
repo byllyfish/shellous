@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="generator" content="pdoc 7.4.0" />
-    <title>shellous API documentation</title>
+    <title>shellous.tty API documentation</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2264%22%20height%3D%2264%22%20viewBox%3D%2244.5%202.5%2015%2015%22%3E%3Cpath%20d%3D%22M49.351%2021.041c-.233-.721-.546-2.408-.772-4.076-.042-.09-.067-.187-.046-.288-.166-1.347-.277-2.625-.241-3.351-1.378-1.008-2.271-2.586-2.271-4.362%200-.976.272-1.935.788-2.774.057-.094.122-.18.184-.268-.033-.167-.052-.339-.052-.516%200-1.477%201.202-2.679%202.679-2.679.791%200%201.496.352%201.987.9a6.3%206.3%200%200%201%201.001.029c.492-.564%201.207-.929%202.012-.929%201.477%200%202.679%201.202%202.679%202.679a2.65%202.65%200%200%201-.269%201.148c.383.747.595%201.572.595%202.41%200%202.311-1.507%204.29-3.635%205.107.037.699.147%202.27.423%203.294l.137.461c.156%202.136-4.612%205.166-5.199%203.215zm.127-4.919a4.78%204.78%200%200%200%20.775-.584c-.172-.115-.505-.254-.88-.378zm.331%202.302l.828-.502c-.202-.143-.576-.328-.984-.49zm.45%202.157l.701-.403c-.214-.115-.536-.249-.891-.376l.19.779zM49.13%204.141c0%20.152.123.276.276.276s.275-.124.275-.276-.123-.276-.276-.276-.275.124-.275.276zm.735-.389a1.15%201.15%200%200%201%20.314.783%201.16%201.16%200%200%201-1.162%201.162c-.457%200-.842-.27-1.032-.653-.026.117-.042.238-.042.362a1.68%201.68%200%200%200%201.679%201.679%201.68%201.68%200%200%200%201.679-1.679c0-.843-.626-1.535-1.436-1.654zm3.076%201.654a1.68%201.68%200%200%200%201.679%201.679%201.68%201.68%200%200%200%201.679-1.679c0-.037-.009-.072-.011-.109-.21.3-.541.508-.935.508a1.16%201.16%200%200%201-1.162-1.162%201.14%201.14%200%200%201%20.474-.912c-.015%200-.03-.005-.045-.005-.926.001-1.679.754-1.679%201.68zm1.861-1.265c0%20.152.123.276.276.276s.275-.124.275-.276-.123-.276-.276-.276-.275.124-.275.276zm1.823%204.823c0-.52-.103-1.035-.288-1.52-.466.394-1.06.64-1.717.64-1.144%200-2.116-.725-2.499-1.738-.383%201.012-1.355%201.738-2.499%201.738-.867%200-1.631-.421-2.121-1.062-.307.605-.478%201.267-.478%201.942%200%202.486%202.153%204.51%204.801%204.51s4.801-2.023%204.801-4.51zm-3.032%209.156l-.146-.492c-.276-1.02-.395-2.457-.444-3.268a6.11%206.11%200%200%201-1.18.115%206.01%206.01%200%200%201-2.536-.562l.006.175c.802.215%201.848.612%202.021%201.25.079.295-.021.601-.274.837l-.598.501c.667.304%201.243.698%201.311%201.179.02.144.022.507-.393.787l-.564.365c1.285.521%201.361.96%201.381%201.126.018.142.011.496-.427.746l-.854.489c.064-1.19%201.985-2.585%202.697-3.248zM49.34%209.925c0-.667%201-.667%201%200%200%20.653.818%201.205%201.787%201.205s1.787-.552%201.787-1.205c0-.667%201-.667%201%200%200%201.216-1.25%202.205-2.787%202.205s-2.787-.989-2.787-2.205zm-.887-7.633c-.093.077-.205.114-.317.114a.5.5%200%200%201-.318-.886L49.183.397a.5.5%200%200%201%20.703.068.5.5%200%200%201-.069.703zm7.661-.065c-.086%200-.173-.022-.253-.068l-1.523-.893c-.575-.337-.069-1.2.506-.863l1.523.892a.5.5%200%200%201%20.179.685c-.094.158-.261.247-.432.247z%22%20fill%3D%22%233bb300%22/%3E%3C/svg%3E"/>
 
 
@@ -16,54 +16,37 @@
             <label id="navtoggle" for="togglestate" class="pdoc-button"><svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'><path stroke-linecap='round' stroke="currentColor" stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/></svg></label>
             <input id="togglestate" type="checkbox">
             <div>
-                        <a class="pdoc-button module-list-button" href="./">
+                        <a class="pdoc-button module-list-button" href="../shellous.html">
 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-box-arrow-in-left" viewBox="0 0 16 16">
   <path fill-rule="evenodd" d="M10 3.5a.5.5 0 0 0-.5-.5h-8a.5.5 0 0 0-.5.5v9a.5.5 0 0 0 .5.5h8a.5.5 0 0 0 .5-.5v-2a.5.5 0 0 1 1 0v2A1.5 1.5 0 0 1 9.5 14h-8A1.5 1.5 0 0 1 0 12.5v-9A1.5 1.5 0 0 1 1.5 2h8A1.5 1.5 0 0 1 11 3.5v2a.5.5 0 0 1-1 0v-2z"/>
   <path fill-rule="evenodd" d="M4.146 8.354a.5.5 0 0 1 0-.708l3-3a.5.5 0 1 1 .708.708L5.707 7.5H14.5a.5.5 0 0 1 0 1H5.707l2.147 2.146a.5.5 0 0 1-.708.708l-3-3z"/>
-</svg>                            &nbsp;
-                            Module Index
-                        </a>
+</svg>                            &nbsp;shellous</a>
 
 
                         <input type="search" placeholder="Search..." role="searchbox" aria-label="search"
                                pattern=".+" required>
 
-                    <h2>Contents</h2>
-                    <ul>
-  <li><a href="#async-processes-and-pipelines">Async Processes and Pipelines</a>
-  <ul>
-    <li><a href="#benefits">Benefits</a></li>
-    <li><a href="#requirements">Requirements</a></li>
-    <li><a href="#basic-usage">Basic Usage</a></li>
-    <li><a href="#results-and-exit-codes">Results and Exit Codes</a></li>
-    <li><a href="#redirecting-standard-input">Redirecting Standard Input</a></li>
-    <li><a href="#redirecting-standard-output">Redirecting Standard Output</a></li>
-    <li><a href="#redirecting-standard-error">Redirecting Standard Error</a></li>
-    <li><a href="#pipelines">Pipelines</a></li>
-    <li><a href="#process-substitution-unix-only">Process Substitution (Unix Only)</a></li>
-    <li><a href="#async-with-for">Async With &amp; For</a></li>
-    <li><a href="#incomplete-results">Incomplete Results</a></li>
-  </ul></li>
-</ul>
 
-
-                    <h2>Submodules</h2>
-                    <ul>
-                            <li><a href="shellous/command.html">shellous.command</a></li>
-                            <li><a href="shellous/harvest.html">shellous.harvest</a></li>
-                            <li><a href="shellous/log.html">shellous.log</a></li>
-                            <li><a href="shellous/pipeline.html">shellous.pipeline</a></li>
-                            <li><a href="shellous/redirect.html">shellous.redirect</a></li>
-                            <li><a href="shellous/result.html">shellous.result</a></li>
-                            <li><a href="shellous/runner.html">shellous.runner</a></li>
-                            <li><a href="shellous/tty.html">shellous.tty</a></li>
-                            <li><a href="shellous/util.html">shellous.util</a></li>
-                    </ul>
 
                     <h2>API Documentation</h2>
                         <ul class="memberlist">
             <li>
-                    <a class="function" href="#context">context</a>
+                    <a class="function" href="#set_ctty_preexec_fn">set_ctty_preexec_fn</a>
+            </li>
+            <li>
+                    <a class="function" href="#open_pty_streams">open_pty_streams</a>
+            </li>
+            <li>
+                    <a class="function" href="#raw">raw</a>
+            </li>
+            <li>
+                    <a class="function" href="#cbreak">cbreak</a>
+            </li>
+            <li>
+                    <a class="function" href="#canonical">canonical</a>
+            </li>
+            <li>
+                    <a class="function" href="#get_eof">get_eof</a>
             </li>
     </ul>
 
@@ -79,284 +62,369 @@
     <main class="pdoc">
             <section>
                     <h1 class="modulename">
-shellous    </h1>
+<a href="./../shellous.html">shellous</a><wbr>.tty    </h1>
 
-                        <div class="docstring"><h1 id="async-processes-and-pipelines">Async Processes and Pipelines</h1>
-
-<p><a href="https://pypi.org/project/shellous/"><img src="https://img.shields.io/pypi/v/shellous" alt="PyPI" /></a> <a href="https://github.com/byllyfish/shellous/actions/workflows/ci.yml"><img src="https://github.com/byllyfish/shellous/actions/workflows/ci.yml/badge.svg" alt="CI" /></a> <a href="https://codecov.io/gh/byllyfish/shellous"><img src="https://codecov.io/gh/byllyfish/shellous/branch/main/graph/badge.svg?token=W44NZE89AW" alt="codecov" /></a></p>
-
-<p>shellous provides a concise API for running subprocesses using asyncio. It is 
-similar to and inspired by <a href="https://pypi.org/project/sh/">sh</a>.</p>
-
-<div class="codehilite"><pre><span></span><code><span class="kn">import</span> <span class="nn">asyncio</span>
-<span class="kn">import</span> <span class="nn">shellous</span>
-
-<span class="n">sh</span> <span class="o">=</span> <span class="n">shellous</span><span class="o">.</span><span class="n">context</span><span class="p">()</span>
-
-<span class="k">async</span> <span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="p">(</span><span class="n">sh</span><span class="p">(</span><span class="s2">&quot;ls&quot;</span><span class="p">)</span> <span class="o">|</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;grep&quot;</span><span class="p">,</span> <span class="s2">&quot;README&quot;</span><span class="p">))</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
-
-<span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">main</span><span class="p">())</span>
-</code></pre></div>
-
-<p><a href="https://byllyfish.github.io/shellous/shellous.html">More Documentation...</a></p>
-
-<h2 id="benefits">Benefits</h2>
-
-<ul>
-<li>Run programs asychronously in a single line.</li>
-<li>Easily capture output or redirect stdin, stdout and stderr to files.</li>
-<li>Easily construct <a href="https://en.wikipedia.org/wiki/Pipeline_(Unix)">pipelines</a> and use <a href="https://en.wikipedia.org/wiki/Process_substitution">process substitution</a>.</li>
-<li>Runs on Linux, MacOS and Windows.</li>
-</ul>
-
-<h2 id="requirements">Requirements</h2>
-
-<ul>
-<li>Requires Python 3.9 or later.</li>
-<li>Requires an asyncio event loop.</li>
-<li>Process substitution requires a Unix system with /dev/fd support.</li>
-</ul>
-
-<h2 id="basic-usage">Basic Usage</h2>
-
-<p>Start the asyncio REPL by typing <code>python3 -m asyncio</code>, and import the <strong>shellous</strong> module:</p>
-
-<pre><code>&gt;&gt;&gt; import shellous
-</code></pre>
-
-<p>Before we can do anything else, we need to create a <strong>context</strong>. Store the context in a 
-short variable name like <code>sh</code> because we'll be typing it a lot.</p>
-
-<pre><code>&gt;&gt;&gt; sh = <a href="#context">shellous.context()</a>
-</code></pre>
-
-<p>Now, we're ready to run our first command. Here's one that runs <code>echo "hello, world"</code>.</p>
-
-<pre><code>&gt;&gt;&gt; await sh("echo", "hello, world")
-'hello, world\n'
-</code></pre>
-
-<p>The first argument is the program name. It is followed by zero or more separate arguments.</p>
-
-<p>A command does not run until you <code>await</code> it. Here, we create our own echo command with "-n"
-to omit the newline. Note, <code>echo("abc")</code> is the same as <code>echo -n "abc"</code>.</p>
-
-<pre><code>&gt;&gt;&gt; echo = sh("echo", "-n")
-&gt;&gt;&gt; await echo("abc")
-'abc'
-</code></pre>
-
-<p><a href="docs/commands.md">More on commands...</a></p>
-
-<h2 id="results-and-exit-codes">Results and Exit Codes</h2>
-
-<p>When you <code>await</code> a command, it captures the standard output and returns it. You can optionally have the
-command return a <code>Result</code> object. The <code>Result</code> object will contain more information about the command 
-execution including the <code>exit_code</code>. To return a result object, set <code>return_result</code> option to <code>True</code>.</p>
-
-<pre><code>&gt;&gt;&gt; await echo("abc").set(return_result=True)
-Result(output_bytes=b'abc', exit_code=0, cancelled=False, encoding='utf-8', extra=None)
-</code></pre>
-
-<p>The above command had an exit_code of 0.</p>
-
-<p>If a command exits with a non-zero exit code, it raises a <code>ResultError</code> exception that contains
-the <code>Result</code> object.</p>
-
-<pre><code>&gt;&gt;&gt; await sh("cat", "does_not_exist")
-Traceback (most recent call last):
-  ...
-<a href="shellous/result.html#ResultError">shellous.result.ResultError</a>: Result(output_bytes=b'', exit_code=1, cancelled=False, encoding='utf-8', extra=None)
-</code></pre>
-
-<p><a href="docs/results.md">More on results...</a></p>
-
-<h2 id="redirecting-standard-input">Redirecting Standard Input</h2>
-
-<p>You can change the standard input of a command by using the <code>|</code> operator.</p>
-
-<pre><code>&gt;&gt;&gt; cmd = "abc" | sh("wc", "-c")
-&gt;&gt;&gt; await cmd
-'       3\n'
-</code></pre>
-
-<p>To redirect stdin using a file's contents, use a <code>Path</code> object from <code>pathlib</code>.</p>
-
-<pre><code>&gt;&gt;&gt; from pathlib import Path
-&gt;&gt;&gt; cmd = Path("README.md") | sh("wc", "-l")
-&gt;&gt;&gt; await cmd
-'     255\n'
-</code></pre>
-
-<p><a href="docs/redirection.md">More on redirection...</a></p>
-
-<h2 id="redirecting-standard-output">Redirecting Standard Output</h2>
-
-<p>To redirect standard output, use the <code>|</code> operator.</p>
-
-<pre><code>&gt;&gt;&gt; output_file = Path("/tmp/output_file")
-&gt;&gt;&gt; cmd = sh("echo", "abc") | output_file
-&gt;&gt;&gt; await cmd
-''
-&gt;&gt;&gt; output_file.read_bytes()
-b'abc\n'
-</code></pre>
-
-<p>To redirect standard output with append, use the <code>&gt;&gt;</code> operator.</p>
-
-<pre><code>&gt;&gt;&gt; cmd = sh("echo", "def") &gt;&gt; output_file
-&gt;&gt;&gt; await cmd
-''
-&gt;&gt;&gt; output_file.read_bytes()
-b'abc\ndef\n'
-</code></pre>
-
-<p><a href="docs/redirection.md">More on redirection...</a></p>
-
-<h2 id="redirecting-standard-error">Redirecting Standard Error</h2>
-
-<p>By default, standard error is not captured. To redirect standard error, use the <code>stderr</code>
-method.</p>
-
-<pre><code>&gt;&gt;&gt; cmd = sh("cat", "does_not_exist").stderr(<a href="#STDOUT">shellous.STDOUT</a>)
-&gt;&gt;&gt; await cmd.set(exit_codes={0,1})
-'cat: does_not_exist: No such file or directory\n'
-</code></pre>
-
-<p>You can redirect standard error to a file or path. </p>
-
-<p>To redirect standard error to the hosting program's <code>sys.stderr</code>, use the INHERIT redirect
-option.</p>
-
-<pre><code>&gt;&gt;&gt; cmd = sh("cat", "does_not_exist").stderr(<a href="#INHERIT">shellous.INHERIT</a>)
-&gt;&gt;&gt; await cmd
-cat: does_not_exist: No such file or directory
-Traceback (most recent call last):
-  ...
-<a href="shellous/result.html#ResultError">shellous.result.ResultError</a>: Result(output_bytes=b'', exit_code=1, cancelled=False, encoding='utf-8', extra=None)
-</code></pre>
-
-<p><a href="docs/redirection.md">More on redirection...</a></p>
-
-<h2 id="pipelines">Pipelines</h2>
-
-<p>You can create a pipeline by combining commands using the <code>|</code> operator.</p>
-
-<pre><code>&gt;&gt;&gt; pipe = sh("ls") | sh("grep", "README")
-&gt;&gt;&gt; await pipe
-'README.md\n'
-</code></pre>
-
-<h2 id="process-substitution-unix-only">Process Substitution (Unix Only)</h2>
-
-<p>You can pass a shell command as an argument to another.</p>
-
-<pre><code>&gt;&gt;&gt; cmd = sh("grep", "README", sh("ls"))
-&gt;&gt;&gt; await cmd
-'README.md\n'
-</code></pre>
-
-<p>Use ~ to write to a command instead.</p>
-
-<pre><code>&gt;&gt;&gt; buf = bytearray()
-&gt;&gt;&gt; cmd = sh("ls") | sh("tee", ~sh("grep", "README") | buf) | <a href="#DEVNULL">shellous.DEVNULL</a>
-&gt;&gt;&gt; await cmd
-''
-&gt;&gt;&gt; buf
-bytearray(b'README.md\n')
-</code></pre>
-
-<h2 id="async-with-for">Async With &amp; For</h2>
-
-<p>You can use <code>async with</code> to interact with the process streams directly. You have to be careful; you
-are responsible for correctly reading and writing multiple streams at the same time.</p>
-
-<pre><code>&gt;&gt;&gt; async with pipe.run() as run:
-...   data = await run.stdout.readline()
-...   print(data)
-... 
-b'README.md\n'
-</code></pre>
-
-<p>You can loop over a command's output by using the context manager as an iterator.</p>
-
-<pre><code>&gt;&gt;&gt; async with pipe.run() as run:
-...   async for line in run:
-...     print(line.rstrip())
-... 
-README.md
-</code></pre>
-
-<h2 id="incomplete-results">Incomplete Results</h2>
-
-<p>When a command is cancelled, shellous normally cleans up after itself and re-raises a <code>CancelledError</code>.</p>
-
-<p>You can retrieve the partial result by setting <code>incomplete_result</code> to True. Shellous will return a
-<code>ResultError</code> when the specified command is cancelled.</p>
-
-<pre><code>&gt;&gt;&gt; sleep = sh("sleep", 60).set(incomplete_result=True)
-&gt;&gt;&gt; t = asyncio.create_task(sleep.coro())
-&gt;&gt;&gt; t.cancel()
-True
-&gt;&gt;&gt; await t
-Traceback (most recent call last):
-  ...
-<a href="shellous/result.html#ResultError">shellous.result.ResultError</a>: Result(output_bytes=b'', exit_code=-15, cancelled=True, encoding='utf-8', extra=None)
-</code></pre>
-
-<p>When you use <code>incomplete_result</code>, your code should respect the <code>cancelled</code> attribute in the Result object. 
-Otherwise, your code may swallow the CancelledError.</p>
-</div>
-
+                
                         <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">.. include:: ../README.md</span>
-<span class="sd">&quot;&quot;&quot;</span>
-<span class="n">__docformat__</span> <span class="o">=</span> <span class="s2">&quot;restructuredtext&quot;</span>
+            <div class="codehilite"><pre><span></span><span class="kn">import</span> <span class="nn">asyncio</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">struct</span>
 
-<span class="n">__version__</span> <span class="o">=</span> <span class="s2">&quot;0.4.0&quot;</span>
+<span class="c1"># The following modules are not supported on Windows.</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">fcntl</span>
+    <span class="kn">import</span> <span class="nn">termios</span>
+    <span class="kn">import</span> <span class="nn">tty</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="k">pass</span>
 
-<span class="c1"># pylint: disable=cyclic-import</span>
-<span class="kn">from</span> <span class="nn">.command</span> <span class="kn">import</span> <span class="n">CmdContext</span><span class="p">,</span> <span class="n">Command</span><span class="p">,</span> <span class="n">Options</span>  <span class="c1"># noqa: F401</span>
-<span class="kn">from</span> <span class="nn">.pipeline</span> <span class="kn">import</span> <span class="n">Pipeline</span>  <span class="c1"># noqa: F401</span>
-<span class="kn">from</span> <span class="nn">.redirect</span> <span class="kn">import</span> <span class="n">Redirect</span>
-<span class="kn">from</span> <span class="nn">.result</span> <span class="kn">import</span> <span class="n">PipeResult</span><span class="p">,</span> <span class="n">Result</span><span class="p">,</span> <span class="n">ResultError</span>  <span class="c1"># noqa: F401</span>
+<span class="kn">from</span> <span class="nn">.log</span> <span class="kn">import</span> <span class="n">LOGGER</span>
 
-<span class="n">STDOUT</span> <span class="o">=</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">STDOUT</span>
-<span class="n">DEVNULL</span> <span class="o">=</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">DEVNULL</span>
-<span class="n">CAPTURE</span> <span class="o">=</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">CAPTURE</span>
-<span class="n">INHERIT</span> <span class="o">=</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">INHERIT</span>
+<span class="n">_STDIN_FILENO</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">_STDOUT_FILENO</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">_LFLAG</span> <span class="o">=</span> <span class="mi">3</span>
+<span class="n">_CC</span> <span class="o">=</span> <span class="mi">6</span>
 
 
-<span class="k">def</span> <span class="nf">context</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">CmdContext</span><span class="p">:</span>
-    <span class="s2">&quot;Construct a new execution context.&quot;</span>
-    <span class="k">return</span> <span class="n">CmdContext</span><span class="p">()</span>
+<span class="k">def</span> <span class="nf">set_ctty_preexec_fn</span><span class="p">():</span>
+    <span class="s2">&quot;Explicitly open the tty to make it become a controlling tty.&quot;</span>
+    <span class="c1"># See https://github.com/python/cpython/blob/3.9/Lib/pty.py</span>
+    <span class="n">tmpfd</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">ttyname</span><span class="p">(</span><span class="n">_STDOUT_FILENO</span><span class="p">),</span> <span class="n">os</span><span class="o">.</span><span class="n">O_RDWR</span><span class="p">)</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">tmpfd</span><span class="p">)</span>
+
+
+<span class="k">async</span> <span class="k">def</span> <span class="nf">open_pty_streams</span><span class="p">(</span><span class="n">file_desc</span><span class="p">):</span>
+    <span class="s2">&quot;Open reader, writer streams for pty file descriptor.&quot;</span>
+    <span class="n">fcntl</span><span class="o">.</span><span class="n">fcntl</span><span class="p">(</span><span class="n">file_desc</span><span class="p">,</span> <span class="n">fcntl</span><span class="o">.</span><span class="n">F_SETFL</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">O_NONBLOCK</span><span class="p">)</span>
+
+    <span class="n">reader_pipe</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">fdopen</span><span class="p">(</span><span class="n">file_desc</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">closefd</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">writer_pipe</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">fdopen</span><span class="p">(</span><span class="n">file_desc</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">closefd</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">loop</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">get_running_loop</span><span class="p">()</span>
+    <span class="n">reader</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">StreamReader</span><span class="p">(</span><span class="n">loop</span><span class="o">=</span><span class="n">loop</span><span class="p">)</span>
+    <span class="n">reader_protocol</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">StreamReaderProtocol</span><span class="p">(</span><span class="n">reader</span><span class="p">,</span> <span class="n">loop</span><span class="o">=</span><span class="n">loop</span><span class="p">)</span>
+    <span class="n">reader_transport</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="k">await</span> <span class="n">loop</span><span class="o">.</span><span class="n">connect_read_pipe</span><span class="p">(</span>
+        <span class="k">lambda</span><span class="p">:</span> <span class="n">reader_protocol</span><span class="p">,</span>
+        <span class="n">reader_pipe</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">writer_protocol</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">streams</span><span class="o">.</span><span class="n">FlowControlMixin</span><span class="p">()</span>
+    <span class="n">writer_transport</span><span class="p">,</span> <span class="n">writer_protocol</span> <span class="o">=</span> <span class="k">await</span> <span class="n">loop</span><span class="o">.</span><span class="n">connect_write_pipe</span><span class="p">(</span>
+        <span class="k">lambda</span><span class="p">:</span> <span class="n">writer_protocol</span><span class="p">,</span>
+        <span class="n">writer_pipe</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">writer</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">StreamWriter</span><span class="p">(</span><span class="n">writer_transport</span><span class="p">,</span> <span class="n">writer_protocol</span><span class="p">,</span> <span class="n">reader</span><span class="p">,</span> <span class="n">loop</span><span class="p">)</span>
+
+    <span class="c1"># Patch writer_transport.close so it also closes the reader_transport.</span>
+    <span class="k">def</span> <span class="nf">_close</span><span class="p">():</span>
+        <span class="n">_orig_close</span><span class="p">()</span>
+        <span class="n">reader_transport</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+    <span class="n">writer_transport</span><span class="o">.</span><span class="n">close</span><span class="p">,</span> <span class="n">_orig_close</span> <span class="o">=</span> <span class="n">_close</span><span class="p">,</span> <span class="n">writer_transport</span><span class="o">.</span><span class="n">close</span>
+
+    <span class="k">return</span> <span class="n">reader</span><span class="p">,</span> <span class="n">writer</span>
+
+
+<span class="k">def</span> <span class="nf">raw</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">cols</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+    <span class="s2">&quot;Return a function that sets PtyOptions.child_fd to raw mode.&quot;</span>
+
+    <span class="k">if</span> <span class="bp">Ellipsis</span> <span class="ow">in</span> <span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+        <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">_inherit_term_size</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_pty_set_raw</span><span class="p">(</span><span class="n">fd</span><span class="p">):</span>
+        <span class="n">tty</span><span class="o">.</span><span class="n">setraw</span><span class="p">(</span><span class="n">fd</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">rows</span> <span class="ow">or</span> <span class="n">cols</span> <span class="ow">or</span> <span class="n">x</span> <span class="ow">or</span> <span class="n">y</span><span class="p">:</span>
+            <span class="n">_set_term_size</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">get_eof</span><span class="p">(</span><span class="n">fd</span><span class="p">)</span> <span class="o">==</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span>
+
+    <span class="k">return</span> <span class="n">_pty_set_raw</span>
+
+
+<span class="k">def</span> <span class="nf">cbreak</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">cols</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+    <span class="s2">&quot;Return a function that sets PtyOptions.child_fd to cbreak mode.&quot;</span>
+
+    <span class="k">if</span> <span class="bp">Ellipsis</span> <span class="ow">in</span> <span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+        <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">_inherit_term_size</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_pty_set_cbreak</span><span class="p">(</span><span class="n">fd</span><span class="p">):</span>
+        <span class="n">tty</span><span class="o">.</span><span class="n">setcbreak</span><span class="p">(</span><span class="n">fd</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">rows</span> <span class="ow">or</span> <span class="n">cols</span> <span class="ow">or</span> <span class="n">x</span> <span class="ow">or</span> <span class="n">y</span><span class="p">:</span>
+            <span class="n">_set_term_size</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">get_eof</span><span class="p">(</span><span class="n">fd</span><span class="p">)</span> <span class="o">==</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span>
+
+    <span class="k">return</span> <span class="n">_pty_set_cbreak</span>
+
+
+<span class="k">def</span> <span class="nf">canonical</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">cols</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">echo</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="s2">&quot;Return a function that leaves PtyOptions.child_fd in canonical mode.&quot;</span>
+
+    <span class="k">if</span> <span class="bp">Ellipsis</span> <span class="ow">in</span> <span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+        <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">_inherit_term_size</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_pty_set_canonical</span><span class="p">(</span><span class="n">fd</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">rows</span> <span class="ow">or</span> <span class="n">cols</span> <span class="ow">or</span> <span class="n">x</span> <span class="ow">or</span> <span class="n">y</span><span class="p">:</span>
+            <span class="n">_set_term_size</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">echo</span><span class="p">:</span>
+            <span class="n">_set_term_echo</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">get_eof</span><span class="p">(</span><span class="n">fd</span><span class="p">)</span> <span class="o">==</span> <span class="sa">b</span><span class="s2">&quot;</span><span class="se">\x04</span><span class="s2">&quot;</span>
+
+    <span class="k">return</span> <span class="n">_pty_set_canonical</span>
+
+
+<span class="k">def</span> <span class="nf">_set_term_echo</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="n">echo</span><span class="p">):</span>
+    <span class="s2">&quot;Set pseudo-terminal echo.&quot;</span>
+    <span class="n">attrs</span> <span class="o">=</span> <span class="n">termios</span><span class="o">.</span><span class="n">tcgetattr</span><span class="p">(</span><span class="n">fd</span><span class="p">)</span>
+    <span class="n">curr_echo</span> <span class="o">=</span> <span class="p">(</span><span class="n">attrs</span><span class="p">[</span><span class="n">_LFLAG</span><span class="p">]</span> <span class="o">&amp;</span> <span class="n">termios</span><span class="o">.</span><span class="n">ECHO</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span>
+    <span class="k">if</span> <span class="n">echo</span> <span class="o">!=</span> <span class="n">curr_echo</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">echo</span><span class="p">:</span>
+            <span class="c1"># Set the ECHO bit.</span>
+            <span class="n">attrs</span><span class="p">[</span><span class="n">_LFLAG</span><span class="p">]</span> <span class="o">=</span> <span class="n">attrs</span><span class="p">[</span><span class="n">_LFLAG</span><span class="p">]</span> <span class="o">|</span> <span class="n">termios</span><span class="o">.</span><span class="n">ECHO</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Clear the echo bit.</span>
+            <span class="n">attrs</span><span class="p">[</span><span class="n">_LFLAG</span><span class="p">]</span> <span class="o">=</span> <span class="n">attrs</span><span class="p">[</span><span class="n">_LFLAG</span><span class="p">]</span> <span class="o">&amp;</span> <span class="o">~</span><span class="n">termios</span><span class="o">.</span><span class="n">ECHO</span>
+        <span class="n">termios</span><span class="o">.</span><span class="n">tcsetattr</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="n">termios</span><span class="o">.</span><span class="n">TCSADRAIN</span><span class="p">,</span> <span class="n">attrs</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_set_term_size</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+    <span class="s2">&quot;Set pseudo-terminal size.&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">winsz</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s2">&quot;HHHH&quot;</span><span class="p">,</span> <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+        <span class="n">fcntl</span><span class="o">.</span><span class="n">ioctl</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="n">tty</span><span class="o">.</span><span class="n">TIOCSWINSZ</span><span class="p">,</span> <span class="n">winsz</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">OSError</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;_set_term_size ex=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">ex</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_inherit_term_size</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+    <span class="s2">&quot;Override ... with terminal setting from current stdin.&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">zeros</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s2">&quot;HHHH&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">winsz</span> <span class="o">=</span> <span class="n">fcntl</span><span class="o">.</span><span class="n">ioctl</span><span class="p">(</span><span class="n">_STDIN_FILENO</span><span class="p">,</span> <span class="n">tty</span><span class="o">.</span><span class="n">TIOCGWINSZ</span><span class="p">,</span> <span class="n">zeros</span><span class="p">)</span>
+        <span class="n">winsz</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="s2">&quot;HHHH&quot;</span><span class="p">,</span> <span class="n">winsz</span><span class="p">)</span>
+    <span class="k">except</span> <span class="p">(</span><span class="ne">OSError</span><span class="p">,</span> <span class="n">struct</span><span class="o">.</span><span class="n">error</span><span class="p">)</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>
+        <span class="n">winsz</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;_inherit_term_size ex=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">ex</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">rows</span> <span class="ow">is</span> <span class="bp">Ellipsis</span><span class="p">:</span>
+        <span class="n">rows</span> <span class="o">=</span> <span class="n">winsz</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">cols</span> <span class="ow">is</span> <span class="bp">Ellipsis</span><span class="p">:</span>
+        <span class="n">cols</span> <span class="o">=</span> <span class="n">winsz</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">x</span> <span class="ow">is</span> <span class="bp">Ellipsis</span><span class="p">:</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">winsz</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">y</span> <span class="ow">is</span> <span class="bp">Ellipsis</span><span class="p">:</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">winsz</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span>
+
+
+<span class="k">def</span> <span class="nf">get_eof</span><span class="p">(</span><span class="n">fd</span><span class="p">):</span>
+    <span class="s2">&quot;Return the End-of-file character (EOF) if tty is in canonical mode only.&quot;</span>
+
+    <span class="n">eof</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span>
+    <span class="n">attrs</span> <span class="o">=</span> <span class="n">termios</span><span class="o">.</span><span class="n">tcgetattr</span><span class="p">(</span><span class="n">fd</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">attrs</span><span class="p">[</span><span class="n">_LFLAG</span><span class="p">]</span> <span class="o">&amp;</span> <span class="n">termios</span><span class="o">.</span><span class="n">ICANON</span><span class="p">:</span>
+        <span class="n">eof</span> <span class="o">=</span> <span class="n">attrs</span><span class="p">[</span><span class="n">_CC</span><span class="p">][</span><span class="n">termios</span><span class="o">.</span><span class="n">VEOF</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">eof</span>
 </pre></div>
 
         </details>
 
             </section>
-                <section id="context">
-                            <div class="attr function"><a class="headerlink" href="#context">#&nbsp;&nbsp</a>
+                <section id="set_ctty_preexec_fn">
+                            <div class="attr function"><a class="headerlink" href="#set_ctty_preexec_fn">#&nbsp;&nbsp</a>
 
         
             <span class="def">def</span>
-            <span class="name">context</span><span class="signature">() -&gt; <a href="shellous/command.html#CmdContext">shellous.command.CmdContext</a></span>:
+            <span class="name">set_ctty_preexec_fn</span><span class="signature">()</span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">context</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">CmdContext</span><span class="p">:</span>
-    <span class="s2">&quot;Construct a new execution context.&quot;</span>
-    <span class="k">return</span> <span class="n">CmdContext</span><span class="p">()</span>
+            <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">set_ctty_preexec_fn</span><span class="p">():</span>
+    <span class="s2">&quot;Explicitly open the tty to make it become a controlling tty.&quot;</span>
+    <span class="c1"># See https://github.com/python/cpython/blob/3.9/Lib/pty.py</span>
+    <span class="n">tmpfd</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">ttyname</span><span class="p">(</span><span class="n">_STDOUT_FILENO</span><span class="p">),</span> <span class="n">os</span><span class="o">.</span><span class="n">O_RDWR</span><span class="p">)</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">tmpfd</span><span class="p">)</span>
 </pre></div>
 
         </details>
 
-            <div class="docstring"><p>Construct a new execution context.</p>
+            <div class="docstring"><p>Explicitly open the tty to make it become a controlling tty.</p>
+</div>
+
+
+                </section>
+                <section id="open_pty_streams">
+                            <div class="attr function"><a class="headerlink" href="#open_pty_streams">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">async def</span>
+            <span class="name">open_pty_streams</span><span class="signature">(file_desc)</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span><span class="k">async</span> <span class="k">def</span> <span class="nf">open_pty_streams</span><span class="p">(</span><span class="n">file_desc</span><span class="p">):</span>
+    <span class="s2">&quot;Open reader, writer streams for pty file descriptor.&quot;</span>
+    <span class="n">fcntl</span><span class="o">.</span><span class="n">fcntl</span><span class="p">(</span><span class="n">file_desc</span><span class="p">,</span> <span class="n">fcntl</span><span class="o">.</span><span class="n">F_SETFL</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">O_NONBLOCK</span><span class="p">)</span>
+
+    <span class="n">reader_pipe</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">fdopen</span><span class="p">(</span><span class="n">file_desc</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">closefd</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">writer_pipe</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">fdopen</span><span class="p">(</span><span class="n">file_desc</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">closefd</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">loop</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">get_running_loop</span><span class="p">()</span>
+    <span class="n">reader</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">StreamReader</span><span class="p">(</span><span class="n">loop</span><span class="o">=</span><span class="n">loop</span><span class="p">)</span>
+    <span class="n">reader_protocol</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">StreamReaderProtocol</span><span class="p">(</span><span class="n">reader</span><span class="p">,</span> <span class="n">loop</span><span class="o">=</span><span class="n">loop</span><span class="p">)</span>
+    <span class="n">reader_transport</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="k">await</span> <span class="n">loop</span><span class="o">.</span><span class="n">connect_read_pipe</span><span class="p">(</span>
+        <span class="k">lambda</span><span class="p">:</span> <span class="n">reader_protocol</span><span class="p">,</span>
+        <span class="n">reader_pipe</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">writer_protocol</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">streams</span><span class="o">.</span><span class="n">FlowControlMixin</span><span class="p">()</span>
+    <span class="n">writer_transport</span><span class="p">,</span> <span class="n">writer_protocol</span> <span class="o">=</span> <span class="k">await</span> <span class="n">loop</span><span class="o">.</span><span class="n">connect_write_pipe</span><span class="p">(</span>
+        <span class="k">lambda</span><span class="p">:</span> <span class="n">writer_protocol</span><span class="p">,</span>
+        <span class="n">writer_pipe</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">writer</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">StreamWriter</span><span class="p">(</span><span class="n">writer_transport</span><span class="p">,</span> <span class="n">writer_protocol</span><span class="p">,</span> <span class="n">reader</span><span class="p">,</span> <span class="n">loop</span><span class="p">)</span>
+
+    <span class="c1"># Patch writer_transport.close so it also closes the reader_transport.</span>
+    <span class="k">def</span> <span class="nf">_close</span><span class="p">():</span>
+        <span class="n">_orig_close</span><span class="p">()</span>
+        <span class="n">reader_transport</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+    <span class="n">writer_transport</span><span class="o">.</span><span class="n">close</span><span class="p">,</span> <span class="n">_orig_close</span> <span class="o">=</span> <span class="n">_close</span><span class="p">,</span> <span class="n">writer_transport</span><span class="o">.</span><span class="n">close</span>
+
+    <span class="k">return</span> <span class="n">reader</span><span class="p">,</span> <span class="n">writer</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Open reader, writer streams for pty file descriptor.</p>
+</div>
+
+
+                </section>
+                <section id="raw">
+                            <div class="attr function"><a class="headerlink" href="#raw">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">raw</span><span class="signature">(rows=0, cols=0, x=0, y=0)</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">raw</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">cols</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+    <span class="s2">&quot;Return a function that sets PtyOptions.child_fd to raw mode.&quot;</span>
+
+    <span class="k">if</span> <span class="bp">Ellipsis</span> <span class="ow">in</span> <span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+        <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">_inherit_term_size</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_pty_set_raw</span><span class="p">(</span><span class="n">fd</span><span class="p">):</span>
+        <span class="n">tty</span><span class="o">.</span><span class="n">setraw</span><span class="p">(</span><span class="n">fd</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">rows</span> <span class="ow">or</span> <span class="n">cols</span> <span class="ow">or</span> <span class="n">x</span> <span class="ow">or</span> <span class="n">y</span><span class="p">:</span>
+            <span class="n">_set_term_size</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">get_eof</span><span class="p">(</span><span class="n">fd</span><span class="p">)</span> <span class="o">==</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span>
+
+    <span class="k">return</span> <span class="n">_pty_set_raw</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Return a function that sets PtyOptions.child_fd to raw mode.</p>
+</div>
+
+
+                </section>
+                <section id="cbreak">
+                            <div class="attr function"><a class="headerlink" href="#cbreak">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">cbreak</span><span class="signature">(rows=0, cols=0, x=0, y=0)</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">cbreak</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">cols</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+    <span class="s2">&quot;Return a function that sets PtyOptions.child_fd to cbreak mode.&quot;</span>
+
+    <span class="k">if</span> <span class="bp">Ellipsis</span> <span class="ow">in</span> <span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+        <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">_inherit_term_size</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_pty_set_cbreak</span><span class="p">(</span><span class="n">fd</span><span class="p">):</span>
+        <span class="n">tty</span><span class="o">.</span><span class="n">setcbreak</span><span class="p">(</span><span class="n">fd</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">rows</span> <span class="ow">or</span> <span class="n">cols</span> <span class="ow">or</span> <span class="n">x</span> <span class="ow">or</span> <span class="n">y</span><span class="p">:</span>
+            <span class="n">_set_term_size</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">get_eof</span><span class="p">(</span><span class="n">fd</span><span class="p">)</span> <span class="o">==</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span>
+
+    <span class="k">return</span> <span class="n">_pty_set_cbreak</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Return a function that sets PtyOptions.child_fd to cbreak mode.</p>
+</div>
+
+
+                </section>
+                <section id="canonical">
+                            <div class="attr function"><a class="headerlink" href="#canonical">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">canonical</span><span class="signature">(rows=0, cols=0, x=0, y=0, echo=True)</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">canonical</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">cols</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">echo</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="s2">&quot;Return a function that leaves PtyOptions.child_fd in canonical mode.&quot;</span>
+
+    <span class="k">if</span> <span class="bp">Ellipsis</span> <span class="ow">in</span> <span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+        <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">_inherit_term_size</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_pty_set_canonical</span><span class="p">(</span><span class="n">fd</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">rows</span> <span class="ow">or</span> <span class="n">cols</span> <span class="ow">or</span> <span class="n">x</span> <span class="ow">or</span> <span class="n">y</span><span class="p">:</span>
+            <span class="n">_set_term_size</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">echo</span><span class="p">:</span>
+            <span class="n">_set_term_echo</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">get_eof</span><span class="p">(</span><span class="n">fd</span><span class="p">)</span> <span class="o">==</span> <span class="sa">b</span><span class="s2">&quot;</span><span class="se">\x04</span><span class="s2">&quot;</span>
+
+    <span class="k">return</span> <span class="n">_pty_set_canonical</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Return a function that leaves PtyOptions.child_fd in canonical mode.</p>
+</div>
+
+
+                </section>
+                <section id="get_eof">
+                            <div class="attr function"><a class="headerlink" href="#get_eof">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">get_eof</span><span class="signature">(fd)</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">get_eof</span><span class="p">(</span><span class="n">fd</span><span class="p">):</span>
+    <span class="s2">&quot;Return the End-of-file character (EOF) if tty is in canonical mode only.&quot;</span>
+
+    <span class="n">eof</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span>
+    <span class="n">attrs</span> <span class="o">=</span> <span class="n">termios</span><span class="o">.</span><span class="n">tcgetattr</span><span class="p">(</span><span class="n">fd</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">attrs</span><span class="p">[</span><span class="n">_LFLAG</span><span class="p">]</span> <span class="o">&amp;</span> <span class="n">termios</span><span class="o">.</span><span class="n">ICANON</span><span class="p">:</span>
+        <span class="n">eof</span> <span class="o">=</span> <span class="n">attrs</span><span class="p">[</span><span class="n">_CC</span><span class="p">][</span><span class="n">termios</span><span class="o">.</span><span class="n">VEOF</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">eof</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Return the End-of-file character (EOF) if tty is in canonical mode only.</p>
 </div>
 
 
@@ -410,7 +478,7 @@ Otherwise, your code may swallow the CancelledError.</p>
     async function initialize() {
         let docs;
         try {
-            let resp = await fetch("search.json");
+            let resp = await fetch("../search.json");
             docs = await resp.json();
         } catch (e) {
             searchErr = "Cannot fetch search index.";
@@ -478,7 +546,7 @@ Otherwise, your code may swallow the CancelledError.</p>
             }
             for (let result of results.slice(0, 10)) {
                 let doc = result.doc;
-                let url = `${doc.modulename.replaceAll(".", "/")}.html`;
+                let url = `../${doc.modulename.replaceAll(".", "/")}.html`;
                 if (doc.qualname) {
                     url += `#${doc.qualname}`;
                 }

@@ -100,6 +100,12 @@
                                 <a class="variable" href="#Options.write_mode">write_mode</a>
                         </li>
                         <li>
+                                <a class="variable" href="#Options.start_new_session">start_new_session</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Options.pty">pty</a>
+                        </li>
+                        <li>
                                 <a class="function" href="#Options.merge_env">merge_env</a>
                         </li>
                         <li>
@@ -205,8 +211,9 @@
                         <div class="docstring"><p>Implements the CmdContext and Command classes.</p>
 
 <ul>
-<li>A CmdContext creates new command objects.</li>
-<li>A Command specifies the arguments and options used to run a program.</li>
+<li><p>A CmdContext creates new command objects. You should use the <code>context</code>
+function to create these, rather than creating them directly.</p></li>
+<li><p>A Command specifies the arguments and options used to run a program.</p></li>
 </ul>
 </div>
 
@@ -214,7 +221,9 @@
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span><span class="sd">&quot;&quot;&quot;Implements the CmdContext and Command classes.</span>
 
-<span class="sd">- A CmdContext creates new command objects.</span>
+<span class="sd">- A CmdContext creates new command objects. You should use the `context`</span>
+<span class="sd">function to create these, rather than creating them directly.</span>
+
 <span class="sd">- A Command specifies the arguments and options used to run a program.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
@@ -310,6 +319,12 @@
 
     <span class="n">write_mode</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="s2">&quot;True if using process substitution in write mode.&quot;</span>
+
+    <span class="n">start_new_session</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="s2">&quot;True if child process should start a new session with setsid().&quot;</span>
+
+    <span class="n">pty</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="s2">&quot;True if child process should be controlled using a pseudo-terminal (pty).&quot;</span>
 
     <span class="k">def</span> <span class="nf">merge_env</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Return our `env` merged with the global environment.&quot;</span>
@@ -420,6 +435,8 @@
         <span class="n">pass_fds</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">pass_fds_closed</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">write_mode</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">start_new_session</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">pty</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;CmdContext&quot;</span><span class="p">:</span>
         <span class="s2">&quot;Return new context with custom options set.&quot;</span>
         <span class="n">kwargs</span> <span class="o">=</span> <span class="nb">locals</span><span class="p">()</span>
@@ -553,6 +570,8 @@
         <span class="n">pass_fds</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Iterable</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">pass_fds_close</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">write_mode</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">start_new_session</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">pty</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Command&quot;</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Return new command with custom options set.</span>
 
@@ -576,6 +595,10 @@
 <span class="sd">        - Set `pass_fds` to pass open file descriptors to the command.</span>
 <span class="sd">        - Set `pass_fds_close` to True to auto-close the `pass_fds`.</span>
 <span class="sd">        - Set `write_mode` to True when using process substitution for writing.</span>
+<span class="sd">        - Set `start_new_session` to True to start a new session.</span>
+<span class="sd">        - Set `pty` to True to use a pseudo-terminal (pty) to control the child</span>
+<span class="sd">        process. This setting forces `start_new_session` to</span>
+<span class="sd">        also be True.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">kwargs</span> <span class="o">=</span> <span class="nb">locals</span><span class="p">()</span>
         <span class="k">del</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;self&quot;</span><span class="p">]</span>
@@ -735,6 +758,12 @@
     <span class="n">write_mode</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="s2">&quot;True if using process substitution in write mode.&quot;</span>
 
+    <span class="n">start_new_session</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="s2">&quot;True if child process should start a new session with setsid().&quot;</span>
+
+    <span class="n">pty</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="s2">&quot;True if child process should be controlled using a pseudo-terminal (pty).&quot;</span>
+
     <span class="k">def</span> <span class="nf">merge_env</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Return our `env` merged with the global environment.&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">inherit_env</span><span class="p">:</span>
@@ -829,7 +858,9 @@
     alt_name: Optional[str] = None,
     pass_fds: collections.abc.Iterable = (),
     pass_fds_close: bool = False,
-    write_mode: bool = False
+    write_mode: bool = False,
+    start_new_session: bool = False,
+    pty: bool = False
 )</span>
     </div>
 
@@ -1068,6 +1099,28 @@
 
 
                             </div>
+                            <div id="Options.start_new_session" class="classattr">
+                                            <div class="attr variable"><a class="headerlink" href="#Options.start_new_session">#&nbsp;&nbsp</a>
+
+        <span class="name">start_new_session</span><span class="annotation">: bool</span><span class="default_value"> = False</span>
+    </div>
+
+            <div class="docstring"><p>True if child process should start a new session with setsid().</p>
+</div>
+
+
+                            </div>
+                            <div id="Options.pty" class="classattr">
+                                            <div class="attr variable"><a class="headerlink" href="#Options.pty">#&nbsp;&nbsp</a>
+
+        <span class="name">pty</span><span class="annotation">: bool</span><span class="default_value"> = False</span>
+    </div>
+
+            <div class="docstring"><p>True if child process should be controlled using a pseudo-terminal (pty).</p>
+</div>
+
+
+                            </div>
                             <div id="Options.merge_env" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#Options.merge_env">#&nbsp;&nbsp</a>
 
@@ -1297,6 +1350,8 @@
         <span class="n">pass_fds</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">pass_fds_closed</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">write_mode</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">start_new_session</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">pty</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;CmdContext&quot;</span><span class="p">:</span>
         <span class="s2">&quot;Return new context with custom options set.&quot;</span>
         <span class="n">kwargs</span> <span class="o">=</span> <span class="nb">locals</span><span class="p">()</span>
@@ -1499,7 +1554,9 @@
     alt_name=&lt;UNSET.UNSET: 1&gt;,
     pass_fds=&lt;UNSET.UNSET: 1&gt;,
     pass_fds_closed=&lt;UNSET.UNSET: 1&gt;,
-    write_mode=&lt;UNSET.UNSET: 1&gt;
+    write_mode=&lt;UNSET.UNSET: 1&gt;,
+    start_new_session=&lt;UNSET.UNSET: 1&gt;,
+    pty=&lt;UNSET.UNSET: 1&gt;
 ) -&gt; <a href="#CmdContext">shellous.command.CmdContext</a></span>:
     </div>
 
@@ -1519,6 +1576,8 @@
         <span class="n">pass_fds</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">pass_fds_closed</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">write_mode</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">start_new_session</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">pty</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;CmdContext&quot;</span><span class="p">:</span>
         <span class="s2">&quot;Return new context with custom options set.&quot;</span>
         <span class="n">kwargs</span> <span class="o">=</span> <span class="nb">locals</span><span class="p">()</span>
@@ -1627,6 +1686,8 @@
         <span class="n">pass_fds</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Iterable</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">pass_fds_close</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">write_mode</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">start_new_session</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">pty</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Command&quot;</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Return new command with custom options set.</span>
 
@@ -1650,6 +1711,10 @@
 <span class="sd">        - Set `pass_fds` to pass open file descriptors to the command.</span>
 <span class="sd">        - Set `pass_fds_close` to True to auto-close the `pass_fds`.</span>
 <span class="sd">        - Set `write_mode` to True when using process substitution for writing.</span>
+<span class="sd">        - Set `start_new_session` to True to start a new session.</span>
+<span class="sd">        - Set `pty` to True to use a pseudo-terminal (pty) to control the child</span>
+<span class="sd">        process. This setting forces `start_new_session` to</span>
+<span class="sd">        also be True.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">kwargs</span> <span class="o">=</span> <span class="nb">locals</span><span class="p">()</span>
         <span class="k">del</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;self&quot;</span><span class="p">]</span>
@@ -1913,7 +1978,9 @@ is set, return that instead.</p>
     alt_name: Union[str, NoneType, <a href="#UNSET">shellous.command.UNSET</a>] = &lt;UNSET.UNSET: 1&gt;,
     pass_fds: Union[collections.abc.Iterable[int], <a href="#UNSET">shellous.command.UNSET</a>] = &lt;UNSET.UNSET: 1&gt;,
     pass_fds_close: Union[bool, <a href="#UNSET">shellous.command.UNSET</a>] = &lt;UNSET.UNSET: 1&gt;,
-    write_mode: Union[bool, <a href="#UNSET">shellous.command.UNSET</a>] = &lt;UNSET.UNSET: 1&gt;
+    write_mode: Union[bool, <a href="#UNSET">shellous.command.UNSET</a>] = &lt;UNSET.UNSET: 1&gt;,
+    start_new_session: Union[bool, <a href="#UNSET">shellous.command.UNSET</a>] = &lt;UNSET.UNSET: 1&gt;,
+    pty: Union[bool, <a href="#UNSET">shellous.command.UNSET</a>] = &lt;UNSET.UNSET: 1&gt;
 ) -&gt; <a href="#Command">shellous.command.Command</a></span>:
     </div>
 
@@ -1933,6 +2000,8 @@ is set, return that instead.</p>
         <span class="n">pass_fds</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Iterable</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">pass_fds_close</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">write_mode</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">start_new_session</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">pty</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Command&quot;</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Return new command with custom options set.</span>
 
@@ -1956,6 +2025,10 @@ is set, return that instead.</p>
 <span class="sd">        - Set `pass_fds` to pass open file descriptors to the command.</span>
 <span class="sd">        - Set `pass_fds_close` to True to auto-close the `pass_fds`.</span>
 <span class="sd">        - Set `write_mode` to True when using process substitution for writing.</span>
+<span class="sd">        - Set `start_new_session` to True to start a new session.</span>
+<span class="sd">        - Set `pty` to True to use a pseudo-terminal (pty) to control the child</span>
+<span class="sd">        process. This setting forces `start_new_session` to</span>
+<span class="sd">        also be True.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">kwargs</span> <span class="o">=</span> <span class="nb">locals</span><span class="p">()</span>
         <span class="k">del</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;self&quot;</span><span class="p">]</span>
@@ -1987,6 +2060,10 @@ scripting language.</li>
 <li>Set <code>pass_fds</code> to pass open file descriptors to the command.</li>
 <li>Set <code>pass_fds_close</code> to True to auto-close the <code>pass_fds</code>.</li>
 <li>Set <code>write_mode</code> to True when using process substitution for writing.</li>
+<li>Set <code>start_new_session</code> to True to start a new session.</li>
+<li>Set <code>pty</code> to True to use a pseudo-terminal (pty) to control the child
+process. This setting forces <code>start_new_session</code> to
+also be True.</li>
 </ul>
 </div>
 
