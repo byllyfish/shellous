@@ -455,9 +455,6 @@ class Runner:
                 for cmd in opts.subcmds:
                     self.add_task(cmd.coro(), "procsub")
 
-            # Add a task to monitor for when the process finishes.
-            self.add_task(self._waiter(), "waiter")
-
             stdin = self.proc.stdin
             stdout = self.proc.stdout
             stderr = self.proc.stderr
@@ -503,6 +500,9 @@ class Runner:
         self.stdin = stdin
         self.stdout = stdout
         self.stderr = stderr
+
+        # Add a task to monitor for when the process finishes.
+        self.add_task(self._waiter(), "waiter")
 
         return self
 
