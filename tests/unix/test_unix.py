@@ -3,6 +3,7 @@
 import asyncio
 import io
 import os
+import re
 import signal
 import sys
 
@@ -177,7 +178,7 @@ async def test_timeout_fail(sh):
 
     assert exc_info.type is ResultError
     assert exc_info.value.result == Result(
-        output_bytes=None,
+        output_bytes=b"",
         exit_code=_CANCELLED_EXIT_CODE,
         cancelled=True,
         encoding="utf-8",
@@ -193,7 +194,7 @@ async def test_timeout_fail_no_capturing(sh):
         await asyncio.wait_for(cmd, 0.1)
 
     assert exc_info.value.result == Result(
-        output_bytes=None,
+        output_bytes=b"",
         exit_code=_CANCELLED_EXIT_CODE,
         cancelled=True,
         encoding="utf-8",
@@ -532,8 +533,8 @@ async def test_pipeline_async_context_manager(sh):
     assert run.name == "tr|cat"
     assert (
         repr(run) == "<PipeRunner 'tr|cat' results=["
-        "Result(output_bytes=None, exit_code=0, cancelled=False, encoding='utf-8', extra=None), "
-        "Result(output_bytes=None, exit_code=0, cancelled=False, encoding='utf-8', extra=None)]>"
+        "Result(output_bytes=b'', exit_code=0, cancelled=False, encoding='utf-8', extra=None), "
+        "Result(output_bytes=b'', exit_code=0, cancelled=False, encoding='utf-8', extra=None)]>"
     )
 
 
@@ -656,7 +657,7 @@ async def test_shell_cmd(sh):
 
     assert exc_info.type is ResultError
     assert exc_info.value.result == Result(
-        output_bytes=None,
+        output_bytes=b"",
         exit_code=_CANCELLED_EXIT_CODE,
         cancelled=True,
         encoding="utf-8",
@@ -767,3 +768,290 @@ async def test_process_substitution_write_pipe_alt(sh, tmp_path):
     result = await pipe
     assert result == "b\n"
     assert out.read_bytes() == b"b\n"
+
+
+async def test_start_new_session(sh):
+    """Test `start_new_session` option."""
+
+    script = """import os; print(os.getsid(0) == os.getpid())"""
+    cmd = sh(sys.executable, "-c", script)
+
+    result = await cmd
+    assert result == "False\n"
+
+    result = await cmd.set(start_new_session=False)
+    assert result == "False\n"
+
+    result = await cmd.set(start_new_session=True)
+    assert result == "True\n"
+
+
+@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+async def test_manual_pty(sh):
+    """Test setting up a pty manually."""
+
+    import pty  # import not supported on windows
+
+    parent_fd, child_fd = pty.openpty()
+
+    tr = sh("tr", "[:lower:]", "[:upper:]")
+    cmd = (
+        tr.stdin(child_fd, close=True)
+        .stdout(child_fd, close=True)
+        .set(start_new_session=True)
+    )
+
+    async with cmd.run():
+        # Use synchronous functions to test pty directly.
+        os.write(parent_fd, b"abc\n")
+        await asyncio.sleep(0.1)
+        result = os.read(parent_fd, 1024)
+        os.close(parent_fd)
+
+    assert result == b"abc\r\nABC\r\n"
+
+
+async def _get_streams(fd):
+    "Wrap fd in a StreamReader, StreamWriter pair."
+
+    import fcntl
+
+    fcntl.fcntl(fd, fcntl.F_SETFL, os.O_NONBLOCK)
+    reader_pipe = os.fdopen(fd, "rb", 0, closefd=False)
+    writer_pipe = os.fdopen(fd, "wb", 0, closefd=True)
+
+    loop = asyncio.get_running_loop()
+    reader = asyncio.StreamReader(loop=loop)
+    reader_protocol = asyncio.StreamReaderProtocol(reader, loop=loop)
+    reader_transport, _ = await loop.connect_read_pipe(
+        lambda: reader_protocol,
+        reader_pipe,
+    )
+    writer_transport, writer_protocol = await loop.connect_write_pipe(
+        asyncio.streams.FlowControlMixin,
+        writer_pipe,
+    )
+    writer = asyncio.StreamWriter(writer_transport, writer_protocol, reader, loop)
+
+    # Patch writer_transport.close so it also closes the reader_transport.
+    def _close():
+        _orig_close()
+        reader_transport.close()
+
+    writer_transport.close, _orig_close = _close, writer_transport.close
+
+    return reader, writer
+
+
+@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+async def test_manual_pty_streams(sh):
+    """Test setting up a pty manually."""
+
+    import pty  # import not supported on windows
+
+    parent_fd, child_fd = pty.openpty()
+
+    tr = sh("tr", "[:lower:]", "[:upper:]")
+    cmd = (
+        tr.stdin(child_fd, close=True)
+        .stdout(child_fd, close=True)
+        .set(start_new_session=True)
+    )
+
+    reader, writer = await _get_streams(parent_fd)
+
+    async with cmd.run() as run:
+        writer.write(b"abc\n")
+        await writer.drain()
+        await asyncio.sleep(0.05)
+        result = await reader.read(1024)
+        writer.close()
+
+    assert result == b"abc\r\nABC\r\n"
+
+
+@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+async def test_pty(sh):
+    "Test the `pty` option."
+    cmd = sh("tr", "[:lower:]", "[:upper:]").stdin(CAPTURE).set(pty=True)
+
+    async with cmd.run() as run:
+        run.stdin.write(b"abc\n")
+        await run.stdin.drain()
+        result = await run.stdout.read(1024)
+        run.stdin.close()
+
+    assert result == b"abc\r\nABC\r\n"
+
+
+@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+async def test_pty_ctermid(sh):
+    "Test the `pty` option and print out the ctermid, ttyname for stdin/stdout."
+    cmd = (
+        sh(
+            sys.executable,
+            "-c",
+            "import os; print(os.ctermid(), os.ttyname(0), os.ttyname(1))",
+        )
+        .stdin(CAPTURE)
+        .set(pty=True)
+    )
+
+    async with cmd.run() as run:
+        result = await run.stdout.read(1024)
+        run.stdin.close()
+
+    ctermid, stdin_tty, stdout_tty = result.split()
+    assert ctermid == b"/dev/tty"
+    assert re.fullmatch(br"/dev/(?:ttys|pts/)\d+", stdin_tty), stdin_tty
+    assert re.fullmatch(br"/dev/(?:ttys|pts/)\d+", stdout_tty), stdout_tty
+
+
+_STTY_DARWIN = (
+    b"speed 9600 baud; 0 rows; 0 columns;\r\n"
+    b"lflags: icanon isig iexten echo echoe -echok echoke -echonl echoctl\r\n"
+    b"\t-echoprt -altwerase -noflsh -tostop -flusho -pendin -nokerninfo\r\n"
+    b"\t-extproc\r\n"
+    b"iflags: -istrip icrnl -inlcr -igncr ixon -ixoff ixany imaxbel -iutf8\r\n"
+    b"\t-ignbrk brkint -inpck -ignpar -parmrk\r\n"
+    b"oflags: opost onlcr -oxtabs -onocr -onlret\r\n"
+    b"cflags: cread cs8 -parenb -parodd hupcl -clocal -cstopb -crtscts -dsrflow\r\n"
+    b"\t-dtrflow -mdmbuf\r\n"
+    b"cchars: discard = ^O; dsusp = ^Y; eof = ^D; eol = <undef>;\r\n"
+    b"\teol2 = <undef>; erase = ^?; intr = ^C; kill = ^U; lnext = ^V;\r\n"
+    b"\tmin = 1; quit = ^\\; reprint = ^R; start = ^Q; status = ^T;\r\n"
+    b"\tstop = ^S; susp = ^Z; time = 0; werase = ^W;\r\n"
+)
+
+_STTY_LINUX = (
+    b"speed 38400 baud; rows 0; columns 0; line = 0;\r\n"
+    b"intr = ^C; quit = ^\\; erase = ^?; kill = ^U; eof = ^D; eol = <undef>;\r\n"
+    b"eol2 = <undef>; swtch = <undef>; start = ^Q; stop = ^S; susp = ^Z; rprnt = ^R;\r\n"
+    b"werase = ^W; lnext = ^V; discard = ^O; min = 1; time = 0;\r\n"
+    b"-parenb -parodd -cmspar cs8 -hupcl -cstopb cread -clocal -crtscts\r\n"
+    b"-ignbrk -brkint -ignpar -parmrk -inpck -istrip -inlcr -igncr icrnl ixon -ixoff\r\n"
+    b"-iuclc -ixany -imaxbel -iutf8\r\n"
+    b"opost -olcuc -ocrnl onlcr -onocr -onlret -ofill -ofdel nl0 cr0 tab0 bs0 vt0 ff0\r\n"
+    b"isig icanon iexten echo echoe echok -echonl -noflsh -xcase -tostop -echoprt\r\n"
+    b"echoctl echoke -flusho -extproc\r\n"
+)
+
+
+@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+async def test_pty_stty_all(sh, tmp_path):
+    "Test the `pty` option and print out the result of stty -a"
+
+    err = tmp_path / "test_pty_stty_all"
+    cmd = sh("stty", "-a").stdin(CAPTURE).stderr(err).set(pty=True)
+
+    async with cmd.run() as run:
+        result = await run.stdout.read(1024)
+        run.stdin.close()
+
+    assert err.read_bytes() == b""
+    if sys.platform == "linux":
+        assert result == _STTY_LINUX
+    else:
+        assert result == _STTY_DARWIN
+
+
+@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+async def test_pty_tr_eot(sh):
+    "Test the `pty` option with a control-D (EOT = 0x04)"
+    cmd = sh("tr", "[:lower:]", "[:upper:]").stdin(CAPTURE).set(pty=True)
+
+    async with cmd.run() as run:
+        run.stdin.write(b"abc\n\x04")
+        await run.stdin.drain()
+        result = await run.stdout.read(1024)
+
+    if sys.platform == "linux":
+        assert result == b"abc\r\nABC\r\n"
+    else:
+        assert result == b"abc\r\n^D\x08\x08ABC\r\n"
+
+
+@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+async def test_pty_cat_eot(sh):
+    "Test the `pty` option with a control-D (EOT = 0x04)"
+    cmd = sh("cat").stdin(CAPTURE).set(pty=True)
+
+    async with cmd.run() as run:
+        run.stdin.write(b"abc\x04\x04")
+        await run.stdin.drain()
+        result = await run.stdout.read(1024)
+
+    if sys.platform == "linux":
+        assert result == b"abcabc"
+    else:
+        assert result == b"abc^D\x08\x08^D\x08\x08abc"
+
+
+@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+async def test_pty_raw_size(sh):
+    "Test the `pty` option in raw mode."
+    from shellous.tty import raw
+
+    cmd = sh("stty", "size").set(pty=raw(rows=17, cols=41))
+    result = await cmd
+    assert result == "17 41\n"
+
+
+@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+async def test_pty_cbreak_size(sh):
+    "Test the `pty` option in cbreak mode."
+    from shellous.tty import cbreak
+
+    cmd = sh("stty", "size").set(pty=cbreak(rows=19, cols=43))
+    result = await cmd
+    assert result == "19 43\r\n"
+
+
+@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+async def test_pty_raw_ls(sh):
+    "Test the `pty` option in raw mode."
+    from shellous.tty import raw
+
+    cmd = sh("ls").set(pty=raw(rows=24, cols=40))
+    result = await cmd
+
+    assert "README.md" in result
+    for line in io.StringIO(result):
+        assert len(line.rstrip()) <= 40
+
+
+@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+async def test_pty_raw_size_inherited(sh):
+    "Test the `pty` option in raw mode."
+    from shellous.tty import raw
+
+    cmd = sh("stty", "size").set(pty=raw(rows=..., cols=...))
+    result = await cmd
+
+    rows, cols = (int(n) for n in result.rstrip().split())
+    assert rows >= 0 and cols >= 0
+
+
+@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+async def test_pty_cat_auto_eof(sh):
+    "Test the `pty` option with string input and auto-EOF."
+    cmd = "abc" | sh("cat").set(pty=True)
+    result = await cmd
+
+    if sys.platform == "linux":
+        assert result == "abcabc"
+    else:
+        assert result == "abc^D\x08\x08^D\x08\x08abc"
+
+
+@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+async def test_pty_cat_iteration_no_echo(sh):
+    "Test the `pty` option with string input, iteration, and echo=False."
+    from shellous.tty import canonical
+
+    cmd = "abc\ndef\nghi" | sh("cat").set(pty=canonical(echo=False))
+
+    async with cmd.run() as run:
+        lines = [line async for line in run]
+
+    assert lines == ["abc\r\n", "def\r\n", "ghi"]

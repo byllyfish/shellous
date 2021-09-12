@@ -3,6 +3,8 @@
 import os
 from typing import Optional, Union
 
+from .log import LOGGER
+
 
 def decode(data: Optional[bytes], encoding: Optional[str]) -> Union[str, bytes]:
     "Utility function to decode optional byte strings."
@@ -38,8 +40,8 @@ def close_fds(open_fds):
                 if obj >= 0:
                     try:
                         os.close(obj)
-                    except OSError:
-                        pass
+                    except OSError as ex:
+                        LOGGER.warning("os.close ex=%r", ex)
             else:
                 obj.close()
     finally:

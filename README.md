@@ -248,7 +248,7 @@ True
 >>> await t
 Traceback (most recent call last):
   ...
-shellous.result.ResultError: Result(output_bytes=None, exit_code=-15, cancelled=True, encoding='utf-8', extra=None)
+shellous.result.ResultError: Result(output_bytes=b'', exit_code=-15, cancelled=True, encoding='utf-8', extra=None)
 ```
 
 When you use `incomplete_result`, your code should respect the `cancelled` attribute in the Result object. 

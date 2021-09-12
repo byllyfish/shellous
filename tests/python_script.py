@@ -13,6 +13,7 @@ def _write(data):
     "Write data to stdout as bytes."
     if data:
         sys.stdout.buffer.write(data)
+        sys.stdout.buffer.flush()
 
 
 if SHELLOUS_CMD == "echo":
