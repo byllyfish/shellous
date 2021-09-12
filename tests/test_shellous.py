@@ -9,7 +9,8 @@ import sys
 from pathlib import Path
 
 import pytest
-from shellous import CAPTURE, DEVNULL, INHERIT, PipeResult, Result, ResultError, context
+from shellous import (CAPTURE, DEVNULL, INHERIT, PipeResult, Result,
+                      ResultError, context)
 from shellous.harvest import harvest_results
 
 pytestmark = pytest.mark.asyncio
@@ -219,14 +220,29 @@ async def test_pipe_error_cmd1(echo_cmd, tr_cmd):
     with pytest.raises(ResultError) as exc_info:
         await (echo_cmd | tr_cmd)
 
-    assert exc_info.value.result == Result(
-        output_bytes=b"ABC",
-        exit_code=3,
-        cancelled=False,
-        encoding="utf-8",
-        extra=(
-            PipeResult(exit_code=3, cancelled=False),
-            PipeResult(exit_code=CANCELLED_EXIT_CODE, cancelled=True),
+    # This test has a race condition; sometimes we get partial output and
+    # sometimes we don't.
+
+    assert exc_info.value.result in (
+        Result(
+            output_bytes=b"ABC",
+            exit_code=3,
+            cancelled=False,
+            encoding="utf-8",
+            extra=(
+                PipeResult(exit_code=3, cancelled=False),
+                PipeResult(exit_code=CANCELLED_EXIT_CODE, cancelled=True),
+            ),
+        ),
+        Result(
+            output_bytes=b"",  # only difference
+            exit_code=3,
+            cancelled=False,
+            encoding="utf-8",
+            extra=(
+                PipeResult(exit_code=3, cancelled=False),
+                PipeResult(exit_code=CANCELLED_EXIT_CODE, cancelled=True),
+            ),
         ),
     )
 
