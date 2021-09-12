@@ -5,7 +5,7 @@ import enum
 import io
 import os
 
-from shellous.log import log_method
+from shellous.log import LOGGER, log_method
 from shellous.util import decode
 
 _DETAILED_LOGGING = True
@@ -96,4 +96,5 @@ async def copy_bytearray(source, dest):
         data = await source.read(1024)
         if not data:
             break
+        LOGGER.debug("copy_bytearray read=%r", data)
         dest.extend(data)
