@@ -25,23 +25,23 @@ class PtyFds(NamedTuple):
     parent_fd: int
     child_fd: int
     eof: bytes
-    stdin_stream: Any = None
+    reader: Any = None
+    writer: Any = None
 
     async def open_streams(self):
-        return await _open_pty_streams(self.parent_fd)
-
-    def close(self):
-        os.close(self.child_fd)
-        if self.stdin_stream:
-            self.stdin_stream.close()
-
-    def set_stdin_stream(self, stdin_stream):
+        reader, writer = await _open_pty_streams(self.parent_fd)
         return PtyFds(
             self.parent_fd,
             self.child_fd,
             self.eof,
-            stdin_stream,
+            reader,
+            writer,
         )
+
+    def close(self):
+        os.close(self.child_fd)
+        if self.writer:
+            self.writer.close()
 
 
 def open_pty():

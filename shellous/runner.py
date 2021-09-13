@@ -425,12 +425,9 @@ class Runner:
 
             # Second half of pty setup.
             if opts.pty_fds:
-                stdin, stdout, stderr = await self._setup_pty2(
-                    stdin,
-                    stdout,
-                    stderr,
-                    opts,
-                )
+                assert (stdin, stdout, stderr) == (None, None, None)
+                opts.pty_fds = await opts.pty_fds.open_streams()
+                stdin, stdout = opts.pty_fds.writer, opts.pty_fds.reader
 
             if stderr is not None:
                 error = opts.command.options.error
@@ -475,17 +472,6 @@ class Runner:
         await self.proc.wait()
         if self.options.pty_fds and sys.platform == "linux":
             self.stdout._transport.close()
-
-    async def _setup_pty2(self, stdin, stdout, stderr, opts):
-        "Perform second half of pty setup. Return (stdin, stdout, stderr)."
-        assert stdin is None
-        assert stdout is None
-        assert stderr is None
-
-        reader, writer = await opts.pty_fds.open_streams()
-        opts.pty_fds = opts.pty_fds.set_stdin_stream(writer)
-
-        return writer, reader, stderr
 
     def _setup_output_sink(self, stream, sink, encoding, tag):
         "Set up a task to write to custom output sink."
