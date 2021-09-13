@@ -42,9 +42,6 @@ class PtyFds(NamedTuple):
     "Track parent/child fd's for pty."
     parent_fd: int
     child_fd: int
-    stdin: bool
-    stdout: bool
-    stderr: bool
     eof: bytes
     stdin_stream: Any = None
 
@@ -52,16 +49,11 @@ class PtyFds(NamedTuple):
         os.close(self.child_fd)
         if self.stdin_stream:
             self.stdin_stream.close()
-        # if not child_only:
-        #    os.close(self.parent_fd)
 
     def set_stdin(self, stdin_stream):
         return PtyFds(
             self.parent_fd,
             self.child_fd,
-            self.stdin,
-            self.stdout,
-            self.stderr,
             self.eof,
             stdin_stream,
         )
@@ -269,9 +261,6 @@ class _RunOptions:
 
         parent_fd, child_fd = _open_pty()
 
-        # Close `child_fd` later.
-        # self.open_fds.append(child_fd)
-
         if stdin == asyncio.subprocess.PIPE:
             stdin = child_fd
 
@@ -291,9 +280,6 @@ class _RunOptions:
         self.pty_fds = PtyFds(
             parent_fd,
             child_fd,
-            stdin == child_fd,
-            stdout == child_fd,
-            stderr == child_fd,
             pty_util.get_eof(child_fd),
         )
 
@@ -512,15 +498,16 @@ class Runner:
         if self.options.pty_fds and sys.platform == "linux":
             self.stdout._transport.close()
 
-    async def _setup_pty2(self, _stdin, _stdout, stderr, opts):
+    async def _setup_pty2(self, stdin, stdout, stderr, opts):
         "Perform second half of pty setup. Return (stdin, stdout, stderr)."
+        assert stdin is None
+        assert stdout is None
         assert stderr is None
 
         parent_fd = opts.pty_fds.parent_fd
         reader, writer = await pty_util.open_pty_streams(parent_fd)
         opts.pty_fds = opts.pty_fds.set_stdin(writer)
 
-        # FIXME: Should only return when stdin, stdout set in pty_fds.
         return writer, reader, stderr
 
     def _setup_output_sink(self, stream, sink, encoding, tag):
