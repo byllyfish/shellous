@@ -467,10 +467,11 @@ class Runner:
 
         return self
 
+    @log_method(_DETAILED_LOGGING)
     async def _waiter(self):
         "Run task that waits for process to exit."
         await self.proc.wait()
-        if self.options.pty_fds and sys.platform == "linux":
+        if self.options.pty_fds:
             self.stdout._transport.close()
 
     def _setup_output_sink(self, stream, sink, encoding, tag):

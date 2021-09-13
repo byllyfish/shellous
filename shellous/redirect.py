@@ -55,7 +55,11 @@ async def write_stream(input_bytes, stream, eof=None):
                 stream.write(eof + eof)
             else:
                 stream.write(eof)
-            await stream.drain()
+
+            try:
+                await stream.drain()
+            except (BrokenPipeError, ConnectionResetError):
+                pass
     else:
         stream.close()
 
