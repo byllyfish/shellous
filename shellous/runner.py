@@ -4,7 +4,6 @@ import asyncio
 import io
 import os
 import sys
-from typing import Any, NamedTuple, Optional
 
 import shellous
 import shellous.pty_util as pty_util
@@ -36,27 +35,6 @@ def _is_write_mode(cmd):
         # Pipelines need to check both the last/first commands.
         return cmd.options.write_mode or cmd[0].options.write_mode
     return cmd.options.write_mode
-
-
-class PtyFds(NamedTuple):
-    "Track parent/child fd's for pty."
-    parent_fd: int
-    child_fd: int
-    eof: bytes
-    stdin_stream: Any = None
-
-    def close(self):
-        os.close(self.child_fd)
-        if self.stdin_stream:
-            self.stdin_stream.close()
-
-    def set_stdin(self, stdin_stream):
-        return PtyFds(
-            self.parent_fd,
-            self.child_fd,
-            self.eof,
-            stdin_stream,
-        )
 
 
 class _RunOptions:
@@ -259,7 +237,7 @@ class _RunOptions:
         Initializes `self.pty_fds`.
         """
 
-        parent_fd, child_fd = _open_pty()
+        parent_fd, child_fd = pty_util.open_pty()
 
         if stdin == asyncio.subprocess.PIPE:
             stdin = child_fd
@@ -277,7 +255,7 @@ class _RunOptions:
         if callable(pty):
             pty(child_fd)
 
-        self.pty_fds = PtyFds(
+        self.pty_fds = pty_util.PtyFds(
             parent_fd,
             child_fd,
             pty_util.get_eof(child_fd),
@@ -504,9 +482,8 @@ class Runner:
         assert stdout is None
         assert stderr is None
 
-        parent_fd = opts.pty_fds.parent_fd
-        reader, writer = await pty_util.open_pty_streams(parent_fd)
-        opts.pty_fds = opts.pty_fds.set_stdin(writer)
+        reader, writer = await opts.pty_fds.open_streams()
+        opts.pty_fds = opts.pty_fds.set_stdin_stream(writer)
 
         return writer, reader, stderr
 
@@ -866,11 +843,3 @@ def _cleanup(command):
         open_fds.extend(command.options.pass_fds)
 
     close_fds(open_fds)
-
-
-def _open_pty():
-    "Open pseudo-terminal (pty) descriptors. Returns (parent_fd, child_fd)."
-
-    from pty import openpty
-
-    return openpty()

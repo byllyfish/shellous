@@ -1,10 +1,12 @@
 import asyncio
 import os
 import struct
+from typing import Any, NamedTuple
 
 # The following modules are not supported on Windows.
 try:
     import fcntl
+    import pty
     import termios
     import tty
 except ImportError:
@@ -18,6 +20,35 @@ _LFLAG = 3
 _CC = 6
 
 
+class PtyFds(NamedTuple):
+    "Track parent/child fd's for pty."
+    parent_fd: int
+    child_fd: int
+    eof: bytes
+    stdin_stream: Any = None
+
+    async def open_streams(self):
+        return await _open_pty_streams(self.parent_fd)
+
+    def close(self):
+        os.close(self.child_fd)
+        if self.stdin_stream:
+            self.stdin_stream.close()
+
+    def set_stdin_stream(self, stdin_stream):
+        return PtyFds(
+            self.parent_fd,
+            self.child_fd,
+            self.eof,
+            stdin_stream,
+        )
+
+
+def open_pty():
+    "Open pseudo-terminal (pty) descriptors. Returns (parent_fd, child_fd)."
+    return pty.openpty()
+
+
 def set_ctty_preexec_fn():
     "Explicitly open the tty to make it become a controlling tty."
     # See https://github.com/python/cpython/blob/3.9/Lib/pty.py
@@ -25,7 +56,7 @@ def set_ctty_preexec_fn():
     os.close(tmpfd)
 
 
-async def open_pty_streams(file_desc):
+async def _open_pty_streams(file_desc):
     "Open reader, writer streams for pty file descriptor."
     fcntl.fcntl(file_desc, fcntl.F_SETFL, os.O_NONBLOCK)
 
