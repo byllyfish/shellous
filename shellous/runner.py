@@ -7,8 +7,8 @@ import sys
 from typing import Any, NamedTuple, Optional
 
 import shellous
+import shellous.pty_util as pty_util
 import shellous.redirect as redir
-import shellous.tty as tty
 from shellous.harvest import harvest, harvest_results
 from shellous.log import LOGGER, log_method
 from shellous.redirect import Redirect
@@ -294,12 +294,12 @@ class _RunOptions:
             stdin == child_fd,
             stdout == child_fd,
             stderr == child_fd,
-            tty.get_eof(child_fd),
+            pty_util.get_eof(child_fd),
         )
 
         LOGGER.info("_setup_pty1: %r", self.pty_fds)
 
-        return stdin, stdout, stderr, tty.set_ctty_preexec_fn
+        return stdin, stdout, stderr, pty_util.set_ctty_preexec_fn
 
 
 class Runner:
@@ -517,7 +517,7 @@ class Runner:
         assert stderr is None
 
         parent_fd = opts.pty_fds.parent_fd
-        reader, writer = await tty.open_pty_streams(parent_fd)
+        reader, writer = await pty_util.open_pty_streams(parent_fd)
         opts.pty_fds = opts.pty_fds.set_stdin(writer)
 
         # FIXME: Should only return when stdin, stdout set in pty_fds.
