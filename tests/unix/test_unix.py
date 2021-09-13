@@ -1055,6 +1055,7 @@ async def test_pty_cat_iteration_no_echo(sh):
     assert lines == ["abc\r\n", "def\r\n", "ghi"]
 
 
+@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
 async def test_pty_canonical_ls(sh):
     "Test canonical ls output through pty is in columns."
     cmd = sh("ls", "README.md", "CHANGELOG.md").set(pty=canonical(cols=20, rows=10))
