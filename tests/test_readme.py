@@ -146,6 +146,8 @@ def test_parse_readme():
         "t = asyncio.create_task(sleep.coro())",
         "t.cancel()",
         "await t",
+        'ls = sh("ls").set(pty=shellous.canonical(cols=20, rows=10, echo=False))',
+        'await ls("README.md", "CHANGELOG.md")',
     ]
 
 

@@ -4,11 +4,10 @@ import asyncio
 import io
 import os
 import sys
-from typing import Any, NamedTuple, Optional
 
 import shellous
+import shellous.pty_util as pty_util
 import shellous.redirect as redir
-import shellous.tty as tty
 from shellous.harvest import harvest, harvest_results
 from shellous.log import LOGGER, log_method
 from shellous.redirect import Redirect
@@ -36,35 +35,6 @@ def _is_write_mode(cmd):
         # Pipelines need to check both the last/first commands.
         return cmd.options.write_mode or cmd[0].options.write_mode
     return cmd.options.write_mode
-
-
-class PtyFds(NamedTuple):
-    "Track parent/child fd's for pty."
-    parent_fd: int
-    child_fd: int
-    stdin: bool
-    stdout: bool
-    stderr: bool
-    eof: bytes
-    stdin_stream: Any = None
-
-    def close(self):
-        os.close(self.child_fd)
-        if self.stdin_stream:
-            self.stdin_stream.close()
-        # if not child_only:
-        #    os.close(self.parent_fd)
-
-    def set_stdin(self, stdin_stream):
-        return PtyFds(
-            self.parent_fd,
-            self.child_fd,
-            self.stdin,
-            self.stdout,
-            self.stderr,
-            self.eof,
-            stdin_stream,
-        )
 
 
 class _RunOptions:
@@ -267,10 +237,7 @@ class _RunOptions:
         Initializes `self.pty_fds`.
         """
 
-        parent_fd, child_fd = _open_pty()
-
-        # Close `child_fd` later.
-        # self.open_fds.append(child_fd)
+        parent_fd, child_fd = pty_util.open_pty()
 
         if stdin == asyncio.subprocess.PIPE:
             stdin = child_fd
@@ -288,18 +255,15 @@ class _RunOptions:
         if callable(pty):
             pty(child_fd)
 
-        self.pty_fds = PtyFds(
+        self.pty_fds = pty_util.PtyFds(
             parent_fd,
             child_fd,
-            stdin == child_fd,
-            stdout == child_fd,
-            stderr == child_fd,
-            tty.get_eof(child_fd),
+            pty_util.get_eof(child_fd),
         )
 
         LOGGER.info("_setup_pty1: %r", self.pty_fds)
 
-        return stdin, stdout, stderr, tty.set_ctty_preexec_fn
+        return stdin, stdout, stderr, pty_util.set_ctty_preexec_fn
 
 
 class Runner:
@@ -461,12 +425,9 @@ class Runner:
 
             # Second half of pty setup.
             if opts.pty_fds:
-                stdin, stdout, stderr = await self._setup_pty2(
-                    stdin,
-                    stdout,
-                    stderr,
-                    opts,
-                )
+                assert (stdin, stdout, stderr) == (None, None, None)
+                opts.pty_fds = await opts.pty_fds.open_streams()
+                stdin, stdout = opts.pty_fds.writer, opts.pty_fds.reader
 
             if stderr is not None:
                 error = opts.command.options.error
@@ -506,22 +467,12 @@ class Runner:
 
         return self
 
+    @log_method(_DETAILED_LOGGING)
     async def _waiter(self):
         "Run task that waits for process to exit."
         await self.proc.wait()
-        if self.options.pty_fds and sys.platform == "linux":
+        if self.options.pty_fds:
             self.stdout._transport.close()
-
-    async def _setup_pty2(self, _stdin, _stdout, stderr, opts):
-        "Perform second half of pty setup. Return (stdin, stdout, stderr)."
-        assert stderr is None
-
-        parent_fd = opts.pty_fds.parent_fd
-        reader, writer = await tty.open_pty_streams(parent_fd)
-        opts.pty_fds = opts.pty_fds.set_stdin(writer)
-
-        # FIXME: Should only return when stdin, stdout set in pty_fds.
-        return writer, reader, stderr
 
     def _setup_output_sink(self, stream, sink, encoding, tag):
         "Set up a task to write to custom output sink."
@@ -613,11 +564,10 @@ class Runner:
         if self.stdin or (self.stdout and self.stderr):
             raise RuntimeError("multiple capture not supported in iterator")
 
-        encoding = self.options.encoding
         stream = self.stdout or self.stderr
         if stream:
-            async for line in stream:
-                yield decode(line, encoding)
+            async for line in redir.read_lines(stream, self.options.encoding):
+                yield line
 
     def __aiter__(self):
         "Return asynchronous iterator over stdout/stderr."
@@ -811,11 +761,10 @@ class PipeRunner:  # pylint: disable=too-many-instance-attributes
         if self.stdin or (self.stdout and self.stderr):
             raise RuntimeError("multiple capture not supported in iterator")
 
-        encoding = self.encoding
         stream = self.stdout or self.stderr
         if stream:
-            async for line in stream:
-                yield decode(line, encoding)
+            async for line in redir.read_lines(stream, self.encoding):
+                yield line
 
     def __aiter__(self):
         "Return asynchronous iterator over stdout/stderr."
@@ -879,11 +828,3 @@ def _cleanup(command):
         open_fds.extend(command.options.pass_fds)
 
     close_fds(open_fds)
-
-
-def _open_pty():
-    "Open pseudo-terminal (pty) descriptors. Returns (parent_fd, child_fd)."
-
-    from pty import openpty
-
-    return openpty()

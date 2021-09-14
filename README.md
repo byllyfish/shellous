@@ -27,6 +27,7 @@ Benefits
 - Run programs asychronously in a single line.
 - Easily capture output or redirect stdin, stdout and stderr to files.
 - Easily construct [pipelines](https://en.wikipedia.org/wiki/Pipeline_(Unix)) and use [process substitution](https://en.wikipedia.org/wiki/Process_substitution).
+- Run a program with a pseudo-terminal (pty).
 - Runs on Linux, MacOS and Windows.
 
 Requirements
@@ -35,6 +36,7 @@ Requirements
 - Requires Python 3.9 or later.
 - Requires an asyncio event loop.
 - Process substitution requires a Unix system with /dev/fd support.
+- Pseudo-terminals require a Unix system.
 
 Basic Usage
 -----------
@@ -115,7 +117,7 @@ To redirect stdin using a file's contents, use a `Path` object from `pathlib`.
 >>> from pathlib import Path
 >>> cmd = Path("README.md") | sh("wc", "-l")
 >>> await cmd
-'     255\n'
+'     269\n'
 ```
 
 [More on redirection...](docs/redirection.md)
@@ -253,3 +255,15 @@ shellous.result.ResultError: Result(output_bytes=b'', exit_code=-15, cancelled=T
 
 When you use `incomplete_result`, your code should respect the `cancelled` attribute in the Result object. 
 Otherwise, your code may swallow the CancelledError.
+
+Pseudo-Terminal Support
+-----------------------
+
+To run a command through a pseudo-terminal, set the `pty` option to True. Alternatively, you can pass
+a function to configure the tty mode and size.
+
+```python-repl
+>>> ls = sh("ls").set(pty=shellous.canonical(cols=20, rows=10, echo=False))
+>>> await ls("README.md", "CHANGELOG.md")
+'CHANGELOG.md\r\nREADME.md\r\n'
+```

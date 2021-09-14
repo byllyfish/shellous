@@ -52,7 +52,7 @@ jobs:
     - name: Run Tests
       run: |
         # Run pytest.
-        $POETRY_RUN python -m pytest -vv -s --durations=20
+        $POETRY_RUN python -m pytest -vv -s --durations=20 --log-cli-level=DEBUG
     - name: Run Code Coverage (Linux)
       if: matrix.os == 'ubuntu-latest'
       run: |

@@ -16,7 +16,10 @@ from shellous import (
     PipeResult,
     Result,
     ResultError,
+    canonical,
+    cbreak,
     context,
+    raw,
 )
 from shellous.harvest import harvest_results
 
@@ -990,7 +993,6 @@ async def test_pty_cat_eot(sh):
 @pytest.mark.xfail(_is_uvloop(), reason="uvloop")
 async def test_pty_raw_size(sh):
     "Test the `pty` option in raw mode."
-    from shellous.tty import raw
 
     cmd = sh("stty", "size").set(pty=raw(rows=17, cols=41))
     result = await cmd
@@ -1000,7 +1002,6 @@ async def test_pty_raw_size(sh):
 @pytest.mark.xfail(_is_uvloop(), reason="uvloop")
 async def test_pty_cbreak_size(sh):
     "Test the `pty` option in cbreak mode."
-    from shellous.tty import cbreak
 
     cmd = sh("stty", "size").set(pty=cbreak(rows=19, cols=43))
     result = await cmd
@@ -1010,7 +1011,6 @@ async def test_pty_cbreak_size(sh):
 @pytest.mark.xfail(_is_uvloop(), reason="uvloop")
 async def test_pty_raw_ls(sh):
     "Test the `pty` option in raw mode."
-    from shellous.tty import raw
 
     cmd = sh("ls").set(pty=raw(rows=24, cols=40))
     result = await cmd
@@ -1023,7 +1023,6 @@ async def test_pty_raw_ls(sh):
 @pytest.mark.xfail(_is_uvloop(), reason="uvloop")
 async def test_pty_raw_size_inherited(sh):
     "Test the `pty` option in raw mode."
-    from shellous.tty import raw
 
     cmd = sh("stty", "size").set(pty=raw(rows=..., cols=...))
     result = await cmd
@@ -1047,7 +1046,6 @@ async def test_pty_cat_auto_eof(sh):
 @pytest.mark.xfail(_is_uvloop(), reason="uvloop")
 async def test_pty_cat_iteration_no_echo(sh):
     "Test the `pty` option with string input, iteration, and echo=False."
-    from shellous.tty import canonical
 
     cmd = "abc\ndef\nghi" | sh("cat").set(pty=canonical(echo=False))
 
@@ -1055,3 +1053,11 @@ async def test_pty_cat_iteration_no_echo(sh):
         lines = [line async for line in run]
 
     assert lines == ["abc\r\n", "def\r\n", "ghi"]
+
+
+@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+async def test_pty_canonical_ls(sh):
+    "Test canonical ls output through pty is in columns."
+    cmd = sh("ls", "README.md", "CHANGELOG.md").set(pty=canonical(cols=20, rows=10))
+    result = await cmd
+    assert result == "CHANGELOG.md\r\nREADME.md\r\n"

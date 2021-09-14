@@ -1,10 +1,13 @@
 import asyncio
+import errno
 import os
 import struct
+from typing import Any, NamedTuple
 
 # The following modules are not supported on Windows.
 try:
     import fcntl
+    import pty
     import termios
     import tty
 except ImportError:
@@ -18,6 +21,37 @@ _LFLAG = 3
 _CC = 6
 
 
+class PtyFds(NamedTuple):
+    "Track parent/child fd's for pty."
+    parent_fd: int
+    child_fd: int
+    eof: bytes
+    reader: Any = None
+    writer: Any = None
+
+    async def open_streams(self):
+        reader, writer = await _open_pty_streams(self.parent_fd)
+        os.close(self.child_fd)
+        return PtyFds(
+            self.parent_fd,
+            -1,
+            self.eof,
+            reader,
+            writer,
+        )
+
+    def close(self):
+        if self.child_fd >= 0:
+            os.close(self.child_fd)
+        if self.writer:
+            self.writer.close()
+
+
+def open_pty():
+    "Open pseudo-terminal (pty) descriptors. Returns (parent_fd, child_fd)."
+    return pty.openpty()
+
+
 def set_ctty_preexec_fn():
     "Explicitly open the tty to make it become a controlling tty."
     # See https://github.com/python/cpython/blob/3.9/Lib/pty.py
@@ -25,7 +59,18 @@ def set_ctty_preexec_fn():
     os.close(tmpfd)
 
 
-async def open_pty_streams(file_desc):
+class PtyStreamReaderProtocol(asyncio.StreamReaderProtocol):
+    "Custom subclass of StreamReaderProtocol for pty's."
+
+    def connection_lost(self, exc):
+        "Intercept EIO error and treat it as EOF."
+        if isinstance(exc, OSError) and exc.errno == errno.EIO:
+            exc = None
+            LOGGER.info("connection_lost EIO -> EOF")
+        super().connection_lost(exc)
+
+
+async def _open_pty_streams(file_desc):
     "Open reader, writer streams for pty file descriptor."
     fcntl.fcntl(file_desc, fcntl.F_SETFL, os.O_NONBLOCK)
 
@@ -34,7 +79,7 @@ async def open_pty_streams(file_desc):
 
     loop = asyncio.get_running_loop()
     reader = asyncio.StreamReader(loop=loop)
-    reader_protocol = asyncio.StreamReaderProtocol(reader, loop=loop)
+    reader_protocol = PtyStreamReaderProtocol(reader, loop=loop)
     reader_transport, _ = await loop.connect_read_pipe(
         lambda: reader_protocol,
         reader_pipe,
