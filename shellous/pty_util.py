@@ -59,24 +59,6 @@ def set_ctty_preexec_fn():
     os.close(tmpfd)
 
 
-class PtyStreamReader(asyncio.StreamReader):
-    "Custom subclass of StreamReader for pty's."
-
-    async def _wait_for_data(self, func_name):
-        """Override StreamReader's _wait_for_data method.
-
-        Pty's report EOF with EIO (input/output error) on Linux.
-        """
-        try:
-            await super()._wait_for_data(func_name)
-        except OSError as ex:
-            if ex.errno != errno.EIO:
-                raise
-            # Report EOF. No need to wake up waiter.
-            self._eof = True
-            LOGGER.info("_wait_for_data EIO -> EOF")
-
-
 class PtyStreamReaderProtocol(asyncio.StreamReaderProtocol):
     "Custom subclass of StreamReaderProtocol for pty's."
 
@@ -96,7 +78,7 @@ async def _open_pty_streams(file_desc):
     writer_pipe = os.fdopen(file_desc, "wb", 0, closefd=True)
 
     loop = asyncio.get_running_loop()
-    reader = PtyStreamReader(loop=loop)
+    reader = asyncio.StreamReader(loop=loop)
     reader_protocol = PtyStreamReaderProtocol(reader, loop=loop)
     reader_transport, _ = await loop.connect_read_pipe(
         lambda: reader_protocol,
