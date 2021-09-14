@@ -96,8 +96,9 @@ async def copy_bytesio(source, dest):
 async def copy_bytearray(source, dest):
     "Copy bytes from source stream to dest bytearray."
     # Collect partial reads into a bytearray.
-    while True:
-        data = await source.read(1024)
+    while not source.at_eof():
+        data = await source.read(8192)
         if not data:
             break
+        LOGGER.debug("copy_bytearray read %d bytes", len(data))
         dest.extend(data)
