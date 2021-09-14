@@ -256,8 +256,8 @@ shellous.result.ResultError: Result(output_bytes=b'', exit_code=-15, cancelled=T
 When you use `incomplete_result`, your code should respect the `cancelled` attribute in the Result object. 
 Otherwise, your code may swallow the CancelledError.
 
-Pseudo-Terminal Support
------------------------
+Pseudo-Terminal Support (Unix Only)
+-----------------------------------
 
 To run a command through a pseudo-terminal, set the `pty` option to True. Alternatively, you can pass
 a function to configure the tty mode and size.

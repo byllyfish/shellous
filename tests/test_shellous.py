@@ -9,8 +9,7 @@ import sys
 from pathlib import Path
 
 import pytest
-from shellous import (CAPTURE, DEVNULL, INHERIT, PipeResult, Result,
-                      ResultError, context)
+from shellous import CAPTURE, DEVNULL, INHERIT, PipeResult, Result, ResultError, context
 from shellous.harvest import harvest_results
 
 pytestmark = pytest.mark.asyncio
@@ -341,8 +340,23 @@ async def test_broken_pipe_in_failed_pipeline(cat_cmd, echo_cmd):
     data = b"c" * PIPE_MAX_SIZE
     echo = echo_cmd.env(SHELLOUS_EXIT_CODE=7)
 
-    with pytest.raises(BrokenPipeError):
+    # This test has a race condition. Sometimes we get a BrokenPipeError, and
+    # sometimes both commands fail before shellous detects the broken pipe.
+
+    with pytest.raises((BrokenPipeError, ResultError)) as exc_info:
         await (data | cat_cmd | echo("abc"))
+
+    if exc_info.type == ResultError:
+        assert exc_info.value.result == Result(
+            output_bytes=b"abc",
+            exit_code=7,
+            cancelled=False,
+            encoding="utf-8",
+            extra=(
+                PipeResult(exit_code=120, cancelled=True),
+                PipeResult(exit_code=7, cancelled=False),
+            ),
+        )
 
 
 async def test_broken_pipe_in_async_with_failed_pipeline(cat_cmd, echo_cmd):
