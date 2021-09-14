@@ -12,7 +12,7 @@ from shellous.harvest import harvest, harvest_results
 from shellous.log import LOGGER, log_method
 from shellous.redirect import Redirect
 from shellous.result import Result, make_result
-from shellous.util import close_fds, decode
+from shellous.util import close_fds
 
 _NORMAL_LOGGING = True
 _DETAILED_LOGGING = True
@@ -477,6 +477,8 @@ class Runner:
     def _setup_output_sink(self, stream, sink, encoding, tag):
         "Set up a task to write to custom output sink."
         if isinstance(sink, io.StringIO):
+            if encoding is None:
+                raise TypeError("StringIO not supported when encoding=None")
             self.add_task(redir.copy_stringio(stream, sink, encoding), tag)
             stream = None
         elif isinstance(sink, io.BytesIO):

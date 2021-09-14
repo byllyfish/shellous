@@ -4,6 +4,7 @@ import asyncio
 import enum
 import io
 import os
+from typing import Optional
 
 from shellous.log import LOGGER, log_method
 from shellous.util import decode
@@ -31,7 +32,7 @@ STDOUT_TYPES = (str, bytes, os.PathLike, bytearray, io.IOBase, int, Redirect)
 STDOUT_APPEND_TYPES = (str, bytes, os.PathLike)
 
 
-async def _drain(stream):
+async def _drain(stream: asyncio.StreamWriter):
     "Safe drain method."
     try:
         await stream.drain()
@@ -42,7 +43,11 @@ async def _drain(stream):
 
 
 @log_method(_DETAILED_LOGGING)
-async def write_stream(input_bytes, stream, eof=None):
+async def write_stream(
+    input_bytes: bytes,
+    stream: asyncio.StreamWriter,
+    eof: Optional[bytes] = None,
+):
     "Write input_bytes to stream."
     if input_bytes:
         # Check for stream that is already closing before we've written
@@ -73,7 +78,11 @@ async def write_stream(input_bytes, stream, eof=None):
 
 
 @log_method(_DETAILED_LOGGING)
-async def copy_stringio(source, dest, encoding):
+async def copy_stringio(
+    source: asyncio.StreamReader,
+    dest: io.StringIO,
+    encoding: str,
+):
     "Copy bytes from source stream to dest StringIO."
     # Collect partial reads into a BytesIO.
     buf = io.BytesIO()
@@ -90,7 +99,7 @@ async def copy_stringio(source, dest, encoding):
 
 
 @log_method(_DETAILED_LOGGING)
-async def copy_bytesio(source, dest):
+async def copy_bytesio(source: asyncio.StreamReader, dest: io.BytesIO):
     "Copy bytes from source stream to dest BytesIO."
     # Collect partial reads into a BytesIO.
     while True:
@@ -101,7 +110,7 @@ async def copy_bytesio(source, dest):
 
 
 @log_method(_DETAILED_LOGGING)
-async def copy_bytearray(source, dest):
+async def copy_bytearray(source: asyncio.StreamReader, dest: bytearray):
     "Copy bytes from source stream to dest bytearray."
     # Collect partial reads into a bytearray.
     while True:
@@ -111,7 +120,12 @@ async def copy_bytearray(source, dest):
         dest.extend(data)
 
 
-async def read_lines(source, encoding):
+async def read_lines(source: asyncio.StreamReader, encoding: Optional[str]):
     "Async iterator over lines in stream."
-    async for line in source:
-        yield decode(line, encoding)
+    if encoding is None:
+        async for line in source:
+            yield line
+
+    else:
+        async for line in source:
+            yield decode(line, encoding)

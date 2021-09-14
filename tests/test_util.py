@@ -8,9 +8,6 @@ pytestmark = pytest.mark.asyncio
 
 def test_decode():
     "Test the util.decode function."
-    assert decode(None, None) == b""
-    assert decode(b"", None) == b""
-    assert decode(b"abc", None) == b"abc"
 
     assert decode(b"", "utf-8") == ""
     assert decode(b"abc", "utf-8") == "abc"
@@ -20,6 +17,16 @@ def test_decode():
         decode(b"\x81", "utf-8")
 
     assert decode(b"\x81abc", "utf-8 replace") == "\ufffdabc"
+
+
+def test_decode_encoding_none():
+    "Test the util.decode function encoding=None (invalid)."
+
+    # Invalid but allowed.
+    assert decode(None, None) == ""
+
+    with pytest.raises(AttributeError):
+        decode(b"abc", None)
 
 
 def test_coerce_env():

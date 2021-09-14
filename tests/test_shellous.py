@@ -547,3 +547,24 @@ async def test_process_substitution(echo_cmd, cat_cmd):
     else:
         result = await cmd
         assert result == "abc"
+
+
+async def test_async_iter_with_bytes_encoding(cat_cmd):
+    "Test async iteration with encoding=None."
+
+    cmd = b"a\nb\nc\nd" | cat_cmd.set(encoding=None)
+
+    async with cmd.run() as run:
+        lines = [line async for line in run]
+
+    assert lines == [b"a\n", b"b\n", b"c\n", b"d"]
+
+
+async def test_stringio_redirect_with_bytes_encoding(echo_cmd):
+    "Can't use StringIO redirect output buffer with encoding=None."
+
+    buf = io.StringIO()
+    cmd = echo_cmd | buf
+
+    with pytest.raises(TypeError, match="StringIO"):
+        await cmd("abc").set(encoding=None)
