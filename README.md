@@ -1,7 +1,7 @@
 Async Processes and Pipelines
 =============================
 
-[![PyPI](https://img.shields.io/pypi/v/shellous)](https://pypi.org/project/shellous/) [![CI](https://github.com/byllyfish/shellous/actions/workflows/ci.yml/badge.svg)](https://github.com/byllyfish/shellous/actions/workflows/ci.yml) [![codecov](https://codecov.io/gh/byllyfish/shellous/branch/main/graph/badge.svg?token=W44NZE89AW)](https://codecov.io/gh/byllyfish/shellous)
+[![docs](https://img.shields.io/badge/-documentation-informational)](https://byllyfish.github.io/shellous/shellous.html) [![PyPI](https://img.shields.io/pypi/v/shellous)](https://pypi.org/project/shellous/) [![CI](https://github.com/byllyfish/shellous/actions/workflows/ci.yml/badge.svg)](https://github.com/byllyfish/shellous/actions/workflows/ci.yml) [![codecov](https://codecov.io/gh/byllyfish/shellous/branch/main/graph/badge.svg?token=W44NZE89AW)](https://codecov.io/gh/byllyfish/shellous)
 
 shellous provides a concise API for running subprocesses using asyncio. It is 
 similar to and inspired by [sh](https://pypi.org/project/sh/).
@@ -18,8 +18,6 @@ async def main():
 
 asyncio.run(main())
 ```
-
-[More Documentation...](https://byllyfish.github.io/shellous/shellous.html)
 
 Benefits
 --------
@@ -72,7 +70,7 @@ to omit the newline. Note, `echo("abc")` is the same as `echo -n "abc"`.
 'abc'
 ```
 
-[More on commands...](docs/commands.md)
+[More on commands...](docs/commands.md)  <!-- RELATIVE_LINK -->
 
 Results and Exit Codes
 ----------------------
@@ -115,9 +113,9 @@ To redirect stdin using a file's contents, use a `Path` object from `pathlib`.
 
 ```python-repl
 >>> from pathlib import Path
->>> cmd = Path("README.md") | sh("wc", "-l")
+>>> cmd = Path("LICENSE") | sh("wc", "-l")
 >>> await cmd
-'     269\n'
+'     201\n'
 ```
 
 [More on redirection...](docs/redirection.md)
