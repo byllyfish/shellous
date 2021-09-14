@@ -93,6 +93,7 @@
 <span class="kn">import</span> <span class="nn">enum</span>
 <span class="kn">import</span> <span class="nn">io</span>
 <span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span>
 
 <span class="kn">from</span> <span class="nn">shellous.log</span> <span class="kn">import</span> <span class="n">LOGGER</span><span class="p">,</span> <span class="n">log_method</span>
 <span class="kn">from</span> <span class="nn">shellous.util</span> <span class="kn">import</span> <span class="n">decode</span>
@@ -120,7 +121,7 @@
 <span class="n">STDOUT_APPEND_TYPES</span> <span class="o">=</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">)</span>
 
 
-<span class="k">async</span> <span class="k">def</span> <span class="nf">_drain</span><span class="p">(</span><span class="n">stream</span><span class="p">):</span>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">_drain</span><span class="p">(</span><span class="n">stream</span><span class="p">:</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">StreamWriter</span><span class="p">):</span>
     <span class="s2">&quot;Safe drain method.&quot;</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="k">await</span> <span class="n">stream</span><span class="o">.</span><span class="n">drain</span><span class="p">()</span>
@@ -131,9 +132,18 @@
 
 
 <span class="nd">@log_method</span><span class="p">(</span><span class="n">_DETAILED_LOGGING</span><span class="p">)</span>
-<span class="k">async</span> <span class="k">def</span> <span class="nf">write_stream</span><span class="p">(</span><span class="n">input_bytes</span><span class="p">,</span> <span class="n">stream</span><span class="p">,</span> <span class="n">eof</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">write_stream</span><span class="p">(</span>
+    <span class="n">input_bytes</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span>
+    <span class="n">stream</span><span class="p">:</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">StreamWriter</span><span class="p">,</span>
+    <span class="n">eof</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bytes</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">):</span>
     <span class="s2">&quot;Write input_bytes to stream.&quot;</span>
     <span class="k">if</span> <span class="n">input_bytes</span><span class="p">:</span>
+        <span class="c1"># Check for stream that is already closing before we&#39;ve written</span>
+        <span class="c1"># anything. Proactively raise a BrokenPipeError here. (issue #45)</span>
+        <span class="k">if</span> <span class="n">stream</span><span class="o">.</span><span class="n">is_closing</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">BrokenPipeError</span><span class="p">()</span>
+
         <span class="n">stream</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">input_bytes</span><span class="p">)</span>
         <span class="k">await</span> <span class="n">_drain</span><span class="p">(</span><span class="n">stream</span><span class="p">)</span>
 
@@ -157,7 +167,11 @@
 
 
 <span class="nd">@log_method</span><span class="p">(</span><span class="n">_DETAILED_LOGGING</span><span class="p">)</span>
-<span class="k">async</span> <span class="k">def</span> <span class="nf">copy_stringio</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">dest</span><span class="p">,</span> <span class="n">encoding</span><span class="p">):</span>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">copy_stringio</span><span class="p">(</span>
+    <span class="n">source</span><span class="p">:</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">StreamReader</span><span class="p">,</span>
+    <span class="n">dest</span><span class="p">:</span> <span class="n">io</span><span class="o">.</span><span class="n">StringIO</span><span class="p">,</span>
+    <span class="n">encoding</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<span class="p">):</span>
     <span class="s2">&quot;Copy bytes from source stream to dest StringIO.&quot;</span>
     <span class="c1"># Collect partial reads into a BytesIO.</span>
     <span class="n">buf</span> <span class="o">=</span> <span class="n">io</span><span class="o">.</span><span class="n">BytesIO</span><span class="p">()</span>
@@ -174,7 +188,7 @@
 
 
 <span class="nd">@log_method</span><span class="p">(</span><span class="n">_DETAILED_LOGGING</span><span class="p">)</span>
-<span class="k">async</span> <span class="k">def</span> <span class="nf">copy_bytesio</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">dest</span><span class="p">):</span>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">copy_bytesio</span><span class="p">(</span><span class="n">source</span><span class="p">:</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">StreamReader</span><span class="p">,</span> <span class="n">dest</span><span class="p">:</span> <span class="n">io</span><span class="o">.</span><span class="n">BytesIO</span><span class="p">):</span>
     <span class="s2">&quot;Copy bytes from source stream to dest BytesIO.&quot;</span>
     <span class="c1"># Collect partial reads into a BytesIO.</span>
     <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
@@ -185,7 +199,7 @@
 
 
 <span class="nd">@log_method</span><span class="p">(</span><span class="n">_DETAILED_LOGGING</span><span class="p">)</span>
-<span class="k">async</span> <span class="k">def</span> <span class="nf">copy_bytearray</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">dest</span><span class="p">):</span>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">copy_bytearray</span><span class="p">(</span><span class="n">source</span><span class="p">:</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">StreamReader</span><span class="p">,</span> <span class="n">dest</span><span class="p">:</span> <span class="nb">bytearray</span><span class="p">):</span>
     <span class="s2">&quot;Copy bytes from source stream to dest bytearray.&quot;</span>
     <span class="c1"># Collect partial reads into a bytearray.</span>
     <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
@@ -195,10 +209,15 @@
         <span class="n">dest</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
 
 
-<span class="k">async</span> <span class="k">def</span> <span class="nf">read_lines</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">encoding</span><span class="p">):</span>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">read_lines</span><span class="p">(</span><span class="n">source</span><span class="p">:</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">StreamReader</span><span class="p">,</span> <span class="n">encoding</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]):</span>
     <span class="s2">&quot;Async iterator over lines in stream.&quot;</span>
-    <span class="k">async</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">source</span><span class="p">:</span>
-        <span class="k">yield</span> <span class="n">decode</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="n">encoding</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">encoding</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">async</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">source</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">line</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">async</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">source</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">decode</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="n">encoding</span><span class="p">)</span>
 </pre></div>
 
         </details>
@@ -321,15 +340,28 @@
                 <div class="decorator">@log_method(_DETAILED_LOGGING)</div>
 
             <span class="def">async def</span>
-            <span class="name">write_stream</span><span class="signature">(input_bytes, stream, eof=None)</span>:
+            <span class="name">write_stream</span><span class="signature">(
+    input_bytes: bytes,
+    stream: asyncio.streams.StreamWriter,
+    eof: Optional[bytes] = None
+)</span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span><span class="nd">@log_method</span><span class="p">(</span><span class="n">_DETAILED_LOGGING</span><span class="p">)</span>
-<span class="k">async</span> <span class="k">def</span> <span class="nf">write_stream</span><span class="p">(</span><span class="n">input_bytes</span><span class="p">,</span> <span class="n">stream</span><span class="p">,</span> <span class="n">eof</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">write_stream</span><span class="p">(</span>
+    <span class="n">input_bytes</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span>
+    <span class="n">stream</span><span class="p">:</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">StreamWriter</span><span class="p">,</span>
+    <span class="n">eof</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bytes</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">):</span>
     <span class="s2">&quot;Write input_bytes to stream.&quot;</span>
     <span class="k">if</span> <span class="n">input_bytes</span><span class="p">:</span>
+        <span class="c1"># Check for stream that is already closing before we&#39;ve written</span>
+        <span class="c1"># anything. Proactively raise a BrokenPipeError here. (issue #45)</span>
+        <span class="k">if</span> <span class="n">stream</span><span class="o">.</span><span class="n">is_closing</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">BrokenPipeError</span><span class="p">()</span>
+
         <span class="n">stream</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">input_bytes</span><span class="p">)</span>
         <span class="k">await</span> <span class="n">_drain</span><span class="p">(</span><span class="n">stream</span><span class="p">)</span>
 
@@ -365,13 +397,21 @@
                 <div class="decorator">@log_method(_DETAILED_LOGGING)</div>
 
             <span class="def">async def</span>
-            <span class="name">copy_stringio</span><span class="signature">(source, dest, encoding)</span>:
+            <span class="name">copy_stringio</span><span class="signature">(
+    source: asyncio.streams.StreamReader,
+    dest: _io.StringIO,
+    encoding: str
+)</span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span><span class="nd">@log_method</span><span class="p">(</span><span class="n">_DETAILED_LOGGING</span><span class="p">)</span>
-<span class="k">async</span> <span class="k">def</span> <span class="nf">copy_stringio</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">dest</span><span class="p">,</span> <span class="n">encoding</span><span class="p">):</span>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">copy_stringio</span><span class="p">(</span>
+    <span class="n">source</span><span class="p">:</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">StreamReader</span><span class="p">,</span>
+    <span class="n">dest</span><span class="p">:</span> <span class="n">io</span><span class="o">.</span><span class="n">StringIO</span><span class="p">,</span>
+    <span class="n">encoding</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<span class="p">):</span>
     <span class="s2">&quot;Copy bytes from source stream to dest StringIO.&quot;</span>
     <span class="c1"># Collect partial reads into a BytesIO.</span>
     <span class="n">buf</span> <span class="o">=</span> <span class="n">io</span><span class="o">.</span><span class="n">BytesIO</span><span class="p">()</span>
@@ -400,13 +440,13 @@
                 <div class="decorator">@log_method(_DETAILED_LOGGING)</div>
 
             <span class="def">async def</span>
-            <span class="name">copy_bytesio</span><span class="signature">(source, dest)</span>:
+            <span class="name">copy_bytesio</span><span class="signature">(source: asyncio.streams.StreamReader, dest: _io.BytesIO)</span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span><span class="nd">@log_method</span><span class="p">(</span><span class="n">_DETAILED_LOGGING</span><span class="p">)</span>
-<span class="k">async</span> <span class="k">def</span> <span class="nf">copy_bytesio</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">dest</span><span class="p">):</span>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">copy_bytesio</span><span class="p">(</span><span class="n">source</span><span class="p">:</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">StreamReader</span><span class="p">,</span> <span class="n">dest</span><span class="p">:</span> <span class="n">io</span><span class="o">.</span><span class="n">BytesIO</span><span class="p">):</span>
     <span class="s2">&quot;Copy bytes from source stream to dest BytesIO.&quot;</span>
     <span class="c1"># Collect partial reads into a BytesIO.</span>
     <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
@@ -429,13 +469,13 @@
                 <div class="decorator">@log_method(_DETAILED_LOGGING)</div>
 
             <span class="def">async def</span>
-            <span class="name">copy_bytearray</span><span class="signature">(source, dest)</span>:
+            <span class="name">copy_bytearray</span><span class="signature">(source: asyncio.streams.StreamReader, dest: bytearray)</span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span><span class="nd">@log_method</span><span class="p">(</span><span class="n">_DETAILED_LOGGING</span><span class="p">)</span>
-<span class="k">async</span> <span class="k">def</span> <span class="nf">copy_bytearray</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">dest</span><span class="p">):</span>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">copy_bytearray</span><span class="p">(</span><span class="n">source</span><span class="p">:</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">StreamReader</span><span class="p">,</span> <span class="n">dest</span><span class="p">:</span> <span class="nb">bytearray</span><span class="p">):</span>
     <span class="s2">&quot;Copy bytes from source stream to dest bytearray.&quot;</span>
     <span class="c1"># Collect partial reads into a bytearray.</span>
     <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
@@ -457,15 +497,20 @@
 
         
             <span class="def">async def</span>
-            <span class="name">read_lines</span><span class="signature">(source, encoding)</span>:
+            <span class="name">read_lines</span><span class="signature">(source: asyncio.streams.StreamReader, encoding: Optional[str])</span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span><span class="k">async</span> <span class="k">def</span> <span class="nf">read_lines</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">encoding</span><span class="p">):</span>
+            <div class="codehilite"><pre><span></span><span class="k">async</span> <span class="k">def</span> <span class="nf">read_lines</span><span class="p">(</span><span class="n">source</span><span class="p">:</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">StreamReader</span><span class="p">,</span> <span class="n">encoding</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]):</span>
     <span class="s2">&quot;Async iterator over lines in stream.&quot;</span>
-    <span class="k">async</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">source</span><span class="p">:</span>
-        <span class="k">yield</span> <span class="n">decode</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="n">encoding</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">encoding</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">async</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">source</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">line</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">async</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">source</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">decode</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="n">encoding</span><span class="p">)</span>
 </pre></div>
 
         </details>

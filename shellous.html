@@ -43,7 +43,7 @@
     <li><a href="#process-substitution-unix-only">Process Substitution (Unix Only)</a></li>
     <li><a href="#async-with-for">Async With &amp; For</a></li>
     <li><a href="#incomplete-results">Incomplete Results</a></li>
-    <li><a href="#pseudo-terminal-support">Pseudo-Terminal Support</a></li>
+    <li><a href="#pseudo-terminal-support-unix-only">Pseudo-Terminal Support (Unix Only)</a></li>
   </ul></li>
 </ul>
 
@@ -312,7 +312,7 @@ Traceback (most recent call last):
 <p>When you use <code>incomplete_result</code>, your code should respect the <code>cancelled</code> attribute in the Result object. 
 Otherwise, your code may swallow the CancelledError.</p>
 
-<h2 id="pseudo-terminal-support">Pseudo-Terminal Support</h2>
+<h2 id="pseudo-terminal-support-unix-only">Pseudo-Terminal Support (Unix Only)</h2>
 
 <p>To run a command through a pseudo-terminal, set the <code>pty</code> option to True. Alternatively, you can pass
 a function to configure the tty mode and size.</p>
