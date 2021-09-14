@@ -2,6 +2,7 @@
 
 import asyncio
 import enum
+import errno
 import io
 import os
 
@@ -28,6 +29,8 @@ class Redirect(enum.IntEnum):
 STDIN_TYPES = (str, bytes, os.PathLike, bytearray, io.IOBase, int, Redirect)
 STDOUT_TYPES = (str, bytes, os.PathLike, bytearray, io.IOBase, int, Redirect)
 STDOUT_APPEND_TYPES = (str, bytes, os.PathLike)
+
+_CHUNK_SIZE = 8192
 
 
 @log_method(_DETAILED_LOGGING)
@@ -71,7 +74,7 @@ async def copy_stringio(source, dest, encoding):
     buf = io.BytesIO()
     try:
         while True:
-            data = await source.read(1024)
+            data = await source.read(_CHUNK_SIZE)
             if not data:
                 break
             buf.write(data)
@@ -86,7 +89,7 @@ async def copy_bytesio(source, dest):
     "Copy bytes from source stream to dest BytesIO."
     # Collect partial reads into a BytesIO.
     while True:
-        data = await source.read(1024)
+        data = await source.read(_CHUNK_SIZE)
         if not data:
             break
         dest.write(data)
@@ -96,9 +99,26 @@ async def copy_bytesio(source, dest):
 async def copy_bytearray(source, dest):
     "Copy bytes from source stream to dest bytearray."
     # Collect partial reads into a bytearray.
-    while not source.at_eof():
-        data = await source.read(8192)
-        if not data:
-            break
-        LOGGER.debug("copy_bytearray read %d bytes", len(data))
-        dest.extend(data)
+    try:
+        while True:
+            data = await source.read(_CHUNK_SIZE)
+            if not data:
+                break
+            dest.extend(data)
+
+    except OSError as ex:
+        if ex.errno != errno.EIO:
+            raise
+        LOGGER.info("copy_byte_array EIO error ignored")
+
+
+async def read_lines(source, encoding):
+    "Async iterator over lines in stream."
+    try:
+        async for line in source:
+            yield decode(line, encoding)
+
+    except OSError as ex:
+        if ex.errno != errno.EIO:
+            raise
+        LOGGER.info("read_lines EIO error ignored")

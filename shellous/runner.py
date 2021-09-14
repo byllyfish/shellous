@@ -564,11 +564,10 @@ class Runner:
         if self.stdin or (self.stdout and self.stderr):
             raise RuntimeError("multiple capture not supported in iterator")
 
-        encoding = self.options.encoding
         stream = self.stdout or self.stderr
         if stream:
-            async for line in stream:
-                yield decode(line, encoding)
+            async for line in redir.read_lines(stream, self.options.encoding):
+                yield line
 
     def __aiter__(self):
         "Return asynchronous iterator over stdout/stderr."
@@ -762,11 +761,10 @@ class PipeRunner:  # pylint: disable=too-many-instance-attributes
         if self.stdin or (self.stdout and self.stderr):
             raise RuntimeError("multiple capture not supported in iterator")
 
-        encoding = self.encoding
         stream = self.stdout or self.stderr
         if stream:
-            async for line in stream:
-                yield decode(line, encoding)
+            async for line in redir.read_lines(stream, self.encoding):
+                yield line
 
     def __aiter__(self):
         "Return asynchronous iterator over stdout/stderr."
