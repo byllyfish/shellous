@@ -68,12 +68,24 @@ class PtyStreamReader(asyncio.StreamReader):
         Pty's report EOF with EIO (input/output error) on Linux.
         """
         try:
-            return await super()._wait_for_data(func_name)
+            await super()._wait_for_data(func_name)
         except OSError as ex:
             if ex.errno != errno.EIO:
                 raise
             # Report EOF. No need to wake up waiter.
             self._eof = True
+            LOGGER.info("_wait_for_data EIO -> EOF")
+
+
+class PtyStreamReaderProtocol(asyncio.StreamReaderProtocol):
+    "Custom subclass of StreamReaderProtocol for pty's."
+
+    def connection_lost(self, exc):
+        "Intercept EIO error and treat it as EOF."
+        if isinstance(exc, OSError) and exc.errno == errno.EIO:
+            exc = None
+            LOGGER.info("connection_lost EIO -> EOF")
+        super().connection_lost(exc)
 
 
 async def _open_pty_streams(file_desc):
@@ -85,7 +97,7 @@ async def _open_pty_streams(file_desc):
 
     loop = asyncio.get_running_loop()
     reader = PtyStreamReader(loop=loop)
-    reader_protocol = asyncio.StreamReaderProtocol(reader, loop=loop)
+    reader_protocol = PtyStreamReaderProtocol(reader, loop=loop)
     reader_transport, _ = await loop.connect_read_pipe(
         lambda: reader_protocol,
         reader_pipe,
