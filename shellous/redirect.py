@@ -45,6 +45,11 @@ async def _drain(stream):
 async def write_stream(input_bytes, stream, eof=None):
     "Write input_bytes to stream."
     if input_bytes:
+        # Check for stream that is already closing before we've written
+        # anything. Proactively raise a BrokenPipeError here. (issue #45)
+        if stream.is_closing():
+            raise BrokenPipeError()
+
         stream.write(input_bytes)
         await _drain(stream)
 
