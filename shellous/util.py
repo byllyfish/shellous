@@ -6,12 +6,8 @@ from typing import Optional, Union
 from .log import LOGGER
 
 
-def decode(data: Optional[bytes], encoding: Optional[str]) -> Union[str, bytes]:
+def decode(data: Optional[bytes], encoding: str) -> str:
     "Utility function to decode optional byte strings."
-    if encoding is None:
-        if data is None:
-            return b""
-        return data
     if not data:
         return ""
     return data.decode(*encoding.split(maxsplit=1))

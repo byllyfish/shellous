@@ -881,6 +881,7 @@ async def test_pty(sh):
     async with cmd.run() as run:
         run.stdin.write(b"abc\n")
         await run.stdin.drain()
+        await asyncio.sleep(0.1)
         result = await run.stdout.read(1024)
         run.stdin.close()
 
@@ -966,6 +967,7 @@ async def test_pty_tr_eot(sh):
     async with cmd.run() as run:
         run.stdin.write(b"abc\n\x04")
         await run.stdin.drain()
+        await asyncio.sleep(0.1)
         result = await run.stdout.read(1024)
 
     if sys.platform == "linux":
@@ -982,6 +984,7 @@ async def test_pty_cat_eot(sh):
     async with cmd.run() as run:
         run.stdin.write(b"abc\x04\x04")
         await run.stdin.drain()
+        await asyncio.sleep(0.1)
         result = await run.stdout.read(1024)
 
     if sys.platform == "linux":
