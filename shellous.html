@@ -43,6 +43,7 @@
     <li><a href="#process-substitution-unix-only">Process Substitution (Unix Only)</a></li>
     <li><a href="#async-with-for">Async With &amp; For</a></li>
     <li><a href="#incomplete-results">Incomplete Results</a></li>
+    <li><a href="#pseudo-terminal-support">Pseudo-Terminal Support</a></li>
   </ul></li>
 </ul>
 
@@ -53,10 +54,10 @@
                             <li><a href="shellous/harvest.html">shellous.harvest</a></li>
                             <li><a href="shellous/log.html">shellous.log</a></li>
                             <li><a href="shellous/pipeline.html">shellous.pipeline</a></li>
+                            <li><a href="shellous/pty_util.html">shellous.pty_util</a></li>
                             <li><a href="shellous/redirect.html">shellous.redirect</a></li>
                             <li><a href="shellous/result.html">shellous.result</a></li>
                             <li><a href="shellous/runner.html">shellous.runner</a></li>
-                            <li><a href="shellous/tty.html">shellous.tty</a></li>
                             <li><a href="shellous/util.html">shellous.util</a></li>
                     </ul>
 
@@ -108,6 +109,7 @@ similar to and inspired by <a href="https://pypi.org/project/sh/">sh</a>.</p>
 <li>Run programs asychronously in a single line.</li>
 <li>Easily capture output or redirect stdin, stdout and stderr to files.</li>
 <li>Easily construct <a href="https://en.wikipedia.org/wiki/Pipeline_(Unix)">pipelines</a> and use <a href="https://en.wikipedia.org/wiki/Process_substitution">process substitution</a>.</li>
+<li>Run a program with a pseudo-terminal (pty).</li>
 <li>Runs on Linux, MacOS and Windows.</li>
 </ul>
 
@@ -117,6 +119,7 @@ similar to and inspired by <a href="https://pypi.org/project/sh/">sh</a>.</p>
 <li>Requires Python 3.9 or later.</li>
 <li>Requires an asyncio event loop.</li>
 <li>Process substitution requires a Unix system with /dev/fd support.</li>
+<li>Pseudo-terminals require a Unix system.</li>
 </ul>
 
 <h2 id="basic-usage">Basic Usage</h2>
@@ -187,7 +190,7 @@ Traceback (most recent call last):
 <pre><code>&gt;&gt;&gt; from pathlib import Path
 &gt;&gt;&gt; cmd = Path("README.md") | sh("wc", "-l")
 &gt;&gt;&gt; await cmd
-'     255\n'
+'     269\n'
 </code></pre>
 
 <p><a href="docs/redirection.md">More on redirection...</a></p>
@@ -308,6 +311,16 @@ Traceback (most recent call last):
 
 <p>When you use <code>incomplete_result</code>, your code should respect the <code>cancelled</code> attribute in the Result object. 
 Otherwise, your code may swallow the CancelledError.</p>
+
+<h2 id="pseudo-terminal-support">Pseudo-Terminal Support</h2>
+
+<p>To run a command through a pseudo-terminal, set the <code>pty</code> option to True. Alternatively, you can pass
+a function to configure the tty mode and size.</p>
+
+<pre><code>&gt;&gt;&gt; ls = sh("ls").set(pty=<a href="#canonical">shellous.canonical</a>(cols=20, rows=10, echo=False))
+&gt;&gt;&gt; await ls("README.md", "CHANGELOG.md")
+'CHANGELOG.md\r\nREADME.md\r\n'
+</code></pre>
 </div>
 
                         <details>
@@ -322,6 +335,7 @@ Otherwise, your code may swallow the CancelledError.</p>
 <span class="c1"># pylint: disable=cyclic-import</span>
 <span class="kn">from</span> <span class="nn">.command</span> <span class="kn">import</span> <span class="n">CmdContext</span><span class="p">,</span> <span class="n">Command</span><span class="p">,</span> <span class="n">Options</span>  <span class="c1"># noqa: F401</span>
 <span class="kn">from</span> <span class="nn">.pipeline</span> <span class="kn">import</span> <span class="n">Pipeline</span>  <span class="c1"># noqa: F401</span>
+<span class="kn">from</span> <span class="nn">.pty_util</span> <span class="kn">import</span> <span class="n">canonical</span><span class="p">,</span> <span class="n">cbreak</span><span class="p">,</span> <span class="n">raw</span>
 <span class="kn">from</span> <span class="nn">.redirect</span> <span class="kn">import</span> <span class="n">Redirect</span>
 <span class="kn">from</span> <span class="nn">.result</span> <span class="kn">import</span> <span class="n">PipeResult</span><span class="p">,</span> <span class="n">Result</span><span class="p">,</span> <span class="n">ResultError</span>  <span class="c1"># noqa: F401</span>
 
