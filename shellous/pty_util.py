@@ -30,16 +30,18 @@ class PtyFds(NamedTuple):
 
     async def open_streams(self):
         reader, writer = await _open_pty_streams(self.parent_fd)
+        os.close(self.child_fd)
         return PtyFds(
             self.parent_fd,
-            self.child_fd,
+            -1,
             self.eof,
             reader,
             writer,
         )
 
     def close(self):
-        os.close(self.child_fd)
+        if self.child_fd >= 0:
+            os.close(self.child_fd)
         if self.writer:
             self.writer.close()
 
