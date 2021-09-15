@@ -115,7 +115,7 @@ def test_parse_readme():
         'cmd = "abc" | sh("wc", "-c")',
         "await cmd",
         "from pathlib import Path",
-        'cmd = Path("README.md") | sh("wc", "-l")',
+        'cmd = Path("LICENSE") | sh("wc", "-l")',
         "await cmd",
         'output_file = Path("/tmp/output_file")',
         'cmd = sh("echo", "abc") | output_file',

@@ -1,7 +1,7 @@
 Async Processes and Pipelines
 =============================
 
-[![PyPI](https://img.shields.io/pypi/v/shellous)](https://pypi.org/project/shellous/) [![CI](https://github.com/byllyfish/shellous/actions/workflows/ci.yml/badge.svg)](https://github.com/byllyfish/shellous/actions/workflows/ci.yml) [![codecov](https://codecov.io/gh/byllyfish/shellous/branch/main/graph/badge.svg?token=W44NZE89AW)](https://codecov.io/gh/byllyfish/shellous)
+[![docs](https://img.shields.io/badge/-documentation-informational)](https://byllyfish.github.io/shellous/shellous.html) [![PyPI](https://img.shields.io/pypi/v/shellous)](https://pypi.org/project/shellous/) [![CI](https://github.com/byllyfish/shellous/actions/workflows/ci.yml/badge.svg)](https://github.com/byllyfish/shellous/actions/workflows/ci.yml) [![codecov](https://codecov.io/gh/byllyfish/shellous/branch/main/graph/badge.svg?token=W44NZE89AW)](https://codecov.io/gh/byllyfish/shellous)
 
 shellous provides a concise API for running subprocesses using asyncio. It is 
 similar to and inspired by [sh](https://pypi.org/project/sh/).
@@ -18,8 +18,6 @@ async def main():
 
 asyncio.run(main())
 ```
-
-[More Documentation...](https://byllyfish.github.io/shellous/shellous.html)
 
 Benefits
 --------
@@ -72,7 +70,7 @@ to omit the newline. Note, `echo("abc")` is the same as `echo -n "abc"`.
 'abc'
 ```
 
-[More on commands...](docs/commands.md)
+[More on commands...](docs/commands.md) <!-- __REL_LINK__ -->
 
 Results and Exit Codes
 ----------------------
@@ -98,7 +96,7 @@ Traceback (most recent call last):
 shellous.result.ResultError: Result(output_bytes=b'', exit_code=1, cancelled=False, encoding='utf-8', extra=None)
 ```
 
-[More on results...](docs/results.md)
+[More on results...](docs/results.md) <!-- __REL_LINK__ -->
 
 Redirecting Standard Input
 --------------------------
@@ -115,12 +113,12 @@ To redirect stdin using a file's contents, use a `Path` object from `pathlib`.
 
 ```python-repl
 >>> from pathlib import Path
->>> cmd = Path("README.md") | sh("wc", "-l")
+>>> cmd = Path("LICENSE") | sh("wc", "-l")
 >>> await cmd
-'     269\n'
+'     201\n'
 ```
 
-[More on redirection...](docs/redirection.md)
+[More on redirection...](docs/redirection.md) <!-- __REL_LINK__ -->
 
 Redirecting Standard Output
 ---------------------------
@@ -146,7 +144,7 @@ To redirect standard output with append, use the `>>` operator.
 b'abc\ndef\n'
 ```
 
-[More on redirection...](docs/redirection.md)
+[More on redirection...](docs/redirection.md) <!-- __REL_LINK__ -->
 
 Redirecting Standard Error
 --------------------------
@@ -174,7 +172,7 @@ Traceback (most recent call last):
 shellous.result.ResultError: Result(output_bytes=b'', exit_code=1, cancelled=False, encoding='utf-8', extra=None)
 ```
 
-[More on redirection...](docs/redirection.md)
+[More on redirection...](docs/redirection.md) <!-- __REL_LINK__ -->
 
 Pipelines
 ---------
