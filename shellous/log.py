@@ -10,6 +10,11 @@ import threading
 
 LOGGER = logging.getLogger(__package__)
 
+# Do these at module import; may invoke subprocess.Popen.
+PLATFORM_VERS = platform.platform(terse=True)
+PYTHON_IMPL = platform.python_implementation()
+PYTHON_VERS = platform.python_version()
+
 
 def _exc():
     "Return the current exception value. Useful in logging."
@@ -139,10 +144,6 @@ def log_method(enabled, *, _info=False, **kwds):
 def _platform_info():
     "Return platform information for use in logging."
 
-    platform_vers = platform.platform(terse=True)
-    python_impl = platform.python_implementation()
-    python_vers = platform.python_version()
-
     # Include module name with name of loop class.
     loop_cls = asyncio.get_running_loop().__class__
     loop_name = f"{loop_cls.__module__}.{loop_cls.__name__}"
@@ -161,7 +162,7 @@ def _platform_info():
     except NotImplementedError:
         child_watcher = None
 
-    info = f"{platform_vers} {python_impl} {python_vers} {loop_name} {thread_name}"
+    info = f"{PLATFORM_VERS} {PYTHON_IMPL} {PYTHON_VERS} {loop_name} {thread_name}"
     if child_watcher:
         return f"{info} {child_watcher}"
     return info

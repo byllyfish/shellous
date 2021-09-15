@@ -253,14 +253,28 @@ async def test_pipe_error_cmd2(echo_cmd, tr_cmd):
     with pytest.raises(ResultError) as exc_info:
         await (echo_cmd("abc") | tr_cmd)
 
-    assert exc_info.value.result == Result(
-        output_bytes=b"ABC",
-        exit_code=5,
-        cancelled=False,
-        encoding="utf-8",
-        extra=(
-            PipeResult(exit_code=0, cancelled=False),
-            PipeResult(exit_code=5, cancelled=False),
+    # This test has a race condition; sometimes the first command is cancelled.
+
+    assert exc_info.value.result in (
+        Result(
+            output_bytes=b"ABC",
+            exit_code=5,
+            cancelled=False,
+            encoding="utf-8",
+            extra=(
+                PipeResult(exit_code=0, cancelled=False),
+                PipeResult(exit_code=5, cancelled=False),
+            ),
+        ),
+        Result(
+            output_bytes=b"ABC",
+            exit_code=5,
+            cancelled=False,
+            encoding="utf-8",
+            extra=(
+                PipeResult(exit_code=0, cancelled=True),  # only difference
+                PipeResult(exit_code=5, cancelled=False),
+            ),
         ),
     )
 
