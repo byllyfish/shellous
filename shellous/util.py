@@ -1,7 +1,7 @@
 "Implements various utility functions."
 
 import os
-from typing import Optional, Union
+from typing import Optional
 
 from .log import LOGGER
 

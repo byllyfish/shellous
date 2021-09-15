@@ -6,8 +6,8 @@ import os
 import sys
 
 import shellous
-import shellous.pty_util as pty_util
 import shellous.redirect as redir
+from shellous import pty_util
 from shellous.harvest import harvest, harvest_results
 from shellous.log import LOGGER, log_method
 from shellous.redirect import Redirect
@@ -472,7 +472,7 @@ class Runner:
         "Run task that waits for process to exit."
         await self.proc.wait()
         if self.options.pty_fds:
-            self.stdout._transport.close()
+            self.stdout._transport.close()  # pylint: disable=protected-access
 
     def _setup_output_sink(self, stream, sink, encoding, tag):
         "Set up a task to write to custom output sink."

@@ -6,7 +6,7 @@ import io
 import os
 from typing import Optional
 
-from shellous.log import LOGGER, log_method
+from shellous.log import log_method
 from shellous.util import decode
 
 _DETAILED_LOGGING = True
