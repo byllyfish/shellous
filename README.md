@@ -70,7 +70,7 @@ to omit the newline. Note, `echo("abc")` is the same as `echo -n "abc"`.
 'abc'
 ```
 
-[More on commands...](docs/commands.md)  <!-- RELATIVE_LINK -->
+[More on commands...](docs/commands.md) <!-- __REL_LINK__ -->
 
 Results and Exit Codes
 ----------------------
@@ -96,7 +96,7 @@ Traceback (most recent call last):
 shellous.result.ResultError: Result(output_bytes=b'', exit_code=1, cancelled=False, encoding='utf-8', extra=None)
 ```
 
-[More on results...](docs/results.md)
+[More on results...](docs/results.md) <!-- __REL_LINK__ -->
 
 Redirecting Standard Input
 --------------------------
@@ -118,7 +118,7 @@ To redirect stdin using a file's contents, use a `Path` object from `pathlib`.
 '     201\n'
 ```
 
-[More on redirection...](docs/redirection.md)
+[More on redirection...](docs/redirection.md) <!-- __REL_LINK__ -->
 
 Redirecting Standard Output
 ---------------------------
@@ -144,7 +144,7 @@ To redirect standard output with append, use the `>>` operator.
 b'abc\ndef\n'
 ```
 
-[More on redirection...](docs/redirection.md)
+[More on redirection...](docs/redirection.md) <!-- __REL_LINK__ -->
 
 Redirecting Standard Error
 --------------------------
@@ -172,7 +172,7 @@ Traceback (most recent call last):
 shellous.result.ResultError: Result(output_bytes=b'', exit_code=1, cancelled=False, encoding='utf-8', extra=None)
 ```
 
-[More on redirection...](docs/redirection.md)
+[More on redirection...](docs/redirection.md) <!-- __REL_LINK__ -->
 
 Pipelines
 ---------
