@@ -18,7 +18,7 @@ from immutables import Map as ImmutableDict
 
 import shellous
 from shellous.redirect import STDIN_TYPES, STDOUT_APPEND_TYPES, STDOUT_TYPES, Redirect
-from shellous.runner import Runner, run_cmd
+from shellous.runner import Runner
 from shellous.util import coerce_env
 
 # Sentinel used in "mergable" keyword arguments to indicate that a value
@@ -395,7 +395,7 @@ class Command:
 
     def coro(self, *, _run_future=None):
         "Return coroutine object to run awaitable."
-        return run_cmd(self, _run_future=_run_future)
+        return Runner.run_command(self, _run_future=_run_future)
 
     def run(self) -> Runner:
         """Return a `Runner` to run the process incrementally.

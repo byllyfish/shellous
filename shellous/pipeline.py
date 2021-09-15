@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 import shellous
 from shellous.redirect import STDIN_TYPES, STDOUT_APPEND_TYPES, STDOUT_TYPES
-from shellous.runner import PipeRunner, run_pipe
+from shellous.runner import PipeRunner
 
 
 @dataclass(frozen=True)
@@ -60,7 +60,7 @@ class Pipeline:
 
     def coro(self):
         "Return coroutine object for pipeline."
-        return run_pipe(self)
+        return PipeRunner.run_pipeline(self)
 
     def run(self) -> "PipeRunner":
         """Return a `Runner` to help run the pipeline incrementally.
