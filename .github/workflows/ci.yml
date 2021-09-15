@@ -77,6 +77,12 @@ jobs:
         $POETRY_RUN python -m pytest -vv -s
       env:
         SHELLOUS_CHILDWATCHER_TYPE: "safe"
+    - name: Run Tests with MultiLoopChildWatcher (Linux and MacOS)
+      if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
+      run: |
+        $POETRY_RUN python -m pytest -vv -s
+      env:
+        SHELLOUS_CHILDWATCHER_TYPE: "multi"
     - name: Run Tests with FastChildWatcher (Linux and MacOS)
       if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
       run: |
