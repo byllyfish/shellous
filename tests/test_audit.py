@@ -1,3 +1,4 @@
+import os
 import sys
 
 import pytest
@@ -17,6 +18,11 @@ def _audit_hook(event, args):
 sys.addaudithook(_audit_hook)
 
 
+def _is_uvloop():
+    "Return true if we're running under uvloop."
+    return os.environ.get("SHELLOUS_LOOP_TYPE") == "uvloop"
+
+
 async def test_audit():
     "Test PEP 578 audit hooks."
 
@@ -34,7 +40,11 @@ async def test_audit():
         _HOOK = None
 
     assert result.rstrip() == "hello"
-    for event in events:
-        print(event)
 
-    assert any(event.startswith("('subprocess.Popen',") for event in events)
+    for event in events:
+        # Work-around Windows UnicodeEncodeError: '_winapi.CreateNamedPipe' evt.
+        print(event.encode("ascii", "backslashreplace").decode("ascii"))
+
+    if not _is_uvloop():
+        # uvloop doesn't implement audit hooks.
+        assert any(event.startswith("('subprocess.Popen',") for event in events)
