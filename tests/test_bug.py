@@ -40,4 +40,4 @@ async def test_bug():
         print("BrokenPipe")
     finally:
         # Fix "ResourceWarning: unclosed" message on Windows.
-        proc.stdin._transport.close()
+        proc._transport.close()
