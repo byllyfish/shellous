@@ -38,3 +38,6 @@ async def test_bug():
         await asyncio.wait_for(proc.stdin.wait_closed(), 5)
     except BrokenPipeError:
         print("BrokenPipe")
+
+    # Fix "ResourceWarning: unclosed" message on Windows.
+    proc.stdin._transport.close()
