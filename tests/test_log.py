@@ -21,6 +21,11 @@ class _Tester:
     async def demo3(self):
         raise ValueError(1)
 
+    @log_method(True)
+    async def demo4(self):
+        for i in range(2):
+            yield i
+
     def __repr__(self):
         return "<self>"
 
@@ -34,10 +39,14 @@ async def test_log_method(caplog):
     await tester.demo2()
     with pytest.raises(ValueError):
         await tester.demo3()
+    async for i in tester.demo4():
+        pass
 
     assert caplog.record_tuples == [
         ("shellous", 20, "_Tester.demo1 stepin <self>"),
         ("shellous", 20, "_Tester.demo1 stepout <self> ex=None"),
         ("shellous", 20, "_Tester.demo3 stepin <self>"),
         ("shellous", 20, "_Tester.demo3 stepout <self> ex=ValueError(1)"),
+        ("shellous", 20, "_Tester.demo4 stepin <self>"),
+        ("shellous", 20, "_Tester.demo4 stepout <self> ex=None"),
     ]
