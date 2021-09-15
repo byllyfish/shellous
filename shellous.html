@@ -84,7 +84,7 @@ shellous    </h1>
 
                         <div class="docstring"><h1 id="async-processes-and-pipelines">Async Processes and Pipelines</h1>
 
-<p><a href="https://pypi.org/project/shellous/"><img src="https://img.shields.io/pypi/v/shellous" alt="PyPI" /></a> <a href="https://github.com/byllyfish/shellous/actions/workflows/ci.yml"><img src="https://github.com/byllyfish/shellous/actions/workflows/ci.yml/badge.svg" alt="CI" /></a> <a href="https://codecov.io/gh/byllyfish/shellous"><img src="https://codecov.io/gh/byllyfish/shellous/branch/main/graph/badge.svg?token=W44NZE89AW" alt="codecov" /></a></p>
+<p><a href="https://byllyfish.github.io/shellous/shellous.html"><img src="https://img.shields.io/badge/-documentation-informational" alt="docs" /></a> <a href="https://pypi.org/project/shellous/"><img src="https://img.shields.io/pypi/v/shellous" alt="PyPI" /></a> <a href="https://github.com/byllyfish/shellous/actions/workflows/ci.yml"><img src="https://github.com/byllyfish/shellous/actions/workflows/ci.yml/badge.svg" alt="CI" /></a> <a href="https://codecov.io/gh/byllyfish/shellous"><img src="https://codecov.io/gh/byllyfish/shellous/branch/main/graph/badge.svg?token=W44NZE89AW" alt="codecov" /></a></p>
 
 <p>shellous provides a concise API for running subprocesses using asyncio. It is 
 similar to and inspired by <a href="https://pypi.org/project/sh/">sh</a>.</p>
@@ -100,8 +100,6 @@ similar to and inspired by <a href="https://pypi.org/project/sh/">sh</a>.</p>
 
 <span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">main</span><span class="p">())</span>
 </code></pre></div>
-
-<p><a href="https://byllyfish.github.io/shellous/shellous.html">More Documentation...</a></p>
 
 <h2 id="benefits">Benefits</h2>
 
@@ -151,7 +149,7 @@ to omit the newline. Note, <code>echo("abc")</code> is the same as <code>echo -n
 'abc'
 </code></pre>
 
-<p><a href="docs/commands.md">More on commands...</a></p>
+<p><a href="docs/commands.md">More on commands...</a> <!-- __REL_LINK__ --></p>
 
 <h2 id="results-and-exit-codes">Results and Exit Codes</h2>
 
@@ -174,7 +172,7 @@ Traceback (most recent call last):
 <a href="shellous/result.html#ResultError">shellous.result.ResultError</a>: Result(output_bytes=b'', exit_code=1, cancelled=False, encoding='utf-8', extra=None)
 </code></pre>
 
-<p><a href="docs/results.md">More on results...</a></p>
+<p><a href="docs/results.md">More on results...</a> <!-- __REL_LINK__ --></p>
 
 <h2 id="redirecting-standard-input">Redirecting Standard Input</h2>
 
@@ -188,12 +186,12 @@ Traceback (most recent call last):
 <p>To redirect stdin using a file's contents, use a <code>Path</code> object from <code>pathlib</code>.</p>
 
 <pre><code>&gt;&gt;&gt; from pathlib import Path
-&gt;&gt;&gt; cmd = Path("README.md") | sh("wc", "-l")
+&gt;&gt;&gt; cmd = Path("LICENSE") | sh("wc", "-l")
 &gt;&gt;&gt; await cmd
-'     269\n'
+'     201\n'
 </code></pre>
 
-<p><a href="docs/redirection.md">More on redirection...</a></p>
+<p><a href="docs/redirection.md">More on redirection...</a> <!-- __REL_LINK__ --></p>
 
 <h2 id="redirecting-standard-output">Redirecting Standard Output</h2>
 
@@ -216,7 +214,7 @@ b'abc\n'
 b'abc\ndef\n'
 </code></pre>
 
-<p><a href="docs/redirection.md">More on redirection...</a></p>
+<p><a href="docs/redirection.md">More on redirection...</a> <!-- __REL_LINK__ --></p>
 
 <h2 id="redirecting-standard-error">Redirecting Standard Error</h2>
 
@@ -241,7 +239,7 @@ Traceback (most recent call last):
 <a href="shellous/result.html#ResultError">shellous.result.ResultError</a>: Result(output_bytes=b'', exit_code=1, cancelled=False, encoding='utf-8', extra=None)
 </code></pre>
 
-<p><a href="docs/redirection.md">More on redirection...</a></p>
+<p><a href="docs/redirection.md">More on redirection...</a> <!-- __REL_LINK__ --></p>
 
 <h2 id="pipelines">Pipelines</h2>
 
