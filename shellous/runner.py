@@ -9,7 +9,7 @@ import shellous
 import shellous.redirect as redir
 from shellous import pty_util
 from shellous.harvest import harvest, harvest_results
-from shellous.log import LOGGER, log_method
+from shellous.log import LOGGER, log_method, log_timer
 from shellous.redirect import Redirect
 from shellous.result import Result, make_result
 from shellous.util import close_fds
@@ -416,10 +416,11 @@ class Runner:
             # Set up subprocess arguments and launch subprocess.
             with self.options as opts:
                 # Launch the main subprocess.
-                self.proc = await asyncio.create_subprocess_exec(
-                    *opts.args,
-                    **opts.kwd_args,
-                )
+                with log_timer("asyncio.create_subprocess_exec"):
+                    self.proc = await asyncio.create_subprocess_exec(
+                        *opts.args,
+                        **opts.kwd_args,
+                    )
 
                 # Launch the process substitution commands (if any).
                 for cmd in opts.subcmds:

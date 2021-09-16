@@ -7,6 +7,8 @@ import logging
 import platform
 import sys
 import threading
+import time
+from contextlib import contextmanager
 
 LOGGER = logging.getLogger(__package__)
 
@@ -175,3 +177,14 @@ def _platform_info():
     if child_watcher:
         return f"{info} {child_watcher}"
     return info
+
+
+@contextmanager
+def log_timer(msg):
+    "Context manager to time an operation (wall clock time)."
+    start = time.monotonic()
+    try:
+        yield
+    finally:
+        duration = time.monotonic() - start
+        LOGGER.info("%s took %g seconds ex=%r", msg, duration, _exc())
