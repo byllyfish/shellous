@@ -20,6 +20,8 @@ _DETAILED_LOGGING = True
 _KILL_TIMEOUT = 3.0
 _CLOSE_TIMEOUT = 0.25
 
+_KILL_EXIT_CODE = -9 if sys.platform != "win32" else 1
+
 
 def _is_cancelled(ex):
     return isinstance(ex, asyncio.CancelledError)
@@ -295,12 +297,15 @@ class Runner:
         "Return the command being run."
         return self.options.command
 
-    def result(self, output_bytes=None):
+    def result(self, output_bytes=b""):
         "Check process exit code and raise a ResultError if necessary."
         if self.proc:
             code = self.proc.returncode
         else:
-            code = None
+            # The process was started but cancelled immediately; `self.proc`
+            # was never returned.
+            assert self.cancelled
+            code = _KILL_EXIT_CODE
 
         result = Result(
             output_bytes,
@@ -319,6 +324,7 @@ class Runner:
             task_name = self.name
         task = asyncio.create_task(coro, name=task_name)
         self.tasks.append(task)
+        return task
 
     @log_method(_DETAILED_LOGGING)
     async def _wait(self):
@@ -642,6 +648,7 @@ class PipeRunner:  # pylint: disable=too-many-instance-attributes
             task_name = self.name
         task = asyncio.create_task(coro, name=task_name)
         self.tasks.append(task)
+        return task
 
     @log_method(_DETAILED_LOGGING)
     async def _wait(self, *, kill=False):
