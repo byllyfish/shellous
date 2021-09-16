@@ -2,12 +2,18 @@
 
 import asyncio
 import functools
+import inspect
 import logging
 import platform
 import sys
 import threading
 
 LOGGER = logging.getLogger(__package__)
+
+# Do these at module import; may invoke subprocess.Popen.
+PLATFORM_VERS = platform.platform(terse=True)
+PYTHON_IMPL = platform.python_implementation()
+PYTHON_VERS = platform.python_version()
 
 
 def _exc():
@@ -32,9 +38,42 @@ def log_method(enabled, *, _info=False, **kwds):
         if not enabled:
             return func
 
-        assert asyncio.iscoroutinefunction(
+        is_asyncgen = inspect.isasyncgenfunction(func)
+        assert is_asyncgen or inspect.iscoroutinefunction(
             func
-        ), f"Decorator expects {func.__qualname__} to be coroutine function"
+        ), f"Expected {func.__qualname__} to be coroutine or asyncgen"
+
+        if "." in func.__qualname__ and is_asyncgen:
+            # Use _asyncgen_wrapper which incldues value of `self` arg.
+            @functools.wraps(func)
+            async def _asyncgen_wrapper(*args, **kwargs):
+                more_args = [f" {key}={args[value]!r}" for key, value in kwds.items()]
+                more_info = "".join(more_args)
+
+                if _info:
+                    LOGGER.info(
+                        "%s stepin %r (%s)%s",
+                        func.__qualname__,
+                        args[0],
+                        _platform_info(),
+                        more_info,
+                    )
+                else:
+                    LOGGER.info("%s stepin %r%s", func.__qualname__, args[0], more_info)
+
+                try:
+                    async for i in func(*args, **kwargs):
+                        yield i
+                finally:
+                    LOGGER.info(
+                        "%s stepout %r ex=%r%s",
+                        func.__qualname__,
+                        args[0],
+                        _exc(),
+                        more_info,
+                    )
+
+            return _asyncgen_wrapper
 
         if "." in func.__qualname__:
             # Use _method_wrapper which incldues value of `self` arg.
@@ -67,6 +106,23 @@ def log_method(enabled, *, _info=False, **kwds):
 
             return _method_wrapper
 
+        if is_asyncgen:
+            # Use _function_wrapper which ignores arguments.
+            @functools.wraps(func)
+            async def _asyncgen_function_wrapper(*args, **kwargs):
+                LOGGER.info("%s stepin", func.__qualname__)
+                try:
+                    async for item in func(*args, **kwargs):
+                        yield item
+                finally:
+                    LOGGER.info(
+                        "%s stepout ex=%r",
+                        func.__qualname__,
+                        _exc(),
+                    )
+
+            return _asyncgen_function_wrapper
+
         # Use _function_wrapper which ignores arguments.
         @functools.wraps(func)
         async def _function_wrapper(*args, **kwargs):
@@ -88,10 +144,6 @@ def log_method(enabled, *, _info=False, **kwds):
 def _platform_info():
     "Return platform information for use in logging."
 
-    platform_vers = platform.platform(terse=True)
-    python_impl = platform.python_implementation()
-    python_vers = platform.python_version()
-
     # Include module name with name of loop class.
     loop_cls = asyncio.get_running_loop().__class__
     loop_name = f"{loop_cls.__module__}.{loop_cls.__name__}"
@@ -110,7 +162,7 @@ def _platform_info():
     except NotImplementedError:
         child_watcher = None
 
-    info = f"{platform_vers} {python_impl} {python_vers} {loop_name} {thread_name}"
+    info = f"{PLATFORM_VERS} {PYTHON_IMPL} {PYTHON_VERS} {loop_name} {thread_name}"
     if child_watcher:
         return f"{info} {child_watcher}"
     return info

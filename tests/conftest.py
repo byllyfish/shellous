@@ -50,6 +50,8 @@ def _init_child_watcher():
         asyncio.set_child_watcher(asyncio.SafeChildWatcher())
     elif childwatcher_type == "pidfd":
         asyncio.set_child_watcher(asyncio.PidfdChildWatcher())
+    elif childwatcher_type == "multi":
+        asyncio.set_child_watcher(asyncio.MultiLoopChildWatcher())
 
 
 @pytest.fixture(autouse=True)

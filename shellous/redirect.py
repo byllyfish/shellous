@@ -6,7 +6,7 @@ import io
 import os
 from typing import Optional
 
-from shellous.log import LOGGER, log_method
+from shellous.log import log_method
 from shellous.util import decode
 
 _DETAILED_LOGGING = True
@@ -120,6 +120,7 @@ async def copy_bytearray(source: asyncio.StreamReader, dest: bytearray):
         dest.extend(data)
 
 
+@log_method(_DETAILED_LOGGING)
 async def read_lines(source: asyncio.StreamReader, encoding: Optional[str]):
     "Async iterator over lines in stream."
     if encoding is None:

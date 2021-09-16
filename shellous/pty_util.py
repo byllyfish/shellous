@@ -1,3 +1,5 @@
+"Implements support for pseudo-terminals."
+
 import asyncio
 import errno
 import os
@@ -30,6 +32,7 @@ class PtyFds(NamedTuple):
     writer: Any = None
 
     async def open_streams(self):
+        "Open pty reader/writer streams."
         reader, writer = await _open_pty_streams(self.parent_fd)
         os.close(self.child_fd)
         return PtyFds(
@@ -41,6 +44,7 @@ class PtyFds(NamedTuple):
         )
 
     def close(self):
+        "Close pty file descriptors."
         if self.child_fd >= 0:
             os.close(self.child_fd)
         if self.writer:
@@ -102,55 +106,55 @@ async def _open_pty_streams(file_desc):
     return reader, writer
 
 
-def raw(rows=0, cols=0, x=0, y=0):
+def raw(rows=0, cols=0, xpixel=0, ypixel=0):
     "Return a function that sets PtyOptions.child_fd to raw mode."
 
-    if Ellipsis in (rows, cols, x, y):
-        rows, cols, x, y = _inherit_term_size(rows, cols, x, y)
+    if Ellipsis in (rows, cols, xpixel, ypixel):
+        rows, cols, xpixel, ypixel = _inherit_term_size(rows, cols, xpixel, ypixel)
 
-    def _pty_set_raw(fd):
-        tty.setraw(fd)
-        if rows or cols or x or y:
-            _set_term_size(fd, rows, cols, x, y)
-        assert get_eof(fd) == b""
+    def _pty_set_raw(fdesc):
+        tty.setraw(fdesc)
+        if rows or cols or xpixel or ypixel:
+            _set_term_size(fdesc, rows, cols, xpixel, ypixel)
+        assert get_eof(fdesc) == b""
 
     return _pty_set_raw
 
 
-def cbreak(rows=0, cols=0, x=0, y=0):
+def cbreak(rows=0, cols=0, xpixel=0, ypixel=0):
     "Return a function that sets PtyOptions.child_fd to cbreak mode."
 
-    if Ellipsis in (rows, cols, x, y):
-        rows, cols, x, y = _inherit_term_size(rows, cols, x, y)
+    if Ellipsis in (rows, cols, xpixel, ypixel):
+        rows, cols, xpixel, ypixel = _inherit_term_size(rows, cols, xpixel, ypixel)
 
-    def _pty_set_cbreak(fd):
-        tty.setcbreak(fd)
-        if rows or cols or x or y:
-            _set_term_size(fd, rows, cols, x, y)
-        assert get_eof(fd) == b""
+    def _pty_set_cbreak(fdesc):
+        tty.setcbreak(fdesc)
+        if rows or cols or xpixel or ypixel:
+            _set_term_size(fdesc, rows, cols, xpixel, ypixel)
+        assert get_eof(fdesc) == b""
 
     return _pty_set_cbreak
 
 
-def canonical(rows=0, cols=0, x=0, y=0, echo=True):
+def canonical(rows=0, cols=0, xpixel=0, ypixel=0, echo=True):
     "Return a function that leaves PtyOptions.child_fd in canonical mode."
 
-    if Ellipsis in (rows, cols, x, y):
-        rows, cols, x, y = _inherit_term_size(rows, cols, x, y)
+    if Ellipsis in (rows, cols, xpixel, ypixel):
+        rows, cols, xpixel, ypixel = _inherit_term_size(rows, cols, xpixel, ypixel)
 
-    def _pty_set_canonical(fd):
-        if rows or cols or x or y:
-            _set_term_size(fd, rows, cols, x, y)
+    def _pty_set_canonical(fdesc):
+        if rows or cols or xpixel or ypixel:
+            _set_term_size(fdesc, rows, cols, xpixel, ypixel)
         if not echo:
-            _set_term_echo(fd, False)
-        assert get_eof(fd) == b"\x04"
+            _set_term_echo(fdesc, False)
+        assert get_eof(fdesc) == b"\x04"
 
     return _pty_set_canonical
 
 
-def _set_term_echo(fd, echo):
+def _set_term_echo(fdesc, echo):
     "Set pseudo-terminal echo."
-    attrs = termios.tcgetattr(fd)
+    attrs = termios.tcgetattr(fdesc)
     curr_echo = (attrs[_LFLAG] & termios.ECHO) != 0
     if echo != curr_echo:
         if echo:
@@ -159,19 +163,19 @@ def _set_term_echo(fd, echo):
         else:
             # Clear the echo bit.
             attrs[_LFLAG] = attrs[_LFLAG] & ~termios.ECHO
-        termios.tcsetattr(fd, termios.TCSADRAIN, attrs)
+        termios.tcsetattr(fdesc, termios.TCSADRAIN, attrs)
 
 
-def _set_term_size(fd, rows, cols, x, y):
+def _set_term_size(fdesc, rows, cols, xpixel, ypixel):
     "Set pseudo-terminal size."
     try:
-        winsz = struct.pack("HHHH", rows, cols, x, y)
-        fcntl.ioctl(fd, tty.TIOCSWINSZ, winsz)
+        winsz = struct.pack("HHHH", rows, cols, xpixel, ypixel)
+        fcntl.ioctl(fdesc, tty.TIOCSWINSZ, winsz)
     except OSError as ex:
         LOGGER.warning("_set_term_size ex=%r", ex)
 
 
-def _inherit_term_size(rows, cols, x, y):
+def _inherit_term_size(rows, cols, xpixel, ypixel):
     "Override ... with terminal setting from current stdin."
     try:
         zeros = struct.pack("HHHH", 0, 0, 0, 0)
@@ -185,19 +189,19 @@ def _inherit_term_size(rows, cols, x, y):
         rows = winsz[0]
     if cols is Ellipsis:
         cols = winsz[1]
-    if x is Ellipsis:
-        x = winsz[2]
-    if y is Ellipsis:
-        y = winsz[3]
+    if xpixel is Ellipsis:
+        xpixel = winsz[2]
+    if ypixel is Ellipsis:
+        ypixel = winsz[3]
 
-    return rows, cols, x, y
+    return rows, cols, xpixel, ypixel
 
 
-def get_eof(fd):
+def get_eof(fdesc):
     "Return the End-of-file character (EOF) if tty is in canonical mode only."
 
     eof = b""
-    attrs = termios.tcgetattr(fd)
+    attrs = termios.tcgetattr(fdesc)
     if attrs[_LFLAG] & termios.ICANON:
         eof = attrs[_CC][termios.VEOF]
 

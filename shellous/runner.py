@@ -6,8 +6,8 @@ import os
 import sys
 
 import shellous
-import shellous.pty_util as pty_util
 import shellous.redirect as redir
+from shellous import pty_util
 from shellous.harvest import harvest, harvest_results
 from shellous.log import LOGGER, log_method
 from shellous.redirect import Redirect
@@ -472,7 +472,7 @@ class Runner:
         "Run task that waits for process to exit."
         await self.proc.wait()
         if self.options.pty_fds:
-            self.stdout._transport.close()
+            self.stdout._transport.close()  # pylint: disable=protected-access
 
     def _setup_output_sink(self, stream, sink, encoding, tag):
         "Set up a task to write to custom output sink."
@@ -574,6 +574,29 @@ class Runner:
     def __aiter__(self):
         "Return asynchronous iterator over stdout/stderr."
         return self._readlines()
+
+    @staticmethod
+    async def run_command(command, *, _run_future=None):
+        "Run a command. This is the main entry point for Runner."
+        if not _run_future and _is_multiple_capture(command):
+            LOGGER.warning("run_command: multiple capture requires 'async with'")
+            _cleanup(command)
+            raise ValueError("multiple capture requires 'async with'")
+
+        output_bytes = bytearray()
+
+        async with command.run() as run:
+            if _run_future is not None:
+                # Return streams to caller in another task.
+                _run_future.set_result(run)
+
+            else:
+                # Read the output here and return it.
+                stream = run.stdout or run.stderr
+                if stream:
+                    await redir.copy_bytearray(stream, output_bytes)
+
+        return run.result(bytes(output_bytes))
 
 
 class PipeRunner:  # pylint: disable=too-many-instance-attributes
@@ -772,37 +795,14 @@ class PipeRunner:  # pylint: disable=too-many-instance-attributes
         "Return asynchronous iterator over stdout/stderr."
         return self._readlines()
 
+    @staticmethod
+    async def run_pipeline(pipe):
+        "Run a pipeline. This is the main entry point for PipeRunner."
 
-async def run_cmd(command, *, _run_future=None):
-    "Run a command."
-    if not _run_future and _is_multiple_capture(command):
-        LOGGER.warning("run_cmd: multiple capture requires 'async with'")
-        _cleanup(command)
-        raise ValueError("multiple capture requires 'async with'")
-
-    output_bytes = bytearray()
-
-    async with command.run() as run:
-        if _run_future is not None:
-            # Return streams to caller in another task.
-            _run_future.set_result(run)
-
-        else:
-            # Read the output here and return it.
-            stream = run.stdout or run.stderr
-            if stream:
-                await redir.copy_bytearray(stream, output_bytes)
-
-    return run.result(bytes(output_bytes))
-
-
-async def run_pipe(pipe):
-    "Run a pipeline"
-
-    run = PipeRunner(pipe, capturing=False)
-    async with run:
-        pass
-    return run.result()
+        run = PipeRunner(pipe, capturing=False)
+        async with run:
+            pass
+        return run.result()
 
 
 def _is_multiple_capture(cmd):
