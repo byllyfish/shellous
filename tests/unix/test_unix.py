@@ -177,7 +177,7 @@ async def test_timeout_fail(sh):
     "Test that an awaitable command can be called with a timeout."
     cmd = sh("sleep", "5").set(incomplete_result=True)
     with pytest.raises(ResultError) as exc_info:
-        await asyncio.wait_for(cmd, 0.1)
+        await asyncio.wait_for(cmd, 0.2)
 
     assert exc_info.type is ResultError
     assert exc_info.value.result == Result(
@@ -194,7 +194,7 @@ async def test_timeout_fail_no_capturing(sh):
     cmd = sh("sleep", "5").stdin(DEVNULL).stdout(DEVNULL).set(incomplete_result=True)
 
     with pytest.raises(ResultError) as exc_info:
-        await asyncio.wait_for(cmd, 0.1)
+        await asyncio.wait_for(cmd, 0.2)
 
     assert exc_info.value.result == Result(
         output_bytes=b"",
