@@ -64,7 +64,7 @@
                     <a class="function" href="#open_pty">open_pty</a>
             </li>
             <li>
-                    <a class="function" href="#set_ctty_preexec_fn">set_ctty_preexec_fn</a>
+                    <a class="function" href="#set_ctty">set_ctty</a>
             </li>
             <li>
                     <a class="class" href="#PtyStreamReaderProtocol">PtyStreamReaderProtocol</a>
@@ -166,10 +166,18 @@
     <span class="k">return</span> <span class="n">pty</span><span class="o">.</span><span class="n">openpty</span><span class="p">()</span>
 
 
-<span class="k">def</span> <span class="nf">set_ctty_preexec_fn</span><span class="p">():</span>
+<span class="k">def</span> <span class="nf">set_ctty</span><span class="p">(</span><span class="n">child_fd</span><span class="p">):</span>
     <span class="s2">&quot;Explicitly open the tty to make it become a controlling tty.&quot;</span>
     <span class="c1"># See https://github.com/python/cpython/blob/3.9/Lib/pty.py</span>
-    <span class="n">tmpfd</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">ttyname</span><span class="p">(</span><span class="n">_STDOUT_FILENO</span><span class="p">),</span> <span class="n">os</span><span class="o">.</span><span class="n">O_RDWR</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">termios</span><span class="p">,</span> <span class="s2">&quot;TIOCSCTTY&quot;</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">fcntl</span><span class="o">.</span><span class="n">ioctl</span><span class="p">(</span><span class="n">child_fd</span><span class="p">,</span> <span class="n">termios</span><span class="o">.</span><span class="n">TIOCSCTTY</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="k">except</span> <span class="ne">OSError</span><span class="p">:</span>
+            <span class="k">pass</span>
+
+    <span class="n">tmpfd</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">ttyname</span><span class="p">(</span><span class="n">child_fd</span><span class="p">),</span> <span class="n">os</span><span class="o">.</span><span class="n">O_RDWR</span><span class="p">)</span>
     <span class="n">os</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">tmpfd</span><span class="p">)</span>
 
 
@@ -528,20 +536,28 @@
 
 
                 </section>
-                <section id="set_ctty_preexec_fn">
-                            <div class="attr function"><a class="headerlink" href="#set_ctty_preexec_fn">#&nbsp;&nbsp</a>
+                <section id="set_ctty">
+                            <div class="attr function"><a class="headerlink" href="#set_ctty">#&nbsp;&nbsp</a>
 
         
             <span class="def">def</span>
-            <span class="name">set_ctty_preexec_fn</span><span class="signature">()</span>:
+            <span class="name">set_ctty</span><span class="signature">(child_fd)</span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">set_ctty_preexec_fn</span><span class="p">():</span>
+            <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">set_ctty</span><span class="p">(</span><span class="n">child_fd</span><span class="p">):</span>
     <span class="s2">&quot;Explicitly open the tty to make it become a controlling tty.&quot;</span>
     <span class="c1"># See https://github.com/python/cpython/blob/3.9/Lib/pty.py</span>
-    <span class="n">tmpfd</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">ttyname</span><span class="p">(</span><span class="n">_STDOUT_FILENO</span><span class="p">),</span> <span class="n">os</span><span class="o">.</span><span class="n">O_RDWR</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">termios</span><span class="p">,</span> <span class="s2">&quot;TIOCSCTTY&quot;</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">fcntl</span><span class="o">.</span><span class="n">ioctl</span><span class="p">(</span><span class="n">child_fd</span><span class="p">,</span> <span class="n">termios</span><span class="o">.</span><span class="n">TIOCSCTTY</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="k">except</span> <span class="ne">OSError</span><span class="p">:</span>
+            <span class="k">pass</span>
+
+    <span class="n">tmpfd</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">ttyname</span><span class="p">(</span><span class="n">child_fd</span><span class="p">),</span> <span class="n">os</span><span class="o">.</span><span class="n">O_RDWR</span><span class="p">)</span>
     <span class="n">os</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">tmpfd</span><span class="p">)</span>
 </pre></div>
 

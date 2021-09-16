@@ -71,6 +71,9 @@
 <span class="n">PYTHON_IMPL</span> <span class="o">=</span> <span class="n">platform</span><span class="o">.</span><span class="n">python_implementation</span><span class="p">()</span>
 <span class="n">PYTHON_VERS</span> <span class="o">=</span> <span class="n">platform</span><span class="o">.</span><span class="n">python_version</span><span class="p">()</span>
 
+<span class="n">LOG_IGNORE_STEPIN</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+<span class="n">LOG_IGNORE_STEPOUT</span> <span class="o">=</span> <span class="o">-</span><span class="mi">2</span>
+
 
 <span class="k">def</span> <span class="nf">_exc</span><span class="p">():</span>
     <span class="s2">&quot;Return the current exception value. Useful in logging.&quot;</span>
@@ -100,34 +103,31 @@
         <span class="p">),</span> <span class="sa">f</span><span class="s2">&quot;Expected </span><span class="si">{</span><span class="n">func</span><span class="o">.</span><span class="vm">__qualname__</span><span class="si">}</span><span class="s2"> to be coroutine or asyncgen&quot;</span>
 
         <span class="k">if</span> <span class="s2">&quot;.&quot;</span> <span class="ow">in</span> <span class="n">func</span><span class="o">.</span><span class="vm">__qualname__</span> <span class="ow">and</span> <span class="n">is_asyncgen</span><span class="p">:</span>
-            <span class="c1"># Use _asyncgen_wrapper which incldues value of `self` arg.</span>
+            <span class="c1"># Use _asyncgen_wrapper which includes value of `self` arg.</span>
             <span class="nd">@functools</span><span class="o">.</span><span class="n">wraps</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
             <span class="k">async</span> <span class="k">def</span> <span class="nf">_asyncgen_wrapper</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-                <span class="n">more_args</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">=</span><span class="si">{</span><span class="n">args</span><span class="p">[</span><span class="n">value</span><span class="p">]</span><span class="si">!r}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">kwds</span><span class="o">.</span><span class="n">items</span><span class="p">()]</span>
-                <span class="n">more_info</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">more_args</span><span class="p">)</span>
+                <span class="n">more_info</span><span class="p">,</span> <span class="n">plat_info</span> <span class="o">=</span> <span class="n">_info_args</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">kwds</span><span class="p">,</span> <span class="n">_info</span><span class="p">)</span>
 
-                <span class="k">if</span> <span class="n">_info</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">enabled</span> <span class="o">!=</span> <span class="n">LOG_IGNORE_STEPIN</span><span class="p">:</span>
                     <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-                        <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> stepin </span><span class="si">%r</span><span class="s2"> (</span><span class="si">%s</span><span class="s2">)</span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> stepin </span><span class="si">%r%s%s</span><span class="s2">&quot;</span><span class="p">,</span>
                         <span class="n">func</span><span class="o">.</span><span class="vm">__qualname__</span><span class="p">,</span>
                         <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
-                        <span class="n">_platform_info</span><span class="p">(),</span>
+                        <span class="n">plat_info</span><span class="p">,</span>
                         <span class="n">more_info</span><span class="p">,</span>
                     <span class="p">)</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> stepin </span><span class="si">%r%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">func</span><span class="o">.</span><span class="vm">__qualname__</span><span class="p">,</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">more_info</span><span class="p">)</span>
-
                 <span class="k">try</span><span class="p">:</span>
                     <span class="k">async</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
                         <span class="k">yield</span> <span class="n">i</span>
                 <span class="k">finally</span><span class="p">:</span>
-                    <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-                        <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> stepout </span><span class="si">%r</span><span class="s2"> ex=</span><span class="si">%r%s</span><span class="s2">&quot;</span><span class="p">,</span>
-                        <span class="n">func</span><span class="o">.</span><span class="vm">__qualname__</span><span class="p">,</span>
-                        <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
-                        <span class="n">_exc</span><span class="p">(),</span>
-                        <span class="n">more_info</span><span class="p">,</span>
-                    <span class="p">)</span>
+                    <span class="k">if</span> <span class="n">enabled</span> <span class="o">!=</span> <span class="n">LOG_IGNORE_STEPOUT</span><span class="p">:</span>
+                        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                            <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> stepout </span><span class="si">%r</span><span class="s2"> ex=</span><span class="si">%r%s</span><span class="s2">&quot;</span><span class="p">,</span>
+                            <span class="n">func</span><span class="o">.</span><span class="vm">__qualname__</span><span class="p">,</span>
+                            <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                            <span class="n">_exc</span><span class="p">(),</span>
+                            <span class="n">more_info</span><span class="p">,</span>
+                        <span class="p">)</span>
 
             <span class="k">return</span> <span class="n">_asyncgen_wrapper</span>
 
@@ -135,30 +135,27 @@
             <span class="c1"># Use _method_wrapper which incldues value of `self` arg.</span>
             <span class="nd">@functools</span><span class="o">.</span><span class="n">wraps</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
             <span class="k">async</span> <span class="k">def</span> <span class="nf">_method_wrapper</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-                <span class="n">more_args</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">=</span><span class="si">{</span><span class="n">args</span><span class="p">[</span><span class="n">value</span><span class="p">]</span><span class="si">!r}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">kwds</span><span class="o">.</span><span class="n">items</span><span class="p">()]</span>
-                <span class="n">more_info</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">more_args</span><span class="p">)</span>
+                <span class="n">more_info</span><span class="p">,</span> <span class="n">plat_info</span> <span class="o">=</span> <span class="n">_info_args</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">kwds</span><span class="p">,</span> <span class="n">_info</span><span class="p">)</span>
 
-                <span class="k">if</span> <span class="n">_info</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">enabled</span> <span class="o">!=</span> <span class="n">LOG_IGNORE_STEPIN</span><span class="p">:</span>
                     <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-                        <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> stepin </span><span class="si">%r</span><span class="s2"> (</span><span class="si">%s</span><span class="s2">)</span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> stepin </span><span class="si">%r%s%s</span><span class="s2">&quot;</span><span class="p">,</span>
                         <span class="n">func</span><span class="o">.</span><span class="vm">__qualname__</span><span class="p">,</span>
                         <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
-                        <span class="n">_platform_info</span><span class="p">(),</span>
+                        <span class="n">plat_info</span><span class="p">,</span>
                         <span class="n">more_info</span><span class="p">,</span>
                     <span class="p">)</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> stepin </span><span class="si">%r%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">func</span><span class="o">.</span><span class="vm">__qualname__</span><span class="p">,</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">more_info</span><span class="p">)</span>
-
                 <span class="k">try</span><span class="p">:</span>
                     <span class="k">return</span> <span class="k">await</span> <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
                 <span class="k">finally</span><span class="p">:</span>
-                    <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-                        <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> stepout </span><span class="si">%r</span><span class="s2"> ex=</span><span class="si">%r%s</span><span class="s2">&quot;</span><span class="p">,</span>
-                        <span class="n">func</span><span class="o">.</span><span class="vm">__qualname__</span><span class="p">,</span>
-                        <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
-                        <span class="n">_exc</span><span class="p">(),</span>
-                        <span class="n">more_info</span><span class="p">,</span>
-                    <span class="p">)</span>
+                    <span class="k">if</span> <span class="n">enabled</span> <span class="o">!=</span> <span class="n">LOG_IGNORE_STEPOUT</span><span class="p">:</span>
+                        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                            <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> stepout </span><span class="si">%r</span><span class="s2"> ex=</span><span class="si">%r%s</span><span class="s2">&quot;</span><span class="p">,</span>
+                            <span class="n">func</span><span class="o">.</span><span class="vm">__qualname__</span><span class="p">,</span>
+                            <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                            <span class="n">_exc</span><span class="p">(),</span>
+                            <span class="n">more_info</span><span class="p">,</span>
+                        <span class="p">)</span>
 
             <span class="k">return</span> <span class="n">_method_wrapper</span>
 
@@ -166,35 +163,47 @@
             <span class="c1"># Use _function_wrapper which ignores arguments.</span>
             <span class="nd">@functools</span><span class="o">.</span><span class="n">wraps</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
             <span class="k">async</span> <span class="k">def</span> <span class="nf">_asyncgen_function_wrapper</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-                <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> stepin&quot;</span><span class="p">,</span> <span class="n">func</span><span class="o">.</span><span class="vm">__qualname__</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">enabled</span> <span class="o">!=</span> <span class="n">LOG_IGNORE_STEPIN</span><span class="p">:</span>
+                    <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> stepin&quot;</span><span class="p">,</span> <span class="n">func</span><span class="o">.</span><span class="vm">__qualname__</span><span class="p">)</span>
                 <span class="k">try</span><span class="p">:</span>
                     <span class="k">async</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
                         <span class="k">yield</span> <span class="n">item</span>
                 <span class="k">finally</span><span class="p">:</span>
-                    <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-                        <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> stepout ex=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span>
-                        <span class="n">func</span><span class="o">.</span><span class="vm">__qualname__</span><span class="p">,</span>
-                        <span class="n">_exc</span><span class="p">(),</span>
-                    <span class="p">)</span>
+                    <span class="k">if</span> <span class="n">enabled</span> <span class="o">!=</span> <span class="n">LOG_IGNORE_STEPOUT</span><span class="p">:</span>
+                        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                            <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> stepout ex=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span>
+                            <span class="n">func</span><span class="o">.</span><span class="vm">__qualname__</span><span class="p">,</span>
+                            <span class="n">_exc</span><span class="p">(),</span>
+                        <span class="p">)</span>
 
             <span class="k">return</span> <span class="n">_asyncgen_function_wrapper</span>
 
         <span class="c1"># Use _function_wrapper which ignores arguments.</span>
         <span class="nd">@functools</span><span class="o">.</span><span class="n">wraps</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
         <span class="k">async</span> <span class="k">def</span> <span class="nf">_function_wrapper</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-            <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> stepin&quot;</span><span class="p">,</span> <span class="n">func</span><span class="o">.</span><span class="vm">__qualname__</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">enabled</span> <span class="o">!=</span> <span class="n">LOG_IGNORE_STEPIN</span><span class="p">:</span>
+                <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> stepin&quot;</span><span class="p">,</span> <span class="n">func</span><span class="o">.</span><span class="vm">__qualname__</span><span class="p">)</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="k">return</span> <span class="k">await</span> <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
             <span class="k">finally</span><span class="p">:</span>
-                <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-                    <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> stepout ex=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span>
-                    <span class="n">func</span><span class="o">.</span><span class="vm">__qualname__</span><span class="p">,</span>
-                    <span class="n">_exc</span><span class="p">(),</span>
-                <span class="p">)</span>
+                <span class="k">if</span> <span class="n">enabled</span> <span class="o">!=</span> <span class="n">LOG_IGNORE_STEPOUT</span><span class="p">:</span>
+                    <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                        <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> stepout ex=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span>
+                        <span class="n">func</span><span class="o">.</span><span class="vm">__qualname__</span><span class="p">,</span>
+                        <span class="n">_exc</span><span class="p">(),</span>
+                    <span class="p">)</span>
 
         <span class="k">return</span> <span class="n">_function_wrapper</span>
 
     <span class="k">return</span> <span class="n">_decorator</span>
+
+
+<span class="k">def</span> <span class="nf">_info_args</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">kwds</span><span class="p">,</span> <span class="n">_info</span><span class="p">):</span>
+    <span class="s2">&quot;Return info strings with specified arguments.&quot;</span>
+    <span class="n">more_args</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">=</span><span class="si">{</span><span class="n">args</span><span class="p">[</span><span class="n">value</span><span class="p">]</span><span class="si">!r}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">kwds</span><span class="o">.</span><span class="n">items</span><span class="p">()]</span>
+    <span class="n">more_info</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">more_args</span><span class="p">)</span>
+    <span class="n">plat_info</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot; (</span><span class="si">{</span><span class="n">_platform_info</span><span class="p">()</span><span class="si">}</span><span class="s2">)&quot;</span> <span class="k">if</span> <span class="n">_info</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">more_info</span><span class="p">,</span> <span class="n">plat_info</span>
 
 
 <span class="k">def</span> <span class="nf">_platform_info</span><span class="p">():</span>
@@ -260,34 +269,31 @@
         <span class="p">),</span> <span class="sa">f</span><span class="s2">&quot;Expected </span><span class="si">{</span><span class="n">func</span><span class="o">.</span><span class="vm">__qualname__</span><span class="si">}</span><span class="s2"> to be coroutine or asyncgen&quot;</span>
 
         <span class="k">if</span> <span class="s2">&quot;.&quot;</span> <span class="ow">in</span> <span class="n">func</span><span class="o">.</span><span class="vm">__qualname__</span> <span class="ow">and</span> <span class="n">is_asyncgen</span><span class="p">:</span>
-            <span class="c1"># Use _asyncgen_wrapper which incldues value of `self` arg.</span>
+            <span class="c1"># Use _asyncgen_wrapper which includes value of `self` arg.</span>
             <span class="nd">@functools</span><span class="o">.</span><span class="n">wraps</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
             <span class="k">async</span> <span class="k">def</span> <span class="nf">_asyncgen_wrapper</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-                <span class="n">more_args</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">=</span><span class="si">{</span><span class="n">args</span><span class="p">[</span><span class="n">value</span><span class="p">]</span><span class="si">!r}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">kwds</span><span class="o">.</span><span class="n">items</span><span class="p">()]</span>
-                <span class="n">more_info</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">more_args</span><span class="p">)</span>
+                <span class="n">more_info</span><span class="p">,</span> <span class="n">plat_info</span> <span class="o">=</span> <span class="n">_info_args</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">kwds</span><span class="p">,</span> <span class="n">_info</span><span class="p">)</span>
 
-                <span class="k">if</span> <span class="n">_info</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">enabled</span> <span class="o">!=</span> <span class="n">LOG_IGNORE_STEPIN</span><span class="p">:</span>
                     <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-                        <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> stepin </span><span class="si">%r</span><span class="s2"> (</span><span class="si">%s</span><span class="s2">)</span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> stepin </span><span class="si">%r%s%s</span><span class="s2">&quot;</span><span class="p">,</span>
                         <span class="n">func</span><span class="o">.</span><span class="vm">__qualname__</span><span class="p">,</span>
                         <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
-                        <span class="n">_platform_info</span><span class="p">(),</span>
+                        <span class="n">plat_info</span><span class="p">,</span>
                         <span class="n">more_info</span><span class="p">,</span>
                     <span class="p">)</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> stepin </span><span class="si">%r%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">func</span><span class="o">.</span><span class="vm">__qualname__</span><span class="p">,</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">more_info</span><span class="p">)</span>
-
                 <span class="k">try</span><span class="p">:</span>
                     <span class="k">async</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
                         <span class="k">yield</span> <span class="n">i</span>
                 <span class="k">finally</span><span class="p">:</span>
-                    <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-                        <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> stepout </span><span class="si">%r</span><span class="s2"> ex=</span><span class="si">%r%s</span><span class="s2">&quot;</span><span class="p">,</span>
-                        <span class="n">func</span><span class="o">.</span><span class="vm">__qualname__</span><span class="p">,</span>
-                        <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
-                        <span class="n">_exc</span><span class="p">(),</span>
-                        <span class="n">more_info</span><span class="p">,</span>
-                    <span class="p">)</span>
+                    <span class="k">if</span> <span class="n">enabled</span> <span class="o">!=</span> <span class="n">LOG_IGNORE_STEPOUT</span><span class="p">:</span>
+                        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                            <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> stepout </span><span class="si">%r</span><span class="s2"> ex=</span><span class="si">%r%s</span><span class="s2">&quot;</span><span class="p">,</span>
+                            <span class="n">func</span><span class="o">.</span><span class="vm">__qualname__</span><span class="p">,</span>
+                            <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                            <span class="n">_exc</span><span class="p">(),</span>
+                            <span class="n">more_info</span><span class="p">,</span>
+                        <span class="p">)</span>
 
             <span class="k">return</span> <span class="n">_asyncgen_wrapper</span>
 
@@ -295,30 +301,27 @@
             <span class="c1"># Use _method_wrapper which incldues value of `self` arg.</span>
             <span class="nd">@functools</span><span class="o">.</span><span class="n">wraps</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
             <span class="k">async</span> <span class="k">def</span> <span class="nf">_method_wrapper</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-                <span class="n">more_args</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">=</span><span class="si">{</span><span class="n">args</span><span class="p">[</span><span class="n">value</span><span class="p">]</span><span class="si">!r}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">kwds</span><span class="o">.</span><span class="n">items</span><span class="p">()]</span>
-                <span class="n">more_info</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">more_args</span><span class="p">)</span>
+                <span class="n">more_info</span><span class="p">,</span> <span class="n">plat_info</span> <span class="o">=</span> <span class="n">_info_args</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">kwds</span><span class="p">,</span> <span class="n">_info</span><span class="p">)</span>
 
-                <span class="k">if</span> <span class="n">_info</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">enabled</span> <span class="o">!=</span> <span class="n">LOG_IGNORE_STEPIN</span><span class="p">:</span>
                     <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-                        <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> stepin </span><span class="si">%r</span><span class="s2"> (</span><span class="si">%s</span><span class="s2">)</span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> stepin </span><span class="si">%r%s%s</span><span class="s2">&quot;</span><span class="p">,</span>
                         <span class="n">func</span><span class="o">.</span><span class="vm">__qualname__</span><span class="p">,</span>
                         <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
-                        <span class="n">_platform_info</span><span class="p">(),</span>
+                        <span class="n">plat_info</span><span class="p">,</span>
                         <span class="n">more_info</span><span class="p">,</span>
                     <span class="p">)</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> stepin </span><span class="si">%r%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">func</span><span class="o">.</span><span class="vm">__qualname__</span><span class="p">,</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">more_info</span><span class="p">)</span>
-
                 <span class="k">try</span><span class="p">:</span>
                     <span class="k">return</span> <span class="k">await</span> <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
                 <span class="k">finally</span><span class="p">:</span>
-                    <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-                        <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> stepout </span><span class="si">%r</span><span class="s2"> ex=</span><span class="si">%r%s</span><span class="s2">&quot;</span><span class="p">,</span>
-                        <span class="n">func</span><span class="o">.</span><span class="vm">__qualname__</span><span class="p">,</span>
-                        <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
-                        <span class="n">_exc</span><span class="p">(),</span>
-                        <span class="n">more_info</span><span class="p">,</span>
-                    <span class="p">)</span>
+                    <span class="k">if</span> <span class="n">enabled</span> <span class="o">!=</span> <span class="n">LOG_IGNORE_STEPOUT</span><span class="p">:</span>
+                        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                            <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> stepout </span><span class="si">%r</span><span class="s2"> ex=</span><span class="si">%r%s</span><span class="s2">&quot;</span><span class="p">,</span>
+                            <span class="n">func</span><span class="o">.</span><span class="vm">__qualname__</span><span class="p">,</span>
+                            <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                            <span class="n">_exc</span><span class="p">(),</span>
+                            <span class="n">more_info</span><span class="p">,</span>
+                        <span class="p">)</span>
 
             <span class="k">return</span> <span class="n">_method_wrapper</span>
 
@@ -326,31 +329,35 @@
             <span class="c1"># Use _function_wrapper which ignores arguments.</span>
             <span class="nd">@functools</span><span class="o">.</span><span class="n">wraps</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
             <span class="k">async</span> <span class="k">def</span> <span class="nf">_asyncgen_function_wrapper</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-                <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> stepin&quot;</span><span class="p">,</span> <span class="n">func</span><span class="o">.</span><span class="vm">__qualname__</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">enabled</span> <span class="o">!=</span> <span class="n">LOG_IGNORE_STEPIN</span><span class="p">:</span>
+                    <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> stepin&quot;</span><span class="p">,</span> <span class="n">func</span><span class="o">.</span><span class="vm">__qualname__</span><span class="p">)</span>
                 <span class="k">try</span><span class="p">:</span>
                     <span class="k">async</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
                         <span class="k">yield</span> <span class="n">item</span>
                 <span class="k">finally</span><span class="p">:</span>
-                    <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-                        <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> stepout ex=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span>
-                        <span class="n">func</span><span class="o">.</span><span class="vm">__qualname__</span><span class="p">,</span>
-                        <span class="n">_exc</span><span class="p">(),</span>
-                    <span class="p">)</span>
+                    <span class="k">if</span> <span class="n">enabled</span> <span class="o">!=</span> <span class="n">LOG_IGNORE_STEPOUT</span><span class="p">:</span>
+                        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                            <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> stepout ex=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span>
+                            <span class="n">func</span><span class="o">.</span><span class="vm">__qualname__</span><span class="p">,</span>
+                            <span class="n">_exc</span><span class="p">(),</span>
+                        <span class="p">)</span>
 
             <span class="k">return</span> <span class="n">_asyncgen_function_wrapper</span>
 
         <span class="c1"># Use _function_wrapper which ignores arguments.</span>
         <span class="nd">@functools</span><span class="o">.</span><span class="n">wraps</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
         <span class="k">async</span> <span class="k">def</span> <span class="nf">_function_wrapper</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-            <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> stepin&quot;</span><span class="p">,</span> <span class="n">func</span><span class="o">.</span><span class="vm">__qualname__</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">enabled</span> <span class="o">!=</span> <span class="n">LOG_IGNORE_STEPIN</span><span class="p">:</span>
+                <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> stepin&quot;</span><span class="p">,</span> <span class="n">func</span><span class="o">.</span><span class="vm">__qualname__</span><span class="p">)</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="k">return</span> <span class="k">await</span> <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
             <span class="k">finally</span><span class="p">:</span>
-                <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-                    <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> stepout ex=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span>
-                    <span class="n">func</span><span class="o">.</span><span class="vm">__qualname__</span><span class="p">,</span>
-                    <span class="n">_exc</span><span class="p">(),</span>
-                <span class="p">)</span>
+                <span class="k">if</span> <span class="n">enabled</span> <span class="o">!=</span> <span class="n">LOG_IGNORE_STEPOUT</span><span class="p">:</span>
+                    <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                        <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> stepout ex=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span>
+                        <span class="n">func</span><span class="o">.</span><span class="vm">__qualname__</span><span class="p">,</span>
+                        <span class="n">_exc</span><span class="p">(),</span>
+                    <span class="p">)</span>
 
         <span class="k">return</span> <span class="n">_function_wrapper</span>
 
