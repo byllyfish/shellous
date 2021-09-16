@@ -56,10 +56,18 @@ def open_pty():
     return pty.openpty()
 
 
-def set_ctty_preexec_fn():
+def set_ctty(child_fd):
     "Explicitly open the tty to make it become a controlling tty."
     # See https://github.com/python/cpython/blob/3.9/Lib/pty.py
-    tmpfd = os.open(os.ttyname(_STDOUT_FILENO), os.O_RDWR)
+
+    if hasattr(termios, "TIOCSCTTY"):
+        try:
+            fcntl.ioctl(child_fd, termios.TIOCSCTTY, 0)
+            return
+        except OSError:
+            pass
+
+    tmpfd = os.open(os.ttyname(child_fd), os.O_RDWR)
     os.close(tmpfd)
 
 
