@@ -582,3 +582,25 @@ async def test_stringio_redirect_with_bytes_encoding(echo_cmd):
 
     with pytest.raises(TypeError, match="StringIO"):
         await cmd("abc").set(encoding=None)
+
+
+async def test_quick_cancel(echo_cmd):
+    "Test a command that is quickly cancelled, just before starting."
+
+    async def _test_task():
+        # Cancel in _make_subprocess_transport (asyncio/unix_events.py)
+        asyncio.current_task().cancel()
+        return await echo_cmd("hello").set(incomplete_result=True)
+
+    task = asyncio.create_task(_test_task())
+
+    with pytest.raises(ResultError) as exc_info:
+        await task
+
+    assert exc_info.value.result == Result(
+        output_bytes=None,  # FIXME
+        exit_code=None,  # FIXME
+        cancelled=True,
+        encoding="utf-8",
+        extra=None,
+    )
