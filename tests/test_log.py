@@ -3,7 +3,7 @@
 import logging
 
 import pytest
-from shellous.log import LOG_IGNORE_STEPIN, LOG_IGNORE_STEPOUT, log_method
+from shellous.log import LOG_IGNORE_STEPIN, LOG_IGNORE_STEPOUT, log_method, log_timer
 
 pytestmark = pytest.mark.asyncio
 
@@ -62,3 +62,16 @@ async def test_log_method(caplog):
         ("shellous", 20, "_Tester.demo5 stepin <self>"),
         ("shellous", 20, "_Tester.demo6 stepout <self> ex=None"),
     ]
+
+
+def test_log_timer(caplog):
+    "Test the log_timer context manager."
+    caplog.set_level(logging.WARNING)
+
+    with log_timer("test1", -1):
+        pass
+
+    assert len(caplog.record_tuples) == 1
+    rec = caplog.record_tuples[0]
+    assert rec[0:2] == ("shellous", 30)
+    assert rec[2].startswith("test1 took ")
