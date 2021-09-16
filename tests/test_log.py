@@ -3,7 +3,7 @@
 import logging
 
 import pytest
-from shellous.log import log_method
+from shellous.log import LOG_IGNORE_STEPIN, LOG_IGNORE_STEPOUT, log_method
 
 pytestmark = pytest.mark.asyncio
 
@@ -26,6 +26,14 @@ class _Tester:
         for i in range(2):
             yield i
 
+    @log_method(LOG_IGNORE_STEPOUT)
+    async def demo5(self):
+        pass
+
+    @log_method(LOG_IGNORE_STEPIN)
+    async def demo6(self):
+        pass
+
     def __repr__(self):
         return "<self>"
 
@@ -41,6 +49,8 @@ async def test_log_method(caplog):
         await tester.demo3()
     async for i in tester.demo4():
         pass
+    await tester.demo5()
+    await tester.demo6()
 
     assert caplog.record_tuples == [
         ("shellous", 20, "_Tester.demo1 stepin <self>"),
@@ -49,4 +59,6 @@ async def test_log_method(caplog):
         ("shellous", 20, "_Tester.demo3 stepout <self> ex=ValueError(1)"),
         ("shellous", 20, "_Tester.demo4 stepin <self>"),
         ("shellous", 20, "_Tester.demo4 stepout <self> ex=None"),
+        ("shellous", 20, "_Tester.demo5 stepin <self>"),
+        ("shellous", 20, "_Tester.demo6 stepout <self> ex=None"),
     ]
