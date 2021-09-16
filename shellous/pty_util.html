@@ -103,10 +103,14 @@
                     <h1 class="modulename">
 <a href="./../shellous.html">shellous</a><wbr>.pty_util    </h1>
 
-                
+                        <div class="docstring"><p>Implements support for pseudo-terminals.</p>
+</div>
+
                         <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span><span class="kn">import</span> <span class="nn">asyncio</span>
+            <div class="codehilite"><pre><span></span><span class="s2">&quot;Implements support for pseudo-terminals.&quot;</span>
+
+<span class="kn">import</span> <span class="nn">asyncio</span>
 <span class="kn">import</span> <span class="nn">errno</span>
 <span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">import</span> <span class="nn">struct</span>
@@ -138,6 +142,7 @@
     <span class="n">writer</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="k">async</span> <span class="k">def</span> <span class="nf">open_streams</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;Open pty reader/writer streams.&quot;</span>
         <span class="n">reader</span><span class="p">,</span> <span class="n">writer</span> <span class="o">=</span> <span class="k">await</span> <span class="n">_open_pty_streams</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parent_fd</span><span class="p">)</span>
         <span class="n">os</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child_fd</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">PtyFds</span><span class="p">(</span>
@@ -149,6 +154,7 @@
         <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;Close pty file descriptors.&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">child_fd</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
             <span class="n">os</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child_fd</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">writer</span><span class="p">:</span>
@@ -210,55 +216,55 @@
     <span class="k">return</span> <span class="n">reader</span><span class="p">,</span> <span class="n">writer</span>
 
 
-<span class="k">def</span> <span class="nf">raw</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">cols</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">raw</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">cols</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">xpixel</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">ypixel</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
     <span class="s2">&quot;Return a function that sets PtyOptions.child_fd to raw mode.&quot;</span>
 
-    <span class="k">if</span> <span class="bp">Ellipsis</span> <span class="ow">in</span> <span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
-        <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">_inherit_term_size</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+    <span class="k">if</span> <span class="bp">Ellipsis</span> <span class="ow">in</span> <span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">xpixel</span><span class="p">,</span> <span class="n">ypixel</span><span class="p">):</span>
+        <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">xpixel</span><span class="p">,</span> <span class="n">ypixel</span> <span class="o">=</span> <span class="n">_inherit_term_size</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">xpixel</span><span class="p">,</span> <span class="n">ypixel</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_pty_set_raw</span><span class="p">(</span><span class="n">fd</span><span class="p">):</span>
-        <span class="n">tty</span><span class="o">.</span><span class="n">setraw</span><span class="p">(</span><span class="n">fd</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">rows</span> <span class="ow">or</span> <span class="n">cols</span> <span class="ow">or</span> <span class="n">x</span> <span class="ow">or</span> <span class="n">y</span><span class="p">:</span>
-            <span class="n">_set_term_size</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
-        <span class="k">assert</span> <span class="n">get_eof</span><span class="p">(</span><span class="n">fd</span><span class="p">)</span> <span class="o">==</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">_pty_set_raw</span><span class="p">(</span><span class="n">fdesc</span><span class="p">):</span>
+        <span class="n">tty</span><span class="o">.</span><span class="n">setraw</span><span class="p">(</span><span class="n">fdesc</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">rows</span> <span class="ow">or</span> <span class="n">cols</span> <span class="ow">or</span> <span class="n">xpixel</span> <span class="ow">or</span> <span class="n">ypixel</span><span class="p">:</span>
+            <span class="n">_set_term_size</span><span class="p">(</span><span class="n">fdesc</span><span class="p">,</span> <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">xpixel</span><span class="p">,</span> <span class="n">ypixel</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">get_eof</span><span class="p">(</span><span class="n">fdesc</span><span class="p">)</span> <span class="o">==</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span>
 
     <span class="k">return</span> <span class="n">_pty_set_raw</span>
 
 
-<span class="k">def</span> <span class="nf">cbreak</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">cols</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">cbreak</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">cols</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">xpixel</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">ypixel</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
     <span class="s2">&quot;Return a function that sets PtyOptions.child_fd to cbreak mode.&quot;</span>
 
-    <span class="k">if</span> <span class="bp">Ellipsis</span> <span class="ow">in</span> <span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
-        <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">_inherit_term_size</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+    <span class="k">if</span> <span class="bp">Ellipsis</span> <span class="ow">in</span> <span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">xpixel</span><span class="p">,</span> <span class="n">ypixel</span><span class="p">):</span>
+        <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">xpixel</span><span class="p">,</span> <span class="n">ypixel</span> <span class="o">=</span> <span class="n">_inherit_term_size</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">xpixel</span><span class="p">,</span> <span class="n">ypixel</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_pty_set_cbreak</span><span class="p">(</span><span class="n">fd</span><span class="p">):</span>
-        <span class="n">tty</span><span class="o">.</span><span class="n">setcbreak</span><span class="p">(</span><span class="n">fd</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">rows</span> <span class="ow">or</span> <span class="n">cols</span> <span class="ow">or</span> <span class="n">x</span> <span class="ow">or</span> <span class="n">y</span><span class="p">:</span>
-            <span class="n">_set_term_size</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
-        <span class="k">assert</span> <span class="n">get_eof</span><span class="p">(</span><span class="n">fd</span><span class="p">)</span> <span class="o">==</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">_pty_set_cbreak</span><span class="p">(</span><span class="n">fdesc</span><span class="p">):</span>
+        <span class="n">tty</span><span class="o">.</span><span class="n">setcbreak</span><span class="p">(</span><span class="n">fdesc</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">rows</span> <span class="ow">or</span> <span class="n">cols</span> <span class="ow">or</span> <span class="n">xpixel</span> <span class="ow">or</span> <span class="n">ypixel</span><span class="p">:</span>
+            <span class="n">_set_term_size</span><span class="p">(</span><span class="n">fdesc</span><span class="p">,</span> <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">xpixel</span><span class="p">,</span> <span class="n">ypixel</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">get_eof</span><span class="p">(</span><span class="n">fdesc</span><span class="p">)</span> <span class="o">==</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span>
 
     <span class="k">return</span> <span class="n">_pty_set_cbreak</span>
 
 
-<span class="k">def</span> <span class="nf">canonical</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">cols</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">echo</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">canonical</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">cols</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">xpixel</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">ypixel</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">echo</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
     <span class="s2">&quot;Return a function that leaves PtyOptions.child_fd in canonical mode.&quot;</span>
 
-    <span class="k">if</span> <span class="bp">Ellipsis</span> <span class="ow">in</span> <span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
-        <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">_inherit_term_size</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+    <span class="k">if</span> <span class="bp">Ellipsis</span> <span class="ow">in</span> <span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">xpixel</span><span class="p">,</span> <span class="n">ypixel</span><span class="p">):</span>
+        <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">xpixel</span><span class="p">,</span> <span class="n">ypixel</span> <span class="o">=</span> <span class="n">_inherit_term_size</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">xpixel</span><span class="p">,</span> <span class="n">ypixel</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_pty_set_canonical</span><span class="p">(</span><span class="n">fd</span><span class="p">):</span>
-        <span class="k">if</span> <span class="n">rows</span> <span class="ow">or</span> <span class="n">cols</span> <span class="ow">or</span> <span class="n">x</span> <span class="ow">or</span> <span class="n">y</span><span class="p">:</span>
-            <span class="n">_set_term_size</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">_pty_set_canonical</span><span class="p">(</span><span class="n">fdesc</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">rows</span> <span class="ow">or</span> <span class="n">cols</span> <span class="ow">or</span> <span class="n">xpixel</span> <span class="ow">or</span> <span class="n">ypixel</span><span class="p">:</span>
+            <span class="n">_set_term_size</span><span class="p">(</span><span class="n">fdesc</span><span class="p">,</span> <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">xpixel</span><span class="p">,</span> <span class="n">ypixel</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">echo</span><span class="p">:</span>
-            <span class="n">_set_term_echo</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
-        <span class="k">assert</span> <span class="n">get_eof</span><span class="p">(</span><span class="n">fd</span><span class="p">)</span> <span class="o">==</span> <span class="sa">b</span><span class="s2">&quot;</span><span class="se">\x04</span><span class="s2">&quot;</span>
+            <span class="n">_set_term_echo</span><span class="p">(</span><span class="n">fdesc</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">get_eof</span><span class="p">(</span><span class="n">fdesc</span><span class="p">)</span> <span class="o">==</span> <span class="sa">b</span><span class="s2">&quot;</span><span class="se">\x04</span><span class="s2">&quot;</span>
 
     <span class="k">return</span> <span class="n">_pty_set_canonical</span>
 
 
-<span class="k">def</span> <span class="nf">_set_term_echo</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="n">echo</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">_set_term_echo</span><span class="p">(</span><span class="n">fdesc</span><span class="p">,</span> <span class="n">echo</span><span class="p">):</span>
     <span class="s2">&quot;Set pseudo-terminal echo.&quot;</span>
-    <span class="n">attrs</span> <span class="o">=</span> <span class="n">termios</span><span class="o">.</span><span class="n">tcgetattr</span><span class="p">(</span><span class="n">fd</span><span class="p">)</span>
+    <span class="n">attrs</span> <span class="o">=</span> <span class="n">termios</span><span class="o">.</span><span class="n">tcgetattr</span><span class="p">(</span><span class="n">fdesc</span><span class="p">)</span>
     <span class="n">curr_echo</span> <span class="o">=</span> <span class="p">(</span><span class="n">attrs</span><span class="p">[</span><span class="n">_LFLAG</span><span class="p">]</span> <span class="o">&amp;</span> <span class="n">termios</span><span class="o">.</span><span class="n">ECHO</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span>
     <span class="k">if</span> <span class="n">echo</span> <span class="o">!=</span> <span class="n">curr_echo</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">echo</span><span class="p">:</span>
@@ -267,19 +273,19 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="c1"># Clear the echo bit.</span>
             <span class="n">attrs</span><span class="p">[</span><span class="n">_LFLAG</span><span class="p">]</span> <span class="o">=</span> <span class="n">attrs</span><span class="p">[</span><span class="n">_LFLAG</span><span class="p">]</span> <span class="o">&amp;</span> <span class="o">~</span><span class="n">termios</span><span class="o">.</span><span class="n">ECHO</span>
-        <span class="n">termios</span><span class="o">.</span><span class="n">tcsetattr</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="n">termios</span><span class="o">.</span><span class="n">TCSADRAIN</span><span class="p">,</span> <span class="n">attrs</span><span class="p">)</span>
+        <span class="n">termios</span><span class="o">.</span><span class="n">tcsetattr</span><span class="p">(</span><span class="n">fdesc</span><span class="p">,</span> <span class="n">termios</span><span class="o">.</span><span class="n">TCSADRAIN</span><span class="p">,</span> <span class="n">attrs</span><span class="p">)</span>
 
 
-<span class="k">def</span> <span class="nf">_set_term_size</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">_set_term_size</span><span class="p">(</span><span class="n">fdesc</span><span class="p">,</span> <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">xpixel</span><span class="p">,</span> <span class="n">ypixel</span><span class="p">):</span>
     <span class="s2">&quot;Set pseudo-terminal size.&quot;</span>
     <span class="k">try</span><span class="p">:</span>
-        <span class="n">winsz</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s2">&quot;HHHH&quot;</span><span class="p">,</span> <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
-        <span class="n">fcntl</span><span class="o">.</span><span class="n">ioctl</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="n">tty</span><span class="o">.</span><span class="n">TIOCSWINSZ</span><span class="p">,</span> <span class="n">winsz</span><span class="p">)</span>
+        <span class="n">winsz</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s2">&quot;HHHH&quot;</span><span class="p">,</span> <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">xpixel</span><span class="p">,</span> <span class="n">ypixel</span><span class="p">)</span>
+        <span class="n">fcntl</span><span class="o">.</span><span class="n">ioctl</span><span class="p">(</span><span class="n">fdesc</span><span class="p">,</span> <span class="n">tty</span><span class="o">.</span><span class="n">TIOCSWINSZ</span><span class="p">,</span> <span class="n">winsz</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">OSError</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>
         <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;_set_term_size ex=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">ex</span><span class="p">)</span>
 
 
-<span class="k">def</span> <span class="nf">_inherit_term_size</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">_inherit_term_size</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">xpixel</span><span class="p">,</span> <span class="n">ypixel</span><span class="p">):</span>
     <span class="s2">&quot;Override ... with terminal setting from current stdin.&quot;</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="n">zeros</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s2">&quot;HHHH&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
@@ -293,19 +299,19 @@
         <span class="n">rows</span> <span class="o">=</span> <span class="n">winsz</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
     <span class="k">if</span> <span class="n">cols</span> <span class="ow">is</span> <span class="bp">Ellipsis</span><span class="p">:</span>
         <span class="n">cols</span> <span class="o">=</span> <span class="n">winsz</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
-    <span class="k">if</span> <span class="n">x</span> <span class="ow">is</span> <span class="bp">Ellipsis</span><span class="p">:</span>
-        <span class="n">x</span> <span class="o">=</span> <span class="n">winsz</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
-    <span class="k">if</span> <span class="n">y</span> <span class="ow">is</span> <span class="bp">Ellipsis</span><span class="p">:</span>
-        <span class="n">y</span> <span class="o">=</span> <span class="n">winsz</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">xpixel</span> <span class="ow">is</span> <span class="bp">Ellipsis</span><span class="p">:</span>
+        <span class="n">xpixel</span> <span class="o">=</span> <span class="n">winsz</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">ypixel</span> <span class="ow">is</span> <span class="bp">Ellipsis</span><span class="p">:</span>
+        <span class="n">ypixel</span> <span class="o">=</span> <span class="n">winsz</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
 
-    <span class="k">return</span> <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span>
+    <span class="k">return</span> <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">xpixel</span><span class="p">,</span> <span class="n">ypixel</span>
 
 
-<span class="k">def</span> <span class="nf">get_eof</span><span class="p">(</span><span class="n">fd</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">get_eof</span><span class="p">(</span><span class="n">fdesc</span><span class="p">):</span>
     <span class="s2">&quot;Return the End-of-file character (EOF) if tty is in canonical mode only.&quot;</span>
 
     <span class="n">eof</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span>
-    <span class="n">attrs</span> <span class="o">=</span> <span class="n">termios</span><span class="o">.</span><span class="n">tcgetattr</span><span class="p">(</span><span class="n">fd</span><span class="p">)</span>
+    <span class="n">attrs</span> <span class="o">=</span> <span class="n">termios</span><span class="o">.</span><span class="n">tcgetattr</span><span class="p">(</span><span class="n">fdesc</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">attrs</span><span class="p">[</span><span class="n">_LFLAG</span><span class="p">]</span> <span class="o">&amp;</span> <span class="n">termios</span><span class="o">.</span><span class="n">ICANON</span><span class="p">:</span>
         <span class="n">eof</span> <span class="o">=</span> <span class="n">attrs</span><span class="p">[</span><span class="n">_CC</span><span class="p">][</span><span class="n">termios</span><span class="o">.</span><span class="n">VEOF</span><span class="p">]</span>
 
@@ -335,6 +341,7 @@
     <span class="n">writer</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="k">async</span> <span class="k">def</span> <span class="nf">open_streams</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;Open pty reader/writer streams.&quot;</span>
         <span class="n">reader</span><span class="p">,</span> <span class="n">writer</span> <span class="o">=</span> <span class="k">await</span> <span class="n">_open_pty_streams</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parent_fd</span><span class="p">)</span>
         <span class="n">os</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child_fd</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">PtyFds</span><span class="p">(</span>
@@ -346,6 +353,7 @@
         <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;Close pty file descriptors.&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">child_fd</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
             <span class="n">os</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child_fd</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">writer</span><span class="p">:</span>
@@ -443,6 +451,7 @@
                 <details>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span>    <span class="k">async</span> <span class="k">def</span> <span class="nf">open_streams</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;Open pty reader/writer streams.&quot;</span>
         <span class="n">reader</span><span class="p">,</span> <span class="n">writer</span> <span class="o">=</span> <span class="k">await</span> <span class="n">_open_pty_streams</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parent_fd</span><span class="p">)</span>
         <span class="n">os</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child_fd</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">PtyFds</span><span class="p">(</span>
@@ -456,7 +465,9 @@
 
         </details>
 
-    
+            <div class="docstring"><p>Open pty reader/writer streams.</p>
+</div>
+
 
                             </div>
                             <div id="PtyFds.close" class="classattr">
@@ -470,6 +481,7 @@
                 <details>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;Close pty file descriptors.&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">child_fd</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
             <span class="n">os</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child_fd</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">writer</span><span class="p">:</span>
@@ -478,7 +490,9 @@
 
         </details>
 
-    
+            <div class="docstring"><p>Close pty file descriptors.</p>
+</div>
+
 
                             </div>
                             <div class="inherited">
@@ -614,22 +628,22 @@
 
         
             <span class="def">def</span>
-            <span class="name">raw</span><span class="signature">(rows=0, cols=0, x=0, y=0)</span>:
+            <span class="name">raw</span><span class="signature">(rows=0, cols=0, xpixel=0, ypixel=0)</span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">raw</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">cols</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+            <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">raw</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">cols</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">xpixel</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">ypixel</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
     <span class="s2">&quot;Return a function that sets PtyOptions.child_fd to raw mode.&quot;</span>
 
-    <span class="k">if</span> <span class="bp">Ellipsis</span> <span class="ow">in</span> <span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
-        <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">_inherit_term_size</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+    <span class="k">if</span> <span class="bp">Ellipsis</span> <span class="ow">in</span> <span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">xpixel</span><span class="p">,</span> <span class="n">ypixel</span><span class="p">):</span>
+        <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">xpixel</span><span class="p">,</span> <span class="n">ypixel</span> <span class="o">=</span> <span class="n">_inherit_term_size</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">xpixel</span><span class="p">,</span> <span class="n">ypixel</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_pty_set_raw</span><span class="p">(</span><span class="n">fd</span><span class="p">):</span>
-        <span class="n">tty</span><span class="o">.</span><span class="n">setraw</span><span class="p">(</span><span class="n">fd</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">rows</span> <span class="ow">or</span> <span class="n">cols</span> <span class="ow">or</span> <span class="n">x</span> <span class="ow">or</span> <span class="n">y</span><span class="p">:</span>
-            <span class="n">_set_term_size</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
-        <span class="k">assert</span> <span class="n">get_eof</span><span class="p">(</span><span class="n">fd</span><span class="p">)</span> <span class="o">==</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">_pty_set_raw</span><span class="p">(</span><span class="n">fdesc</span><span class="p">):</span>
+        <span class="n">tty</span><span class="o">.</span><span class="n">setraw</span><span class="p">(</span><span class="n">fdesc</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">rows</span> <span class="ow">or</span> <span class="n">cols</span> <span class="ow">or</span> <span class="n">xpixel</span> <span class="ow">or</span> <span class="n">ypixel</span><span class="p">:</span>
+            <span class="n">_set_term_size</span><span class="p">(</span><span class="n">fdesc</span><span class="p">,</span> <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">xpixel</span><span class="p">,</span> <span class="n">ypixel</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">get_eof</span><span class="p">(</span><span class="n">fdesc</span><span class="p">)</span> <span class="o">==</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span>
 
     <span class="k">return</span> <span class="n">_pty_set_raw</span>
 </pre></div>
@@ -646,22 +660,22 @@
 
         
             <span class="def">def</span>
-            <span class="name">cbreak</span><span class="signature">(rows=0, cols=0, x=0, y=0)</span>:
+            <span class="name">cbreak</span><span class="signature">(rows=0, cols=0, xpixel=0, ypixel=0)</span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">cbreak</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">cols</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+            <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">cbreak</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">cols</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">xpixel</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">ypixel</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
     <span class="s2">&quot;Return a function that sets PtyOptions.child_fd to cbreak mode.&quot;</span>
 
-    <span class="k">if</span> <span class="bp">Ellipsis</span> <span class="ow">in</span> <span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
-        <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">_inherit_term_size</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+    <span class="k">if</span> <span class="bp">Ellipsis</span> <span class="ow">in</span> <span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">xpixel</span><span class="p">,</span> <span class="n">ypixel</span><span class="p">):</span>
+        <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">xpixel</span><span class="p">,</span> <span class="n">ypixel</span> <span class="o">=</span> <span class="n">_inherit_term_size</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">xpixel</span><span class="p">,</span> <span class="n">ypixel</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_pty_set_cbreak</span><span class="p">(</span><span class="n">fd</span><span class="p">):</span>
-        <span class="n">tty</span><span class="o">.</span><span class="n">setcbreak</span><span class="p">(</span><span class="n">fd</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">rows</span> <span class="ow">or</span> <span class="n">cols</span> <span class="ow">or</span> <span class="n">x</span> <span class="ow">or</span> <span class="n">y</span><span class="p">:</span>
-            <span class="n">_set_term_size</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
-        <span class="k">assert</span> <span class="n">get_eof</span><span class="p">(</span><span class="n">fd</span><span class="p">)</span> <span class="o">==</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">_pty_set_cbreak</span><span class="p">(</span><span class="n">fdesc</span><span class="p">):</span>
+        <span class="n">tty</span><span class="o">.</span><span class="n">setcbreak</span><span class="p">(</span><span class="n">fdesc</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">rows</span> <span class="ow">or</span> <span class="n">cols</span> <span class="ow">or</span> <span class="n">xpixel</span> <span class="ow">or</span> <span class="n">ypixel</span><span class="p">:</span>
+            <span class="n">_set_term_size</span><span class="p">(</span><span class="n">fdesc</span><span class="p">,</span> <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">xpixel</span><span class="p">,</span> <span class="n">ypixel</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">get_eof</span><span class="p">(</span><span class="n">fdesc</span><span class="p">)</span> <span class="o">==</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span>
 
     <span class="k">return</span> <span class="n">_pty_set_cbreak</span>
 </pre></div>
@@ -678,23 +692,23 @@
 
         
             <span class="def">def</span>
-            <span class="name">canonical</span><span class="signature">(rows=0, cols=0, x=0, y=0, echo=True)</span>:
+            <span class="name">canonical</span><span class="signature">(rows=0, cols=0, xpixel=0, ypixel=0, echo=True)</span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">canonical</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">cols</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">echo</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+            <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">canonical</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">cols</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">xpixel</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">ypixel</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">echo</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
     <span class="s2">&quot;Return a function that leaves PtyOptions.child_fd in canonical mode.&quot;</span>
 
-    <span class="k">if</span> <span class="bp">Ellipsis</span> <span class="ow">in</span> <span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
-        <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">_inherit_term_size</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+    <span class="k">if</span> <span class="bp">Ellipsis</span> <span class="ow">in</span> <span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">xpixel</span><span class="p">,</span> <span class="n">ypixel</span><span class="p">):</span>
+        <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">xpixel</span><span class="p">,</span> <span class="n">ypixel</span> <span class="o">=</span> <span class="n">_inherit_term_size</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">xpixel</span><span class="p">,</span> <span class="n">ypixel</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_pty_set_canonical</span><span class="p">(</span><span class="n">fd</span><span class="p">):</span>
-        <span class="k">if</span> <span class="n">rows</span> <span class="ow">or</span> <span class="n">cols</span> <span class="ow">or</span> <span class="n">x</span> <span class="ow">or</span> <span class="n">y</span><span class="p">:</span>
-            <span class="n">_set_term_size</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">_pty_set_canonical</span><span class="p">(</span><span class="n">fdesc</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">rows</span> <span class="ow">or</span> <span class="n">cols</span> <span class="ow">or</span> <span class="n">xpixel</span> <span class="ow">or</span> <span class="n">ypixel</span><span class="p">:</span>
+            <span class="n">_set_term_size</span><span class="p">(</span><span class="n">fdesc</span><span class="p">,</span> <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">xpixel</span><span class="p">,</span> <span class="n">ypixel</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">echo</span><span class="p">:</span>
-            <span class="n">_set_term_echo</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
-        <span class="k">assert</span> <span class="n">get_eof</span><span class="p">(</span><span class="n">fd</span><span class="p">)</span> <span class="o">==</span> <span class="sa">b</span><span class="s2">&quot;</span><span class="se">\x04</span><span class="s2">&quot;</span>
+            <span class="n">_set_term_echo</span><span class="p">(</span><span class="n">fdesc</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">get_eof</span><span class="p">(</span><span class="n">fdesc</span><span class="p">)</span> <span class="o">==</span> <span class="sa">b</span><span class="s2">&quot;</span><span class="se">\x04</span><span class="s2">&quot;</span>
 
     <span class="k">return</span> <span class="n">_pty_set_canonical</span>
 </pre></div>
@@ -711,16 +725,16 @@
 
         
             <span class="def">def</span>
-            <span class="name">get_eof</span><span class="signature">(fd)</span>:
+            <span class="name">get_eof</span><span class="signature">(fdesc)</span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">get_eof</span><span class="p">(</span><span class="n">fd</span><span class="p">):</span>
+            <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">get_eof</span><span class="p">(</span><span class="n">fdesc</span><span class="p">):</span>
     <span class="s2">&quot;Return the End-of-file character (EOF) if tty is in canonical mode only.&quot;</span>
 
     <span class="n">eof</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span>
-    <span class="n">attrs</span> <span class="o">=</span> <span class="n">termios</span><span class="o">.</span><span class="n">tcgetattr</span><span class="p">(</span><span class="n">fd</span><span class="p">)</span>
+    <span class="n">attrs</span> <span class="o">=</span> <span class="n">termios</span><span class="o">.</span><span class="n">tcgetattr</span><span class="p">(</span><span class="n">fdesc</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">attrs</span><span class="p">[</span><span class="n">_LFLAG</span><span class="p">]</span> <span class="o">&amp;</span> <span class="n">termios</span><span class="o">.</span><span class="n">ICANON</span><span class="p">:</span>
         <span class="n">eof</span> <span class="o">=</span> <span class="n">attrs</span><span class="p">[</span><span class="n">_CC</span><span class="p">][</span><span class="n">termios</span><span class="o">.</span><span class="n">VEOF</span><span class="p">]</span>
 
