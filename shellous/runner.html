@@ -107,7 +107,7 @@
 <span class="kn">import</span> <span class="nn">shellous.redirect</span> <span class="k">as</span> <span class="nn">redir</span>
 <span class="kn">from</span> <span class="nn">shellous</span> <span class="kn">import</span> <span class="n">pty_util</span>
 <span class="kn">from</span> <span class="nn">shellous.harvest</span> <span class="kn">import</span> <span class="n">harvest</span><span class="p">,</span> <span class="n">harvest_results</span>
-<span class="kn">from</span> <span class="nn">shellous.log</span> <span class="kn">import</span> <span class="n">LOGGER</span><span class="p">,</span> <span class="n">log_method</span>
+<span class="kn">from</span> <span class="nn">shellous.log</span> <span class="kn">import</span> <span class="n">LOGGER</span><span class="p">,</span> <span class="n">log_method</span><span class="p">,</span> <span class="n">log_timer</span>
 <span class="kn">from</span> <span class="nn">shellous.redirect</span> <span class="kn">import</span> <span class="n">Redirect</span>
 <span class="kn">from</span> <span class="nn">shellous.result</span> <span class="kn">import</span> <span class="n">Result</span><span class="p">,</span> <span class="n">make_result</span>
 <span class="kn">from</span> <span class="nn">shellous.util</span> <span class="kn">import</span> <span class="n">close_fds</span>
@@ -514,10 +514,11 @@
             <span class="c1"># Set up subprocess arguments and launch subprocess.</span>
             <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span> <span class="k">as</span> <span class="n">opts</span><span class="p">:</span>
                 <span class="c1"># Launch the main subprocess.</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">proc</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_subprocess_exec</span><span class="p">(</span>
-                    <span class="o">*</span><span class="n">opts</span><span class="o">.</span><span class="n">args</span><span class="p">,</span>
-                    <span class="o">**</span><span class="n">opts</span><span class="o">.</span><span class="n">kwd_args</span><span class="p">,</span>
-                <span class="p">)</span>
+                <span class="k">with</span> <span class="n">log_timer</span><span class="p">(</span><span class="s2">&quot;asyncio.create_subprocess_exec&quot;</span><span class="p">):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">proc</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_subprocess_exec</span><span class="p">(</span>
+                        <span class="o">*</span><span class="n">opts</span><span class="o">.</span><span class="n">args</span><span class="p">,</span>
+                        <span class="o">**</span><span class="n">opts</span><span class="o">.</span><span class="n">kwd_args</span><span class="p">,</span>
+                    <span class="p">)</span>
 
                 <span class="c1"># Launch the process substitution commands (if any).</span>
                 <span class="k">for</span> <span class="n">cmd</span> <span class="ow">in</span> <span class="n">opts</span><span class="o">.</span><span class="n">subcmds</span><span class="p">:</span>
@@ -1099,10 +1100,11 @@
             <span class="c1"># Set up subprocess arguments and launch subprocess.</span>
             <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span> <span class="k">as</span> <span class="n">opts</span><span class="p">:</span>
                 <span class="c1"># Launch the main subprocess.</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">proc</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_subprocess_exec</span><span class="p">(</span>
-                    <span class="o">*</span><span class="n">opts</span><span class="o">.</span><span class="n">args</span><span class="p">,</span>
-                    <span class="o">**</span><span class="n">opts</span><span class="o">.</span><span class="n">kwd_args</span><span class="p">,</span>
-                <span class="p">)</span>
+                <span class="k">with</span> <span class="n">log_timer</span><span class="p">(</span><span class="s2">&quot;asyncio.create_subprocess_exec&quot;</span><span class="p">):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">proc</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_subprocess_exec</span><span class="p">(</span>
+                        <span class="o">*</span><span class="n">opts</span><span class="o">.</span><span class="n">args</span><span class="p">,</span>
+                        <span class="o">**</span><span class="n">opts</span><span class="o">.</span><span class="n">kwd_args</span><span class="p">,</span>
+                    <span class="p">)</span>
 
                 <span class="c1"># Launch the process substitution commands (if any).</span>
                 <span class="k">for</span> <span class="n">cmd</span> <span class="ow">in</span> <span class="n">opts</span><span class="o">.</span><span class="n">subcmds</span><span class="p">:</span>

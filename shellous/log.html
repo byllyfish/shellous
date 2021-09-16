@@ -33,6 +33,9 @@
             <li>
                     <a class="function" href="#log_method">log_method</a>
             </li>
+            <li>
+                    <a class="function" href="#log_timer">log_timer</a>
+            </li>
     </ul>
 
 
@@ -63,6 +66,8 @@
 <span class="kn">import</span> <span class="nn">platform</span>
 <span class="kn">import</span> <span class="nn">sys</span>
 <span class="kn">import</span> <span class="nn">threading</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">from</span> <span class="nn">contextlib</span> <span class="kn">import</span> <span class="n">contextmanager</span>
 
 <span class="n">LOGGER</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="n">__package__</span><span class="p">)</span>
 
@@ -231,6 +236,18 @@
     <span class="k">if</span> <span class="n">child_watcher</span><span class="p">:</span>
         <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">info</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">child_watcher</span><span class="si">}</span><span class="s2">&quot;</span>
     <span class="k">return</span> <span class="n">info</span>
+
+
+<span class="nd">@contextmanager</span>
+<span class="k">def</span> <span class="nf">log_timer</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">warn_limit</span><span class="o">=</span><span class="mf">0.1</span><span class="p">):</span>
+    <span class="s2">&quot;Context manager to time an operation (wall clock time).&quot;</span>
+    <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">yield</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="n">duration</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span>
+        <span class="k">if</span> <span class="n">duration</span> <span class="o">&gt;=</span> <span class="n">warn_limit</span><span class="p">:</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> took </span><span class="si">%g</span><span class="s2"> seconds ex=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="n">duration</span><span class="p">,</span> <span class="n">_exc</span><span class="p">())</span>
 </pre></div>
 
         </details>
@@ -374,6 +391,36 @@
 <p>If <code>_info</code> is True, include platform info in log message.</p>
 
 <p>Use <code>kwds</code> to log other arguments.</p>
+</div>
+
+
+                </section>
+                <section id="log_timer">
+                            <div class="attr function"><a class="headerlink" href="#log_timer">#&nbsp;&nbsp</a>
+
+                <div class="decorator">@contextmanager</div>
+
+            <span class="def">def</span>
+            <span class="name">log_timer</span><span class="signature">(msg, warn_limit=0.1)</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span><span class="nd">@contextmanager</span>
+<span class="k">def</span> <span class="nf">log_timer</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">warn_limit</span><span class="o">=</span><span class="mf">0.1</span><span class="p">):</span>
+    <span class="s2">&quot;Context manager to time an operation (wall clock time).&quot;</span>
+    <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">yield</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="n">duration</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span>
+        <span class="k">if</span> <span class="n">duration</span> <span class="o">&gt;=</span> <span class="n">warn_limit</span><span class="p">:</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> took </span><span class="si">%g</span><span class="s2"> seconds ex=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="n">duration</span><span class="p">,</span> <span class="n">_exc</span><span class="p">())</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Context manager to time an operation (wall clock time).</p>
 </div>
 
 
