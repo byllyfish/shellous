@@ -66,12 +66,12 @@ async def test_log_method(caplog):
 
 def test_log_timer(caplog):
     "Test the log_timer context manager."
-    caplog.set_level(logging.INFO)
+    caplog.set_level(logging.WARNING)
 
-    with log_timer("test1"):
+    with log_timer("test1", -1):
         pass
 
     assert len(caplog.record_tuples) == 1
     rec = caplog.record_tuples[0]
-    assert rec[0:2] == ("shellous", 20)
+    assert rec[0:2] == ("shellous", 30)
     assert rec[2].startswith("test1 took ")

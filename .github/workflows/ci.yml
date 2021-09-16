@@ -22,7 +22,7 @@ jobs:
 
     env:
       POETRY_RUN: python -m poetry run
-      LOG_LEVEL: INFO
+      LOG_LEVEL: WARNING
 
     steps:
     - uses: actions/checkout@v2
@@ -62,25 +62,25 @@ jobs:
     - name: Run Tests with uvloop (Linux and MacOS)
       if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
       run: |
-        $POETRY_RUN python -m pytest -vv -s
+        $POETRY_RUN python -m pytest -vv -s --log-cli-level=$LOG_LEVEL
       env:
         SHELLOUS_LOOP_TYPE: "uvloop"
     - name: Run Tests with PidfdWatcher (Linux)
       if: matrix.os == 'ubuntu-latest'
       run: |
-        $POETRY_RUN python -m pytest -vv -s
+        $POETRY_RUN python -m pytest -vv -s --log-cli-level=$LOG_LEVEL
       env:
         SHELLOUS_CHILDWATCHER_TYPE: "pidfd"
     - name: Run Tests with SafeChildWatcher (Linux and MacOS)
       if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
       run: |
-        $POETRY_RUN python -m pytest -vv -s
+        $POETRY_RUN python -m pytest -vv -s --log-cli-level=$LOG_LEVEL
       env:
         SHELLOUS_CHILDWATCHER_TYPE: "safe"
     - name: Run Tests with MultiLoopChildWatcher (Linux and MacOS)
       if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
       run: |
-        $POETRY_RUN python -m pytest -vv -s
+        $POETRY_RUN python -m pytest -vv -s --log-cli-level=$LOG_LEVEL
       env:
         SHELLOUS_CHILDWATCHER_TYPE: "multi"
       continue-on-error: true  # not confident yet

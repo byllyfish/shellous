@@ -180,11 +180,12 @@ def _platform_info():
 
 
 @contextmanager
-def log_timer(msg):
+def log_timer(msg, warn_limit=0.1):
     "Context manager to time an operation (wall clock time)."
     start = time.perf_counter()
     try:
         yield
     finally:
         duration = time.perf_counter() - start
-        LOGGER.info("%s took %g seconds ex=%r", msg, duration, _exc())
+        if duration >= warn_limit:
+            LOGGER.warning("%s took %g seconds ex=%r", msg, duration, _exc())
