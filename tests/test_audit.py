@@ -34,8 +34,10 @@ async def test_audit():
 
     try:
         _HOOK = _hook
+
         sh = shellous.context()
         result = await sh(sys.executable, "-c", "print('hello')")
+
     finally:
         _HOOK = None
 
@@ -48,3 +50,24 @@ async def test_audit():
     if not _is_uvloop():
         # uvloop doesn't implement audit hooks.
         assert any(event.startswith("('subprocess.Popen',") for event in events)
+
+
+@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+async def test_audit_block_popen():
+    "Test PEP 578 audit hooks."
+
+    global _HOOK
+
+    def _hook(event, args):
+        if event == "subprocess.Popen":
+            raise RuntimeError("Popen blocked")
+
+    try:
+        _HOOK = _hook
+
+        sh = shellous.context()
+        with pytest.raises(RuntimeError, match="Popen blocked"):
+            await sh(sys.executable, "-c", "print('hello')")
+
+    finally:
+        _HOOK = None
