@@ -265,7 +265,7 @@ class _RunOptions:
 
         LOGGER.info("_setup_pty1: %r", self.pty_fds)
 
-        return stdin, stdout, stderr, pty_util.set_ctty_preexec_fn
+        return stdin, stdout, stderr, lambda: pty_util.set_ctty(child_fd)
 
 
 class Runner:
