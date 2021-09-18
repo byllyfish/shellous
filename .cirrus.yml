@@ -1,0 +1,13 @@
+freebsd_instance:
+  image_family: freebsd-13-0
+
+task:
+  name: CI / build
+
+  install_script:
+    - pkg install -y python39
+    - python3.9 -m pip install poetry
+    - python3.9 -m poetry install --no-root --no-interaction
+
+  script:
+    - python3.9 -m poetry run python -m pytest -vv -s --durations=20 --log-cli-level=DEBUG

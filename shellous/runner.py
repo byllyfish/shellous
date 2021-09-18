@@ -479,6 +479,7 @@ class Runner:
         "Run task that waits for process to exit."
         await self.proc.wait()
         if self.options.pty_fds:
+            LOGGER.debug("Runner._waiter pty_fds closing stdout transport!")
             self.stdout._transport.close()  # pylint: disable=protected-access
 
     def _setup_output_sink(self, stream, sink, encoding, tag):
@@ -568,6 +569,7 @@ class Runner:
             procinfo = " pid=None"
         return f"<Runner {self.name!r}{cancelled}{procinfo}>"
 
+    @log_method(_DETAILED_LOGGING)
     async def _readlines(self):
         "Iterate over lines in stdout/stderr"
         if self.stdin or (self.stdout and self.stderr):
@@ -789,6 +791,7 @@ class PipeRunner:  # pylint: disable=too-many-instance-attributes
             result_info = f" results={self.results!r}"
         return f"<PipeRunner {self.name!r}{cancelled_info}{result_info}>"
 
+    @log_method(_DETAILED_LOGGING)
     async def _readlines(self):
         "Iterate over lines in stdout/stderr"
         if self.stdin or (self.stdout and self.stderr):

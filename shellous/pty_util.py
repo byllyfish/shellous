@@ -45,6 +45,7 @@ class PtyFds(NamedTuple):
 
     def close(self):
         "Close pty file descriptors."
+        LOGGER.debug("PtyFds.close")
         if self.child_fd >= 0:
             os.close(self.child_fd)
         if self.writer:
@@ -76,10 +77,16 @@ class PtyStreamReaderProtocol(asyncio.StreamReaderProtocol):
 
     def connection_lost(self, exc):
         "Intercept EIO error and treat it as EOF."
+        LOGGER.debug("PtyStreamReaderProtocol.connection_lost ex=%r", exc)
         if isinstance(exc, OSError) and exc.errno == errno.EIO:
             exc = None
             LOGGER.info("connection_lost EIO -> EOF")
         super().connection_lost(exc)
+
+    def eof_received(self):
+        "Log when EOF received."
+        LOGGER.debug("PtyStreamReaderProtocol.eof_received")
+        return super().eof_received()
 
 
 async def _open_pty_streams(file_desc):
@@ -106,6 +113,7 @@ async def _open_pty_streams(file_desc):
 
     # Patch writer_transport.close so it also closes the reader_transport.
     def _close():
+        LOGGER.debug("writer_transport.close()")
         _orig_close()
         reader_transport.close()
 

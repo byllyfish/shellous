@@ -814,6 +814,31 @@ async def test_manual_pty(sh):
     assert result == b"abc\r\nABC\r\n"
 
 
+@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+async def test_manual_pty_ls(sh):
+    """Test setting up a pty manually."""
+
+    import pty  # import not supported on windows
+
+    parent_fd, child_fd = pty.openpty()
+
+    cmd = (
+        sh("ls", "README.md")
+        .stdin(child_fd, close=False)
+        .stdout(child_fd, close=True)
+        .stderr(INHERIT)
+        .set(start_new_session=True)
+    )
+
+    async with cmd.run():
+        # Use synchronous functions to test pty directly.
+        await asyncio.sleep(0.1)
+        result = os.read(parent_fd, 1024)
+        os.close(parent_fd)
+
+    assert result == b""  # FIXME: This isn't what I expect...
+
+
 async def _get_streams(fd):
     "Wrap fd in a StreamReader, StreamWriter pair."
 
