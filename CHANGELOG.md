@@ -1,13 +1,18 @@
 Shellous Change Log
 ===================
 
+0.5.1
+-----
+
+- [BUGFIX] Fix sed script in 'publish' github action.
+
 0.5.0
 -----
 
 - [FEATURE] Add support for pseudo-terminals (pty).
 - [BUGFIX] Case where process exits before we can write to stdin... (#45)
 - [BUGFIX] Sleep command interrupted at start (#62)
-- [BUGFIX] Add documentation badge; remove non-wrking relative links from pypi readme.
+- [BUGFIX] Add documentation badge; remove non-working relative links from pypi readme.
 
 0.4.0
 -----
