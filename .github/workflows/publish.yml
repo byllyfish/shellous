@@ -24,7 +24,7 @@ jobs:
       - name: Build package
         run: |
           # Delete lines in README.md that match "__REL_LINK__".
-          sed -e '/__REL_LINK__/d' -i '' README.md
+          sed -e '/__REL_LINK__/d' --in-place README.md
           python3 -m poetry build
       - name: Publish package to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
