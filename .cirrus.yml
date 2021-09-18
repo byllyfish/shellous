@@ -8,7 +8,8 @@ task:
     - pkg install -y python39
     - python3.9 -m venv .venv
     - . .venv/bin/activate && pip install poetry && poetry install --no-root --no-interaction
-    - pip list
+    # We need to enable the /dev/fd file system on FreeBSD.
+    - mount -t fdescfs null /dev/fd
 
   script:
     - . .venv/bin/activate && pytest -vv -s --durations=20 --log-cli-level=DEBUG
