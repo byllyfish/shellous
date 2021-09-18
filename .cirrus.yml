@@ -6,8 +6,9 @@ task:
 
   install_script:
     - pkg install -y python39
-    - python3.9 -m pip install poetry
-    - python3.9 -m poetry install --no-root --no-interaction
+    - python3.9 -m venv .venv
+    - . .venv/bin/activate && pip install poetry && poetry install --no-root --no-interaction
+    - pip list
 
   script:
-    - python3.9 -m poetry run python -m pytest -vv -s --durations=20 --log-cli-level=DEBUG
+    - . .venv/bin/activate && pytest -vv -s --durations=20 --log-cli-level=DEBUG
