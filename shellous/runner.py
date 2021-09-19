@@ -142,8 +142,9 @@ class _RunOptions:
 
         # Set up PTY here. This is the first half. Second half in `Runner`.
         start_new_session = options.start_new_session
-        preexec_fn = None
+        preexec_fn = options.preexec_fn
         if options.pty:
+            assert preexec_fn is None
             stdin, stdout, stderr, preexec_fn = self._setup_pty1(
                 stdin,
                 stdout,

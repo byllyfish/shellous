@@ -820,23 +820,30 @@ async def test_manual_pty_ls(sh):
 
     import pty  # import not supported on windows
 
+    import shellous
+
     parent_fd, child_fd = pty.openpty()
 
     cmd = (
+        # sh("bash", "-c", "ls README.md")
         sh("ls", "README.md")
         .stdin(child_fd, close=False)
         .stdout(child_fd, close=True)
-        .stderr(INHERIT)
-        .set(start_new_session=True)
+        .set(start_new_session=True, preexec_fn=shellous.pty_util.set_ctty(child_fd))
     )
 
+    result = bytearray()
     async with cmd.run():
         # Use synchronous functions to test pty directly.
-        await asyncio.sleep(0.1)
-        result = os.read(parent_fd, 1024)
-        os.close(parent_fd)
+        while True:
+            data = os.read(parent_fd, 4096)
+            if not data:
+                break
+            result.extend(data)
 
-    assert result == b""  # FIXME: This isn't what I expect...
+    os.close(parent_fd)
+
+    assert result == b"README.md\r\n"
 
 
 async def _get_streams(fd):
@@ -1089,3 +1096,27 @@ async def test_pty_canonical_ls(sh):
     cmd = sh("ls", "README.md", "CHANGELOG.md").set(pty=canonical(cols=20, rows=10))
     result = await cmd
     assert result == "CHANGELOG.md\r\nREADME.md\r\n"
+
+
+@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+async def test_pty_compare_large_ls_output(sh):
+    "Compare pty output to non-pty output."
+    cmd = sh("ls", "-lR", "/usr/lib")
+    regular_result = await cmd
+
+    pty_result = await cmd.set(pty=True)
+    pty_result = pty_result.replace("^D\x08\x08", "").replace("\r\n", "\n")
+
+    assert pty_result == regular_result
+
+
+@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+async def test_pty_compare_small_ls_output(sh):
+    "Compare pty output to non-pty output."
+    cmd = sh("ls", "README.md")
+    regular_result = await cmd
+
+    pty_result = await cmd.set(pty=True)
+    pty_result = pty_result.replace("^D\x08\x08", "").replace("\r\n", "\n")
+
+    assert pty_result == regular_result

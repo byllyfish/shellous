@@ -4,7 +4,7 @@ import io
 import os
 from typing import Any, Optional, Union
 
-from .log import LOGGER
+from .log import LOGGER, log_timer
 
 
 def decode(data: Optional[bytes], encoding: str) -> str:
@@ -31,15 +31,16 @@ def coerce_env(env: dict[str, Any]) -> dict[str, str]:
 
 def close_fds(open_fds: list[Union[io.IOBase, int]]) -> None:
     "Close open file descriptors or file objects."
-    try:
-        for obj in open_fds:
-            if isinstance(obj, int):
-                if obj >= 0:
-                    try:
-                        os.close(obj)
-                    except OSError as ex:
-                        LOGGER.warning("os.close ex=%r", ex)
-            else:
-                obj.close()
-    finally:
-        open_fds.clear()
+    with log_timer("close_fds"):
+        try:
+            for obj in open_fds:
+                if isinstance(obj, int):
+                    if obj >= 0:
+                        try:
+                            os.close(obj)
+                        except OSError as ex:
+                            LOGGER.warning("os.close ex=%r", ex)
+                else:
+                    obj.close()
+        finally:
+            open_fds.clear()
