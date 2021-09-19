@@ -1102,13 +1102,14 @@ async def test_pty_canonical_ls(sh):
 
 
 @pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+@pytest.mark.timeout(90)
 async def test_pty_compare_large_ls_output(sh):
     "Compare pty output to non-pty output."
-    cmd = sh("ls", "-lR", "/usr/lib").set(encoding=None)
+    cmd = sh("ls", "-lR", "/usr/lib")
     regular_result = await cmd
 
     pty_result = await cmd.set(pty=True)
-    pty_result = pty_result.replace(b"^D\x08\x08", b"").replace(b"\r\n", b"\n")
+    pty_result = pty_result.replace("^D\x08\x08", "").replace("\r\n", "\n")
 
     assert pty_result == regular_result
 
@@ -1116,10 +1117,10 @@ async def test_pty_compare_large_ls_output(sh):
 @pytest.mark.xfail(_is_uvloop(), reason="uvloop")
 async def test_pty_compare_small_ls_output(sh):
     "Compare pty output to non-pty output."
-    cmd = sh("ls", "README.md").set(encoding=None)
+    cmd = sh("ls", "README.md")
     regular_result = await cmd
 
     pty_result = await cmd.set(pty=True)
-    pty_result = pty_result.replace(b"^D\x08\x08", b"").replace(b"\r\n", b"\n")
+    pty_result = pty_result.replace("^D\x08\x08", "").replace("\r\n", "\n")
 
     assert pty_result == regular_result
