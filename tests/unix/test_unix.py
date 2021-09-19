@@ -1105,11 +1105,11 @@ async def test_pty_canonical_ls(sh):
 @pytest.mark.timeout(90)
 async def test_pty_compare_large_ls_output(sh):
     "Compare pty output to non-pty output."
-    cmd = sh("ls", "-lR", "/usr/lib")
+    cmd = sh("ls", "-l", "/usr/lib")
     regular_result = await cmd
 
     pty_result = await cmd.set(pty=True)
-    pty_result = pty_result.replace("^D\x08\x08", "").replace("\r\n", "\n")
+    pty_result = pty_result.replace("^D\x08\x08", "").replace("\r", "")
 
     assert pty_result == regular_result
 
@@ -1121,6 +1121,6 @@ async def test_pty_compare_small_ls_output(sh):
     regular_result = await cmd
 
     pty_result = await cmd.set(pty=True)
-    pty_result = pty_result.replace("^D\x08\x08", "").replace("\r\n", "\n")
+    pty_result = pty_result.replace("^D\x08\x08", "").replace("\r", "")
 
     assert pty_result == regular_result
