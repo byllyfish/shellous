@@ -34,6 +34,11 @@ def _is_uvloop():
     return os.environ.get("SHELLOUS_LOOP_TYPE") == "uvloop"
 
 
+def _is_codecov_linux():
+    "Return true if we're running code coverage under Linux."
+    return sys.platform == "linux" and os.environ.get("SHELLOUS_CODE_COVERAGE")
+
+
 @pytest.fixture
 def sh():
     return context()
@@ -814,7 +819,7 @@ async def test_manual_pty(sh):
     assert result == b"abc\r\nABC\r\n"
 
 
-@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+@pytest.mark.xfail(_is_uvloop() or sys.platform == "darwin", reason="uvloop,darwin")
 async def test_manual_pty_ls(sh):
     """Test setting up a pty manually."""
 
@@ -1101,7 +1106,7 @@ async def test_pty_canonical_ls(sh):
     assert result == "CHANGELOG.md\r\nREADME.md\r\n"
 
 
-@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+@pytest.mark.xfail(_is_uvloop() or _is_codecov_linux(), reason="uvloop,codecov")
 @pytest.mark.timeout(90)
 async def test_pty_compare_large_ls_output(sh):
     "Compare pty output to non-pty output."
