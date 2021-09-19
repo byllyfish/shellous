@@ -836,7 +836,10 @@ async def test_manual_pty_ls(sh):
     async with cmd.run():
         # Use synchronous functions to test pty directly.
         while True:
-            data = os.read(parent_fd, 4096)
+            try:
+                data = os.read(parent_fd, 4096)
+            except OSError:  # indicates EOF on Linux
+                data = b""
             if not data:
                 break
             result.extend(data)
@@ -1101,11 +1104,11 @@ async def test_pty_canonical_ls(sh):
 @pytest.mark.xfail(_is_uvloop(), reason="uvloop")
 async def test_pty_compare_large_ls_output(sh):
     "Compare pty output to non-pty output."
-    cmd = sh("ls", "-lR", "/usr/lib")
+    cmd = sh("ls", "-lR", "/usr/lib").set(encoding=None)
     regular_result = await cmd
 
     pty_result = await cmd.set(pty=True)
-    pty_result = pty_result.replace("^D\x08\x08", "").replace("\r\n", "\n")
+    pty_result = pty_result.replace(b"^D\x08\x08", b"").replace(b"\r\n", b"\n")
 
     assert pty_result == regular_result
 
@@ -1113,10 +1116,10 @@ async def test_pty_compare_large_ls_output(sh):
 @pytest.mark.xfail(_is_uvloop(), reason="uvloop")
 async def test_pty_compare_small_ls_output(sh):
     "Compare pty output to non-pty output."
-    cmd = sh("ls", "README.md")
+    cmd = sh("ls", "README.md").set(encoding=None)
     regular_result = await cmd
 
     pty_result = await cmd.set(pty=True)
-    pty_result = pty_result.replace("^D\x08\x08", "").replace("\r\n", "\n")
+    pty_result = pty_result.replace(b"^D\x08\x08", b"").replace(b"\r\n", b"\n")
 
     assert pty_result == regular_result
