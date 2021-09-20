@@ -795,7 +795,7 @@ async def test_start_new_session(sh):
 
 
 @pytest.mark.xfail(_is_uvloop(), reason="uvloop")
-async def test_manual_pty(sh):
+async def test_pty_manual(sh):
     """Test setting up a pty manually."""
 
     import pty  # import not supported on windows
@@ -820,7 +820,7 @@ async def test_manual_pty(sh):
 
 
 @pytest.mark.xfail(_is_uvloop() or sys.platform == "darwin", reason="uvloop,darwin")
-async def test_manual_pty_ls(sh):
+async def test_pty_manual_ls(sh):
     """Test setting up a pty manually."""
 
     import pty  # import not supported on windows
@@ -887,7 +887,7 @@ async def _get_streams(fd):
 
 
 @pytest.mark.xfail(_is_uvloop(), reason="uvloop")
-async def test_manual_pty_streams(sh):
+async def test_pty_manual_streams(sh):
     """Test setting up a pty manually."""
 
     import pty  # import not supported on windows
@@ -946,7 +946,9 @@ async def test_pty_ctermid(sh):
         run.stdin.close()
 
     ctermid, stdin_tty, stdout_tty = result.split()
-    assert ctermid == b"/dev/tty"
+
+    print(ctermid, stdin_tty, stdout_tty)
+    assert re.fullmatch(br"/dev/(?:tty|pts/\d+)", ctermid), ctermid
     assert re.fullmatch(br"/dev/(?:ttys|pts/)\d+", stdin_tty), stdin_tty
     assert re.fullmatch(br"/dev/(?:ttys|pts/)\d+", stdout_tty), stdout_tty
 
