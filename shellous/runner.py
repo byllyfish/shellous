@@ -240,7 +240,10 @@ class _RunOptions:
         Initializes `self.pty_fds`.
         """
 
-        parent_fd, child_fd = pty_util.open_pty()
+        self.pty_fds, child_fd = pty_util.open_pty(pty)
+        self.open_fds.append(child_fd)
+
+        LOGGER.info("_setup_pty1: %r child_fd=%r", self.pty_fds, child_fd)
 
         if stdin == asyncio.subprocess.PIPE:
             stdin = child_fd
@@ -252,20 +255,6 @@ class _RunOptions:
             stderr = child_fd
         elif stderr == asyncio.subprocess.PIPE:
             raise RuntimeError("pty can't separate stderr from stdout")
-
-        # If pty is a callable, call it here with `child_fd` as argument. This
-        # gives the client an opportunity to configure the tty.
-        if callable(pty):
-            pty(child_fd)
-
-        self.pty_fds = pty_util.PtyFds(
-            parent_fd,
-            pty_util.get_eof(child_fd),
-        )
-
-        self.open_fds.append(child_fd)
-
-        LOGGER.info("_setup_pty1: %r", self.pty_fds)
 
         return stdin, stdout, stderr, lambda: pty_util.set_ctty(child_fd)
 

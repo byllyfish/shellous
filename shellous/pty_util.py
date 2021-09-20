@@ -49,9 +49,22 @@ class PtyFds(NamedTuple):
             os.close(self.parent_fd)
 
 
-def open_pty():
-    "Open pseudo-terminal (pty) descriptors. Returns (parent_fd, child_fd)."
-    return pty.openpty()
+def open_pty(pty_func):
+    "Open pseudo-terminal (pty) descriptors. Returns (PtyFds, child_fd)."
+    parent_fd, child_fd = pty.openpty()
+
+    # If pty_func is a callable, call it here with `child_fd` as argument. This
+    # gives the client an opportunity to configure the tty.
+    if callable(pty_func):
+        pty_func(child_fd)
+
+    return (
+        PtyFds(
+            parent_fd,
+            _get_eof(child_fd),
+        ),
+        child_fd,
+    )
 
 
 def set_ctty(child_fd):
@@ -125,7 +138,7 @@ def raw(rows=0, cols=0, xpixel=0, ypixel=0):
         tty.setraw(fdesc)
         if rows or cols or xpixel or ypixel:
             _set_term_size(fdesc, rows, cols, xpixel, ypixel)
-        assert get_eof(fdesc) == b""
+        assert _get_eof(fdesc) == b""
 
     return _pty_set_raw
 
@@ -140,7 +153,7 @@ def cbreak(rows=0, cols=0, xpixel=0, ypixel=0):
         tty.setcbreak(fdesc)
         if rows or cols or xpixel or ypixel:
             _set_term_size(fdesc, rows, cols, xpixel, ypixel)
-        assert get_eof(fdesc) == b""
+        assert _get_eof(fdesc) == b""
 
     return _pty_set_cbreak
 
@@ -156,7 +169,7 @@ def canonical(rows=0, cols=0, xpixel=0, ypixel=0, echo=True):
             _set_term_size(fdesc, rows, cols, xpixel, ypixel)
         if not echo:
             _set_term_echo(fdesc, False)
-        assert get_eof(fdesc) == b"\x04"
+        assert _get_eof(fdesc) == b"\x04"
 
     return _pty_set_canonical
 
@@ -206,7 +219,7 @@ def _inherit_term_size(rows, cols, xpixel, ypixel):
     return rows, cols, xpixel, ypixel
 
 
-def get_eof(fdesc):
+def _get_eof(fdesc):
     "Return the End-of-file character (EOF) if tty is in canonical mode only."
 
     eof = b""
