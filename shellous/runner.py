@@ -479,9 +479,9 @@ class Runner:
     async def _waiter(self):
         "Run task that waits for process to exit."
         await self.proc.wait()
-        if self.options.pty_fds:
-            LOGGER.debug("Runner._waiter pty_fds closing stdout transport!")
-            self.stdout._transport.close()  # pylint: disable=protected-access
+        # if self.options.pty_fds:
+        #    LOGGER.debug("Runner._waiter pty_fds closing stdout transport!")
+        #    self.stdout._transport.close()  # pylint: disable=protected-access
 
     def _setup_output_sink(self, stream, sink, encoding, tag):
         "Set up a task to write to custom output sink."
