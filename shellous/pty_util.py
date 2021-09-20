@@ -91,23 +91,19 @@ class PtyStreamReaderProtocol(asyncio.StreamReaderProtocol):
 
 async def _open_pty_streams(file_desc):
     "Open reader, writer streams for pty file descriptor."
-    fcntl.fcntl(file_desc, fcntl.F_SETFL, os.O_NONBLOCK)
-
-    reader_pipe = os.fdopen(file_desc, "rb", 0, closefd=False)
-    writer_pipe = os.fdopen(file_desc, "wb", 0, closefd=True)
 
     loop = asyncio.get_running_loop()
     reader = asyncio.StreamReader(loop=loop)
     reader_protocol = PtyStreamReaderProtocol(reader, loop=loop)
     reader_transport, _ = await loop.connect_read_pipe(
         lambda: reader_protocol,
-        reader_pipe,
+        os.fdopen(file_desc, "rb", 0, closefd=False),
     )
 
     writer_protocol = asyncio.streams.FlowControlMixin()
     writer_transport, writer_protocol = await loop.connect_write_pipe(
         lambda: writer_protocol,
-        writer_pipe,
+        os.fdopen(file_desc, "wb", 0, closefd=True),
     )
     writer = asyncio.StreamWriter(writer_transport, writer_protocol, reader, loop)
 
