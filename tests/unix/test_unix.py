@@ -34,6 +34,11 @@ def _is_uvloop():
     return os.environ.get("SHELLOUS_LOOP_TYPE") == "uvloop"
 
 
+def _is_codecov_linux():
+    "Return true if we're running code coverage under Linux."
+    return sys.platform == "linux" and os.environ.get("SHELLOUS_CODE_COVERAGE")
+
+
 @pytest.fixture
 def sh():
     return context()
@@ -790,7 +795,7 @@ async def test_start_new_session(sh):
 
 
 @pytest.mark.xfail(_is_uvloop(), reason="uvloop")
-async def test_manual_pty(sh):
+async def test_pty_manual(sh):
     """Test setting up a pty manually."""
 
     import pty  # import not supported on windows
@@ -812,6 +817,41 @@ async def test_manual_pty(sh):
         os.close(parent_fd)
 
     assert result == b"abc\r\nABC\r\n"
+
+
+@pytest.mark.xfail(_is_uvloop() or sys.platform == "darwin", reason="uvloop,darwin")
+async def test_pty_manual_ls(sh):
+    """Test setting up a pty manually."""
+
+    import pty  # import not supported on windows
+
+    import shellous
+
+    parent_fd, child_fd = pty.openpty()
+
+    cmd = (
+        # sh("bash", "-c", "ls README.md")
+        sh("ls", "README.md")
+        .stdin(child_fd, close=False)
+        .stdout(child_fd, close=True)
+        .set(start_new_session=True, preexec_fn=shellous.pty_util.set_ctty(child_fd))
+    )
+
+    result = bytearray()
+    async with cmd.run():
+        # Use synchronous functions to test pty directly.
+        while True:
+            try:
+                data = os.read(parent_fd, 4096)
+            except OSError:  # indicates EOF on Linux
+                data = b""
+            if not data:
+                break
+            result.extend(data)
+
+    os.close(parent_fd)
+
+    assert result == b"README.md\r\n"
 
 
 async def _get_streams(fd):
@@ -847,7 +887,7 @@ async def _get_streams(fd):
 
 
 @pytest.mark.xfail(_is_uvloop(), reason="uvloop")
-async def test_manual_pty_streams(sh):
+async def test_pty_manual_streams(sh):
     """Test setting up a pty manually."""
 
     import pty  # import not supported on windows
@@ -906,7 +946,9 @@ async def test_pty_ctermid(sh):
         run.stdin.close()
 
     ctermid, stdin_tty, stdout_tty = result.split()
-    assert ctermid == b"/dev/tty"
+
+    print(ctermid, stdin_tty, stdout_tty)
+    assert re.fullmatch(br"/dev/(?:tty|pts/\d+)", ctermid), ctermid
     assert re.fullmatch(br"/dev/(?:ttys|pts/)\d+", stdin_tty), stdin_tty
     assert re.fullmatch(br"/dev/(?:ttys|pts/)\d+", stdout_tty), stdout_tty
 
@@ -1064,3 +1106,28 @@ async def test_pty_canonical_ls(sh):
     cmd = sh("ls", "README.md", "CHANGELOG.md").set(pty=canonical(cols=20, rows=10))
     result = await cmd
     assert result == "CHANGELOG.md\r\nREADME.md\r\n"
+
+
+@pytest.mark.xfail(_is_uvloop() or _is_codecov_linux(), reason="uvloop,codecov")
+@pytest.mark.timeout(90)
+async def test_pty_compare_large_ls_output(sh):
+    "Compare pty output to non-pty output."
+    cmd = sh("ls", "-l", "/usr/lib")
+    regular_result = await cmd
+
+    pty_result = await cmd.set(pty=True)
+    pty_result = pty_result.replace("^D\x08\x08", "").replace("\r", "")
+
+    assert pty_result == regular_result
+
+
+@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+async def test_pty_compare_small_ls_output(sh):
+    "Compare pty output to non-pty output."
+    cmd = sh("ls", "README.md")
+    regular_result = await cmd
+
+    pty_result = await cmd.set(pty=True)
+    pty_result = pty_result.replace("^D\x08\x08", "").replace("\r", "")
+
+    assert pty_result == regular_result

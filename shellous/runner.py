@@ -142,8 +142,9 @@ class _RunOptions:
 
         # Set up PTY here. This is the first half. Second half in `Runner`.
         start_new_session = options.start_new_session
-        preexec_fn = None
+        preexec_fn = options.preexec_fn
         if options.pty:
+            assert preexec_fn is None
             stdin, stdout, stderr, preexec_fn = self._setup_pty1(
                 stdin,
                 stdout,
@@ -239,7 +240,10 @@ class _RunOptions:
         Initializes `self.pty_fds`.
         """
 
-        parent_fd, child_fd = pty_util.open_pty()
+        self.pty_fds, child_fd = pty_util.open_pty(pty)
+        self.open_fds.append(child_fd)
+
+        LOGGER.info("_setup_pty1: %r child_fd=%r", self.pty_fds, child_fd)
 
         if stdin == asyncio.subprocess.PIPE:
             stdin = child_fd
@@ -251,19 +255,6 @@ class _RunOptions:
             stderr = child_fd
         elif stderr == asyncio.subprocess.PIPE:
             raise RuntimeError("pty can't separate stderr from stdout")
-
-        # If pty is a callable, call it here with `child_fd` as argument. This
-        # gives the client an opportunity to configure the tty.
-        if callable(pty):
-            pty(child_fd)
-
-        self.pty_fds = pty_util.PtyFds(
-            parent_fd,
-            child_fd,
-            pty_util.get_eof(child_fd),
-        )
-
-        LOGGER.info("_setup_pty1: %r", self.pty_fds)
 
         return stdin, stdout, stderr, lambda: pty_util.set_ctty(child_fd)
 
@@ -415,6 +406,10 @@ class Runner:
         try:
             # Set up subprocess arguments and launch subprocess.
             with self.options as opts:
+                # Second half of pty setup.
+                if opts.pty_fds:
+                    opts.pty_fds = await opts.pty_fds.open_streams()
+
                 # Launch the main subprocess.
                 with log_timer("asyncio.create_subprocess_exec"):
                     self.proc = await asyncio.create_subprocess_exec(
@@ -430,10 +425,10 @@ class Runner:
             stdout = self.proc.stdout
             stderr = self.proc.stderr
 
-            # Second half of pty setup.
+            # Assign pty streams.
             if opts.pty_fds:
                 assert (stdin, stdout, stderr) == (None, None, None)
-                opts.pty_fds = await opts.pty_fds.open_streams()
+                # opts.pty_fds = await opts.pty_fds.open_streams()
                 stdin, stdout = opts.pty_fds.writer, opts.pty_fds.reader
 
             if stderr is not None:
@@ -478,8 +473,6 @@ class Runner:
     async def _waiter(self):
         "Run task that waits for process to exit."
         await self.proc.wait()
-        if self.options.pty_fds:
-            self.stdout._transport.close()  # pylint: disable=protected-access
 
     def _setup_output_sink(self, stream, sink, encoding, tag):
         "Set up a task to write to custom output sink."

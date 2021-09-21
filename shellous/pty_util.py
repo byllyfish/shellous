@@ -26,7 +26,6 @@ _CC = 6
 class PtyFds(NamedTuple):
     "Track parent/child fd's for pty."
     parent_fd: int
-    child_fd: int
     eof: bytes
     reader: Any = None
     writer: Any = None
@@ -34,10 +33,8 @@ class PtyFds(NamedTuple):
     async def open_streams(self):
         "Open pty reader/writer streams."
         reader, writer = await _open_pty_streams(self.parent_fd)
-        os.close(self.child_fd)
         return PtyFds(
             self.parent_fd,
-            -1,
             self.eof,
             reader,
             writer,
@@ -45,15 +42,29 @@ class PtyFds(NamedTuple):
 
     def close(self):
         "Close pty file descriptors."
-        if self.child_fd >= 0:
-            os.close(self.child_fd)
+        LOGGER.info("PtyFds.close")
         if self.writer:
             self.writer.close()
+        else:
+            os.close(self.parent_fd)
 
 
-def open_pty():
-    "Open pseudo-terminal (pty) descriptors. Returns (parent_fd, child_fd)."
-    return pty.openpty()
+def open_pty(pty_func):
+    "Open pseudo-terminal (pty) descriptors. Returns (PtyFds, child_fd)."
+    parent_fd, child_fd = pty.openpty()
+
+    # If pty_func is a callable, call it here with `child_fd` as argument. This
+    # gives the client an opportunity to configure the tty.
+    if callable(pty_func):
+        pty_func(child_fd)
+
+    return (
+        PtyFds(
+            parent_fd,
+            _get_eof(child_fd),
+        ),
+        child_fd,
+    )
 
 
 def set_ctty(child_fd):
@@ -76,36 +87,39 @@ class PtyStreamReaderProtocol(asyncio.StreamReaderProtocol):
 
     def connection_lost(self, exc):
         "Intercept EIO error and treat it as EOF."
+        LOGGER.info("PtyStreamReaderProtocol.connection_lost ex=%r", exc)
         if isinstance(exc, OSError) and exc.errno == errno.EIO:
             exc = None
             LOGGER.info("connection_lost EIO -> EOF")
         super().connection_lost(exc)
 
+    def eof_received(self):
+        "Log when EOF received."
+        LOGGER.info("PtyStreamReaderProtocol.eof_received")
+        return super().eof_received()
+
 
 async def _open_pty_streams(file_desc):
     "Open reader, writer streams for pty file descriptor."
-    fcntl.fcntl(file_desc, fcntl.F_SETFL, os.O_NONBLOCK)
-
-    reader_pipe = os.fdopen(file_desc, "rb", 0, closefd=False)
-    writer_pipe = os.fdopen(file_desc, "wb", 0, closefd=True)
 
     loop = asyncio.get_running_loop()
     reader = asyncio.StreamReader(loop=loop)
     reader_protocol = PtyStreamReaderProtocol(reader, loop=loop)
     reader_transport, _ = await loop.connect_read_pipe(
         lambda: reader_protocol,
-        reader_pipe,
+        os.fdopen(file_desc, "rb", 0, closefd=False),
     )
 
     writer_protocol = asyncio.streams.FlowControlMixin()
     writer_transport, writer_protocol = await loop.connect_write_pipe(
         lambda: writer_protocol,
-        writer_pipe,
+        os.fdopen(file_desc, "wb", 0, closefd=True),
     )
     writer = asyncio.StreamWriter(writer_transport, writer_protocol, reader, loop)
 
     # Patch writer_transport.close so it also closes the reader_transport.
     def _close():
+        LOGGER.info("writer_transport.close()")
         _orig_close()
         reader_transport.close()
 
@@ -124,7 +138,7 @@ def raw(rows=0, cols=0, xpixel=0, ypixel=0):
         tty.setraw(fdesc)
         if rows or cols or xpixel or ypixel:
             _set_term_size(fdesc, rows, cols, xpixel, ypixel)
-        assert get_eof(fdesc) == b""
+        assert _get_eof(fdesc) == b""
 
     return _pty_set_raw
 
@@ -139,7 +153,7 @@ def cbreak(rows=0, cols=0, xpixel=0, ypixel=0):
         tty.setcbreak(fdesc)
         if rows or cols or xpixel or ypixel:
             _set_term_size(fdesc, rows, cols, xpixel, ypixel)
-        assert get_eof(fdesc) == b""
+        assert _get_eof(fdesc) == b""
 
     return _pty_set_cbreak
 
@@ -155,7 +169,7 @@ def canonical(rows=0, cols=0, xpixel=0, ypixel=0, echo=True):
             _set_term_size(fdesc, rows, cols, xpixel, ypixel)
         if not echo:
             _set_term_echo(fdesc, False)
-        assert get_eof(fdesc) == b"\x04"
+        assert _get_eof(fdesc) == b"\x04"
 
     return _pty_set_canonical
 
@@ -205,7 +219,7 @@ def _inherit_term_size(rows, cols, xpixel, ypixel):
     return rows, cols, xpixel, ypixel
 
 
-def get_eof(fdesc):
+def _get_eof(fdesc):
     "Return the End-of-file character (EOF) if tty is in canonical mode only."
 
     eof = b""

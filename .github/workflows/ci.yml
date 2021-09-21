@@ -59,6 +59,8 @@ jobs:
         # Run coverage and upload report to codecov.
         $POETRY_RUN coverage run --source shellous -m pytest
         $POETRY_RUN codecov
+      env:
+        SHELLOUS_CODE_COVERAGE: 1
     - name: Run Tests with uvloop (Linux and MacOS)
       if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
       run: |
