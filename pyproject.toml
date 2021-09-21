@@ -29,7 +29,7 @@ flake8 = "^3.9.2"
 pytest-dotenv = "^0.5.2"
 pytest-randomly = "^3.10.1"
 pytest-timeout = "^1.4.2"
-pdoc = "^7.4.0"
+pdoc = "^8.0.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
