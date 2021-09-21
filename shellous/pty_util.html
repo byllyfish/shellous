@@ -40,9 +40,6 @@
                                 <a class="variable" href="#PtyFds.parent_fd">parent_fd</a>
                         </li>
                         <li>
-                                <a class="variable" href="#PtyFds.child_fd">child_fd</a>
-                        </li>
-                        <li>
                                 <a class="variable" href="#PtyFds.eof">eof</a>
                         </li>
                         <li>
@@ -72,6 +69,9 @@
                         <li>
                                 <a class="function" href="#PtyStreamReaderProtocol.connection_lost">connection_lost</a>
                         </li>
+                        <li>
+                                <a class="function" href="#PtyStreamReaderProtocol.eof_received">eof_received</a>
+                        </li>
                 </ul>
 
             </li>
@@ -83,9 +83,6 @@
             </li>
             <li>
                     <a class="function" href="#canonical">canonical</a>
-            </li>
-            <li>
-                    <a class="function" href="#get_eof">get_eof</a>
             </li>
     </ul>
 
@@ -136,7 +133,6 @@
 <span class="k">class</span> <span class="nc">PtyFds</span><span class="p">(</span><span class="n">NamedTuple</span><span class="p">):</span>
     <span class="s2">&quot;Track parent/child fd&#39;s for pty.&quot;</span>
     <span class="n">parent_fd</span><span class="p">:</span> <span class="nb">int</span>
-    <span class="n">child_fd</span><span class="p">:</span> <span class="nb">int</span>
     <span class="n">eof</span><span class="p">:</span> <span class="nb">bytes</span>
     <span class="n">reader</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">writer</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span>
@@ -144,10 +140,8 @@
     <span class="k">async</span> <span class="k">def</span> <span class="nf">open_streams</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Open pty reader/writer streams.&quot;</span>
         <span class="n">reader</span><span class="p">,</span> <span class="n">writer</span> <span class="o">=</span> <span class="k">await</span> <span class="n">_open_pty_streams</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parent_fd</span><span class="p">)</span>
-        <span class="n">os</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child_fd</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">PtyFds</span><span class="p">(</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">parent_fd</span><span class="p">,</span>
-            <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">eof</span><span class="p">,</span>
             <span class="n">reader</span><span class="p">,</span>
             <span class="n">writer</span><span class="p">,</span>
@@ -155,15 +149,29 @@
 
     <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Close pty file descriptors.&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">child_fd</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="n">os</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child_fd</span><span class="p">)</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;PtyFds.close&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">writer</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">writer</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parent_fd</span><span class="p">)</span>
 
 
-<span class="k">def</span> <span class="nf">open_pty</span><span class="p">():</span>
-    <span class="s2">&quot;Open pseudo-terminal (pty) descriptors. Returns (parent_fd, child_fd).&quot;</span>
-    <span class="k">return</span> <span class="n">pty</span><span class="o">.</span><span class="n">openpty</span><span class="p">()</span>
+<span class="k">def</span> <span class="nf">open_pty</span><span class="p">(</span><span class="n">pty_func</span><span class="p">):</span>
+    <span class="s2">&quot;Open pseudo-terminal (pty) descriptors. Returns (PtyFds, child_fd).&quot;</span>
+    <span class="n">parent_fd</span><span class="p">,</span> <span class="n">child_fd</span> <span class="o">=</span> <span class="n">pty</span><span class="o">.</span><span class="n">openpty</span><span class="p">()</span>
+
+    <span class="c1"># If pty_func is a callable, call it here with `child_fd` as argument. This</span>
+    <span class="c1"># gives the client an opportunity to configure the tty.</span>
+    <span class="k">if</span> <span class="n">callable</span><span class="p">(</span><span class="n">pty_func</span><span class="p">):</span>
+        <span class="n">pty_func</span><span class="p">(</span><span class="n">child_fd</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">(</span>
+        <span class="n">PtyFds</span><span class="p">(</span>
+            <span class="n">parent_fd</span><span class="p">,</span>
+            <span class="n">_get_eof</span><span class="p">(</span><span class="n">child_fd</span><span class="p">),</span>
+        <span class="p">),</span>
+        <span class="n">child_fd</span><span class="p">,</span>
+    <span class="p">)</span>
 
 
 <span class="k">def</span> <span class="nf">set_ctty</span><span class="p">(</span><span class="n">child_fd</span><span class="p">):</span>
@@ -186,36 +194,39 @@
 
     <span class="k">def</span> <span class="nf">connection_lost</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exc</span><span class="p">):</span>
         <span class="s2">&quot;Intercept EIO error and treat it as EOF.&quot;</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;PtyStreamReaderProtocol.connection_lost ex=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">exc</span><span class="p">)</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">exc</span><span class="p">,</span> <span class="ne">OSError</span><span class="p">)</span> <span class="ow">and</span> <span class="n">exc</span><span class="o">.</span><span class="n">errno</span> <span class="o">==</span> <span class="n">errno</span><span class="o">.</span><span class="n">EIO</span><span class="p">:</span>
             <span class="n">exc</span> <span class="o">=</span> <span class="kc">None</span>
             <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;connection_lost EIO -&gt; EOF&quot;</span><span class="p">)</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">connection_lost</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span>
 
+    <span class="k">def</span> <span class="nf">eof_received</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;Log when EOF received.&quot;</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;PtyStreamReaderProtocol.eof_received&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">eof_received</span><span class="p">()</span>
+
 
 <span class="k">async</span> <span class="k">def</span> <span class="nf">_open_pty_streams</span><span class="p">(</span><span class="n">file_desc</span><span class="p">):</span>
     <span class="s2">&quot;Open reader, writer streams for pty file descriptor.&quot;</span>
-    <span class="n">fcntl</span><span class="o">.</span><span class="n">fcntl</span><span class="p">(</span><span class="n">file_desc</span><span class="p">,</span> <span class="n">fcntl</span><span class="o">.</span><span class="n">F_SETFL</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">O_NONBLOCK</span><span class="p">)</span>
-
-    <span class="n">reader_pipe</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">fdopen</span><span class="p">(</span><span class="n">file_desc</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">closefd</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-    <span class="n">writer_pipe</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">fdopen</span><span class="p">(</span><span class="n">file_desc</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">closefd</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
     <span class="n">loop</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">get_running_loop</span><span class="p">()</span>
     <span class="n">reader</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">StreamReader</span><span class="p">(</span><span class="n">loop</span><span class="o">=</span><span class="n">loop</span><span class="p">)</span>
     <span class="n">reader_protocol</span> <span class="o">=</span> <span class="n">PtyStreamReaderProtocol</span><span class="p">(</span><span class="n">reader</span><span class="p">,</span> <span class="n">loop</span><span class="o">=</span><span class="n">loop</span><span class="p">)</span>
     <span class="n">reader_transport</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="k">await</span> <span class="n">loop</span><span class="o">.</span><span class="n">connect_read_pipe</span><span class="p">(</span>
         <span class="k">lambda</span><span class="p">:</span> <span class="n">reader_protocol</span><span class="p">,</span>
-        <span class="n">reader_pipe</span><span class="p">,</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">fdopen</span><span class="p">(</span><span class="n">file_desc</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">closefd</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
     <span class="p">)</span>
 
     <span class="n">writer_protocol</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">streams</span><span class="o">.</span><span class="n">FlowControlMixin</span><span class="p">()</span>
     <span class="n">writer_transport</span><span class="p">,</span> <span class="n">writer_protocol</span> <span class="o">=</span> <span class="k">await</span> <span class="n">loop</span><span class="o">.</span><span class="n">connect_write_pipe</span><span class="p">(</span>
         <span class="k">lambda</span><span class="p">:</span> <span class="n">writer_protocol</span><span class="p">,</span>
-        <span class="n">writer_pipe</span><span class="p">,</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">fdopen</span><span class="p">(</span><span class="n">file_desc</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">closefd</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
     <span class="p">)</span>
     <span class="n">writer</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">StreamWriter</span><span class="p">(</span><span class="n">writer_transport</span><span class="p">,</span> <span class="n">writer_protocol</span><span class="p">,</span> <span class="n">reader</span><span class="p">,</span> <span class="n">loop</span><span class="p">)</span>
 
     <span class="c1"># Patch writer_transport.close so it also closes the reader_transport.</span>
     <span class="k">def</span> <span class="nf">_close</span><span class="p">():</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;writer_transport.close()&quot;</span><span class="p">)</span>
         <span class="n">_orig_close</span><span class="p">()</span>
         <span class="n">reader_transport</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 
@@ -234,7 +245,7 @@
         <span class="n">tty</span><span class="o">.</span><span class="n">setraw</span><span class="p">(</span><span class="n">fdesc</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">rows</span> <span class="ow">or</span> <span class="n">cols</span> <span class="ow">or</span> <span class="n">xpixel</span> <span class="ow">or</span> <span class="n">ypixel</span><span class="p">:</span>
             <span class="n">_set_term_size</span><span class="p">(</span><span class="n">fdesc</span><span class="p">,</span> <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">xpixel</span><span class="p">,</span> <span class="n">ypixel</span><span class="p">)</span>
-        <span class="k">assert</span> <span class="n">get_eof</span><span class="p">(</span><span class="n">fdesc</span><span class="p">)</span> <span class="o">==</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span>
+        <span class="k">assert</span> <span class="n">_get_eof</span><span class="p">(</span><span class="n">fdesc</span><span class="p">)</span> <span class="o">==</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span>
 
     <span class="k">return</span> <span class="n">_pty_set_raw</span>
 
@@ -249,7 +260,7 @@
         <span class="n">tty</span><span class="o">.</span><span class="n">setcbreak</span><span class="p">(</span><span class="n">fdesc</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">rows</span> <span class="ow">or</span> <span class="n">cols</span> <span class="ow">or</span> <span class="n">xpixel</span> <span class="ow">or</span> <span class="n">ypixel</span><span class="p">:</span>
             <span class="n">_set_term_size</span><span class="p">(</span><span class="n">fdesc</span><span class="p">,</span> <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">xpixel</span><span class="p">,</span> <span class="n">ypixel</span><span class="p">)</span>
-        <span class="k">assert</span> <span class="n">get_eof</span><span class="p">(</span><span class="n">fdesc</span><span class="p">)</span> <span class="o">==</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span>
+        <span class="k">assert</span> <span class="n">_get_eof</span><span class="p">(</span><span class="n">fdesc</span><span class="p">)</span> <span class="o">==</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span>
 
     <span class="k">return</span> <span class="n">_pty_set_cbreak</span>
 
@@ -265,7 +276,7 @@
             <span class="n">_set_term_size</span><span class="p">(</span><span class="n">fdesc</span><span class="p">,</span> <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">xpixel</span><span class="p">,</span> <span class="n">ypixel</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">echo</span><span class="p">:</span>
             <span class="n">_set_term_echo</span><span class="p">(</span><span class="n">fdesc</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
-        <span class="k">assert</span> <span class="n">get_eof</span><span class="p">(</span><span class="n">fdesc</span><span class="p">)</span> <span class="o">==</span> <span class="sa">b</span><span class="s2">&quot;</span><span class="se">\x04</span><span class="s2">&quot;</span>
+        <span class="k">assert</span> <span class="n">_get_eof</span><span class="p">(</span><span class="n">fdesc</span><span class="p">)</span> <span class="o">==</span> <span class="sa">b</span><span class="s2">&quot;</span><span class="se">\x04</span><span class="s2">&quot;</span>
 
     <span class="k">return</span> <span class="n">_pty_set_canonical</span>
 
@@ -315,7 +326,7 @@
     <span class="k">return</span> <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">xpixel</span><span class="p">,</span> <span class="n">ypixel</span>
 
 
-<span class="k">def</span> <span class="nf">get_eof</span><span class="p">(</span><span class="n">fdesc</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">_get_eof</span><span class="p">(</span><span class="n">fdesc</span><span class="p">):</span>
     <span class="s2">&quot;Return the End-of-file character (EOF) if tty is in canonical mode only.&quot;</span>
 
     <span class="n">eof</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span>
@@ -343,7 +354,6 @@
             <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">PtyFds</span><span class="p">(</span><span class="n">NamedTuple</span><span class="p">):</span>
     <span class="s2">&quot;Track parent/child fd&#39;s for pty.&quot;</span>
     <span class="n">parent_fd</span><span class="p">:</span> <span class="nb">int</span>
-    <span class="n">child_fd</span><span class="p">:</span> <span class="nb">int</span>
     <span class="n">eof</span><span class="p">:</span> <span class="nb">bytes</span>
     <span class="n">reader</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">writer</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span>
@@ -351,10 +361,8 @@
     <span class="k">async</span> <span class="k">def</span> <span class="nf">open_streams</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Open pty reader/writer streams.&quot;</span>
         <span class="n">reader</span><span class="p">,</span> <span class="n">writer</span> <span class="o">=</span> <span class="k">await</span> <span class="n">_open_pty_streams</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parent_fd</span><span class="p">)</span>
-        <span class="n">os</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child_fd</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">PtyFds</span><span class="p">(</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">parent_fd</span><span class="p">,</span>
-            <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">eof</span><span class="p">,</span>
             <span class="n">reader</span><span class="p">,</span>
             <span class="n">writer</span><span class="p">,</span>
@@ -362,10 +370,11 @@
 
     <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Close pty file descriptors.&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">child_fd</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="n">os</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child_fd</span><span class="p">)</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;PtyFds.close&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">writer</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">writer</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parent_fd</span><span class="p">)</span>
 </pre></div>
 
         </details>
@@ -378,17 +387,11 @@
                                         <div class="attr function"><a class="headerlink" href="#PtyFds.__init__">#&nbsp;&nbsp</a>
 
         
-            <span class="name">PtyFds</span><span class="signature">(
-    parent_fd: int,
-    child_fd: int,
-    eof: bytes,
-    reader: Any = None,
-    writer: Any = None
-)</span>
+            <span class="name">PtyFds</span><span class="signature">(parent_fd: int, eof: bytes, reader: Any = None, writer: Any = None)</span>
     </div>
 
         
-            <div class="docstring"><p>Create new instance of PtyFds(parent_fd, child_fd, eof, reader, writer)</p>
+            <div class="docstring"><p>Create new instance of PtyFds(parent_fd, eof, reader, writer)</p>
 </div>
 
 
@@ -404,24 +407,13 @@
 
 
                             </div>
-                            <div id="PtyFds.child_fd" class="classattr">
-                                            <div class="attr variable"><a class="headerlink" href="#PtyFds.child_fd">#&nbsp;&nbsp</a>
-
-        <span class="name">child_fd</span><span class="annotation">: int</span>
-    </div>
-
-            <div class="docstring"><p>Alias for field number 1</p>
-</div>
-
-
-                            </div>
                             <div id="PtyFds.eof" class="classattr">
                                             <div class="attr variable"><a class="headerlink" href="#PtyFds.eof">#&nbsp;&nbsp</a>
 
         <span class="name">eof</span><span class="annotation">: bytes</span>
     </div>
 
-            <div class="docstring"><p>Alias for field number 2</p>
+            <div class="docstring"><p>Alias for field number 1</p>
 </div>
 
 
@@ -432,7 +424,7 @@
         <span class="name">reader</span><span class="annotation">: Any</span>
     </div>
 
-            <div class="docstring"><p>Alias for field number 3</p>
+            <div class="docstring"><p>Alias for field number 2</p>
 </div>
 
 
@@ -443,7 +435,7 @@
         <span class="name">writer</span><span class="annotation">: Any</span>
     </div>
 
-            <div class="docstring"><p>Alias for field number 4</p>
+            <div class="docstring"><p>Alias for field number 3</p>
 </div>
 
 
@@ -461,10 +453,8 @@
             <div class="codehilite"><pre><span></span>    <span class="k">async</span> <span class="k">def</span> <span class="nf">open_streams</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Open pty reader/writer streams.&quot;</span>
         <span class="n">reader</span><span class="p">,</span> <span class="n">writer</span> <span class="o">=</span> <span class="k">await</span> <span class="n">_open_pty_streams</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parent_fd</span><span class="p">)</span>
-        <span class="n">os</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child_fd</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">PtyFds</span><span class="p">(</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">parent_fd</span><span class="p">,</span>
-            <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">eof</span><span class="p">,</span>
             <span class="n">reader</span><span class="p">,</span>
             <span class="n">writer</span><span class="p">,</span>
@@ -490,10 +480,11 @@
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Close pty file descriptors.&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">child_fd</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="n">os</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child_fd</span><span class="p">)</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;PtyFds.close&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">writer</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">writer</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parent_fd</span><span class="p">)</span>
 </pre></div>
 
         </details>
@@ -519,19 +510,32 @@
 
         
             <span class="def">def</span>
-            <span class="name">open_pty</span><span class="signature">()</span>:
+            <span class="name">open_pty</span><span class="signature">(pty_func)</span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">open_pty</span><span class="p">():</span>
-    <span class="s2">&quot;Open pseudo-terminal (pty) descriptors. Returns (parent_fd, child_fd).&quot;</span>
-    <span class="k">return</span> <span class="n">pty</span><span class="o">.</span><span class="n">openpty</span><span class="p">()</span>
+            <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">open_pty</span><span class="p">(</span><span class="n">pty_func</span><span class="p">):</span>
+    <span class="s2">&quot;Open pseudo-terminal (pty) descriptors. Returns (PtyFds, child_fd).&quot;</span>
+    <span class="n">parent_fd</span><span class="p">,</span> <span class="n">child_fd</span> <span class="o">=</span> <span class="n">pty</span><span class="o">.</span><span class="n">openpty</span><span class="p">()</span>
+
+    <span class="c1"># If pty_func is a callable, call it here with `child_fd` as argument. This</span>
+    <span class="c1"># gives the client an opportunity to configure the tty.</span>
+    <span class="k">if</span> <span class="n">callable</span><span class="p">(</span><span class="n">pty_func</span><span class="p">):</span>
+        <span class="n">pty_func</span><span class="p">(</span><span class="n">child_fd</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">(</span>
+        <span class="n">PtyFds</span><span class="p">(</span>
+            <span class="n">parent_fd</span><span class="p">,</span>
+            <span class="n">_get_eof</span><span class="p">(</span><span class="n">child_fd</span><span class="p">),</span>
+        <span class="p">),</span>
+        <span class="n">child_fd</span><span class="p">,</span>
+    <span class="p">)</span>
 </pre></div>
 
         </details>
 
-            <div class="docstring"><p>Open pseudo-terminal (pty) descriptors. Returns (parent_fd, child_fd).</p>
+            <div class="docstring"><p>Open pseudo-terminal (pty) descriptors. Returns (PtyFds, child_fd).</p>
 </div>
 
 
@@ -584,10 +588,16 @@
 
     <span class="k">def</span> <span class="nf">connection_lost</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exc</span><span class="p">):</span>
         <span class="s2">&quot;Intercept EIO error and treat it as EOF.&quot;</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;PtyStreamReaderProtocol.connection_lost ex=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">exc</span><span class="p">)</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">exc</span><span class="p">,</span> <span class="ne">OSError</span><span class="p">)</span> <span class="ow">and</span> <span class="n">exc</span><span class="o">.</span><span class="n">errno</span> <span class="o">==</span> <span class="n">errno</span><span class="o">.</span><span class="n">EIO</span><span class="p">:</span>
             <span class="n">exc</span> <span class="o">=</span> <span class="kc">None</span>
             <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;connection_lost EIO -&gt; EOF&quot;</span><span class="p">)</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">connection_lost</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">eof_received</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;Log when EOF received.&quot;</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;PtyStreamReaderProtocol.eof_received&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">eof_received</span><span class="p">()</span>
 </pre></div>
 
         </details>
@@ -608,6 +618,7 @@
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">connection_lost</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exc</span><span class="p">):</span>
         <span class="s2">&quot;Intercept EIO error and treat it as EOF.&quot;</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;PtyStreamReaderProtocol.connection_lost ex=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">exc</span><span class="p">)</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">exc</span><span class="p">,</span> <span class="ne">OSError</span><span class="p">)</span> <span class="ow">and</span> <span class="n">exc</span><span class="o">.</span><span class="n">errno</span> <span class="o">==</span> <span class="n">errno</span><span class="o">.</span><span class="n">EIO</span><span class="p">:</span>
             <span class="n">exc</span> <span class="o">=</span> <span class="kc">None</span>
             <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;connection_lost EIO -&gt; EOF&quot;</span><span class="p">)</span>
@@ -621,6 +632,29 @@
 
 
                             </div>
+                            <div id="PtyStreamReaderProtocol.eof_received" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#PtyStreamReaderProtocol.eof_received">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">eof_received</span><span class="signature">(self)</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">eof_received</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;Log when EOF received.&quot;</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;PtyStreamReaderProtocol.eof_received&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">eof_received</span><span class="p">()</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Log when EOF received.</p>
+</div>
+
+
+                            </div>
                             <div class="inherited">
                                 <h5>Inherited Members</h5>
                                 <dl>
@@ -628,7 +662,6 @@
                                 <dd id="PtyStreamReaderProtocol.__init__" class="function">StreamReaderProtocol</dd>
                 <dd id="PtyStreamReaderProtocol.connection_made" class="function">connection_made</dd>
                 <dd id="PtyStreamReaderProtocol.data_received" class="function">data_received</dd>
-                <dd id="PtyStreamReaderProtocol.eof_received" class="function">eof_received</dd>
 
             </div>
             <div><dt>asyncio.streams.FlowControlMixin</dt>
@@ -659,7 +692,7 @@
         <span class="n">tty</span><span class="o">.</span><span class="n">setraw</span><span class="p">(</span><span class="n">fdesc</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">rows</span> <span class="ow">or</span> <span class="n">cols</span> <span class="ow">or</span> <span class="n">xpixel</span> <span class="ow">or</span> <span class="n">ypixel</span><span class="p">:</span>
             <span class="n">_set_term_size</span><span class="p">(</span><span class="n">fdesc</span><span class="p">,</span> <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">xpixel</span><span class="p">,</span> <span class="n">ypixel</span><span class="p">)</span>
-        <span class="k">assert</span> <span class="n">get_eof</span><span class="p">(</span><span class="n">fdesc</span><span class="p">)</span> <span class="o">==</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span>
+        <span class="k">assert</span> <span class="n">_get_eof</span><span class="p">(</span><span class="n">fdesc</span><span class="p">)</span> <span class="o">==</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span>
 
     <span class="k">return</span> <span class="n">_pty_set_raw</span>
 </pre></div>
@@ -691,7 +724,7 @@
         <span class="n">tty</span><span class="o">.</span><span class="n">setcbreak</span><span class="p">(</span><span class="n">fdesc</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">rows</span> <span class="ow">or</span> <span class="n">cols</span> <span class="ow">or</span> <span class="n">xpixel</span> <span class="ow">or</span> <span class="n">ypixel</span><span class="p">:</span>
             <span class="n">_set_term_size</span><span class="p">(</span><span class="n">fdesc</span><span class="p">,</span> <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">xpixel</span><span class="p">,</span> <span class="n">ypixel</span><span class="p">)</span>
-        <span class="k">assert</span> <span class="n">get_eof</span><span class="p">(</span><span class="n">fdesc</span><span class="p">)</span> <span class="o">==</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span>
+        <span class="k">assert</span> <span class="n">_get_eof</span><span class="p">(</span><span class="n">fdesc</span><span class="p">)</span> <span class="o">==</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span>
 
     <span class="k">return</span> <span class="n">_pty_set_cbreak</span>
 </pre></div>
@@ -724,7 +757,7 @@
             <span class="n">_set_term_size</span><span class="p">(</span><span class="n">fdesc</span><span class="p">,</span> <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">,</span> <span class="n">xpixel</span><span class="p">,</span> <span class="n">ypixel</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">echo</span><span class="p">:</span>
             <span class="n">_set_term_echo</span><span class="p">(</span><span class="n">fdesc</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
-        <span class="k">assert</span> <span class="n">get_eof</span><span class="p">(</span><span class="n">fdesc</span><span class="p">)</span> <span class="o">==</span> <span class="sa">b</span><span class="s2">&quot;</span><span class="se">\x04</span><span class="s2">&quot;</span>
+        <span class="k">assert</span> <span class="n">_get_eof</span><span class="p">(</span><span class="n">fdesc</span><span class="p">)</span> <span class="o">==</span> <span class="sa">b</span><span class="s2">&quot;</span><span class="se">\x04</span><span class="s2">&quot;</span>
 
     <span class="k">return</span> <span class="n">_pty_set_canonical</span>
 </pre></div>
@@ -732,34 +765,6 @@
         </details>
 
             <div class="docstring"><p>Return a function that leaves PtyOptions.child_fd in canonical mode.</p>
-</div>
-
-
-                </section>
-                <section id="get_eof">
-                            <div class="attr function"><a class="headerlink" href="#get_eof">#&nbsp;&nbsp</a>
-
-        
-            <span class="def">def</span>
-            <span class="name">get_eof</span><span class="signature">(fdesc)</span>:
-    </div>
-
-                <details>
-            <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">get_eof</span><span class="p">(</span><span class="n">fdesc</span><span class="p">):</span>
-    <span class="s2">&quot;Return the End-of-file character (EOF) if tty is in canonical mode only.&quot;</span>
-
-    <span class="n">eof</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span>
-    <span class="n">attrs</span> <span class="o">=</span> <span class="n">termios</span><span class="o">.</span><span class="n">tcgetattr</span><span class="p">(</span><span class="n">fdesc</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">attrs</span><span class="p">[</span><span class="n">_LFLAG</span><span class="p">]</span> <span class="o">&amp;</span> <span class="n">termios</span><span class="o">.</span><span class="n">ICANON</span><span class="p">:</span>
-        <span class="n">eof</span> <span class="o">=</span> <span class="n">attrs</span><span class="p">[</span><span class="n">_CC</span><span class="p">][</span><span class="n">termios</span><span class="o">.</span><span class="n">VEOF</span><span class="p">]</span>
-
-    <span class="k">return</span> <span class="n">eof</span>
-</pre></div>
-
-        </details>
-
-            <div class="docstring"><p>Return the End-of-file character (EOF) if tty is in canonical mode only.</p>
 </div>
 
 

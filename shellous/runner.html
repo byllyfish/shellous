@@ -240,8 +240,9 @@
 
         <span class="c1"># Set up PTY here. This is the first half. Second half in `Runner`.</span>
         <span class="n">start_new_session</span> <span class="o">=</span> <span class="n">options</span><span class="o">.</span><span class="n">start_new_session</span>
-        <span class="n">preexec_fn</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">preexec_fn</span> <span class="o">=</span> <span class="n">options</span><span class="o">.</span><span class="n">preexec_fn</span>
         <span class="k">if</span> <span class="n">options</span><span class="o">.</span><span class="n">pty</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="n">preexec_fn</span> <span class="ow">is</span> <span class="kc">None</span>
             <span class="n">stdin</span><span class="p">,</span> <span class="n">stdout</span><span class="p">,</span> <span class="n">stderr</span><span class="p">,</span> <span class="n">preexec_fn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_setup_pty1</span><span class="p">(</span>
                 <span class="n">stdin</span><span class="p">,</span>
                 <span class="n">stdout</span><span class="p">,</span>
@@ -337,7 +338,10 @@
 <span class="sd">        Initializes `self.pty_fds`.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="n">parent_fd</span><span class="p">,</span> <span class="n">child_fd</span> <span class="o">=</span> <span class="n">pty_util</span><span class="o">.</span><span class="n">open_pty</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pty_fds</span><span class="p">,</span> <span class="n">child_fd</span> <span class="o">=</span> <span class="n">pty_util</span><span class="o">.</span><span class="n">open_pty</span><span class="p">(</span><span class="n">pty</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">open_fds</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">child_fd</span><span class="p">)</span>
+
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;_setup_pty1: </span><span class="si">%r</span><span class="s2"> child_fd=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pty_fds</span><span class="p">,</span> <span class="n">child_fd</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">stdin</span> <span class="o">==</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">:</span>
             <span class="n">stdin</span> <span class="o">=</span> <span class="n">child_fd</span>
@@ -349,19 +353,6 @@
             <span class="n">stderr</span> <span class="o">=</span> <span class="n">child_fd</span>
         <span class="k">elif</span> <span class="n">stderr</span> <span class="o">==</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;pty can&#39;t separate stderr from stdout&quot;</span><span class="p">)</span>
-
-        <span class="c1"># If pty is a callable, call it here with `child_fd` as argument. This</span>
-        <span class="c1"># gives the client an opportunity to configure the tty.</span>
-        <span class="k">if</span> <span class="n">callable</span><span class="p">(</span><span class="n">pty</span><span class="p">):</span>
-            <span class="n">pty</span><span class="p">(</span><span class="n">child_fd</span><span class="p">)</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">pty_fds</span> <span class="o">=</span> <span class="n">pty_util</span><span class="o">.</span><span class="n">PtyFds</span><span class="p">(</span>
-            <span class="n">parent_fd</span><span class="p">,</span>
-            <span class="n">child_fd</span><span class="p">,</span>
-            <span class="n">pty_util</span><span class="o">.</span><span class="n">get_eof</span><span class="p">(</span><span class="n">child_fd</span><span class="p">),</span>
-        <span class="p">)</span>
-
-        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;_setup_pty1: </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pty_fds</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">stdin</span><span class="p">,</span> <span class="n">stdout</span><span class="p">,</span> <span class="n">stderr</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">pty_util</span><span class="o">.</span><span class="n">set_ctty</span><span class="p">(</span><span class="n">child_fd</span><span class="p">)</span>
 
@@ -513,6 +504,10 @@
         <span class="k">try</span><span class="p">:</span>
             <span class="c1"># Set up subprocess arguments and launch subprocess.</span>
             <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span> <span class="k">as</span> <span class="n">opts</span><span class="p">:</span>
+                <span class="c1"># Second half of pty setup.</span>
+                <span class="k">if</span> <span class="n">opts</span><span class="o">.</span><span class="n">pty_fds</span><span class="p">:</span>
+                    <span class="n">opts</span><span class="o">.</span><span class="n">pty_fds</span> <span class="o">=</span> <span class="k">await</span> <span class="n">opts</span><span class="o">.</span><span class="n">pty_fds</span><span class="o">.</span><span class="n">open_streams</span><span class="p">()</span>
+
                 <span class="c1"># Launch the main subprocess.</span>
                 <span class="k">with</span> <span class="n">log_timer</span><span class="p">(</span><span class="s2">&quot;asyncio.create_subprocess_exec&quot;</span><span class="p">):</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">proc</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_subprocess_exec</span><span class="p">(</span>
@@ -528,10 +523,10 @@
             <span class="n">stdout</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">stdout</span>
             <span class="n">stderr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">stderr</span>
 
-            <span class="c1"># Second half of pty setup.</span>
+            <span class="c1"># Assign pty streams.</span>
             <span class="k">if</span> <span class="n">opts</span><span class="o">.</span><span class="n">pty_fds</span><span class="p">:</span>
                 <span class="k">assert</span> <span class="p">(</span><span class="n">stdin</span><span class="p">,</span> <span class="n">stdout</span><span class="p">,</span> <span class="n">stderr</span><span class="p">)</span> <span class="o">==</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-                <span class="n">opts</span><span class="o">.</span><span class="n">pty_fds</span> <span class="o">=</span> <span class="k">await</span> <span class="n">opts</span><span class="o">.</span><span class="n">pty_fds</span><span class="o">.</span><span class="n">open_streams</span><span class="p">()</span>
+                <span class="c1"># opts.pty_fds = await opts.pty_fds.open_streams()</span>
                 <span class="n">stdin</span><span class="p">,</span> <span class="n">stdout</span> <span class="o">=</span> <span class="n">opts</span><span class="o">.</span><span class="n">pty_fds</span><span class="o">.</span><span class="n">writer</span><span class="p">,</span> <span class="n">opts</span><span class="o">.</span><span class="n">pty_fds</span><span class="o">.</span><span class="n">reader</span>
 
             <span class="k">if</span> <span class="n">stderr</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -576,8 +571,6 @@
     <span class="k">async</span> <span class="k">def</span> <span class="nf">_waiter</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Run task that waits for process to exit.&quot;</span>
         <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">pty_fds</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">_transport</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>  <span class="c1"># pylint: disable=protected-access</span>
 
     <span class="k">def</span> <span class="nf">_setup_output_sink</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stream</span><span class="p">,</span> <span class="n">sink</span><span class="p">,</span> <span class="n">encoding</span><span class="p">,</span> <span class="n">tag</span><span class="p">):</span>
         <span class="s2">&quot;Set up a task to write to custom output sink.&quot;</span>
@@ -1099,6 +1092,10 @@
         <span class="k">try</span><span class="p">:</span>
             <span class="c1"># Set up subprocess arguments and launch subprocess.</span>
             <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span> <span class="k">as</span> <span class="n">opts</span><span class="p">:</span>
+                <span class="c1"># Second half of pty setup.</span>
+                <span class="k">if</span> <span class="n">opts</span><span class="o">.</span><span class="n">pty_fds</span><span class="p">:</span>
+                    <span class="n">opts</span><span class="o">.</span><span class="n">pty_fds</span> <span class="o">=</span> <span class="k">await</span> <span class="n">opts</span><span class="o">.</span><span class="n">pty_fds</span><span class="o">.</span><span class="n">open_streams</span><span class="p">()</span>
+
                 <span class="c1"># Launch the main subprocess.</span>
                 <span class="k">with</span> <span class="n">log_timer</span><span class="p">(</span><span class="s2">&quot;asyncio.create_subprocess_exec&quot;</span><span class="p">):</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">proc</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_subprocess_exec</span><span class="p">(</span>
@@ -1114,10 +1111,10 @@
             <span class="n">stdout</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">stdout</span>
             <span class="n">stderr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">stderr</span>
 
-            <span class="c1"># Second half of pty setup.</span>
+            <span class="c1"># Assign pty streams.</span>
             <span class="k">if</span> <span class="n">opts</span><span class="o">.</span><span class="n">pty_fds</span><span class="p">:</span>
                 <span class="k">assert</span> <span class="p">(</span><span class="n">stdin</span><span class="p">,</span> <span class="n">stdout</span><span class="p">,</span> <span class="n">stderr</span><span class="p">)</span> <span class="o">==</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-                <span class="n">opts</span><span class="o">.</span><span class="n">pty_fds</span> <span class="o">=</span> <span class="k">await</span> <span class="n">opts</span><span class="o">.</span><span class="n">pty_fds</span><span class="o">.</span><span class="n">open_streams</span><span class="p">()</span>
+                <span class="c1"># opts.pty_fds = await opts.pty_fds.open_streams()</span>
                 <span class="n">stdin</span><span class="p">,</span> <span class="n">stdout</span> <span class="o">=</span> <span class="n">opts</span><span class="o">.</span><span class="n">pty_fds</span><span class="o">.</span><span class="n">writer</span><span class="p">,</span> <span class="n">opts</span><span class="o">.</span><span class="n">pty_fds</span><span class="o">.</span><span class="n">reader</span>
 
             <span class="k">if</span> <span class="n">stderr</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -1162,8 +1159,6 @@
     <span class="k">async</span> <span class="k">def</span> <span class="nf">_waiter</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Run task that waits for process to exit.&quot;</span>
         <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">pty_fds</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">_transport</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>  <span class="c1"># pylint: disable=protected-access</span>
 
     <span class="k">def</span> <span class="nf">_setup_output_sink</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stream</span><span class="p">,</span> <span class="n">sink</span><span class="p">,</span> <span class="n">encoding</span><span class="p">,</span> <span class="n">tag</span><span class="p">):</span>
         <span class="s2">&quot;Set up a task to write to custom output sink.&quot;</span>
