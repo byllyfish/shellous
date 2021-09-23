@@ -3,7 +3,7 @@
 import logging
 
 import pytest
-from shellous.log import LOG_IGNORE_STEPIN, LOG_IGNORE_STEPOUT, log_method, log_timer
+from shellous.log import _LOG_IGNORE_STEPIN, _LOG_IGNORE_STEPOUT, log_method, log_timer
 
 pytestmark = pytest.mark.asyncio
 
@@ -26,11 +26,11 @@ class _Tester:
         for i in range(2):
             yield i
 
-    @log_method(LOG_IGNORE_STEPOUT)
+    @log_method(_LOG_IGNORE_STEPOUT)
     async def demo5(self):
         pass
 
-    @log_method(LOG_IGNORE_STEPIN)
+    @log_method(_LOG_IGNORE_STEPIN)
     async def demo6(self):
         pass
 

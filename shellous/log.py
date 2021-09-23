@@ -17,8 +17,12 @@ PLATFORM_VERS = platform.platform(terse=True)
 PYTHON_IMPL = platform.python_implementation()
 PYTHON_VERS = platform.python_version()
 
-LOG_IGNORE_STEPIN = -1
-LOG_IGNORE_STEPOUT = -2
+_LOG_IGNORE_STEPIN = -1
+_LOG_IGNORE_STEPOUT = -2
+
+LOG_ENTER = True
+LOG_EXIT = True
+LOG_DETAIL = True
 
 
 def _exc():
@@ -54,7 +58,7 @@ def log_method(enabled, *, _info=False, **kwds):
             async def _asyncgen_wrapper(*args, **kwargs):
                 more_info, plat_info = _info_args(args, kwds, _info)
 
-                if enabled != LOG_IGNORE_STEPIN:
+                if enabled != _LOG_IGNORE_STEPIN:
                     LOGGER.info(
                         "%s stepin %r%s%s",
                         func.__qualname__,
@@ -66,7 +70,7 @@ def log_method(enabled, *, _info=False, **kwds):
                     async for i in func(*args, **kwargs):
                         yield i
                 finally:
-                    if enabled != LOG_IGNORE_STEPOUT:
+                    if enabled != _LOG_IGNORE_STEPOUT:
                         LOGGER.info(
                             "%s stepout %r ex=%r%s",
                             func.__qualname__,
@@ -83,7 +87,7 @@ def log_method(enabled, *, _info=False, **kwds):
             async def _method_wrapper(*args, **kwargs):
                 more_info, plat_info = _info_args(args, kwds, _info)
 
-                if enabled != LOG_IGNORE_STEPIN:
+                if enabled != _LOG_IGNORE_STEPIN:
                     LOGGER.info(
                         "%s stepin %r%s%s",
                         func.__qualname__,
@@ -94,7 +98,7 @@ def log_method(enabled, *, _info=False, **kwds):
                 try:
                     return await func(*args, **kwargs)
                 finally:
-                    if enabled != LOG_IGNORE_STEPOUT:
+                    if enabled != _LOG_IGNORE_STEPOUT:
                         LOGGER.info(
                             "%s stepout %r ex=%r%s",
                             func.__qualname__,
@@ -109,13 +113,13 @@ def log_method(enabled, *, _info=False, **kwds):
             # Use _function_wrapper which ignores arguments.
             @functools.wraps(func)
             async def _asyncgen_function_wrapper(*args, **kwargs):
-                if enabled != LOG_IGNORE_STEPIN:
+                if enabled != _LOG_IGNORE_STEPIN:
                     LOGGER.info("%s stepin", func.__qualname__)
                 try:
                     async for item in func(*args, **kwargs):
                         yield item
                 finally:
-                    if enabled != LOG_IGNORE_STEPOUT:
+                    if enabled != _LOG_IGNORE_STEPOUT:
                         LOGGER.info(
                             "%s stepout ex=%r",
                             func.__qualname__,
@@ -127,12 +131,12 @@ def log_method(enabled, *, _info=False, **kwds):
         # Use _function_wrapper which ignores arguments.
         @functools.wraps(func)
         async def _function_wrapper(*args, **kwargs):
-            if enabled != LOG_IGNORE_STEPIN:
+            if enabled != _LOG_IGNORE_STEPIN:
                 LOGGER.info("%s stepin", func.__qualname__)
             try:
                 return await func(*args, **kwargs)
             finally:
-                if enabled != LOG_IGNORE_STEPOUT:
+                if enabled != _LOG_IGNORE_STEPOUT:
                     LOGGER.info(
                         "%s stepout ex=%r",
                         func.__qualname__,

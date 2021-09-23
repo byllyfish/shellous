@@ -9,13 +9,10 @@ import shellous
 import shellous.redirect as redir
 from shellous import pty_util
 from shellous.harvest import harvest, harvest_results
-from shellous.log import LOGGER, log_method, log_timer
+from shellous.log import LOG_DETAIL, LOG_ENTER, LOG_EXIT, LOGGER, log_method, log_timer
 from shellous.redirect import Redirect
 from shellous.result import Result, make_result
 from shellous.util import close_fds
-
-_NORMAL_LOGGING = True
-_DETAILED_LOGGING = True
 
 _KILL_TIMEOUT = 3.0
 _CLOSE_TIMEOUT = 0.25
@@ -317,7 +314,7 @@ class Runner:
         self.tasks.append(task)
         return task
 
-    @log_method(_DETAILED_LOGGING)
+    @log_method(LOG_DETAIL)
     async def _wait(self):
         "Normal wait for background I/O tasks and process to finish."
         assert self.proc
@@ -331,7 +328,7 @@ class Runner:
             self.tasks.clear()  # all tasks were cancelled
             await self._kill()
 
-    @log_method(_DETAILED_LOGGING)
+    @log_method(LOG_DETAIL)
     async def _kill(self):
         "Kill process and wait for it to finish."
         assert self.proc
@@ -371,7 +368,7 @@ class Runner:
         else:
             self.proc.send_signal(sig)
 
-    @log_method(_DETAILED_LOGGING)
+    @log_method(LOG_DETAIL)
     async def _kill_wait(self):
         "Wait for killed process to exit."
         assert self.proc
@@ -387,7 +384,7 @@ class Runner:
             LOGGER.error("%r failed to kill process %r", self, self.proc)
             raise RuntimeError(f"Unable to kill process {self.proc!r}") from ex
 
-    @log_method(_NORMAL_LOGGING, _info=True)
+    @log_method(LOG_ENTER, _info=True)
     async def __aenter__(self):
         "Set up redirections and launch subprocess."
         try:
@@ -397,7 +394,7 @@ class Runner:
                 # Raises ResultError instead of CancelledError.
                 self.result()
 
-    @log_method(_DETAILED_LOGGING)
+    @log_method(LOG_DETAIL)
     async def _start(self):
         "Set up redirections and launch subprocess."
         assert self.proc is None
@@ -469,7 +466,7 @@ class Runner:
 
         return self
 
-    @log_method(_DETAILED_LOGGING)
+    @log_method(LOG_DETAIL)
     async def _waiter(self):
         "Run task that waits for process to exit."
         await self.proc.wait()
@@ -489,7 +486,7 @@ class Runner:
             stream = None
         return stream
 
-    @log_method(_NORMAL_LOGGING, exc_value=2)
+    @log_method(LOG_EXIT, exc_value=2)
     async def __aexit__(self, _exc_type, exc_value, _exc_tb):
         "Wait for process to exit and handle cancellation."
         suppress = False
@@ -500,7 +497,7 @@ class Runner:
             self.cancelled = True
         return suppress
 
-    @log_method(_DETAILED_LOGGING)
+    @log_method(LOG_DETAIL)
     async def _finish(self, exc_value):
         "Finish the run. Return True only if `exc_value` should be suppressed."
         assert self.proc
@@ -518,7 +515,7 @@ class Runner:
         finally:
             await self._close()
 
-    @log_method(_DETAILED_LOGGING)
+    @log_method(LOG_DETAIL)
     async def _close(self):
         "Make sure that our resources are properly closed."
         assert self.proc
@@ -644,7 +641,7 @@ class PipeRunner:  # pylint: disable=too-many-instance-attributes
         self.tasks.append(task)
         return task
 
-    @log_method(_DETAILED_LOGGING)
+    @log_method(LOG_DETAIL)
     async def _wait(self, *, kill=False):
         "Wait for pipeline to finish."
         assert self.results is None
@@ -659,7 +656,7 @@ class PipeRunner:  # pylint: disable=too-many-instance-attributes
         if cancelled:
             self.cancelled = True
 
-    @log_method(_NORMAL_LOGGING)
+    @log_method(LOG_ENTER)
     async def __aenter__(self):
         "Set up redirections and launch pipeline."
         try:
@@ -671,7 +668,7 @@ class PipeRunner:  # pylint: disable=too-many-instance-attributes
             await self._wait(kill=True)  # FIXME
             raise
 
-    @log_method(_NORMAL_LOGGING, exc_value=2)
+    @log_method(LOG_EXIT, exc_value=2)
     async def __aexit__(self, _exc_type, exc_value, _exc_tb):
         "Wait for pipeline to exit and handle cancellation."
         suppress = False
@@ -682,7 +679,7 @@ class PipeRunner:  # pylint: disable=too-many-instance-attributes
             self.cancelled = True
         return suppress
 
-    @log_method(_DETAILED_LOGGING)
+    @log_method(LOG_DETAIL)
     async def _finish(self, exc_value):
         "Wait for pipeline to exit and handle cancellation."
         if exc_value is not None:
@@ -693,7 +690,7 @@ class PipeRunner:  # pylint: disable=too-many-instance-attributes
 
         await self._wait()
 
-    @log_method(_DETAILED_LOGGING)
+    @log_method(LOG_DETAIL)
     async def _start(self):
         "Set up redirection and launch pipeline."
         open_fds = []
@@ -743,7 +740,7 @@ class PipeRunner:  # pylint: disable=too-many-instance-attributes
 
         return cmds
 
-    @log_method(_DETAILED_LOGGING)
+    @log_method(LOG_DETAIL)
     async def _setup_capturing(self, cmds):
         """Set up capturing and return (stdin, stdout, stderr) streams."""
 

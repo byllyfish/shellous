@@ -6,10 +6,9 @@ import io
 import os
 from typing import Optional
 
-from shellous.log import log_method
+from shellous.log import LOG_DETAIL, log_method
 from shellous.util import decode
 
-_DETAILED_LOGGING = True
 _CHUNK_SIZE = 8192
 
 
@@ -42,7 +41,7 @@ async def _drain(stream: asyncio.StreamWriter):
         pass
 
 
-@log_method(_DETAILED_LOGGING)
+@log_method(LOG_DETAIL)
 async def write_stream(
     input_bytes: bytes,
     stream: asyncio.StreamWriter,
@@ -77,7 +76,7 @@ async def write_stream(
         await _drain(stream)
 
 
-@log_method(_DETAILED_LOGGING)
+@log_method(LOG_DETAIL)
 async def copy_stringio(
     source: asyncio.StreamReader,
     dest: io.StringIO,
@@ -98,7 +97,7 @@ async def copy_stringio(
         dest.write(decode(buf.getvalue(), encoding))
 
 
-@log_method(_DETAILED_LOGGING)
+@log_method(LOG_DETAIL)
 async def copy_bytesio(source: asyncio.StreamReader, dest: io.BytesIO):
     "Copy bytes from source stream to dest BytesIO."
     # Collect partial reads into a BytesIO.
@@ -109,7 +108,7 @@ async def copy_bytesio(source: asyncio.StreamReader, dest: io.BytesIO):
         dest.write(data)
 
 
-@log_method(_DETAILED_LOGGING)
+@log_method(LOG_DETAIL)
 async def copy_bytearray(source: asyncio.StreamReader, dest: bytearray):
     "Copy bytes from source stream to dest bytearray."
     # Collect partial reads into a bytearray.
@@ -120,7 +119,7 @@ async def copy_bytearray(source: asyncio.StreamReader, dest: bytearray):
         dest.extend(data)
 
 
-@log_method(_DETAILED_LOGGING)
+@log_method(LOG_DETAIL)
 async def read_lines(source: asyncio.StreamReader, encoding: Optional[str]):
     "Async iterator over lines in stream."
     if encoding is None:
