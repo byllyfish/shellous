@@ -159,10 +159,12 @@ class _RunOptions:
             "env": options.merge_env(),
             "start_new_session": start_new_session,
             "preexec_fn": preexec_fn,
+            "close_fds": False,
         }
 
         if options.pass_fds:
             self.kwd_args["pass_fds"] = options.pass_fds
+            self.kwd_args["close_fds"] = True
             if options.pass_fds_close:
                 self.open_fds.extend(options.pass_fds)
 
