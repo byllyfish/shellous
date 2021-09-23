@@ -819,21 +819,21 @@ async def test_pty_manual(sh):
     assert result == b"abc\r\nABC\r\n"
 
 
-@pytest.mark.xfail(_is_uvloop() or sys.platform == "darwin", reason="uvloop,darwin")
+@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
 async def test_pty_manual_ls(sh):
     """Test setting up a pty manually."""
 
     import pty  # import not supported on windows
 
     import shellous
+    from shellous.log import log_timer
 
     parent_fd, child_fd = pty.openpty()
 
     cmd = (
-        # sh("bash", "-c", "ls README.md")
         sh("ls", "README.md")
         .stdin(child_fd, close=False)
-        .stdout(child_fd, close=True)
+        .stdout(child_fd, close=False)
         .set(start_new_session=True, preexec_fn=shellous.pty_util.set_ctty(child_fd))
     )
 
@@ -842,12 +842,19 @@ async def test_pty_manual_ls(sh):
         # Use synchronous functions to test pty directly.
         while True:
             try:
-                data = os.read(parent_fd, 4096)
+                with log_timer("os.read", -1):
+                    data = os.read(parent_fd, 4096)
             except OSError:  # indicates EOF on Linux
                 data = b""
             if not data:
                 break
             result.extend(data)
+            # Close child_fd after first successful read. If we close it
+            # in the parent immediately after forking the child, we don't read
+            # anything in the parent on MacOS! This has something to do with
+            # the process exiting so quickly with so little output.
+            with log_timer("os.close", -1):
+                os.close(child_fd)
 
     os.close(parent_fd)
 
