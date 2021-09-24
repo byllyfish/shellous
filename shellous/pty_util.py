@@ -4,7 +4,7 @@ import asyncio
 import errno
 import os
 import struct
-from typing import Any, NamedTuple
+from typing import Any, NamedTuple, Optional
 
 # The following modules are not supported on Windows.
 try:
@@ -16,6 +16,7 @@ except ImportError:
     pass
 
 from .log import LOGGER
+from .util import close_fds
 
 _STDIN_FILENO = 0
 _STDOUT_FILENO = 1
@@ -26,6 +27,7 @@ _CC = 6
 class PtyFds(NamedTuple):
     "Track parent/child fd's for pty."
     parent_fd: int
+    child_fd: Optional[int]
     eof: bytes
     reader: Any = None
     writer: Any = None
@@ -35,6 +37,7 @@ class PtyFds(NamedTuple):
         reader, writer = await _open_pty_streams(self.parent_fd)
         return PtyFds(
             self.parent_fd,
+            self.child_fd,
             self.eof,
             reader,
             writer,
@@ -48,8 +51,14 @@ class PtyFds(NamedTuple):
         else:
             os.close(self.parent_fd)
 
+    def close_child(self):
+        "Close pty child file descriptor for delayed close feature."
+        LOGGER.info("PtyFds.close_child")
+        if self.child_fd >= 0:
+            close_fds([self.child_fd])
 
-def open_pty(pty_func):
+
+def open_pty(pty_func, pty_delay_child_close):
     "Open pseudo-terminal (pty) descriptors. Returns (PtyFds, child_fd)."
     parent_fd, child_fd = pty.openpty()
 
@@ -61,6 +70,7 @@ def open_pty(pty_func):
     return (
         PtyFds(
             parent_fd,
+            child_fd if pty_delay_child_close else None,
             _get_eof(child_fd),
         ),
         child_fd,

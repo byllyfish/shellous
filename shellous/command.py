@@ -10,6 +10,7 @@ import dataclasses
 import enum
 import os
 import signal
+import sys
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 from typing import Any, Optional, TypeVar, Union
@@ -107,6 +108,9 @@ class Options:  # pylint: disable=too-many-instance-attributes
 
     pty: bool = False
     "True if child process should be controlled using a pseudo-terminal (pty)."
+
+    pty_delay_child_close: bool = sys.platform != "linux"
+    "True if parent should delay closing child pty descriptor."
 
     def merge_env(self):
         "Return our `env` merged with the global environment."
@@ -220,6 +224,7 @@ class CmdContext:
         start_new_session=_UNSET,
         preexec_fn=_UNSET,
         pty=_UNSET,
+        pty_delay_child_close=_UNSET,
     ) -> "CmdContext":
         "Return new context with custom options set."
         kwargs = locals()
@@ -356,6 +361,7 @@ class Command:
         start_new_session: Unset[bool] = _UNSET,
         preexec_fn: Unset[Any] = _UNSET,
         pty: Unset[bool] = _UNSET,
+        pty_delay_child_close: Unset[bool] = _UNSET,
     ) -> "Command":
         """Return new command with custom options set.
 
@@ -385,6 +391,8 @@ class Command:
         process. You may also set `pty` to a 1-arg function to call on the
         child_fd for setup purposes. Setting `pty` forces `start_new_session`
         to True.
+        - Set `pty_delay_child_close` to True to delay closing the child pty
+        file descriptor.
         """
         kwargs = locals()
         del kwargs["self"]
