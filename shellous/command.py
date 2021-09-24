@@ -109,7 +109,7 @@ class Options:  # pylint: disable=too-many-instance-attributes
     pty: bool = False
     "True if child process should be controlled using a pseudo-terminal (pty)."
 
-    pty_delay_child_close: bool = sys.platform != "linux"
+    pty_delay_child_close: bool = False
     "True if parent should delay closing child pty descriptor."
 
     def merge_env(self):
