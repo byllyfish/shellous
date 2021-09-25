@@ -412,6 +412,7 @@ class Runner:
 
                 # Launch the main subprocess.
                 with log_timer("asyncio.create_subprocess_exec"):
+                    LOGGER.info("subprocess_exec %r", opts.kwd_args)
                     self.proc = await asyncio.create_subprocess_exec(
                         *opts.args,
                         **opts.kwd_args,
