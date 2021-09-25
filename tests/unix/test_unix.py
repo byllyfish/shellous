@@ -1066,7 +1066,8 @@ async def test_pty_cbreak_size(sh):
 async def test_pty_raw_ls(sh):
     "Test the `pty` option in raw mode."
 
-    cmd = sh("ls").set(pty=raw(rows=24, cols=40))
+    close = sys.platform.startswith("freebsd")
+    cmd = sh("ls").set(pty=raw(rows=24, cols=40), pty_delay_child_close=close)
     result = await cmd
 
     assert "README.md" in result
