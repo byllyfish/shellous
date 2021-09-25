@@ -1108,6 +1108,7 @@ async def test_pty_cat_iteration_no_echo(sh):
 
 
 @pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+@pytest.mark.flaky(reruns=2)  # SafeChildWatcher?
 async def test_pty_canonical_ls(sh):
     "Test canonical ls output through pty is in columns."
     cmd = sh("ls", "README.md", "CHANGELOG.md").set(pty=canonical(cols=20, rows=10))

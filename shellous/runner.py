@@ -18,6 +18,7 @@ _KILL_TIMEOUT = 3.0
 _CLOSE_TIMEOUT = 0.25
 
 _KILL_EXIT_CODE = -9 if sys.platform != "win32" else 1
+_FLAKY_EXIT_CODE = 255
 
 
 def _is_cancelled(ex):
@@ -536,6 +537,10 @@ class Runner:
             LOGGER.critical("Runner._close process still running %r", self.proc)
             self.proc._transport.close()  # pylint: disable=protected-access
             return
+
+        # asyncio child watcher artifact.
+        if self.proc.returncode == _FLAKY_EXIT_CODE:
+            LOGGER.warning("Runner._close exit code=%r", self.proc.returncode)
 
         try:
             # Make sure the transport is closed (for asyncio and uvloop).
