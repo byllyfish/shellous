@@ -2,7 +2,7 @@
 
 import io
 import os
-from typing import Any, Optional, Union
+from typing import Any, Iterable, Optional, Union
 
 from .log import LOGGER, log_timer
 
@@ -29,7 +29,7 @@ def coerce_env(env: dict[str, Any]) -> dict[str, str]:
     return {str(key): _coerce(key, value) for key, value in env.items()}
 
 
-def close_fds(open_fds: list[Union[io.IOBase, int]]) -> None:
+def close_fds(open_fds: Iterable[Union[io.IOBase, int]]) -> None:
     "Close open file descriptors or file objects."
     with log_timer("close_fds"):
         try:
@@ -43,4 +43,5 @@ def close_fds(open_fds: list[Union[io.IOBase, int]]) -> None:
                 else:
                     obj.close()
         finally:
-            open_fds.clear()
+            if isinstance(open_fds, (list, set)):
+                open_fds.clear()

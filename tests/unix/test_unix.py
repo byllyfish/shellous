@@ -854,7 +854,9 @@ async def test_pty_manual_ls(sh):
             # anything in the parent on MacOS! This has something to do with
             # the process exiting so quickly with so little output.
             with log_timer("os.close", -1):
-                os.close(child_fd)
+                if child_fd >= 0:
+                    os.close(child_fd)
+                    child_fd = -1
 
     os.close(parent_fd)
 
