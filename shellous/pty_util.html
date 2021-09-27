@@ -111,7 +111,7 @@
 <span class="kn">import</span> <span class="nn">errno</span>
 <span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">import</span> <span class="nn">struct</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">NamedTuple</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">NamedTuple</span><span class="p">,</span> <span class="n">Optional</span>
 
 <span class="c1"># The following modules are not supported on Windows.</span>
 <span class="k">try</span><span class="p">:</span>
@@ -123,6 +123,7 @@
     <span class="k">pass</span>
 
 <span class="kn">from</span> <span class="nn">.log</span> <span class="kn">import</span> <span class="n">LOGGER</span>
+<span class="kn">from</span> <span class="nn">.util</span> <span class="kn">import</span> <span class="n">close_fds</span>
 
 <span class="n">_STDIN_FILENO</span> <span class="o">=</span> <span class="mi">0</span>
 <span class="n">_STDOUT_FILENO</span> <span class="o">=</span> <span class="mi">1</span>
@@ -131,7 +132,7 @@
 
 
 <span class="k">class</span> <span class="nc">PtyFds</span><span class="p">(</span><span class="n">NamedTuple</span><span class="p">):</span>
-    <span class="s2">&quot;Track parent/child fd&#39;s for pty.&quot;</span>
+    <span class="s2">&quot;Track parent fd for pty.&quot;</span>
     <span class="n">parent_fd</span><span class="p">:</span> <span class="nb">int</span>
     <span class="n">eof</span><span class="p">:</span> <span class="nb">bytes</span>
     <span class="n">reader</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span>
@@ -178,13 +179,7 @@
     <span class="s2">&quot;Explicitly open the tty to make it become a controlling tty.&quot;</span>
     <span class="c1"># See https://github.com/python/cpython/blob/3.9/Lib/pty.py</span>
 
-    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">termios</span><span class="p">,</span> <span class="s2">&quot;TIOCSCTTY&quot;</span><span class="p">):</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">fcntl</span><span class="o">.</span><span class="n">ioctl</span><span class="p">(</span><span class="n">child_fd</span><span class="p">,</span> <span class="n">termios</span><span class="o">.</span><span class="n">TIOCSCTTY</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-            <span class="k">return</span>
-        <span class="k">except</span> <span class="ne">OSError</span><span class="p">:</span>
-            <span class="k">pass</span>
-
+    <span class="c1"># Don&#39;t use ioctl TIOCSTTY; it doesn&#39;t appear to work on FreeBSD.</span>
     <span class="n">tmpfd</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">ttyname</span><span class="p">(</span><span class="n">child_fd</span><span class="p">),</span> <span class="n">os</span><span class="o">.</span><span class="n">O_RDWR</span><span class="p">)</span>
     <span class="n">os</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">tmpfd</span><span class="p">)</span>
 
@@ -352,7 +347,7 @@
                 <details>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">PtyFds</span><span class="p">(</span><span class="n">NamedTuple</span><span class="p">):</span>
-    <span class="s2">&quot;Track parent/child fd&#39;s for pty.&quot;</span>
+    <span class="s2">&quot;Track parent fd for pty.&quot;</span>
     <span class="n">parent_fd</span><span class="p">:</span> <span class="nb">int</span>
     <span class="n">eof</span><span class="p">:</span> <span class="nb">bytes</span>
     <span class="n">reader</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span>
@@ -379,7 +374,7 @@
 
         </details>
 
-            <div class="docstring"><p>Track parent/child fd's for pty.</p>
+            <div class="docstring"><p>Track parent fd for pty.</p>
 </div>
 
 
@@ -554,13 +549,7 @@
     <span class="s2">&quot;Explicitly open the tty to make it become a controlling tty.&quot;</span>
     <span class="c1"># See https://github.com/python/cpython/blob/3.9/Lib/pty.py</span>
 
-    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">termios</span><span class="p">,</span> <span class="s2">&quot;TIOCSCTTY&quot;</span><span class="p">):</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">fcntl</span><span class="o">.</span><span class="n">ioctl</span><span class="p">(</span><span class="n">child_fd</span><span class="p">,</span> <span class="n">termios</span><span class="o">.</span><span class="n">TIOCSCTTY</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-            <span class="k">return</span>
-        <span class="k">except</span> <span class="ne">OSError</span><span class="p">:</span>
-            <span class="k">pass</span>
-
+    <span class="c1"># Don&#39;t use ioctl TIOCSTTY; it doesn&#39;t appear to work on FreeBSD.</span>
     <span class="n">tmpfd</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">ttyname</span><span class="p">(</span><span class="n">child_fd</span><span class="p">),</span> <span class="n">os</span><span class="o">.</span><span class="n">O_RDWR</span><span class="p">)</span>
     <span class="n">os</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">tmpfd</span><span class="p">)</span>
 </pre></div>
