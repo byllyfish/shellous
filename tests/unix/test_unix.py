@@ -819,21 +819,21 @@ async def test_pty_manual(sh):
     assert result == b"abc\r\nABC\r\n"
 
 
-@pytest.mark.xfail(_is_uvloop() or sys.platform == "darwin", reason="uvloop,darwin")
+@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
 async def test_pty_manual_ls(sh):
     """Test setting up a pty manually."""
 
     import pty  # import not supported on windows
 
     import shellous
+    from shellous.log import log_timer
 
     parent_fd, child_fd = pty.openpty()
 
     cmd = (
-        # sh("bash", "-c", "ls README.md")
         sh("ls", "README.md")
         .stdin(child_fd, close=False)
-        .stdout(child_fd, close=True)
+        .stdout(child_fd, close=False)
         .set(start_new_session=True, preexec_fn=shellous.pty_util.set_ctty(child_fd))
     )
 
@@ -842,12 +842,21 @@ async def test_pty_manual_ls(sh):
         # Use synchronous functions to test pty directly.
         while True:
             try:
-                data = os.read(parent_fd, 4096)
+                with log_timer("os.read", -1):
+                    data = os.read(parent_fd, 4096)
             except OSError:  # indicates EOF on Linux
                 data = b""
             if not data:
                 break
             result.extend(data)
+            # Close child_fd after first successful read. If we close it
+            # in the parent immediately after forking the child, we don't read
+            # anything in the parent on MacOS! This has something to do with
+            # the process exiting so quickly with so little output.
+            with log_timer("os.close", -1):
+                if child_fd >= 0:
+                    os.close(child_fd)
+                    child_fd = -1
 
     os.close(parent_fd)
 
@@ -948,7 +957,7 @@ async def test_pty_ctermid(sh):
     ctermid, stdin_tty, stdout_tty = result.split()
 
     print(ctermid, stdin_tty, stdout_tty)
-    assert re.fullmatch(br"/dev/(?:tty|pts/\d+)", ctermid), ctermid
+    assert re.fullmatch(br"/dev/(?:ctty|tty|pts/\d+)", ctermid), ctermid
     assert re.fullmatch(br"/dev/(?:ttys|pts/)\d+", stdin_tty), stdin_tty
     assert re.fullmatch(br"/dev/(?:ttys|pts/)\d+", stdout_tty), stdout_tty
 
@@ -982,6 +991,38 @@ _STTY_LINUX = (
     b"echoctl echoke -flusho -extproc\r\n"
 )
 
+_STTY_FREEBSD_12 = (
+    b"speed 9600 baud; 0 rows; 0 columns;\r\n"
+    b"lflags: icanon isig iexten echo echoe -echok echoke -echonl echoctl\r\n"
+    b"\t-echoprt -altwerase -noflsh -tostop -flusho -pendin -nokerninfo\r\n"
+    b"\t-extproc\r\n"
+    b"iflags: -istrip icrnl -inlcr -igncr ixon -ixoff ixany imaxbel -ignbrk\r\n"
+    b"\tbrkint -inpck -ignpar -parmrk\r\n"
+    b"oflags: opost onlcr -ocrnl tab0 -onocr -onlret\r\n"
+    b"cflags: cread cs8 -parenb -parodd hupcl -clocal -cstopb -crtscts -dsrflow\r\n"
+    b"\t-dtrflow -mdmbuf\r\n"
+    b"cchars: discard = ^O; dsusp = ^Y; eof = ^D; eol = <undef>;\r\n"
+    b"\teol2 = <undef>; erase = ^?; erase2 = ^H; intr = ^C; kill = ^U;\r\n"
+    b"\tlnext = ^V; min = 1; quit = ^\\; reprint = ^R; start = ^Q;\r\n"
+    b"\tstatus = ^T; stop = ^S; susp = ^Z; time = 0; werase = ^W;\r\n"
+)
+
+_STTY_FREEBSD_13 = (
+    b"speed 9600 baud; 0 rows; 0 columns;\r\n"
+    b"lflags: icanon isig iexten echo echoe -echok echoke -echonl echoctl\r\n"
+    b"\t-echoprt -altwerase -noflsh -tostop -flusho -pendin -nokerninfo\r\n"
+    b"\t-extproc\r\n"
+    b"iflags: -istrip icrnl -inlcr -igncr ixon -ixoff ixany imaxbel -ignbrk\r\n"
+    b"\tbrkint -inpck -ignpar -parmrk\r\n"
+    b"oflags: opost onlcr -ocrnl tab0 -onocr -onlret\r\n"
+    b"cflags: cread cs8 -parenb -parodd hupcl -clocal -cstopb -crtscts -dsrflow\r\n"
+    b"\t-dtrflow -mdmbuf rtsdtr\r\n"
+    b"cchars: discard = ^O; dsusp = ^Y; eof = ^D; eol = <undef>;\r\n"
+    b"\teol2 = <undef>; erase = ^?; erase2 = ^H; intr = ^C; kill = ^U;\r\n"
+    b"\tlnext = ^V; min = 1; quit = ^\\; reprint = ^R; start = ^Q;\r\n"
+    b"\tstatus = ^T; stop = ^S; susp = ^Z; time = 0; werase = ^W;\r\n"
+)
+
 
 @pytest.mark.xfail(_is_uvloop(), reason="uvloop")
 async def test_pty_stty_all(sh, tmp_path):
@@ -990,15 +1031,22 @@ async def test_pty_stty_all(sh, tmp_path):
     err = tmp_path / "test_pty_stty_all"
     cmd = sh("stty", "-a").stdin(CAPTURE).stderr(err).set(pty=True)
 
+    buf = b""
     async with cmd.run() as run:
-        result = await run.stdout.read(1024)
-        run.stdin.close()
+        while True:
+            result = await run.stdout.read(1024)
+            if not result:
+                run.stdin.close()
+                break
+            buf += result
 
     assert err.read_bytes() == b""
     if sys.platform == "linux":
-        assert result == _STTY_LINUX
+        assert buf == _STTY_LINUX
+    elif sys.platform.startswith("freebsd"):
+        assert buf == _STTY_FREEBSD_12 or buf == _STTY_FREEBSD_13
     else:
-        assert result == _STTY_DARWIN
+        assert buf == _STTY_DARWIN
 
 
 @pytest.mark.xfail(_is_uvloop(), reason="uvloop")
@@ -1057,7 +1105,7 @@ async def test_pty_cbreak_size(sh):
 async def test_pty_raw_ls(sh):
     "Test the `pty` option in raw mode."
 
-    cmd = sh("ls").set(pty=raw(rows=24, cols=40))
+    cmd = sh("ls").set(pty=raw(rows=24, cols=40)).stderr(STDOUT)
     result = await cmd
 
     assert "README.md" in result
@@ -1103,7 +1151,9 @@ async def test_pty_cat_iteration_no_echo(sh):
 @pytest.mark.xfail(_is_uvloop(), reason="uvloop")
 async def test_pty_canonical_ls(sh):
     "Test canonical ls output through pty is in columns."
-    cmd = sh("ls", "README.md", "CHANGELOG.md").set(pty=canonical(cols=20, rows=10))
+    cmd = sh("ls", "README.md", "CHANGELOG.md").set(
+        pty=canonical(cols=20, rows=10, echo=False)
+    )
     result = await cmd
     assert result == "CHANGELOG.md\r\nREADME.md\r\n"
 

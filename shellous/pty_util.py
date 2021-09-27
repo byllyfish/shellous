@@ -4,7 +4,7 @@ import asyncio
 import errno
 import os
 import struct
-from typing import Any, NamedTuple
+from typing import Any, NamedTuple, Optional
 
 # The following modules are not supported on Windows.
 try:
@@ -16,6 +16,7 @@ except ImportError:
     pass
 
 from .log import LOGGER
+from .util import close_fds
 
 _STDIN_FILENO = 0
 _STDOUT_FILENO = 1
@@ -24,7 +25,7 @@ _CC = 6
 
 
 class PtyFds(NamedTuple):
-    "Track parent/child fd's for pty."
+    "Track parent fd for pty."
     parent_fd: int
     eof: bytes
     reader: Any = None
@@ -71,13 +72,7 @@ def set_ctty(child_fd):
     "Explicitly open the tty to make it become a controlling tty."
     # See https://github.com/python/cpython/blob/3.9/Lib/pty.py
 
-    if hasattr(termios, "TIOCSCTTY"):
-        try:
-            fcntl.ioctl(child_fd, termios.TIOCSCTTY, 0)
-            return
-        except OSError:
-            pass
-
+    # Don't use ioctl TIOCSTTY; it doesn't appear to work on FreeBSD.
     tmpfd = os.open(os.ttyname(child_fd), os.O_RDWR)
     os.close(tmpfd)
 

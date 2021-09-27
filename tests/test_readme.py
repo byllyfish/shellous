@@ -67,6 +67,10 @@ async def run_asyncio_repl(cmds):
         p = Prompt(run.stdin, run.stdout, errbuf)
         await p.prompt()
 
+        # Turn off WARNING logging.
+        await p.prompt("import shellous.log, logging")
+        await p.prompt("shellous.log.LOGGER.setLevel(logging.ERROR)")
+
         output = []
         for cmd in cmds:
             output.append(await p.prompt(cmd))
