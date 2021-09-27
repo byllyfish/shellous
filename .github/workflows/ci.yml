@@ -64,7 +64,7 @@ jobs:
     - name: Run Tests with uvloop (Linux and MacOS)
       if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
       run: |
-        $POETRY_RUN python -m pytest -vv -s --log-cli-level=$LOG_LEVEL
+        $POETRY_RUN python -m pytest -vv -s --log-cli-level=DEBUG
       env:
         SHELLOUS_LOOP_TYPE: "uvloop"
     - name: Run Tests with PidfdWatcher (Linux)
