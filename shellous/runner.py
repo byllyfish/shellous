@@ -332,7 +332,7 @@ class Runner:
                     LOGGER.info("waitpid returned %r", (pid, status))
                     if pid == self.proc.pid:
                         self.proc._transport._returncode = status
-                        self.proc._transport._proc.returncode = status  # copy into Popen obj
+                        self.proc._transport._proc.returncode = status
                         break
                     await asyncio.sleep(0.020)
 
@@ -423,12 +423,13 @@ class Runner:
 
                 # Launch the main subprocess.
                 with log_timer("asyncio.create_subprocess_exec"):
-                    LOGGER.info("subprocess_exec %r", opts.kwd_args)
                     if _FREEBSD and opts.pty_fds:
                         cw = asyncio.get_child_watcher()
                         saved_add_handler = cw.add_child_handler
+
                         def _add_child_handler(pid, callback, *args):
-                            cw.add_child_handler = saved_add_handler   
+                            cw.add_child_handler = saved_add_handler
+
                         cw.add_child_handler = _add_child_handler
                     self.proc = await asyncio.create_subprocess_exec(
                         *opts.args,
@@ -446,7 +447,6 @@ class Runner:
             # Assign pty streams.
             if opts.pty_fds:
                 assert (stdin, stdout, stderr) == (None, None, None)
-                # opts.pty_fds = await opts.pty_fds.open_streams()
                 stdin, stdout = opts.pty_fds.writer, opts.pty_fds.reader
 
             if stderr is not None:
