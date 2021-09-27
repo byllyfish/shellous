@@ -325,20 +325,30 @@ class Runner:
             if self.tasks:
                 await harvest(*self.tasks, trustee=self)
             if _BSD and self.options.pty_fds:
-                while True:
-                    pid, status = os.waitpid(self.proc.pid, os.WNOHANG)
-                    LOGGER.info("waitpid returned %r", (pid, status))
-                    if pid == self.proc.pid:
-                        self.proc._transport._returncode = status
-                        self.proc._transport._proc.returncode = status
-                        break
-                    await asyncio.sleep(0.020)
+                await self._wait_pid()
 
         except asyncio.CancelledError:
             LOGGER.info("Runner.wait cancelled %r", self)
             self.cancelled = True
             self.tasks.clear()  # all tasks were cancelled
             await self._kill()
+
+    @log_method(LOG_DETAIL)
+    async def _wait_pid(self):
+        "Manually poll `waitpid` until process finishes."
+        proc_pid = self.proc.pid
+        assert proc_pid
+
+        while True:
+            pid, status = os.waitpid(proc_pid, os.WNOHANG)
+            LOGGER.info("waitpid returned %r", (pid, status))
+
+            if pid == proc_pid:
+                self.proc._transport._returncode = status
+                self.proc._transport._proc.returncode = status
+                break
+
+            await asyncio.sleep(0.025)
 
     @log_method(LOG_DETAIL)
     async def _kill(self):
@@ -415,28 +425,7 @@ class Runner:
         try:
             # Set up subprocess arguments and launch subprocess.
             with self.options as opts:
-                # Second half of pty setup.
-                if opts.pty_fds:
-                    opts.pty_fds = await opts.pty_fds.open_streams()
-
-                # Launch the main subprocess.
-                with log_timer("asyncio.create_subprocess_exec"):
-                    if _BSD and opts.pty_fds:
-                        cw = asyncio.get_child_watcher()
-                        saved_add_handler = cw.add_child_handler
-
-                        def _add_child_handler(pid, callback, *args):
-                            cw.add_child_handler = saved_add_handler
-
-                        cw.add_child_handler = _add_child_handler
-                    self.proc = await asyncio.create_subprocess_exec(
-                        *opts.args,
-                        **opts.kwd_args,
-                    )
-
-                # Launch the process substitution commands (if any).
-                for cmd in opts.subcmds:
-                    self.add_task(cmd.coro(), "procsub")
+                await self._subprocess_exec(opts)
 
             stdin = self.proc.stdin
             stdout = self.proc.stdout
@@ -485,6 +474,26 @@ class Runner:
             self.add_task(self._waiter(), "waiter")
 
         return self
+
+    @log_method(LOG_DETAIL)
+    async def _subprocess_exec(self, opts):
+        "Start the subprocess and assign to `self.proc`."
+
+        # Second half of pty setup.
+        if opts.pty_fds:
+            opts.pty_fds = await opts.pty_fds.open_streams()
+            if _BSD:
+                pty_util.patch_child_watcher()
+
+        with log_timer("asyncio.create_subprocess_exec"):
+            self.proc = await asyncio.create_subprocess_exec(
+                *opts.args,
+                **opts.kwd_args,
+            )
+
+        # Launch the process substitution commands (if any).
+        for cmd in opts.subcmds:
+            self.add_task(cmd.coro(), "procsub")
 
     @log_method(LOG_DETAIL)
     async def _waiter(self):

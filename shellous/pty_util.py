@@ -223,3 +223,14 @@ def _get_eof(fdesc):
         eof = attrs[_CC][termios.VEOF]
 
     return eof
+
+
+def patch_child_watcher():
+    "Patch the current child watcher to ignore the next `add_child_handler`."
+    watcher = asyncio.get_child_watcher()
+    saved_add_handler = watcher.add_child_handler
+
+    def _add_child_handler(*_args):
+        watcher.add_child_handler = saved_add_handler
+
+    watcher.add_child_handler = _add_child_handler
