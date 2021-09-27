@@ -239,10 +239,8 @@ class _RunOptions:
         Initializes `self.pty_fds`.
         """
 
-        delay_close = self.command.options.pty_delay_child_close
-        self.pty_fds, child_fd = pty_util.open_pty(pty, delay_close)
-        if not delay_close:
-            self.open_fds.append(child_fd)
+        self.pty_fds, child_fd = pty_util.open_pty(pty)
+        self.open_fds.append(child_fd)
 
         LOGGER.info("_setup_pty1: %r child_fd=%r", self.pty_fds, child_fd)
 
@@ -491,11 +489,7 @@ class Runner:
     @log_method(LOG_DETAIL)
     async def _waiter(self):
         "Run task that waits for process to exit."
-        try:
-            await self.proc.wait()
-        finally:
-            if self.options.pty_fds and self.command.options.pty_delay_child_close:
-                self.options.pty_fds.close_child()
+        await self.proc.wait()
 
     def _setup_output_sink(self, stream, sink, encoding, tag):
         "Set up a task to write to custom output sink."
