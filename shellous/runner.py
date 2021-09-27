@@ -19,7 +19,7 @@ _CLOSE_TIMEOUT = 0.25
 
 _KILL_EXIT_CODE = -9 if sys.platform != "win32" else 1
 _FLAKY_EXIT_CODE = 255
-_FREEBSD = sys.platform.startswith("freebsd")
+_BSD = sys.platform.startswith("freebsd") or sys.platform == "darwin"
 
 
 def _is_cancelled(ex):
@@ -324,7 +324,7 @@ class Runner:
         try:
             if self.tasks:
                 await harvest(*self.tasks, trustee=self)
-            if _FREEBSD and self.options.pty_fds:
+            if _BSD and self.options.pty_fds:
                 while True:
                     pid, status = os.waitpid(self.proc.pid, os.WNOHANG)
                     LOGGER.info("waitpid returned %r", (pid, status))
@@ -421,7 +421,7 @@ class Runner:
 
                 # Launch the main subprocess.
                 with log_timer("asyncio.create_subprocess_exec"):
-                    if _FREEBSD and opts.pty_fds:
+                    if _BSD and opts.pty_fds:
                         cw = asyncio.get_child_watcher()
                         saved_add_handler = cw.add_child_handler
 
@@ -481,7 +481,7 @@ class Runner:
         self.stderr = stderr
 
         # Add a task to monitor for when the process finishes.
-        if not (_FREEBSD and opts.pty_fds):
+        if not (_BSD and opts.pty_fds):
             self.add_task(self._waiter(), "waiter")
 
         return self
