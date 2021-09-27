@@ -84,6 +84,9 @@
             <li>
                     <a class="function" href="#canonical">canonical</a>
             </li>
+            <li>
+                    <a class="function" href="#patch_child_watcher">patch_child_watcher</a>
+            </li>
     </ul>
 
 
@@ -330,6 +333,17 @@
         <span class="n">eof</span> <span class="o">=</span> <span class="n">attrs</span><span class="p">[</span><span class="n">_CC</span><span class="p">][</span><span class="n">termios</span><span class="o">.</span><span class="n">VEOF</span><span class="p">]</span>
 
     <span class="k">return</span> <span class="n">eof</span>
+
+
+<span class="k">def</span> <span class="nf">patch_child_watcher</span><span class="p">():</span>
+    <span class="s2">&quot;Patch the current child watcher to ignore the next `add_child_handler`.&quot;</span>
+    <span class="n">watcher</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">get_child_watcher</span><span class="p">()</span>
+    <span class="n">saved_add_handler</span> <span class="o">=</span> <span class="n">watcher</span><span class="o">.</span><span class="n">add_child_handler</span>
+
+    <span class="k">def</span> <span class="nf">_add_child_handler</span><span class="p">(</span><span class="o">*</span><span class="n">_args</span><span class="p">):</span>
+        <span class="n">watcher</span><span class="o">.</span><span class="n">add_child_handler</span> <span class="o">=</span> <span class="n">saved_add_handler</span>
+
+    <span class="n">watcher</span><span class="o">.</span><span class="n">add_child_handler</span> <span class="o">=</span> <span class="n">_add_child_handler</span>
 </pre></div>
 
         </details>
@@ -754,6 +768,34 @@
         </details>
 
             <div class="docstring"><p>Return a function that leaves PtyOptions.child_fd in canonical mode.</p>
+</div>
+
+
+                </section>
+                <section id="patch_child_watcher">
+                            <div class="attr function"><a class="headerlink" href="#patch_child_watcher">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">patch_child_watcher</span><span class="signature">()</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">patch_child_watcher</span><span class="p">():</span>
+    <span class="s2">&quot;Patch the current child watcher to ignore the next `add_child_handler`.&quot;</span>
+    <span class="n">watcher</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">get_child_watcher</span><span class="p">()</span>
+    <span class="n">saved_add_handler</span> <span class="o">=</span> <span class="n">watcher</span><span class="o">.</span><span class="n">add_child_handler</span>
+
+    <span class="k">def</span> <span class="nf">_add_child_handler</span><span class="p">(</span><span class="o">*</span><span class="n">_args</span><span class="p">):</span>
+        <span class="n">watcher</span><span class="o">.</span><span class="n">add_child_handler</span> <span class="o">=</span> <span class="n">saved_add_handler</span>
+
+    <span class="n">watcher</span><span class="o">.</span><span class="n">add_child_handler</span> <span class="o">=</span> <span class="n">_add_child_handler</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Patch the current child watcher to ignore the next <code>add_child_handler</code>.</p>
 </div>
 
 
