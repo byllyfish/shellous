@@ -19,6 +19,7 @@ _CLOSE_TIMEOUT = 0.25
 
 _KILL_EXIT_CODE = -9 if sys.platform != "win32" else 1
 _FLAKY_EXIT_CODE = 255
+_FREEBSD = sys.platform.startswith("freebsd")
 
 
 def _is_cancelled(ex):
@@ -323,7 +324,17 @@ class Runner:
         assert self.proc
 
         try:
-            await harvest(*self.tasks, trustee=self)
+            if self.tasks:
+                await harvest(*self.tasks, trustee=self)
+            if _FREEBSD and self.options.pty_fds:
+                while True:
+                    pid, status = os.waitpid(self.proc.pid, os.WNOHANG)
+                    LOGGER.info("waitpid returned %r", (pid, status))
+                    if pid == self.proc.pid:
+                        self.proc._transport._returncode = status
+                        self.proc._transport._proc.returncode = status  # copy into Popen obj
+                        break
+                    await asyncio.sleep(0.020)
 
         except asyncio.CancelledError:
             LOGGER.info("Runner.wait cancelled %r", self)
@@ -413,6 +424,12 @@ class Runner:
                 # Launch the main subprocess.
                 with log_timer("asyncio.create_subprocess_exec"):
                     LOGGER.info("subprocess_exec %r", opts.kwd_args)
+                    if _FREEBSD and opts.pty_fds:
+                        cw = asyncio.get_child_watcher()
+                        saved_add_handler = cw.add_child_handler
+                        def _add_child_handler(pid, callback, *args):
+                            cw.add_child_handler = saved_add_handler   
+                        cw.add_child_handler = _add_child_handler
                     self.proc = await asyncio.create_subprocess_exec(
                         *opts.args,
                         **opts.kwd_args,
@@ -466,7 +483,8 @@ class Runner:
         self.stderr = stderr
 
         # Add a task to monitor for when the process finishes.
-        self.add_task(self._waiter(), "waiter")
+        if not (_FREEBSD and opts.pty_fds):
+            self.add_task(self._waiter(), "waiter")
 
         return self
 

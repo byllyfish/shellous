@@ -957,7 +957,7 @@ async def test_pty_ctermid(sh):
     ctermid, stdin_tty, stdout_tty = result.split()
 
     print(ctermid, stdin_tty, stdout_tty)
-    assert re.fullmatch(br"/dev/(?:tty|pts/\d+)", ctermid), ctermid
+    assert re.fullmatch(br"/dev/(?:ctty|tty|pts/\d+)", ctermid), ctermid
     assert re.fullmatch(br"/dev/(?:ttys|pts/)\d+", stdin_tty), stdin_tty
     assert re.fullmatch(br"/dev/(?:ttys|pts/)\d+", stdout_tty), stdout_tty
 
@@ -991,6 +991,22 @@ _STTY_LINUX = (
     b"echoctl echoke -flusho -extproc\r\n"
 )
 
+_STTY_FREEBSD = (
+    b'speed 9600 baud; 0 rows; 0 columns;\r\n'
+    b'lflags: icanon isig iexten echo echoe -echok echoke -echonl echoctl\r\n'
+    b'\t-echoprt -altwerase -noflsh -tostop -flusho -pendin -nokerninfo\r\n'
+    b'\t-extproc\r\n'
+    b'iflags: -istrip icrnl -inlcr -igncr ixon -ixoff ixany imaxbel -ignbrk\r\n'
+    b'\tbrkint -inpck -ignpar -parmrk\r\n'
+    b'oflags: opost onlcr -ocrnl tab0 -onocr -onlret\r\n'
+    b'cflags: cread cs8 -parenb -parodd hupcl -clocal -cstopb -crtscts -dsrflow\r\n'
+    b'\t-dtrflow -mdmbuf\r\n'
+    b'cchars: discard = ^O; dsusp = ^Y; eof = ^D; eol = <undef>;\r\n'
+    b'\teol2 = <undef>; erase = ^?; erase2 = ^H; intr = ^C; kill = ^U;\r\n'
+    b'\tlnext = ^V; min = 1; quit = ^\\; reprint = ^R; start = ^Q;\r\n'
+    b'\tstatus = ^T; stop = ^S; susp = ^Z; time = 0; werase = ^W;\r\n'
+)
+
 
 @pytest.mark.xfail(_is_uvloop(), reason="uvloop")
 async def test_pty_stty_all(sh, tmp_path):
@@ -999,15 +1015,22 @@ async def test_pty_stty_all(sh, tmp_path):
     err = tmp_path / "test_pty_stty_all"
     cmd = sh("stty", "-a").stdin(CAPTURE).stderr(err).set(pty=True)
 
+    buf = b""
     async with cmd.run() as run:
-        result = await run.stdout.read(1024)
-        run.stdin.close()
+        while True:
+            result = await run.stdout.read(1024)
+            if not result:
+                run.stdin.close()
+                break
+            buf += result
 
     assert err.read_bytes() == b""
     if sys.platform == "linux":
-        assert result == _STTY_LINUX
+        assert buf == _STTY_LINUX
+    elif sys.platform.startswith("freebsd"):
+        assert buf == _STTY_FREEBSD
     else:
-        assert result == _STTY_DARWIN
+        assert buf == _STTY_DARWIN
 
 
 @pytest.mark.xfail(_is_uvloop(), reason="uvloop")
@@ -1066,10 +1089,9 @@ async def test_pty_cbreak_size(sh):
 async def test_pty_raw_ls(sh):
     "Test the `pty` option in raw mode."
 
-    close = sys.platform.startswith("freebsd")
     cmd = (
         sh("ls")
-        .set(pty=raw(rows=24, cols=40), pty_delay_child_close=close)
+        .set(pty=raw(rows=24, cols=40))
         .stderr(STDOUT)
     )
     result = await cmd
@@ -1115,10 +1137,9 @@ async def test_pty_cat_iteration_no_echo(sh):
 
 
 @pytest.mark.xfail(_is_uvloop(), reason="uvloop")
-@pytest.mark.flaky(reruns=2)  # SafeChildWatcher?
 async def test_pty_canonical_ls(sh):
     "Test canonical ls output through pty is in columns."
-    cmd = sh("ls", "README.md", "CHANGELOG.md").set(pty=canonical(cols=20, rows=10))
+    cmd = sh("ls", "README.md", "CHANGELOG.md").set(pty=canonical(cols=20, rows=10, echo=False))
     result = await cmd
     assert result == "CHANGELOG.md\r\nREADME.md\r\n"
 
