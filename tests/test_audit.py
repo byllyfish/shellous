@@ -47,6 +47,11 @@ async def test_audit():
         # Work-around Windows UnicodeEncodeError: '_winapi.CreateNamedPipe' evt.
         print(event.encode("ascii", "backslashreplace").decode("ascii"))
 
+    # Check for my audit event.
+    assert any(
+        event.startswith("('byllyfish/shellous.subprocess_spawn',") for event in events
+    )
+
     if not _is_uvloop():
         # uvloop doesn't implement audit hooks.
         assert any(event.startswith("('subprocess.Popen',") for event in events)
