@@ -13,3 +13,7 @@ task:
 
   script:
     - . .venv/bin/activate && pytest -vv -s --durations=20 --log-cli-level=DEBUG
+
+  safecw_script:
+    # Test SafeChildWatcher.
+    - . .venv/bin/activate && SHELLOUS_CHILDWATCHER_TYPE=safe pytest -vv -s --durations=20 --log-cli-level=DEBUG
