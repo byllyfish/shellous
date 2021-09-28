@@ -912,7 +912,7 @@ async def test_pty_manual_streams(sh):
 
     reader, writer = await _get_streams(parent_fd)
 
-    async with cmd.run() as run:
+    async with cmd.run():
         writer.write(b"abc\n")
         await writer.drain()
         await asyncio.sleep(0.05)

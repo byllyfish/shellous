@@ -203,7 +203,7 @@ class CmdContext:
         new_options = self.options.set_env(kwds)
         return CmdContext(new_options)
 
-    def set(  # pylint: disable=unused-argument
+    def set(  # pylint: disable=unused-argument, too-many-locals
         self,
         *,
         inherit_env=_UNSET,
@@ -339,7 +339,7 @@ class Command:
         new_options = self.options.set_env(kwds)
         return Command(self.args, new_options)
 
-    def set(  # pylint: disable=unused-argument
+    def set(  # pylint: disable=unused-argument, too-many-locals
         self,
         *,
         inherit_env: Unset[bool] = _UNSET,

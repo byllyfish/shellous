@@ -38,7 +38,7 @@ def _is_write_mode(cmd):
     return cmd.options.write_mode
 
 
-class _RunOptions:
+class _RunOptions:  # pylint: disable=too-many-instance-attributes
     """_RunOptions is context manager to assist in running a command.
 
     This class sets up low-level I/O redirection and helps close open file
@@ -356,6 +356,7 @@ class Runner:
                 LOGGER.info("waitpid returned %r", (pid, status))
 
             if pid == proc_pid:
+                # pylint: disable=protected-access
                 self.proc._transport._returncode = status
                 self.proc._transport._proc.returncode = status
                 break
