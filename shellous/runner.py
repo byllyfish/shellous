@@ -79,7 +79,7 @@ class _RunOptions:
         "Make sure those file descriptors are cleaned up."
         self.close_fds()
         if exc_value:
-            LOGGER.info(
+            LOGGER.warning(
                 "_RunOptions.exit %r exc_value=%r", self.command.name, exc_value
             )
 
@@ -252,7 +252,8 @@ class _RunOptions:
         if not _BSD:
             self.open_fds.append(self.pty_fds.child_fd)
 
-        LOGGER.info("_setup_pty1: %r", self.pty_fds)
+        if LOG_DETAIL:
+            LOGGER.info("_setup_pty1: %r", self.pty_fds)
 
         if stdin == asyncio.subprocess.PIPE:
             stdin = child_fd
@@ -351,7 +352,8 @@ class Runner:
 
         while True:
             pid, status = os.waitpid(proc_pid, os.WNOHANG)
-            LOGGER.info("waitpid returned %r", (pid, status))
+            if LOG_DETAIL:
+                LOGGER.info("waitpid returned %r", (pid, status))
 
             if pid == proc_pid:
                 self.proc._transport._returncode = status

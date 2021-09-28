@@ -16,7 +16,7 @@ try:
 except ImportError:
     pass
 
-from .log import LOGGER, log_method
+from .log import LOG_DETAIL, LOGGER, log_method
 from .util import close_fds
 
 _STDIN_FILENO = 0
@@ -49,7 +49,7 @@ class PtyFds(NamedTuple):
     reader: Any = None
     writer: Any = None
 
-    @log_method(True)
+    @log_method(LOG_DETAIL)
     async def open_streams(self):
         "Open pty reader/writer streams."
         reader, writer = await _open_pty_streams(self.parent_fd, self.child_fd)
@@ -63,7 +63,8 @@ class PtyFds(NamedTuple):
 
     def close(self):
         "Close pty file descriptors."
-        LOGGER.info("PtyFds.close")
+        if LOG_DETAIL:
+            LOGGER.info("PtyFds.close")
         self.child_fd.close()
         if self.writer:
             self.writer.close()
@@ -101,10 +102,10 @@ class PtyStreamReaderProtocol(asyncio.StreamReaderProtocol):
 
     def connection_lost(self, exc):
         "Intercept EIO error and treat it as EOF."
-        LOGGER.info("PtyStreamReaderProtocol.connection_lost ex=%r", exc)
+        if LOG_DETAIL:
+            LOGGER.info("PtyStreamReaderProtocol.connection_lost ex=%r", exc)
         if isinstance(exc, OSError) and exc.errno == errno.EIO:
             exc = None
-            LOGGER.info("connection_lost EIO -> EOF")
         super().connection_lost(exc)
 
     def data_received(self, data):
@@ -116,7 +117,8 @@ class PtyStreamReaderProtocol(asyncio.StreamReaderProtocol):
 
     def eof_received(self):
         "Log when EOF received."
-        LOGGER.info("PtyStreamReaderProtocol.eof_received")
+        if LOG_DETAIL:
+            LOGGER.info("PtyStreamReaderProtocol.eof_received")
         return super().eof_received()
 
 
@@ -145,7 +147,8 @@ async def _open_pty_streams(parent_fd: int, child_fd: ChildFd):
 
     # Patch writer_transport.close so it also closes the reader_transport.
     def _close():
-        LOGGER.info("writer_transport.close()")
+        if LOG_DETAIL:
+            LOGGER.info("writer_transport.close()")
         _orig_close()
         reader_transport.close()
 
