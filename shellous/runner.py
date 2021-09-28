@@ -181,7 +181,7 @@ class _RunOptions:  # pylint: disable=too-many-instance-attributes
         if isinstance(input_, (bytes, bytearray)):
             input_bytes = input_
         elif isinstance(input_, os.PathLike):
-            stdin = open(input_, "rb")
+            stdin = open(input_, "rb")  # pylint: disable=consider-using-with
             self.open_fds.append(stdin)
         elif isinstance(input_, Redirect) and input_.is_custom():
             # Custom support for Redirect constants.
@@ -210,8 +210,7 @@ class _RunOptions:  # pylint: disable=too-many-instance-attributes
 
         if isinstance(output, (str, bytes, os.PathLike)):
             mode = "ab" if append else "wb"
-            # FIXME: we really just need the file descriptor...
-            stdout = open(output, mode=mode)
+            stdout = open(output, mode=mode)  # pylint: disable=consider-using-with
             self.open_fds.append(stdout)
         elif isinstance(output, Redirect) and output.is_custom():
             # Custom support for Redirect constants.
@@ -711,7 +710,7 @@ class PipeRunner:  # pylint: disable=too-many-instance-attributes
             LOGGER.warning("PipeRunner enter %r ex=%r", self, ex)
             if _is_cancelled(ex):
                 self.cancelled = True
-            await self._wait(kill=True)  # FIXME
+            await self._wait(kill=True)
             raise
 
     @log_method(LOG_EXIT, exc_value=2)
