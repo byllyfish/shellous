@@ -437,7 +437,7 @@ class Runner:
         try:
             # Set up subprocess arguments and launch subprocess.
             with self.options as opts:
-                await self._subprocess_exec(opts)
+                await self._subprocess_spawn(opts)
 
             stdin = self.proc.stdin
             stdout = self.proc.stdout
@@ -488,7 +488,7 @@ class Runner:
         return self
 
     @log_method(LOG_DETAIL)
-    async def _subprocess_exec(self, opts):
+    async def _subprocess_spawn(self, opts):
         "Start the subprocess and assign to `self.proc`."
 
         # Second half of pty setup.
@@ -498,6 +498,8 @@ class Runner:
                 pty_util.patch_child_watcher()
 
         with log_timer("asyncio.create_subprocess_exec"):
+            # AUDIT: byllyfish/shellous.subprocess_spawn: executable
+            sys.audit("byllyfish/shellous.subprocess_spawn", opts.args[0])
             self.proc = await asyncio.create_subprocess_exec(
                 *opts.args,
                 **opts.kwd_args,
