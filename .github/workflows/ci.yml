@@ -76,7 +76,7 @@ jobs:
     - name: Run Tests with SafeChildWatcher (Linux and MacOS)
       if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
       run: |
-        $POETRY_RUN python -m pytest -vv -s --log-cli-level=$LOG_LEVEL
+        $POETRY_RUN python -m pytest -vv -s --log-cli-level=DEBUG
       env:
         SHELLOUS_CHILDWATCHER_TYPE: "safe"
     - name: Run Tests with MultiLoopChildWatcher (Linux and MacOS)
