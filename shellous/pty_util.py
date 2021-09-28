@@ -4,6 +4,7 @@ import asyncio
 import errno
 import os
 import struct
+from dataclasses import dataclass
 from typing import Any, NamedTuple, Optional
 
 # The following modules are not supported on Windows.
@@ -15,7 +16,7 @@ try:
 except ImportError:
     pass
 
-from .log import LOGGER
+from .log import LOG_DETAIL, LOGGER, log_method
 from .util import close_fds
 
 _STDIN_FILENO = 0
@@ -24,18 +25,37 @@ _LFLAG = 3
 _CC = 6
 
 
+@dataclass
+class ChildFd:
+    "Make sure child fd is only closed once."
+    child_fd: int
+
+    def __int__(self):
+        return self.child_fd
+
+    def close(self):
+        "Close the child file descriptor exactly once."
+        if self.child_fd >= 0:
+            fdesc = self.child_fd
+            self.child_fd = -1
+            close_fds([fdesc])
+
+
 class PtyFds(NamedTuple):
     "Track parent fd for pty."
     parent_fd: int
+    child_fd: ChildFd
     eof: bytes
     reader: Any = None
     writer: Any = None
 
+    @log_method(LOG_DETAIL)
     async def open_streams(self):
         "Open pty reader/writer streams."
-        reader, writer = await _open_pty_streams(self.parent_fd)
+        reader, writer = await _open_pty_streams(self.parent_fd, self.child_fd)
         return PtyFds(
             self.parent_fd,
+            self.child_fd,
             self.eof,
             reader,
             writer,
@@ -43,11 +63,13 @@ class PtyFds(NamedTuple):
 
     def close(self):
         "Close pty file descriptors."
-        LOGGER.info("PtyFds.close")
+        if LOG_DETAIL:
+            LOGGER.info("PtyFds.close")
+        self.child_fd.close()
         if self.writer:
             self.writer.close()
         else:
-            os.close(self.parent_fd)
+            close_fds([self.parent_fd])
 
 
 def open_pty(pty_func):
@@ -59,12 +81,10 @@ def open_pty(pty_func):
     if callable(pty_func):
         pty_func(child_fd)
 
-    return (
-        PtyFds(
-            parent_fd,
-            _get_eof(child_fd),
-        ),
-        child_fd,
+    return PtyFds(
+        parent_fd,
+        ChildFd(child_fd),
+        _get_eof(child_fd),
     )
 
 
@@ -82,39 +102,53 @@ class PtyStreamReaderProtocol(asyncio.StreamReaderProtocol):
 
     def connection_lost(self, exc):
         "Intercept EIO error and treat it as EOF."
-        LOGGER.info("PtyStreamReaderProtocol.connection_lost ex=%r", exc)
+        if LOG_DETAIL:
+            LOGGER.info("PtyStreamReaderProtocol.connection_lost ex=%r", exc)
         if isinstance(exc, OSError) and exc.errno == errno.EIO:
             exc = None
-            LOGGER.info("connection_lost EIO -> EOF")
         super().connection_lost(exc)
+
+    def data_received(self, data):
+        "Close child_fd when first data received."
+        if self._pty_child_fd:
+            self._pty_child_fd.close()
+            self._pty_child_fd = None
+        return super().data_received(data)
 
     def eof_received(self):
         "Log when EOF received."
-        LOGGER.info("PtyStreamReaderProtocol.eof_received")
+        if LOG_DETAIL:
+            LOGGER.info("PtyStreamReaderProtocol.eof_received")
         return super().eof_received()
 
 
-async def _open_pty_streams(file_desc):
+async def _open_pty_streams(parent_fd: int, child_fd: ChildFd):
     "Open reader, writer streams for pty file descriptor."
 
     loop = asyncio.get_running_loop()
     reader = asyncio.StreamReader(loop=loop)
     reader_protocol = PtyStreamReaderProtocol(reader, loop=loop)
+
+    # Stick reference to child_fd into protocol so we can close it after the
+    # first data is received on BSD systems.
+    reader_protocol._pty_child_fd = child_fd
+
     reader_transport, _ = await loop.connect_read_pipe(
         lambda: reader_protocol,
-        os.fdopen(file_desc, "rb", 0, closefd=False),
+        os.fdopen(parent_fd, "rb", 0, closefd=False),
     )
 
     writer_protocol = asyncio.streams.FlowControlMixin()
     writer_transport, writer_protocol = await loop.connect_write_pipe(
         lambda: writer_protocol,
-        os.fdopen(file_desc, "wb", 0, closefd=True),
+        os.fdopen(parent_fd, "wb", 0, closefd=True),
     )
     writer = asyncio.StreamWriter(writer_transport, writer_protocol, reader, loop)
 
     # Patch writer_transport.close so it also closes the reader_transport.
     def _close():
-        LOGGER.info("writer_transport.close()")
+        if LOG_DETAIL:
+            LOGGER.info("writer_transport.close()")
         _orig_close()
         reader_transport.close()
 

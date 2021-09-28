@@ -50,7 +50,7 @@ def log_method(enabled, *, _info=False, **kwds):
         is_asyncgen = inspect.isasyncgenfunction(func)
         assert is_asyncgen or inspect.iscoroutinefunction(
             func
-        ), f"Expected {func.__qualname__} to be coroutine or asyncgen"
+        ), f"Expected {func!r} to be coroutine or asyncgen"
 
         if "." in func.__qualname__ and is_asyncgen:
             # Use _asyncgen_wrapper which includes value of `self` arg.
