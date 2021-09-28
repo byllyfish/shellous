@@ -12,7 +12,7 @@ from shellous.harvest import harvest, harvest_results
 from shellous.log import LOG_DETAIL, LOG_ENTER, LOG_EXIT, LOGGER, log_method, log_timer
 from shellous.redirect import Redirect
 from shellous.result import Result, make_result
-from shellous.util import close_fds
+from shellous.util import close_fds, verify_dev_fd
 
 _KILL_TIMEOUT = 3.0
 _CLOSE_TIMEOUT = 0.25
@@ -116,6 +116,9 @@ class _RunOptions:
             pass_fds=pass_fds,
             pass_fds_close=True,
         )
+
+        if _BSD:
+            verify_dev_fd(pass_fds[0])
 
     def _setup_redirects(self):
         "Set up I/O redirections."
@@ -456,7 +459,7 @@ class Runner:
                     stdin = None
 
         except (Exception, asyncio.CancelledError) as ex:
-            LOGGER.info("Runner.start %r ex=%r", self, ex)
+            LOGGER.info("Runner._start %r ex=%r", self, ex)
             if _is_cancelled(ex):
                 self.cancelled = True
             if self.proc:

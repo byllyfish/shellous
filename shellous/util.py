@@ -45,3 +45,12 @@ def close_fds(open_fds: Iterable[Union[io.IOBase, int]]) -> None:
         finally:
             if isinstance(open_fds, (list, set)):
                 open_fds.clear()
+
+
+def verify_dev_fd(fdesc):
+    "Verify that /dev/fd file system exists and works."
+    path = f"/dev/fd/{fdesc}"
+    if not os.path.exists(path):
+        raise RuntimeError(
+            f"Missing '{path}': you may need to enable fdescfs file system"
+        )
