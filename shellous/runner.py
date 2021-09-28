@@ -242,10 +242,17 @@ class _RunOptions:
         Initializes `self.pty_fds`.
         """
 
-        self.pty_fds, child_fd = pty_util.open_pty(pty)
-        self.open_fds.append(child_fd)
+        self.pty_fds = pty_util.open_pty(pty)
+        child_fd = int(self.pty_fds.child_fd)
 
-        LOGGER.info("_setup_pty1: %r child_fd=%r", self.pty_fds, child_fd)
+        # On BSD-derived systems like FreeBSD and Darwin, we delay closing the
+        # pty's child_fd in the parent process until after the first read
+        # succeeds. On Linux, we close the child_fd as soon as possible.
+
+        if not _BSD:
+            self.open_fds.append(self.pty_fds.child_fd)
+
+        LOGGER.info("_setup_pty1: %r", self.pty_fds)
 
         if stdin == asyncio.subprocess.PIPE:
             stdin = child_fd
