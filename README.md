@@ -26,7 +26,7 @@ Benefits
 - Easily capture output or redirect stdin, stdout and stderr to files.
 - Easily construct [pipelines](https://en.wikipedia.org/wiki/Pipeline_(Unix)) and use [process substitution](https://en.wikipedia.org/wiki/Process_substitution).
 - Run a program with a pseudo-terminal (pty).
-- Runs on Linux, MacOS and Windows.
+- Runs on Linux, MacOS, FreeBSD and Windows.
 
 Requirements
 ------------
