@@ -1,6 +1,12 @@
 Shellous Change Log
 ===================
 
+0.6.0
+-----
+
+- [FEATURE] Add support for FreeBSD.
+- [BUGFIX] Improve pty support on MacOS.
+
 0.5.1
 -----
 
