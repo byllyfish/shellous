@@ -7,6 +7,7 @@ import sys
 
 import pytest
 import shellous
+from shellous.harvest import harvest_results
 from shellous.log import LOGGER
 
 pytestmark = pytest.mark.asyncio
@@ -30,10 +31,13 @@ class Prompt:
             self.stdin.write(input_text.encode("utf-8") + b"\n")
 
         # Drain our write to stdin, and wait for prompt from stdout.
-        out, _ = await asyncio.gather(
+        cancelled, (out, _) = await harvest_results(
             self.stdout.readuntil(self.prompt_bytes),
             self.stdin.drain(),
+            timeout=2.0,
         )
+        if cancelled:
+            raise asyncio.CancelledError()
 
         # If there are ellipsis bytes in the beginning of out, remove them.
         out = re.sub(br"^(?:\.\.\. )+", b"", out)
