@@ -4,7 +4,7 @@ import io
 import os
 from typing import Any, Iterable, Optional, Union
 
-from .log import LOGGER, log_timer
+from .log import LOG_DETAIL, LOGGER, log_timer
 
 
 def decode(data: Optional[bytes], encoding: str) -> str:
@@ -47,10 +47,33 @@ def close_fds(open_fds: Iterable[Union[io.IOBase, int]]) -> None:
                 open_fds.clear()
 
 
-def verify_dev_fd(fdesc):
+def verify_dev_fd(fdesc: int) -> None:
     "Verify that /dev/fd file system exists and works."
     path = f"/dev/fd/{fdesc}"
     if not os.path.exists(path):
         raise RuntimeError(
             f"Missing '{path}': you may need to enable fdescfs file system"
         )
+
+
+def wait_pid(pid: int) -> Optional[int]:
+    """Call os.waitpid and return exit status.
+
+    Return None if process is still running.
+    """
+    assert pid is not None and pid > 0
+
+    try:
+        result_pid, status = os.waitpid(pid, os.WNOHANG)
+    except ChildProcessError as ex:
+        # Set status to 255 if process not found.
+        LOGGER.warning("wait_pid(%r) status is 255 ex=%r", pid, ex)
+        return 255
+
+    if LOG_DETAIL:
+        LOGGER.info("os.waitpid returned %r", (result_pid, status))
+
+    if result_pid != pid:
+        return None
+
+    return status

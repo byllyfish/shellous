@@ -12,7 +12,7 @@ from shellous.harvest import harvest, harvest_results
 from shellous.log import LOG_DETAIL, LOG_ENTER, LOG_EXIT, LOGGER, log_method, log_timer
 from shellous.redirect import Redirect
 from shellous.result import Result, make_result
-from shellous.util import close_fds, verify_dev_fd
+from shellous.util import close_fds, verify_dev_fd, wait_pid
 
 _KILL_TIMEOUT = 3.0
 _CLOSE_TIMEOUT = 0.25
@@ -38,7 +38,7 @@ def _is_write_mode(cmd):
     return cmd.options.write_mode
 
 
-class _RunOptions:
+class _RunOptions:  # pylint: disable=too-many-instance-attributes
     """_RunOptions is context manager to assist in running a command.
 
     This class sets up low-level I/O redirection and helps close open file
@@ -181,7 +181,7 @@ class _RunOptions:
         if isinstance(input_, (bytes, bytearray)):
             input_bytes = input_
         elif isinstance(input_, os.PathLike):
-            stdin = open(input_, "rb")
+            stdin = open(input_, "rb")  # pylint: disable=consider-using-with
             self.open_fds.append(stdin)
         elif isinstance(input_, Redirect) and input_.is_custom():
             # Custom support for Redirect constants.
@@ -210,8 +210,7 @@ class _RunOptions:
 
         if isinstance(output, (str, bytes, os.PathLike)):
             mode = "ab" if append else "wb"
-            # FIXME: we really just need the file descriptor...
-            stdout = open(output, mode=mode)
+            stdout = open(output, mode=mode)  # pylint: disable=consider-using-with
             self.open_fds.append(stdout)
         elif isinstance(output, Redirect) and output.is_custom():
             # Custom support for Redirect constants.
@@ -347,15 +346,10 @@ class Runner:
     @log_method(LOG_DETAIL)
     async def _wait_pid(self):
         "Manually poll `waitpid` until process finishes."
-        proc_pid = self.proc.pid
-        assert proc_pid
-
         while True:
-            pid, status = os.waitpid(proc_pid, os.WNOHANG)
-            if LOG_DETAIL:
-                LOGGER.info("waitpid returned %r", (pid, status))
-
-            if pid == proc_pid:
+            status = wait_pid(self.proc.pid)
+            if status is not None:
+                # pylint: disable=protected-access
                 self.proc._transport._returncode = status
                 self.proc._transport._proc.returncode = status
                 break
@@ -437,7 +431,7 @@ class Runner:
         try:
             # Set up subprocess arguments and launch subprocess.
             with self.options as opts:
-                await self._subprocess_exec(opts)
+                await self._subprocess_spawn(opts)
 
             stdin = self.proc.stdin
             stdout = self.proc.stdout
@@ -488,7 +482,7 @@ class Runner:
         return self
 
     @log_method(LOG_DETAIL)
-    async def _subprocess_exec(self, opts):
+    async def _subprocess_spawn(self, opts):
         "Start the subprocess and assign to `self.proc`."
 
         # Second half of pty setup.
@@ -498,6 +492,8 @@ class Runner:
                 pty_util.patch_child_watcher()
 
         with log_timer("asyncio.create_subprocess_exec"):
+            # AUDIT: byllyfish/shellous.subprocess_spawn: executable
+            sys.audit("byllyfish/shellous.subprocess_spawn", opts.args[0])
             self.proc = await asyncio.create_subprocess_exec(
                 *opts.args,
                 **opts.kwd_args,
@@ -710,7 +706,7 @@ class PipeRunner:  # pylint: disable=too-many-instance-attributes
             LOGGER.warning("PipeRunner enter %r ex=%r", self, ex)
             if _is_cancelled(ex):
                 self.cancelled = True
-            await self._wait(kill=True)  # FIXME
+            await self._wait(kill=True)
             raise
 
     @log_method(LOG_EXIT, exc_value=2)
