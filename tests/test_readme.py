@@ -7,6 +7,7 @@ import sys
 
 import pytest
 import shellous
+from shellous.log import LOGGER
 
 pytestmark = pytest.mark.asyncio
 
@@ -73,6 +74,7 @@ async def run_asyncio_repl(cmds):
 
         output = []
         for cmd in cmds:
+            LOGGER.info("  repl: %r", cmd)
             output.append(await p.prompt(cmd))
             # Give tasks a chance to get started.
             if ".create_task(" in cmd:
