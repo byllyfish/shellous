@@ -55,7 +55,7 @@ class Prompt:
         return buf.decode("utf-8")
 
 
-async def run_asyncio_repl(cmds):
+async def run_asyncio_repl(cmds, logfile=None):
     "Helper function to run the asyncio REPL and feed it commands."
     sh = shellous.context()
 
@@ -72,9 +72,16 @@ async def run_asyncio_repl(cmds):
         p = Prompt(run.stdin, run.stdout, errbuf)
         await p.prompt()
 
-        # Turn off WARNING logging.
+        # Optionally redirect logging to a file.
         await p.prompt("import shellous.log, logging")
-        await p.prompt("shellous.log.LOGGER.setLevel(logging.ERROR)")
+        if logfile:
+            await p.prompt("shellous.log.LOGGER.setLevel(logging.DEBUG)")
+            await p.prompt(
+                f"logging.basicConfig(filename='{logfile}', level=logging.DEBUG)"
+            )
+        else:
+            # I don't want random logging messages to confuse the output.
+            await p.prompt("shellous.log.LOGGER.setLevel(logging.ERROR)")
 
         output = []
         for cmd in cmds:
@@ -162,20 +169,30 @@ def test_parse_readme():
 
 
 @pytest.mark.skipif(sys.platform != "darwin", reason="Darwin")
-async def test_readme():
+async def test_readme(tmp_path):
     "Test that the REPL commands in the README.md file actually work."
 
     cmds, outputs = _parse_readme("README.md")
-    results = await run_asyncio_repl(cmds)
 
-    # Compare known outputs to actual results.
-    for i, output in enumerate(outputs):
-        # Replace ... with .*?
-        pattern = re.escape(output)
-        pattern = pattern.replace(r"\.\.\.", ".*")
-        if not re.fullmatch(pattern, results[i], re.DOTALL):
-            msg = f"result does not match pattern\n\nresult={results[i]}\n\npattern={output}\n"
-            pytest.fail(msg)
+    try:
+        logfile = tmp_path / "test_readme.log"
+        results = await run_asyncio_repl(cmds, logfile)
+
+        # Compare known outputs to actual results.
+        for i, output in enumerate(outputs):
+            # Replace ... with .*?
+            pattern = re.escape(output)
+            pattern = pattern.replace(r"\.\.\.", ".*")
+            if not re.fullmatch(pattern, results[i], re.DOTALL):
+                msg = f"result does not match pattern\n\nresult={results[i]}\n\npattern={output}\n"
+                pytest.fail(msg)
+
+    except BaseException:
+        # If there is any failure, dump the log to stdout.
+        print(">" * 10, "LOGFILE", ">" * 10)
+        print(logfile.read_text(), end="")
+        print("<" * 30)
+        raise
 
 
 def _parse_readme(filename):
