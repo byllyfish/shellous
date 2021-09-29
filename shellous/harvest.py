@@ -2,7 +2,7 @@
 
 import asyncio
 
-from shellous.log import LOGGER
+from shellous.log import LOG_DETAIL, LOGGER
 
 _CANCEL_TIMEOUT = 15.0  # seconds to wait for cancelled task to finish
 
@@ -132,11 +132,12 @@ async def harvest_wait(
 
     except asyncio.CancelledError:
         # Cancel all tasks and wait for them to finish.
-        LOGGER.info(
-            "harvest_wait cancelled trustee=%r cancel_finish=%r",
-            trustee,
-            cancel_finish,
-        )
+        if LOG_DETAIL:
+            LOGGER.info(
+                "harvest_wait cancelled trustee=%r cancel_finish=%r",
+                trustee,
+                cancel_finish,
+            )
         await _cancel_wait(tasks, trustee, cancel_timeout, cancel_finish)
         _consume_exceptions(tasks)
         raise
@@ -147,7 +148,8 @@ async def harvest_wait(
     assert all(task.done() for task in tasks)
 
     if time_expired:
-        LOGGER.info("harvest_wait timed out trustee=%r", trustee)
+        if LOG_DETAIL:
+            LOGGER.info("harvest_wait timed out trustee=%r", trustee)
         _consume_exceptions(tasks)
         raise asyncio.TimeoutError()
 
@@ -175,10 +177,11 @@ async def _cancel_wait(tasks, trustee, cancel_timeout, cancel_finish=False):
             raise RuntimeError("Harvest._cancel_wait failed")
 
     except asyncio.CancelledError:
-        LOGGER.warning(
-            "harvest._cancel_wait cancelled itself? trustee=%r",
-            trustee,
-        )
+        if LOG_DETAIL:
+            LOGGER.warning(
+                "harvest._cancel_wait cancelled itself? trustee=%r",
+                trustee,
+            )
 
 
 def _to_result(task):
