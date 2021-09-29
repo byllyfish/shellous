@@ -133,7 +133,7 @@
 <span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">import</span> <span class="nn">struct</span>
 <span class="kn">from</span> <span class="nn">dataclasses</span> <span class="kn">import</span> <span class="n">dataclass</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">NamedTuple</span><span class="p">,</span> <span class="n">Optional</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">NamedTuple</span>
 
 <span class="c1"># The following modules are not supported on Windows.</span>
 <span class="k">try</span><span class="p">:</span>
@@ -228,6 +228,8 @@
 <span class="k">class</span> <span class="nc">PtyStreamReaderProtocol</span><span class="p">(</span><span class="n">asyncio</span><span class="o">.</span><span class="n">StreamReaderProtocol</span><span class="p">):</span>
     <span class="s2">&quot;Custom subclass of StreamReaderProtocol for pty&#39;s.&quot;</span>
 
+    <span class="n">_pty_child_fd</span> <span class="o">=</span> <span class="kc">None</span>
+
     <span class="k">def</span> <span class="nf">connection_lost</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exc</span><span class="p">):</span>
         <span class="s2">&quot;Intercept EIO error and treat it as EOF.&quot;</span>
         <span class="k">if</span> <span class="n">LOG_DETAIL</span><span class="p">:</span>
@@ -259,7 +261,7 @@
 
     <span class="c1"># Stick reference to child_fd into protocol so we can close it after the</span>
     <span class="c1"># first data is received on BSD systems.</span>
-    <span class="n">reader_protocol</span><span class="o">.</span><span class="n">_pty_child_fd</span> <span class="o">=</span> <span class="n">child_fd</span>
+    <span class="n">reader_protocol</span><span class="o">.</span><span class="n">_pty_child_fd</span> <span class="o">=</span> <span class="n">child_fd</span>  <span class="c1"># pylint: disable=protected-access</span>
 
     <span class="n">reader_transport</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="k">await</span> <span class="n">loop</span><span class="o">.</span><span class="n">connect_read_pipe</span><span class="p">(</span>
         <span class="k">lambda</span><span class="p">:</span> <span class="n">reader_protocol</span><span class="p">,</span>
@@ -736,6 +738,8 @@
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">PtyStreamReaderProtocol</span><span class="p">(</span><span class="n">asyncio</span><span class="o">.</span><span class="n">StreamReaderProtocol</span><span class="p">):</span>
     <span class="s2">&quot;Custom subclass of StreamReaderProtocol for pty&#39;s.&quot;</span>
+
+    <span class="n">_pty_child_fd</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="k">def</span> <span class="nf">connection_lost</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exc</span><span class="p">):</span>
         <span class="s2">&quot;Intercept EIO error and treat it as EOF.&quot;</span>

@@ -110,7 +110,7 @@
 <span class="kn">from</span> <span class="nn">shellous.log</span> <span class="kn">import</span> <span class="n">LOG_DETAIL</span><span class="p">,</span> <span class="n">LOG_ENTER</span><span class="p">,</span> <span class="n">LOG_EXIT</span><span class="p">,</span> <span class="n">LOGGER</span><span class="p">,</span> <span class="n">log_method</span><span class="p">,</span> <span class="n">log_timer</span>
 <span class="kn">from</span> <span class="nn">shellous.redirect</span> <span class="kn">import</span> <span class="n">Redirect</span>
 <span class="kn">from</span> <span class="nn">shellous.result</span> <span class="kn">import</span> <span class="n">Result</span><span class="p">,</span> <span class="n">make_result</span>
-<span class="kn">from</span> <span class="nn">shellous.util</span> <span class="kn">import</span> <span class="n">close_fds</span><span class="p">,</span> <span class="n">verify_dev_fd</span>
+<span class="kn">from</span> <span class="nn">shellous.util</span> <span class="kn">import</span> <span class="n">close_fds</span><span class="p">,</span> <span class="n">verify_dev_fd</span><span class="p">,</span> <span class="n">wait_pid</span>
 
 <span class="n">_KILL_TIMEOUT</span> <span class="o">=</span> <span class="mf">3.0</span>
 <span class="n">_CLOSE_TIMEOUT</span> <span class="o">=</span> <span class="mf">0.25</span>
@@ -136,7 +136,7 @@
     <span class="k">return</span> <span class="n">cmd</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">write_mode</span>
 
 
-<span class="k">class</span> <span class="nc">_RunOptions</span><span class="p">:</span>
+<span class="k">class</span> <span class="nc">_RunOptions</span><span class="p">:</span>  <span class="c1"># pylint: disable=too-many-instance-attributes</span>
     <span class="sd">&quot;&quot;&quot;_RunOptions is context manager to assist in running a command.</span>
 
 <span class="sd">    This class sets up low-level I/O redirection and helps close open file</span>
@@ -279,7 +279,7 @@
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">input_</span><span class="p">,</span> <span class="p">(</span><span class="nb">bytes</span><span class="p">,</span> <span class="nb">bytearray</span><span class="p">)):</span>
             <span class="n">input_bytes</span> <span class="o">=</span> <span class="n">input_</span>
         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">input_</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">):</span>
-            <span class="n">stdin</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">input_</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span>
+            <span class="n">stdin</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">input_</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span>  <span class="c1"># pylint: disable=consider-using-with</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">open_fds</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">stdin</span><span class="p">)</span>
         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">input_</span><span class="p">,</span> <span class="n">Redirect</span><span class="p">)</span> <span class="ow">and</span> <span class="n">input_</span><span class="o">.</span><span class="n">is_custom</span><span class="p">():</span>
             <span class="c1"># Custom support for Redirect constants.</span>
@@ -308,8 +308,7 @@
 
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">)):</span>
             <span class="n">mode</span> <span class="o">=</span> <span class="s2">&quot;ab&quot;</span> <span class="k">if</span> <span class="n">append</span> <span class="k">else</span> <span class="s2">&quot;wb&quot;</span>
-            <span class="c1"># FIXME: we really just need the file descriptor...</span>
-            <span class="n">stdout</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">)</span>
+            <span class="n">stdout</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">)</span>  <span class="c1"># pylint: disable=consider-using-with</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">open_fds</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">stdout</span><span class="p">)</span>
         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="n">Redirect</span><span class="p">)</span> <span class="ow">and</span> <span class="n">output</span><span class="o">.</span><span class="n">is_custom</span><span class="p">():</span>
             <span class="c1"># Custom support for Redirect constants.</span>
@@ -445,15 +444,10 @@
     <span class="nd">@log_method</span><span class="p">(</span><span class="n">LOG_DETAIL</span><span class="p">)</span>
     <span class="k">async</span> <span class="k">def</span> <span class="nf">_wait_pid</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Manually poll `waitpid` until process finishes.&quot;</span>
-        <span class="n">proc_pid</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">pid</span>
-        <span class="k">assert</span> <span class="n">proc_pid</span>
-
         <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
-            <span class="n">pid</span><span class="p">,</span> <span class="n">status</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">waitpid</span><span class="p">(</span><span class="n">proc_pid</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">WNOHANG</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">LOG_DETAIL</span><span class="p">:</span>
-                <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;waitpid returned </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="p">(</span><span class="n">pid</span><span class="p">,</span> <span class="n">status</span><span class="p">))</span>
-
-            <span class="k">if</span> <span class="n">pid</span> <span class="o">==</span> <span class="n">proc_pid</span><span class="p">:</span>
+            <span class="n">status</span> <span class="o">=</span> <span class="n">wait_pid</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">pid</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">status</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="c1"># pylint: disable=protected-access</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">_transport</span><span class="o">.</span><span class="n">_returncode</span> <span class="o">=</span> <span class="n">status</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">_transport</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">returncode</span> <span class="o">=</span> <span class="n">status</span>
                 <span class="k">break</span>
@@ -535,7 +529,7 @@
         <span class="k">try</span><span class="p">:</span>
             <span class="c1"># Set up subprocess arguments and launch subprocess.</span>
             <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span> <span class="k">as</span> <span class="n">opts</span><span class="p">:</span>
-                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_subprocess_exec</span><span class="p">(</span><span class="n">opts</span><span class="p">)</span>
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_subprocess_spawn</span><span class="p">(</span><span class="n">opts</span><span class="p">)</span>
 
             <span class="n">stdin</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">stdin</span>
             <span class="n">stdout</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">stdout</span>
@@ -586,7 +580,7 @@
         <span class="k">return</span> <span class="bp">self</span>
 
     <span class="nd">@log_method</span><span class="p">(</span><span class="n">LOG_DETAIL</span><span class="p">)</span>
-    <span class="k">async</span> <span class="k">def</span> <span class="nf">_subprocess_exec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">opts</span><span class="p">):</span>
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">_subprocess_spawn</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">opts</span><span class="p">):</span>
         <span class="s2">&quot;Start the subprocess and assign to `self.proc`.&quot;</span>
 
         <span class="c1"># Second half of pty setup.</span>
@@ -596,6 +590,8 @@
                 <span class="n">pty_util</span><span class="o">.</span><span class="n">patch_child_watcher</span><span class="p">()</span>
 
         <span class="k">with</span> <span class="n">log_timer</span><span class="p">(</span><span class="s2">&quot;asyncio.create_subprocess_exec&quot;</span><span class="p">):</span>
+            <span class="c1"># AUDIT: byllyfish/shellous.subprocess_spawn: executable</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">audit</span><span class="p">(</span><span class="s2">&quot;byllyfish/shellous.subprocess_spawn&quot;</span><span class="p">,</span> <span class="n">opts</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">proc</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_subprocess_exec</span><span class="p">(</span>
                 <span class="o">*</span><span class="n">opts</span><span class="o">.</span><span class="n">args</span><span class="p">,</span>
                 <span class="o">**</span><span class="n">opts</span><span class="o">.</span><span class="n">kwd_args</span><span class="p">,</span>
@@ -808,7 +804,7 @@
             <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;PipeRunner enter </span><span class="si">%r</span><span class="s2"> ex=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="n">ex</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">_is_cancelled</span><span class="p">(</span><span class="n">ex</span><span class="p">):</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">cancelled</span> <span class="o">=</span> <span class="kc">True</span>
-            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wait</span><span class="p">(</span><span class="n">kill</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># FIXME</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wait</span><span class="p">(</span><span class="n">kill</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
             <span class="k">raise</span>
 
     <span class="nd">@log_method</span><span class="p">(</span><span class="n">LOG_EXIT</span><span class="p">,</span> <span class="n">exc_value</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
@@ -1065,15 +1061,10 @@
     <span class="nd">@log_method</span><span class="p">(</span><span class="n">LOG_DETAIL</span><span class="p">)</span>
     <span class="k">async</span> <span class="k">def</span> <span class="nf">_wait_pid</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Manually poll `waitpid` until process finishes.&quot;</span>
-        <span class="n">proc_pid</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">pid</span>
-        <span class="k">assert</span> <span class="n">proc_pid</span>
-
         <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
-            <span class="n">pid</span><span class="p">,</span> <span class="n">status</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">waitpid</span><span class="p">(</span><span class="n">proc_pid</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">WNOHANG</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">LOG_DETAIL</span><span class="p">:</span>
-                <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;waitpid returned </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="p">(</span><span class="n">pid</span><span class="p">,</span> <span class="n">status</span><span class="p">))</span>
-
-            <span class="k">if</span> <span class="n">pid</span> <span class="o">==</span> <span class="n">proc_pid</span><span class="p">:</span>
+            <span class="n">status</span> <span class="o">=</span> <span class="n">wait_pid</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">pid</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">status</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="c1"># pylint: disable=protected-access</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">_transport</span><span class="o">.</span><span class="n">_returncode</span> <span class="o">=</span> <span class="n">status</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">_transport</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">returncode</span> <span class="o">=</span> <span class="n">status</span>
                 <span class="k">break</span>
@@ -1155,7 +1146,7 @@
         <span class="k">try</span><span class="p">:</span>
             <span class="c1"># Set up subprocess arguments and launch subprocess.</span>
             <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span> <span class="k">as</span> <span class="n">opts</span><span class="p">:</span>
-                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_subprocess_exec</span><span class="p">(</span><span class="n">opts</span><span class="p">)</span>
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_subprocess_spawn</span><span class="p">(</span><span class="n">opts</span><span class="p">)</span>
 
             <span class="n">stdin</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">stdin</span>
             <span class="n">stdout</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">stdout</span>
@@ -1206,7 +1197,7 @@
         <span class="k">return</span> <span class="bp">self</span>
 
     <span class="nd">@log_method</span><span class="p">(</span><span class="n">LOG_DETAIL</span><span class="p">)</span>
-    <span class="k">async</span> <span class="k">def</span> <span class="nf">_subprocess_exec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">opts</span><span class="p">):</span>
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">_subprocess_spawn</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">opts</span><span class="p">):</span>
         <span class="s2">&quot;Start the subprocess and assign to `self.proc`.&quot;</span>
 
         <span class="c1"># Second half of pty setup.</span>
@@ -1216,6 +1207,8 @@
                 <span class="n">pty_util</span><span class="o">.</span><span class="n">patch_child_watcher</span><span class="p">()</span>
 
         <span class="k">with</span> <span class="n">log_timer</span><span class="p">(</span><span class="s2">&quot;asyncio.create_subprocess_exec&quot;</span><span class="p">):</span>
+            <span class="c1"># AUDIT: byllyfish/shellous.subprocess_spawn: executable</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">audit</span><span class="p">(</span><span class="s2">&quot;byllyfish/shellous.subprocess_spawn&quot;</span><span class="p">,</span> <span class="n">opts</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">proc</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_subprocess_exec</span><span class="p">(</span>
                 <span class="o">*</span><span class="n">opts</span><span class="o">.</span><span class="n">args</span><span class="p">,</span>
                 <span class="o">**</span><span class="n">opts</span><span class="o">.</span><span class="n">kwd_args</span><span class="p">,</span>
@@ -1604,7 +1597,7 @@ result = run.result()
             <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;PipeRunner enter </span><span class="si">%r</span><span class="s2"> ex=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="n">ex</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">_is_cancelled</span><span class="p">(</span><span class="n">ex</span><span class="p">):</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">cancelled</span> <span class="o">=</span> <span class="kc">True</span>
-            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wait</span><span class="p">(</span><span class="n">kill</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># FIXME</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wait</span><span class="p">(</span><span class="n">kill</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
             <span class="k">raise</span>
 
     <span class="nd">@log_method</span><span class="p">(</span><span class="n">LOG_EXIT</span><span class="p">,</span> <span class="n">exc_value</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
