@@ -168,7 +168,7 @@ def test_parse_readme():
     ]
 
 
-@pytest.mark.skipif(sys.platform != "darwin", reason="Darwin")
+@pytest.mark.skipif(sys.platform == "win32", reason="win32")
 async def test_readme(tmp_path):
     "Test that the REPL commands in the README.md file actually work."
 
@@ -180,12 +180,7 @@ async def test_readme(tmp_path):
 
         # Compare known outputs to actual results.
         for i, output in enumerate(outputs):
-            # Replace ... with .*?
-            pattern = re.escape(output)
-            pattern = pattern.replace(r"\.\.\.", ".*")
-            if not re.fullmatch(pattern, results[i], re.DOTALL):
-                msg = f"result does not match pattern\n\nresult={results[i]}\n\npattern={output}\n"
-                pytest.fail(msg)
+            _check_result(output, results[i])
 
     except BaseException:
         # If there is any failure, dump the log to stdout.
@@ -247,3 +242,11 @@ def _current_env():
     env = os.environ.copy()
     env.pop("PYTHONASYNCIODEBUG", None)
     return env
+
+
+def _check_result(output, result):
+    "Fail if result does not match pattern."
+    pattern = re.escape(output).replace(r"\.\.\.", ".*")
+    if not re.fullmatch(pattern, result, re.DOTALL):
+        msg = f"result does not match pattern\n\nresult={result}\n\npattern={output}\n"
+        pytest.fail(msg)
