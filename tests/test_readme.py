@@ -257,7 +257,7 @@ def _check_result(output, result):
             return
 
     # The result of the pty test has platform-dependent \t vs spaces.
-    PTYOUT = re.compile(r"'CHANGELOG.md(?:\s+|\\t)README.md\r\n")
+    PTYOUT = re.compile(r"'CHANGELOG.md(?:\s+|\\t)README.md\\r\\n'")
     if PTYOUT.fullmatch(result) and PTYOUT.fullmatch(output):
         return
 
