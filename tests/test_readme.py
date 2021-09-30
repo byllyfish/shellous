@@ -256,6 +256,11 @@ def _check_result(output, result):
         if result_value == output_value:
             return
 
+    # The result of the pty test has platform-dependent \t vs spaces.
+    PTYOUT = re.compile(r"'CHANGELOG.md(?:\s+|\\t)README.md\r\n")
+    if PTYOUT.fullmatch(result) and PTYOUT.fullmatch(output):
+        return
+
     pattern = re.escape(output).replace(r"\.\.\.", ".*")
     if not re.fullmatch(pattern, result, re.DOTALL):
         msg = f"result does not match pattern\n\nresult={result}\n\npattern={output}\n"
