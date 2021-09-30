@@ -315,9 +315,9 @@ Otherwise, your code may swallow the CancelledError.</p>
 <p>To run a command through a pseudo-terminal, set the <code>pty</code> option to True. Alternatively, you can pass
 a function to configure the tty mode and size.</p>
 
-<pre><code>&gt;&gt;&gt; ls = sh("ls").set(pty=<a href="#canonical">shellous.canonical</a>(cols=20, rows=10, echo=False))
+<pre><code>&gt;&gt;&gt; ls = sh("ls").set(pty=<a href="#canonical">shellous.canonical</a>(cols=40, rows=10, echo=False))
 &gt;&gt;&gt; await ls("README.md", "CHANGELOG.md")
-'CHANGELOG.md\r\nREADME.md\r\n'
+'CHANGELOG.md\tREADME.md\r\n'
 </code></pre>
 </div>
 

@@ -64,7 +64,7 @@
 
 <span class="kn">import</span> <span class="nn">asyncio</span>
 
-<span class="kn">from</span> <span class="nn">shellous.log</span> <span class="kn">import</span> <span class="n">LOGGER</span>
+<span class="kn">from</span> <span class="nn">shellous.log</span> <span class="kn">import</span> <span class="n">LOG_DETAIL</span><span class="p">,</span> <span class="n">LOGGER</span>
 
 <span class="n">_CANCEL_TIMEOUT</span> <span class="o">=</span> <span class="mf">15.0</span>  <span class="c1"># seconds to wait for cancelled task to finish</span>
 
@@ -194,11 +194,12 @@
 
     <span class="k">except</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">CancelledError</span><span class="p">:</span>
         <span class="c1"># Cancel all tasks and wait for them to finish.</span>
-        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-            <span class="s2">&quot;harvest_wait cancelled trustee=</span><span class="si">%r</span><span class="s2"> cancel_finish=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span>
-            <span class="n">trustee</span><span class="p">,</span>
-            <span class="n">cancel_finish</span><span class="p">,</span>
-        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">LOG_DETAIL</span><span class="p">:</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                <span class="s2">&quot;harvest_wait cancelled trustee=</span><span class="si">%r</span><span class="s2"> cancel_finish=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="n">trustee</span><span class="p">,</span>
+                <span class="n">cancel_finish</span><span class="p">,</span>
+            <span class="p">)</span>
         <span class="k">await</span> <span class="n">_cancel_wait</span><span class="p">(</span><span class="n">tasks</span><span class="p">,</span> <span class="n">trustee</span><span class="p">,</span> <span class="n">cancel_timeout</span><span class="p">,</span> <span class="n">cancel_finish</span><span class="p">)</span>
         <span class="n">_consume_exceptions</span><span class="p">(</span><span class="n">tasks</span><span class="p">)</span>
         <span class="k">raise</span>
@@ -209,7 +210,8 @@
     <span class="k">assert</span> <span class="nb">all</span><span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">done</span><span class="p">()</span> <span class="k">for</span> <span class="n">task</span> <span class="ow">in</span> <span class="n">tasks</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">time_expired</span><span class="p">:</span>
-        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;harvest_wait timed out trustee=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">trustee</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">LOG_DETAIL</span><span class="p">:</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;harvest_wait timed out trustee=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">trustee</span><span class="p">)</span>
         <span class="n">_consume_exceptions</span><span class="p">(</span><span class="n">tasks</span><span class="p">)</span>
         <span class="k">raise</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">TimeoutError</span><span class="p">()</span>
 
@@ -237,10 +239,11 @@
             <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Harvest._cancel_wait failed&quot;</span><span class="p">)</span>
 
     <span class="k">except</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">CancelledError</span><span class="p">:</span>
-        <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-            <span class="s2">&quot;harvest._cancel_wait cancelled itself? trustee=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span>
-            <span class="n">trustee</span><span class="p">,</span>
-        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">LOG_DETAIL</span><span class="p">:</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">&quot;harvest._cancel_wait cancelled itself? trustee=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="n">trustee</span><span class="p">,</span>
+            <span class="p">)</span>
 
 
 <span class="k">def</span> <span class="nf">_to_result</span><span class="p">(</span><span class="n">task</span><span class="p">):</span>
@@ -483,11 +486,12 @@ all awaitables are cancelled and consumed before raising a
 
     <span class="k">except</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">CancelledError</span><span class="p">:</span>
         <span class="c1"># Cancel all tasks and wait for them to finish.</span>
-        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-            <span class="s2">&quot;harvest_wait cancelled trustee=</span><span class="si">%r</span><span class="s2"> cancel_finish=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span>
-            <span class="n">trustee</span><span class="p">,</span>
-            <span class="n">cancel_finish</span><span class="p">,</span>
-        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">LOG_DETAIL</span><span class="p">:</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                <span class="s2">&quot;harvest_wait cancelled trustee=</span><span class="si">%r</span><span class="s2"> cancel_finish=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="n">trustee</span><span class="p">,</span>
+                <span class="n">cancel_finish</span><span class="p">,</span>
+            <span class="p">)</span>
         <span class="k">await</span> <span class="n">_cancel_wait</span><span class="p">(</span><span class="n">tasks</span><span class="p">,</span> <span class="n">trustee</span><span class="p">,</span> <span class="n">cancel_timeout</span><span class="p">,</span> <span class="n">cancel_finish</span><span class="p">)</span>
         <span class="n">_consume_exceptions</span><span class="p">(</span><span class="n">tasks</span><span class="p">)</span>
         <span class="k">raise</span>
@@ -498,7 +502,8 @@ all awaitables are cancelled and consumed before raising a
     <span class="k">assert</span> <span class="nb">all</span><span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">done</span><span class="p">()</span> <span class="k">for</span> <span class="n">task</span> <span class="ow">in</span> <span class="n">tasks</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">time_expired</span><span class="p">:</span>
-        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;harvest_wait timed out trustee=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">trustee</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">LOG_DETAIL</span><span class="p">:</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;harvest_wait timed out trustee=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">trustee</span><span class="p">)</span>
         <span class="n">_consume_exceptions</span><span class="p">(</span><span class="n">tasks</span><span class="p">)</span>
         <span class="k">raise</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">TimeoutError</span><span class="p">()</span>
 </pre></div>
