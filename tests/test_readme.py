@@ -7,6 +7,8 @@ import sys
 
 import pytest
 import shellous
+from shellous.harvest import harvest_results
+from shellous.log import LOGGER
 
 pytestmark = pytest.mark.asyncio
 
@@ -29,10 +31,13 @@ class Prompt:
             self.stdin.write(input_text.encode("utf-8") + b"\n")
 
         # Drain our write to stdin, and wait for prompt from stdout.
-        out, _ = await asyncio.gather(
+        cancelled, (out, _) = await harvest_results(
             self.stdout.readuntil(self.prompt_bytes),
             self.stdin.drain(),
+            timeout=2.0,
         )
+        if cancelled:
+            raise asyncio.CancelledError()
 
         # If there are ellipsis bytes in the beginning of out, remove them.
         out = re.sub(br"^(?:\.\.\. )+", b"", out)
@@ -50,7 +55,7 @@ class Prompt:
         return buf.decode("utf-8")
 
 
-async def run_asyncio_repl(cmds):
+async def run_asyncio_repl(cmds, logfile=None):
     "Helper function to run the asyncio REPL and feed it commands."
     sh = shellous.context()
 
@@ -67,12 +72,20 @@ async def run_asyncio_repl(cmds):
         p = Prompt(run.stdin, run.stdout, errbuf)
         await p.prompt()
 
-        # Turn off WARNING logging.
+        # Optionally redirect logging to a file.
         await p.prompt("import shellous.log, logging")
-        await p.prompt("shellous.log.LOGGER.setLevel(logging.ERROR)")
+        if logfile:
+            await p.prompt("shellous.log.LOGGER.setLevel(logging.DEBUG)")
+            await p.prompt(
+                f"logging.basicConfig(filename='{logfile}', level=logging.DEBUG)"
+            )
+        else:
+            # I don't want random logging messages to confuse the output.
+            await p.prompt("shellous.log.LOGGER.setLevel(logging.ERROR)")
 
         output = []
         for cmd in cmds:
+            LOGGER.info("  repl: %r", cmd)
             output.append(await p.prompt(cmd))
             # Give tasks a chance to get started.
             if ".create_task(" in cmd:
@@ -150,26 +163,31 @@ def test_parse_readme():
         "t = asyncio.create_task(sleep.coro())",
         "t.cancel()",
         "await t",
-        'ls = sh("ls").set(pty=shellous.canonical(cols=20, rows=10, echo=False))',
+        'ls = sh("ls").set(pty=shellous.canonical(cols=40, rows=10, echo=False))',
         'await ls("README.md", "CHANGELOG.md")',
     ]
 
 
-@pytest.mark.skipif(sys.platform != "darwin", reason="Darwin")
-async def test_readme():
+@pytest.mark.skipif(sys.platform == "win32", reason="win32")
+async def test_readme(tmp_path):
     "Test that the REPL commands in the README.md file actually work."
 
     cmds, outputs = _parse_readme("README.md")
-    results = await run_asyncio_repl(cmds)
 
-    # Compare known outputs to actual results.
-    for i, output in enumerate(outputs):
-        # Replace ... with .*?
-        pattern = re.escape(output)
-        pattern = pattern.replace(r"\.\.\.", ".*")
-        if not re.fullmatch(pattern, results[i], re.DOTALL):
-            msg = f"result does not match pattern\n\nresult={results[i]}\n\npattern={output}\n"
-            pytest.fail(msg)
+    try:
+        logfile = tmp_path / "test_readme.log"
+        results = await run_asyncio_repl(cmds, logfile)
+
+        # Compare known outputs to actual results.
+        for i, output in enumerate(outputs):
+            _check_result(output, results[i])
+
+    except BaseException:
+        # If there is any failure, dump the log to stdout.
+        print(">" * 10, "LOGFILE", ">" * 10)
+        print(logfile.read_text(), end="")
+        print("<" * 30)
+        raise
 
 
 def _parse_readme(filename):
@@ -224,3 +242,26 @@ def _current_env():
     env = os.environ.copy()
     env.pop("PYTHONASYNCIODEBUG", None)
     return env
+
+
+def _check_result(output, result):
+    "Fail if result does not match pattern."
+
+    # The result of the `wc` command has platform-dependent number of spaces.
+    # Linux: '3\n'  MacOS: '       3\n'
+    WCOUT = re.compile(r"'\s*\d+\\n'")
+    if WCOUT.fullmatch(result) and WCOUT.fullmatch(output):
+        output_value = int(output[1:-3].strip())
+        result_value = int(result[1:-3].strip())
+        if result_value == output_value:
+            return
+
+    # The result of the pty test has platform-dependent \t vs spaces.
+    PTYOUT = re.compile(r"'CHANGELOG.md(?:\s+|\\t)README.md\\r\\n'")
+    if PTYOUT.fullmatch(result) and PTYOUT.fullmatch(output):
+        return
+
+    pattern = re.escape(output).replace(r"\.\.\.", ".*")
+    if not re.fullmatch(pattern, result, re.DOTALL):
+        msg = f"result does not match pattern\n\nresult={result}\n\npattern={output}\n"
+        pytest.fail(msg)
