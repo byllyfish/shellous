@@ -297,6 +297,13 @@ class Runner:
         "Return the command being run."
         return self.options.command
 
+    @property
+    def pid(self):
+        "Return the command's process ID."
+        if not self.proc:
+            return None
+        return self.proc.pid
+
     def result(self, output_bytes=b""):
         "Check process exit code and raise a ResultError if necessary."
         if self.proc:

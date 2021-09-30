@@ -1184,7 +1184,7 @@ async def test_pty_compare_small_ls_output(sh):
 
 
 @pytest.mark.xfail(_is_uvloop(), reason="uvloop")
-async def test_stress_pty_canonical_ls_parallel(sh):
+async def test_stress_pty_canonical_ls_parallel(sh, report_children):
     "Test canonical ls output through pty is in columns (parallel stress test)."
     pty = canonical(cols=20, rows=10, echo=False)
     cmd = sh("ls", "README.md", "CHANGELOG.md").set(pty=pty)
@@ -1198,7 +1198,7 @@ async def test_stress_pty_canonical_ls_parallel(sh):
 
 
 @pytest.mark.xfail(_is_uvloop(), reason="uvloop")
-async def test_stress_pty_canonical_ls_sequence(sh):
+async def test_stress_pty_canonical_ls_sequence(sh, report_children):
     "Test canonical ls output through pty is in columns (sequence stress test)."
     pty = canonical(cols=20, rows=10, echo=False)
     cmd = sh("ls", "README.md", "CHANGELOG.md").set(pty=pty)
