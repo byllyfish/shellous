@@ -249,7 +249,7 @@ def _check_result(output, result):
 
     # The result of the `wc` command has platform-dependent number of spaces.
     # Linux: '3\n'  MacOS: '       3\n'
-    WCOUT = re.compile(r"'\s+\d+\\n'")
+    WCOUT = re.compile(r"'\s*\d+\\n'")
     if WCOUT.fullmatch(result) and WCOUT.fullmatch(output):
         output_value = int(output[1:-3].strip())
         result_value = int(result[1:-3].strip())
