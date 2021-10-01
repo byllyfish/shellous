@@ -297,6 +297,13 @@ class Runner:
         "Return the command being run."
         return self.options.command
 
+    @property
+    def pid(self):
+        "Return the command's process ID."
+        if not self.proc:
+            return None
+        return self.proc.pid
+
     def result(self, output_bytes=b""):
         "Check process exit code and raise a ResultError if necessary."
         if self.proc:
@@ -326,6 +333,10 @@ class Runner:
         self.tasks.append(task)
         return task
 
+    def _is_bsd_pty(self):
+        "Return true if we're running a pty on BSD."
+        return _BSD and self.options.pty_fds
+
     @log_method(LOG_DETAIL)
     async def _wait(self):
         "Normal wait for background I/O tasks and process to finish."
@@ -334,8 +345,8 @@ class Runner:
         try:
             if self.tasks:
                 await harvest(*self.tasks, trustee=self)
-            if _BSD and self.options.pty_fds:
-                await self._wait_pid()
+            if self._is_bsd_pty():
+                await self._waiter()
 
         except asyncio.CancelledError:
             LOGGER.info("Runner.wait cancelled %r", self)
@@ -346,6 +357,7 @@ class Runner:
     @log_method(LOG_DETAIL)
     async def _wait_pid(self):
         "Manually poll `waitpid` until process finishes."
+        assert self._is_bsd_pty()
         while True:
             status = wait_pid(self.proc.pid)
             if status is not None:
@@ -365,16 +377,15 @@ class Runner:
         cancel_signal = self.command.options.cancel_signal
 
         try:
-            done = self.proc.returncode is not None
-
             # If not already done, send cancel signal.
-            if not done:
+            if self.proc.returncode is None:
                 self._send_signal(cancel_signal)
 
             if self.tasks:
                 await harvest(*self.tasks, timeout=cancel_timeout, trustee=self)
-            elif not done:
-                await harvest(self.proc.wait(), timeout=cancel_timeout, trustee=self)
+
+            if self.proc.returncode is None:
+                await harvest(self._waiter(), timeout=cancel_timeout, trustee=self)
 
         except (asyncio.CancelledError, asyncio.TimeoutError) as ex:
             LOGGER.warning("Runner.kill %r (ex)=%r", self, ex)
@@ -406,8 +417,8 @@ class Runner:
             return
 
         try:
-            self.proc.kill()
-            await harvest(self.proc.wait(), timeout=_KILL_TIMEOUT, trustee=self)
+            self._send_signal(None)
+            await harvest(self._waiter(), timeout=_KILL_TIMEOUT, trustee=self)
         except asyncio.TimeoutError as ex:
             LOGGER.error("%r failed to kill process %r", self, self.proc)
             raise RuntimeError(f"Unable to kill process {self.proc!r}") from ex
@@ -476,7 +487,7 @@ class Runner:
         self.stderr = stderr
 
         # Add a task to monitor for when the process finishes.
-        if not (_BSD and opts.pty_fds):
+        if not self._is_bsd_pty():
             self.add_task(self._waiter(), "waiter")
 
         return self
@@ -506,7 +517,10 @@ class Runner:
     @log_method(LOG_DETAIL)
     async def _waiter(self):
         "Run task that waits for process to exit."
-        await self.proc.wait()
+        if self._is_bsd_pty():
+            await self._wait_pid()
+        else:
+            await self.proc.wait()
 
     def _setup_output_sink(self, stream, sink, encoding, tag):
         "Set up a task to write to custom output sink."

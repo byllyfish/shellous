@@ -4,10 +4,12 @@ import asyncio
 import contextlib
 import gc
 import os
+import re
 import sys
 import threading
 
 import pytest
+import shellous
 
 childwatcher_type = os.environ.get("SHELLOUS_CHILDWATCHER_TYPE")
 loop_type = os.environ.get("SHELLOUS_LOOP_TYPE")
@@ -81,6 +83,18 @@ async def report_orphan_tasks():
         await asyncio.sleep(0)
 
 
+@pytest.fixture
+async def report_children():
+    "Check for child processes."
+
+    try:
+        yield
+    finally:
+        children = await _get_children()
+        if children:
+            pytest.fail(f"Child processes detected: {children}")
+
+
 @contextlib.contextmanager
 def _check_open_fds():
     "Check for growth in number of open file descriptors."
@@ -95,3 +109,25 @@ def _get_fds():
     if sys.platform == "win32" or loop_type == "uvloop":
         return set()
     return set(os.listdir("/dev/fd"))
+
+
+async def _get_children():
+    "Return set of child processes. (Not implemented on Windows)"
+    if sys.platform == "win32":
+        return set()
+
+    sh = shellous.context()
+    ps = sh("ps", "axo", "pid=,ppid=,stat=")
+    my_pid = os.getpid()
+
+    children = set()
+    async with ps.run() as run:
+        async for line in run:
+            m = re.match(f"^\\s*(\\d+)\\s+{my_pid}\\s+(.*)$", line)
+            if m:
+                # Report child as "pid/stat"
+                child_pid = int(m.group(1))
+                if child_pid != run.pid:
+                    children.add(f"{m.group(1)}/{m.group(2).strip()}")
+
+    return children

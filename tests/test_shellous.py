@@ -5,6 +5,7 @@
 import asyncio
 import hashlib
 import io
+import os
 import sys
 from pathlib import Path
 
@@ -21,6 +22,11 @@ PIPE_MAX_SIZE = 4 * 1024 * 1024 + 1
 # On Windows, the exit_code of a terminated process is 1.
 CANCELLED_EXIT_CODE = -15 if sys.platform != "win32" else 1
 KILL_EXIT_CODE = -9 if sys.platform != "win32" else 1
+
+
+def _is_uvloop():
+    "Return true if we're running under uvloop."
+    return os.environ.get("SHELLOUS_LOOP_TYPE") == "uvloop"
 
 
 def test_debug_mode(event_loop):
@@ -605,3 +611,18 @@ async def test_quick_cancel(echo_cmd):
         encoding="utf-8",
         extra=None,
     )
+
+
+@pytest.mark.skipif(sys.platform == "win32" or _is_uvloop(), reason="win32,uvloop")
+async def test_pty_echo_exit_code(echo_cmd):
+    "Test exit code is reported correctly for pty."
+    options = dict(return_result=True, exit_codes={7}, pty=True)
+    result = await echo_cmd("abc").env(SHELLOUS_EXIT_CODE=7).set(**options)
+
+    if sys.platform == "linux":
+        expected_output = "abc"
+    else:
+        expected_output = "^D\x08\x08abc"
+
+    assert result.exit_code == 7
+    assert result.output == expected_output

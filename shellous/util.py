@@ -76,4 +76,11 @@ def wait_pid(pid: int) -> Optional[int]:
     if result_pid != pid:
         return None
 
+    # Convert os.waitpid status to an exit status.
+    try:
+        status = os.waitstatus_to_exitcode(status)
+    except ValueError:
+        # See https://github.com/python/cpython/blob/7e5c107541726b90d3f2e6e69ef37180cf58335d/Lib/asyncio/unix_events.py#L47
+        pass
+
     return status
