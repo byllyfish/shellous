@@ -144,6 +144,13 @@
     <span class="k">if</span> <span class="n">result_pid</span> <span class="o">!=</span> <span class="n">pid</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">None</span>
 
+    <span class="c1"># Convert os.waitpid status to an exit status.</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">status</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">waitstatus_to_exitcode</span><span class="p">(</span><span class="n">status</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+        <span class="c1"># See https://github.com/python/cpython/blob/7e5c107541726b90d3f2e6e69ef37180cf58335d/Lib/asyncio/unix_events.py#L47</span>
+        <span class="k">pass</span>
+
     <span class="k">return</span> <span class="n">status</span>
 </pre></div>
 
@@ -299,6 +306,13 @@ parent environment.</p>
 
     <span class="k">if</span> <span class="n">result_pid</span> <span class="o">!=</span> <span class="n">pid</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="c1"># Convert os.waitpid status to an exit status.</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">status</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">waitstatus_to_exitcode</span><span class="p">(</span><span class="n">status</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+        <span class="c1"># See https://github.com/python/cpython/blob/7e5c107541726b90d3f2e6e69ef37180cf58335d/Lib/asyncio/unix_events.py#L47</span>
+        <span class="k">pass</span>
 
     <span class="k">return</span> <span class="n">status</span>
 </pre></div>
