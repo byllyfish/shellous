@@ -1209,15 +1209,21 @@ async def test_stress_pty_canonical_ls_sequence(sh, report_children):
         assert result == "CHANGELOG.md\r\nREADME.md\r\n"
 
 
+@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
 async def test_pty_timeout_fail(sh):
     "Test that a pty command can be called with a timeout."
     cmd = sh("sleep", "5").set(incomplete_result=True, pty=True)
     with pytest.raises(ResultError) as exc_info:
         await asyncio.wait_for(cmd, 0.2)
 
+    if sys.platform == "linux":
+        expected_output = b""
+    else:
+        expected_output = b"^D\x08\x08"
+
     assert exc_info.type is ResultError
     assert exc_info.value.result == Result(
-        output_bytes=b"^D\x08\x08",
+        output_bytes=expected_output,
         exit_code=_CANCELLED_EXIT_CODE,
         cancelled=True,
         encoding="utf-8",
