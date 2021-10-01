@@ -54,8 +54,8 @@ jobs:
       run: |
         # Run pytest.
         $POETRY_RUN python -m pytest -vv -s --durations=20 --log-cli-level=DEBUG
-    - name: Run Code Coverage (Linux)
-      if: matrix.os == 'ubuntu-latest'
+    - name: Run Code Coverage (Linux and MacOS)
+      if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
       run: |
         # Run coverage and upload report to codecov.
         $POETRY_RUN coverage run --source shellous -m pytest
