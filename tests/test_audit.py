@@ -76,3 +76,25 @@ async def test_audit_block_popen():
 
     finally:
         _HOOK = None
+
+
+async def test_audit_block_subprocess_spawn():
+    "Test PEP 578 audit hooks."
+
+    global _HOOK
+
+    def _hook(event, args):
+        if event == "byllyfish/shellous.subprocess_spawn":
+            raise RuntimeError("subprocess_spawn blocked")
+
+    try:
+        _HOOK = _hook
+
+        sh = shellous.context()
+        cmd = sh(sys.executable, "-c", "print('hello')")
+        with pytest.raises(RuntimeError, match="subprocess_spawn"):
+            # Test process substitution cleanup.
+            await cmd(cmd())
+
+    finally:
+        _HOOK = None

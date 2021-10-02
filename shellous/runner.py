@@ -82,6 +82,8 @@ class _RunOptions:  # pylint: disable=too-many-instance-attributes
             LOGGER.warning(
                 "_RunOptions.exit %r exc_value=%r", self.command.name, exc_value
             )
+            for subcmd in self.subcmds:
+                _cleanup(subcmd)
 
     def _setup_proc_sub(self):
         "Set up process substitution."
