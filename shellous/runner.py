@@ -129,18 +129,20 @@ class _RunOptions:  # pylint: disable=too-many-instance-attributes
         options = self.command.options
 
         stdin, input_bytes = self._setup_input(
-            options.input, options.input_close, self.encoding
+            Redirect.from_default(options.input, 0, options.pty),
+            options.input_close,
+            self.encoding,
         )
 
         stdout = self._setup_output(
-            options.output,
+            Redirect.from_default(options.output, 1, options.pty),
             options.output_append,
             options.output_close,
             sys.stdout,
         )
 
         stderr = self._setup_output(
-            options.error,
+            Redirect.from_default(options.error, 2, options.pty),
             options.error_append,
             options.error_close,
             sys.stderr,
@@ -864,9 +866,13 @@ class PipeRunner:  # pylint: disable=too-many-instance-attributes
 
 def _is_multiple_capture(cmd):
     "Return true if stdin is CAPTURE or both stdout and stderr are CAPTURE."
-    return cmd.options.input == Redirect.CAPTURE or (
-        cmd.options.output == Redirect.CAPTURE and cmd.options.error == Redirect.CAPTURE
-    )
+    input = Redirect.from_default(cmd.options.input, 0, cmd.options.pty)
+    if input == Redirect.CAPTURE:
+        return True
+
+    output = Redirect.from_default(cmd.options.output, 1, cmd.options.pty)
+    error = Redirect.from_default(cmd.options.error, 2, cmd.options.pty)
+    return output == Redirect.CAPTURE and error == Redirect.CAPTURE
 
 
 def _cleanup(command):

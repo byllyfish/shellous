@@ -10,6 +10,9 @@ from shellous.log import LOG_DETAIL, log_method
 from shellous.util import decode
 
 _CHUNK_SIZE = 8192
+_STDIN = 0
+_STDOUT = 1
+_STDERR = 2
 
 
 class Redirect(enum.IntEnum):
@@ -19,11 +22,29 @@ class Redirect(enum.IntEnum):
     DEVNULL = asyncio.subprocess.DEVNULL  # -3
     CAPTURE = -10
     INHERIT = -11
+    DEFAULT = -12
 
     def is_custom(self):
         "Return true if this redirect option is not built into asyncio."
-        return self in {Redirect.CAPTURE, Redirect.INHERIT}
+        return self in {Redirect.CAPTURE, Redirect.INHERIT, Redirect.DEFAULT}
 
+    @staticmethod
+    def from_default(obj, fd, pty):
+        "Return object with Redirect.DEFAULT replaced by actual value."
+        if not isinstance(obj, Redirect) or obj != Redirect.DEFAULT:
+            return obj
+
+        assert obj == Redirect.DEFAULT
+        return _DEFAULT_REDIRECTION[fd]
+
+
+# This table has the default redirections for stdin, stdout, stderr.
+# Used by Redirect.from_default().
+_DEFAULT_REDIRECTION = {
+    _STDIN: b"",
+    _STDOUT: Redirect.CAPTURE,
+    _STDERR: Redirect.DEVNULL,
+}
 
 # Used in Command and Pipeline to implement operator overloading.
 STDIN_TYPES = (str, bytes, os.PathLike, bytearray, io.IOBase, int, Redirect)
