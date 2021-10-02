@@ -122,6 +122,8 @@
 <span class="n">_FLAKY_EXIT_CODE</span> <span class="o">=</span> <span class="mi">255</span>
 <span class="n">_BSD</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;freebsd&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span> <span class="o">==</span> <span class="s2">&quot;darwin&quot;</span>
 
+<span class="n">AUDIT_EVENT_SUBPROCESS_SPAWN</span> <span class="o">=</span> <span class="s2">&quot;byllyfish/shellous.subprocess_spawn&quot;</span>
+
 
 <span class="k">def</span> <span class="nf">_is_cancelled</span><span class="p">(</span><span class="n">ex</span><span class="p">):</span>
     <span class="k">return</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ex</span><span class="p">,</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">CancelledError</span><span class="p">)</span>
@@ -183,6 +185,8 @@
             <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
                 <span class="s2">&quot;_RunOptions.exit </span><span class="si">%r</span><span class="s2"> exc_value=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">command</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">exc_value</span>
             <span class="p">)</span>
+            <span class="k">for</span> <span class="n">subcmd</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">subcmds</span><span class="p">:</span>
+                <span class="n">_cleanup</span><span class="p">(</span><span class="n">subcmd</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_setup_proc_sub</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Set up process substitution.&quot;</span>
@@ -604,8 +608,8 @@
                 <span class="n">pty_util</span><span class="o">.</span><span class="n">patch_child_watcher</span><span class="p">()</span>
 
         <span class="k">with</span> <span class="n">log_timer</span><span class="p">(</span><span class="s2">&quot;asyncio.create_subprocess_exec&quot;</span><span class="p">):</span>
-            <span class="c1"># AUDIT: byllyfish/shellous.subprocess_spawn: executable</span>
-            <span class="n">sys</span><span class="o">.</span><span class="n">audit</span><span class="p">(</span><span class="s2">&quot;byllyfish/shellous.subprocess_spawn&quot;</span><span class="p">,</span> <span class="n">opts</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="c1"># AUDIT: subprocess spawn</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">audit</span><span class="p">(</span><span class="n">AUDIT_EVENT_SUBPROCESS_SPAWN</span><span class="p">,</span> <span class="n">opts</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">proc</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_subprocess_exec</span><span class="p">(</span>
                 <span class="o">*</span><span class="n">opts</span><span class="o">.</span><span class="n">args</span><span class="p">,</span>
                 <span class="o">**</span><span class="n">opts</span><span class="o">.</span><span class="n">kwd_args</span><span class="p">,</span>
@@ -1235,8 +1239,8 @@
                 <span class="n">pty_util</span><span class="o">.</span><span class="n">patch_child_watcher</span><span class="p">()</span>
 
         <span class="k">with</span> <span class="n">log_timer</span><span class="p">(</span><span class="s2">&quot;asyncio.create_subprocess_exec&quot;</span><span class="p">):</span>
-            <span class="c1"># AUDIT: byllyfish/shellous.subprocess_spawn: executable</span>
-            <span class="n">sys</span><span class="o">.</span><span class="n">audit</span><span class="p">(</span><span class="s2">&quot;byllyfish/shellous.subprocess_spawn&quot;</span><span class="p">,</span> <span class="n">opts</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="c1"># AUDIT: subprocess spawn</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">audit</span><span class="p">(</span><span class="n">AUDIT_EVENT_SUBPROCESS_SPAWN</span><span class="p">,</span> <span class="n">opts</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">proc</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_subprocess_exec</span><span class="p">(</span>
                 <span class="o">*</span><span class="n">opts</span><span class="o">.</span><span class="n">args</span><span class="p">,</span>
                 <span class="o">**</span><span class="n">opts</span><span class="o">.</span><span class="n">kwd_args</span><span class="p">,</span>
