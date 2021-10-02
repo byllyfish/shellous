@@ -3,6 +3,7 @@ import sys
 
 import pytest
 import shellous
+from shellous import AUDIT_EVENT_SUBPROCESS_SPAWN
 
 pytestmark = pytest.mark.asyncio
 
@@ -49,7 +50,7 @@ async def test_audit():
 
     # Check for my audit event.
     assert any(
-        event.startswith("('byllyfish/shellous.subprocess_spawn',") for event in events
+        event.startswith(f"('{AUDIT_EVENT_SUBPROCESS_SPAWN}',") for event in events
     )
 
     if not _is_uvloop():
@@ -73,6 +74,54 @@ async def test_audit_block_popen():
         sh = shellous.context()
         with pytest.raises(RuntimeError, match="Popen blocked"):
             await sh(sys.executable, "-c", "print('hello')")
+
+    finally:
+        _HOOK = None
+
+
+async def test_audit_block_subprocess_spawn():
+    "Test PEP 578 audit hooks."
+
+    global _HOOK
+
+    def _hook(event, _args):
+        if event == AUDIT_EVENT_SUBPROCESS_SPAWN:
+            raise RuntimeError("subprocess_spawn blocked")
+
+    try:
+        _HOOK = _hook
+
+        sh = shellous.context()
+        cmd = sh(sys.executable, "-c", "print('hello')")
+        with pytest.raises(RuntimeError, match="subprocess_spawn"):
+
+            if sys.platform == "win32":
+                # Process substitution doesn't work on Windows.
+                await cmd
+            else:
+                # Test process substitution cleanup also.
+                await cmd(cmd())
+
+    finally:
+        _HOOK = None
+
+
+async def test_audit_block_pipe_specific_cmd():
+    "Test PEP 578 audit hooks to block a specific command (in a pipe)."
+
+    global _HOOK
+
+    def _hook(event, args):
+        if event == AUDIT_EVENT_SUBPROCESS_SPAWN and args[0] == "grep":
+            raise RuntimeError("grep blocked")
+
+    try:
+        _HOOK = _hook
+
+        sh = shellous.context()
+        cmd = sh(sys.executable, "-c", "print('hello')") | sh("grep")
+        with pytest.raises(RuntimeError, match="grep blocked"):
+            await cmd
 
     finally:
         _HOOK = None

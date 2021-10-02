@@ -21,6 +21,8 @@ _KILL_EXIT_CODE = -9 if sys.platform != "win32" else 1
 _FLAKY_EXIT_CODE = 255
 _BSD = sys.platform.startswith("freebsd") or sys.platform == "darwin"
 
+AUDIT_EVENT_SUBPROCESS_SPAWN = "byllyfish/shellous.subprocess_spawn"
+
 
 def _is_cancelled(ex):
     return isinstance(ex, asyncio.CancelledError)
@@ -82,6 +84,8 @@ class _RunOptions:  # pylint: disable=too-many-instance-attributes
             LOGGER.warning(
                 "_RunOptions.exit %r exc_value=%r", self.command.name, exc_value
             )
+            for subcmd in self.subcmds:
+                _cleanup(subcmd)
 
     def _setup_proc_sub(self):
         "Set up process substitution."
@@ -503,8 +507,8 @@ class Runner:
                 pty_util.patch_child_watcher()
 
         with log_timer("asyncio.create_subprocess_exec"):
-            # AUDIT: byllyfish/shellous.subprocess_spawn: executable
-            sys.audit("byllyfish/shellous.subprocess_spawn", opts.args[0])
+            # AUDIT: subprocess spawn
+            sys.audit(AUDIT_EVENT_SUBPROCESS_SPAWN, opts.args[0])
             self.proc = await asyncio.create_subprocess_exec(
                 *opts.args,
                 **opts.kwd_args,
