@@ -93,8 +93,13 @@ async def test_audit_block_subprocess_spawn():
         sh = shellous.context()
         cmd = sh(sys.executable, "-c", "print('hello')")
         with pytest.raises(RuntimeError, match="subprocess_spawn"):
-            # Test process substitution cleanup.
-            await cmd(cmd())
+
+            if sys.platform == "win32":
+                # Process substitution doesn't work on Windows.
+                await cmd
+            else:
+                # Test process substitution cleanup also.
+                await cmd(cmd())
 
     finally:
         _HOOK = None
