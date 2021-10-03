@@ -46,7 +46,16 @@
                                 <a class="variable" href="#Redirect.INHERIT">INHERIT</a>
                         </li>
                         <li>
+                                <a class="variable" href="#Redirect.IGNORE">IGNORE</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Redirect.DEFAULT">DEFAULT</a>
+                        </li>
+                        <li>
                                 <a class="function" href="#Redirect.is_custom">is_custom</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#Redirect.from_default">from_default</a>
                         </li>
                 </ul>
 
@@ -99,6 +108,9 @@
 <span class="kn">from</span> <span class="nn">shellous.util</span> <span class="kn">import</span> <span class="n">decode</span>
 
 <span class="n">_CHUNK_SIZE</span> <span class="o">=</span> <span class="mi">8192</span>
+<span class="n">_STDIN</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">_STDOUT</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">_STDERR</span> <span class="o">=</span> <span class="mi">2</span>
 
 
 <span class="k">class</span> <span class="nc">Redirect</span><span class="p">(</span><span class="n">enum</span><span class="o">.</span><span class="n">IntEnum</span><span class="p">):</span>
@@ -108,11 +120,39 @@
     <span class="n">DEVNULL</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">subprocess</span><span class="o">.</span><span class="n">DEVNULL</span>  <span class="c1"># -3</span>
     <span class="n">CAPTURE</span> <span class="o">=</span> <span class="o">-</span><span class="mi">10</span>
     <span class="n">INHERIT</span> <span class="o">=</span> <span class="o">-</span><span class="mi">11</span>
+    <span class="n">IGNORE</span> <span class="o">=</span> <span class="o">-</span><span class="mi">12</span>
+    <span class="n">DEFAULT</span> <span class="o">=</span> <span class="o">-</span><span class="mi">20</span>
 
     <span class="k">def</span> <span class="nf">is_custom</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Return true if this redirect option is not built into asyncio.&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span> <span class="ow">in</span> <span class="p">{</span><span class="n">Redirect</span><span class="o">.</span><span class="n">CAPTURE</span><span class="p">,</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">INHERIT</span><span class="p">}</span>
+        <span class="k">return</span> <span class="bp">self</span> <span class="ow">in</span> <span class="p">{</span>
+            <span class="n">Redirect</span><span class="o">.</span><span class="n">CAPTURE</span><span class="p">,</span>
+            <span class="n">Redirect</span><span class="o">.</span><span class="n">INHERIT</span><span class="p">,</span>
+            <span class="n">Redirect</span><span class="o">.</span><span class="n">IGNORE</span><span class="p">,</span>
+            <span class="n">Redirect</span><span class="o">.</span><span class="n">DEFAULT</span><span class="p">,</span>
+        <span class="p">}</span>
 
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">from_default</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">fdesc</span><span class="p">,</span> <span class="n">pty</span><span class="p">):</span>
+        <span class="s2">&quot;Return object with Redirect.DEFAULT replaced by actual value.&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Redirect</span><span class="p">)</span> <span class="ow">or</span> <span class="n">obj</span> <span class="o">!=</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">DEFAULT</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">obj</span>
+
+        <span class="k">assert</span> <span class="n">obj</span> <span class="o">==</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">DEFAULT</span>
+        <span class="k">return</span> <span class="n">_DEFAULT_REDIRECTION</span><span class="p">[(</span><span class="n">fdesc</span><span class="p">,</span> <span class="nb">bool</span><span class="p">(</span><span class="n">pty</span><span class="p">))]</span>
+
+
+<span class="c1"># This table has the default redirections for (src, pty).</span>
+<span class="c1"># Sources are stdin, stdout, stderr. Used by Redirect.from_default().</span>
+<span class="n">_DEFAULT_REDIRECTION</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="c1"># (FD, PTY)</span>
+    <span class="p">(</span><span class="n">_STDIN</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+    <span class="p">(</span><span class="n">_STDIN</span><span class="p">,</span> <span class="kc">True</span><span class="p">):</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">IGNORE</span><span class="p">,</span>
+    <span class="p">(</span><span class="n">_STDOUT</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">CAPTURE</span><span class="p">,</span>
+    <span class="p">(</span><span class="n">_STDOUT</span><span class="p">,</span> <span class="kc">True</span><span class="p">):</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">CAPTURE</span><span class="p">,</span>
+    <span class="p">(</span><span class="n">_STDERR</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">DEVNULL</span><span class="p">,</span>
+    <span class="p">(</span><span class="n">_STDERR</span><span class="p">,</span> <span class="kc">True</span><span class="p">):</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">STDOUT</span><span class="p">,</span>
+<span class="p">}</span>
 
 <span class="c1"># Used in Command and Pipeline to implement operator overloading.</span>
 <span class="n">STDIN_TYPES</span> <span class="o">=</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">,</span> <span class="nb">bytearray</span><span class="p">,</span> <span class="n">io</span><span class="o">.</span><span class="n">IOBase</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="n">Redirect</span><span class="p">)</span>
@@ -241,10 +281,26 @@
     <span class="n">DEVNULL</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">subprocess</span><span class="o">.</span><span class="n">DEVNULL</span>  <span class="c1"># -3</span>
     <span class="n">CAPTURE</span> <span class="o">=</span> <span class="o">-</span><span class="mi">10</span>
     <span class="n">INHERIT</span> <span class="o">=</span> <span class="o">-</span><span class="mi">11</span>
+    <span class="n">IGNORE</span> <span class="o">=</span> <span class="o">-</span><span class="mi">12</span>
+    <span class="n">DEFAULT</span> <span class="o">=</span> <span class="o">-</span><span class="mi">20</span>
 
     <span class="k">def</span> <span class="nf">is_custom</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Return true if this redirect option is not built into asyncio.&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span> <span class="ow">in</span> <span class="p">{</span><span class="n">Redirect</span><span class="o">.</span><span class="n">CAPTURE</span><span class="p">,</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">INHERIT</span><span class="p">}</span>
+        <span class="k">return</span> <span class="bp">self</span> <span class="ow">in</span> <span class="p">{</span>
+            <span class="n">Redirect</span><span class="o">.</span><span class="n">CAPTURE</span><span class="p">,</span>
+            <span class="n">Redirect</span><span class="o">.</span><span class="n">INHERIT</span><span class="p">,</span>
+            <span class="n">Redirect</span><span class="o">.</span><span class="n">IGNORE</span><span class="p">,</span>
+            <span class="n">Redirect</span><span class="o">.</span><span class="n">DEFAULT</span><span class="p">,</span>
+        <span class="p">}</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">from_default</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">fdesc</span><span class="p">,</span> <span class="n">pty</span><span class="p">):</span>
+        <span class="s2">&quot;Return object with Redirect.DEFAULT replaced by actual value.&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Redirect</span><span class="p">)</span> <span class="ow">or</span> <span class="n">obj</span> <span class="o">!=</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">DEFAULT</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">obj</span>
+
+        <span class="k">assert</span> <span class="n">obj</span> <span class="o">==</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">DEFAULT</span>
+        <span class="k">return</span> <span class="n">_DEFAULT_REDIRECTION</span><span class="p">[(</span><span class="n">fdesc</span><span class="p">,</span> <span class="nb">bool</span><span class="p">(</span><span class="n">pty</span><span class="p">))]</span>
 </pre></div>
 
         </details>
@@ -289,6 +345,24 @@
     
 
                             </div>
+                            <div id="Redirect.IGNORE" class="classattr">
+                                            <div class="attr variable"><a class="headerlink" href="#Redirect.IGNORE">#&nbsp;&nbsp</a>
+
+        <span class="name">IGNORE</span><span class="default_value"> = &lt;<a href="#Redirect.IGNORE">Redirect.IGNORE</a>: -12&gt;</span>
+    </div>
+
+    
+
+                            </div>
+                            <div id="Redirect.DEFAULT" class="classattr">
+                                            <div class="attr variable"><a class="headerlink" href="#Redirect.DEFAULT">#&nbsp;&nbsp</a>
+
+        <span class="name">DEFAULT</span><span class="default_value"> = &lt;<a href="#Redirect.DEFAULT">Redirect.DEFAULT</a>: -20&gt;</span>
+    </div>
+
+    
+
+                            </div>
                             <div id="Redirect.is_custom" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#Redirect.is_custom">#&nbsp;&nbsp</a>
 
@@ -301,12 +375,45 @@
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">is_custom</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Return true if this redirect option is not built into asyncio.&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span> <span class="ow">in</span> <span class="p">{</span><span class="n">Redirect</span><span class="o">.</span><span class="n">CAPTURE</span><span class="p">,</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">INHERIT</span><span class="p">}</span>
+        <span class="k">return</span> <span class="bp">self</span> <span class="ow">in</span> <span class="p">{</span>
+            <span class="n">Redirect</span><span class="o">.</span><span class="n">CAPTURE</span><span class="p">,</span>
+            <span class="n">Redirect</span><span class="o">.</span><span class="n">INHERIT</span><span class="p">,</span>
+            <span class="n">Redirect</span><span class="o">.</span><span class="n">IGNORE</span><span class="p">,</span>
+            <span class="n">Redirect</span><span class="o">.</span><span class="n">DEFAULT</span><span class="p">,</span>
+        <span class="p">}</span>
 </pre></div>
 
         </details>
 
             <div class="docstring"><p>Return true if this redirect option is not built into asyncio.</p>
+</div>
+
+
+                            </div>
+                            <div id="Redirect.from_default" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#Redirect.from_default">#&nbsp;&nbsp</a>
+
+                <div class="decorator">@staticmethod</div>
+
+            <span class="def">def</span>
+            <span class="name">from_default</span><span class="signature">(obj, fdesc, pty)</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">from_default</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">fdesc</span><span class="p">,</span> <span class="n">pty</span><span class="p">):</span>
+        <span class="s2">&quot;Return object with Redirect.DEFAULT replaced by actual value.&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Redirect</span><span class="p">)</span> <span class="ow">or</span> <span class="n">obj</span> <span class="o">!=</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">DEFAULT</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">obj</span>
+
+        <span class="k">assert</span> <span class="n">obj</span> <span class="o">==</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">DEFAULT</span>
+        <span class="k">return</span> <span class="n">_DEFAULT_REDIRECTION</span><span class="p">[(</span><span class="n">fdesc</span><span class="p">,</span> <span class="nb">bool</span><span class="p">(</span><span class="n">pty</span><span class="p">))]</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Return object with <a href="#Redirect.DEFAULT">Redirect.DEFAULT</a> replaced by actual value.</p>
 </div>
 
 

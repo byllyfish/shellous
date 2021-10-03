@@ -269,13 +269,13 @@ function to create these, rather than creating them directly.</p></li>
     <span class="n">inherit_env</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
     <span class="s2">&quot;True if subprocess should inherit the current environment variables.&quot;</span>
 
-    <span class="nb">input</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span>
+    <span class="nb">input</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">DEFAULT</span>
     <span class="s2">&quot;Input object to bind to stdin.&quot;</span>
 
     <span class="n">input_close</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="s2">&quot;True if input object should be closed after subprocess launch.&quot;</span>
 
-    <span class="n">output</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">CAPTURE</span>
+    <span class="n">output</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">DEFAULT</span>
     <span class="s2">&quot;Output object to bind to stdout.&quot;</span>
 
     <span class="n">output_append</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
@@ -284,7 +284,7 @@ function to create these, rather than creating them directly.</p></li>
     <span class="n">output_close</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="s2">&quot;True if output object should be closed after subprocess launch.&quot;</span>
 
-    <span class="n">error</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">DEVNULL</span>
+    <span class="n">error</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">DEFAULT</span>
     <span class="s2">&quot;Error object to bind to stderr.&quot;</span>
 
     <span class="n">error_append</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
@@ -714,13 +714,13 @@ function to create these, rather than creating them directly.</p></li>
     <span class="n">inherit_env</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
     <span class="s2">&quot;True if subprocess should inherit the current environment variables.&quot;</span>
 
-    <span class="nb">input</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span>
+    <span class="nb">input</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">DEFAULT</span>
     <span class="s2">&quot;Input object to bind to stdin.&quot;</span>
 
     <span class="n">input_close</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="s2">&quot;True if input object should be closed after subprocess launch.&quot;</span>
 
-    <span class="n">output</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">CAPTURE</span>
+    <span class="n">output</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">DEFAULT</span>
     <span class="s2">&quot;Output object to bind to stdout.&quot;</span>
 
     <span class="n">output_append</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
@@ -729,7 +729,7 @@ function to create these, rather than creating them directly.</p></li>
     <span class="n">output_close</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="s2">&quot;True if output object should be closed after subprocess launch.&quot;</span>
 
-    <span class="n">error</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">DEVNULL</span>
+    <span class="n">error</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">DEFAULT</span>
     <span class="s2">&quot;Error object to bind to stderr.&quot;</span>
 
     <span class="n">error_append</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
@@ -854,12 +854,12 @@ function to create these, rather than creating them directly.</p></li>
     context: <a href="#CmdContext">shellous.command.CmdContext</a>,
     env: Optional[immutables._map.Map] = None,
     inherit_env: bool = True,
-    input: Any = b&#39;&#39;,
+    input: Any = &lt;Redirect.DEFAULT: -20&gt;,
     input_close: bool = False,
-    output: Any = &lt;Redirect.CAPTURE: -10&gt;,
+    output: Any = &lt;Redirect.DEFAULT: -20&gt;,
     output_append: bool = False,
     output_close: bool = False,
-    error: Any = &lt;Redirect.DEVNULL: -3&gt;,
+    error: Any = &lt;Redirect.DEFAULT: -20&gt;,
     error_append: bool = False,
     error_close: bool = False,
     encoding: Optional[str] = &#39;utf-8&#39;,
@@ -918,7 +918,7 @@ function to create these, rather than creating them directly.</p></li>
                             <div id="Options.input" class="classattr">
                                             <div class="attr variable"><a class="headerlink" href="#Options.input">#&nbsp;&nbsp</a>
 
-        <span class="name">input</span><span class="annotation">: Any</span><span class="default_value"> = b&#39;&#39;</span>
+        <span class="name">input</span><span class="annotation">: Any</span><span class="default_value"> = &lt;Redirect.DEFAULT: -20&gt;</span>
     </div>
 
             <div class="docstring"><p>Input object to bind to stdin.</p>
@@ -940,7 +940,7 @@ function to create these, rather than creating them directly.</p></li>
                             <div id="Options.output" class="classattr">
                                             <div class="attr variable"><a class="headerlink" href="#Options.output">#&nbsp;&nbsp</a>
 
-        <span class="name">output</span><span class="annotation">: Any</span><span class="default_value"> = &lt;Redirect.CAPTURE: -10&gt;</span>
+        <span class="name">output</span><span class="annotation">: Any</span><span class="default_value"> = &lt;Redirect.DEFAULT: -20&gt;</span>
     </div>
 
             <div class="docstring"><p>Output object to bind to stdout.</p>
@@ -973,7 +973,7 @@ function to create these, rather than creating them directly.</p></li>
                             <div id="Options.error" class="classattr">
                                             <div class="attr variable"><a class="headerlink" href="#Options.error">#&nbsp;&nbsp</a>
 
-        <span class="name">error</span><span class="annotation">: Any</span><span class="default_value"> = &lt;Redirect.DEVNULL: -3&gt;</span>
+        <span class="name">error</span><span class="annotation">: Any</span><span class="default_value"> = &lt;Redirect.DEFAULT: -20&gt;</span>
     </div>
 
             <div class="docstring"><p>Error object to bind to stderr.</p>
