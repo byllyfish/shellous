@@ -1243,4 +1243,4 @@ async def test_pty_default_redirect_stderr(sh):
 
     # Pty mode redirects stderr to stdout.
     result = await cmd.set(exit_codes={1, 2}, pty=True)
-    assert result == "ls: DOES_NOT_EXIST: No such file or directory\r\n"
+    assert result.endswith("No such file or directory\r\n")
