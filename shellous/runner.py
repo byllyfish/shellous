@@ -206,7 +206,7 @@ class _RunOptions:  # pylint: disable=too-many-instance-attributes
         else:
             if encoding is None:
                 raise TypeError("when encoding is None, input must be bytes")
-            input_bytes = input_.encode(encoding)
+            input_bytes = input_.encode(*encoding.split(maxsplit=1))
 
         return stdin, input_bytes
 

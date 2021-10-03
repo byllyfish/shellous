@@ -433,6 +433,14 @@ async def test_runner_enter(echo_cmd):
         await task
 
 
+async def test_encoding_utf8(cat_cmd):
+    "Test use of encoding option with bad utf-8 data."
+
+    cat = cat_cmd.set(encoding="utf-8")
+    with pytest.raises(UnicodeDecodeError, match="invalid start byte"):
+        await (b"\x81abc" | cat)
+
+
 async def test_encoding_utf8_strict(cat_cmd):
     "Test use of encoding option with bad utf-8 data."
 
@@ -447,6 +455,22 @@ async def test_encoding_utf8_replace(cat_cmd):
     cat = cat_cmd.set(encoding="utf-8 replace")
     result = await (b"\x81abc" | cat)
     assert result == "\ufffdabc"
+
+
+async def test_encoding_utf8_replace_str(cat_cmd):
+    "Test use of encoding option with utf-8 data."
+
+    cat = cat_cmd.set(encoding="utf-8 replace")
+    result = await ("abc" | cat)
+    assert result == "abc"
+
+
+async def test_encoding_ascii_str(cat_cmd):
+    "Test use of encoding option with ascii data."
+
+    cat = cat_cmd.set(encoding="ascii")
+    result = await ("abc" | cat)
+    assert result == "abc"
 
 
 async def test_many_short_programs_sequential(echo_cmd):
