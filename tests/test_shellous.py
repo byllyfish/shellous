@@ -473,6 +473,38 @@ async def test_encoding_ascii_str(cat_cmd):
     assert result == "abc"
 
 
+async def test_encoding_utf8_split(cat_cmd):
+    "Test reconstitution of split utf-8 chars in output."
+
+    buf = io.StringIO()
+    cmd = CAPTURE | cat_cmd | buf
+
+    async with cmd.run() as run:
+        # Not split.
+        run.stdin.write(b"\xf0\x9f\x90\x9f")  # "\U0001F41F" in utf-8
+        await run.stdin.drain()
+        await asyncio.sleep(0.2)
+
+        # Split in half.
+        run.stdin.write(b"\xf0\x9f")
+        await run.stdin.drain()
+        await asyncio.sleep(0.1)
+
+        run.stdin.write(b"\x90\x9f")
+        await run.stdin.drain()
+        await asyncio.sleep(0.1)
+
+        # Split up one byte at a time.
+        for item in b"\xf0\x9f\x90\x9f":
+            run.stdin.write(bytes([item]))
+            await run.stdin.drain()
+            await asyncio.sleep(0.1)
+
+        run.stdin.close()
+
+    assert buf.getvalue() == "\U0001F41F" * 3
+
+
 async def test_many_short_programs_sequential(echo_cmd):
     "Test many short programs (sequential)."
     COUNT = 10
