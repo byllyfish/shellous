@@ -479,8 +479,6 @@ class Runner:
                         "stdin",
                     )
                     stdin = None
-                elif opts.command.options.input == Redirect.IGNORE:
-                    stdin = None
 
         except (Exception, asyncio.CancelledError) as ex:
             LOGGER.info("Runner._start %r ex=%r", self, ex)

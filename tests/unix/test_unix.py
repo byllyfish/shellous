@@ -1240,6 +1240,12 @@ async def test_pty_default_redirect_stderr(sh):
     result = await cmd.set(exit_codes={1, 2}, pty=True)
     assert result.endswith("No such file or directory\r\n")
 
+    # Test that pty's runner.stdin is still available...
+    async with cmd.set(exit_codes={1, 2}, pty=True).run() as run:
+        assert run.stdin is not None
+        result = await run.stdout.read()
+        assert result.endswith(b"No such file or directory\r\n")
+
 
 @pytest.mark.xfail(_is_uvloop(), reason="uvloop")
 async def test_pty_cat_hangs(sh):
@@ -1251,6 +1257,6 @@ async def test_pty_cat_hangs(sh):
     result = await cmd
     assert result == ""
 
-    # Pty mode reads from IGNORE; which hangs.
+    # Pty mode reads from IGNORE; which causes cat to hang.
     with pytest.raises(asyncio.TimeoutError):
         await asyncio.wait_for(cmd.set(pty=True), 2.0)
