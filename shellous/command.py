@@ -45,13 +45,13 @@ class Options:  # pylint: disable=too-many-instance-attributes
     inherit_env: bool = True
     "True if subprocess should inherit the current environment variables."
 
-    input: Any = b""
+    input: Any = Redirect.DEFAULT
     "Input object to bind to stdin."
 
     input_close: bool = False
     "True if input object should be closed after subprocess launch."
 
-    output: Any = Redirect.CAPTURE
+    output: Any = Redirect.DEFAULT
     "Output object to bind to stdout."
 
     output_append: bool = False
@@ -60,7 +60,7 @@ class Options:  # pylint: disable=too-many-instance-attributes
     output_close: bool = False
     "True if output object should be closed after subprocess launch."
 
-    error: Any = Redirect.DEVNULL
+    error: Any = Redirect.DEFAULT
     "Error object to bind to stderr."
 
     error_append: bool = False
