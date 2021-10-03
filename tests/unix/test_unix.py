@@ -1216,14 +1216,9 @@ async def test_pty_timeout_fail(sh):
     with pytest.raises(ResultError) as exc_info:
         await asyncio.wait_for(cmd, 0.2)
 
-    if sys.platform == "linux":
-        expected_output = b""
-    else:
-        expected_output = b"^D\x08\x08"
-
     assert exc_info.type is ResultError
     assert exc_info.value.result == Result(
-        output_bytes=expected_output,
+        output_bytes=b"",
         exit_code=_CANCELLED_EXIT_CODE,
         cancelled=True,
         encoding="utf-8",
@@ -1244,3 +1239,18 @@ async def test_pty_default_redirect_stderr(sh):
     # Pty mode redirects stderr to stdout.
     result = await cmd.set(exit_codes={1, 2}, pty=True)
     assert result.endswith("No such file or directory\r\n")
+
+
+@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+async def test_pty_cat_hangs(sh):
+    "Test that cat under pty hangs because we don't send EOF."
+
+    cmd = sh("cat")
+
+    # Non-pty mode we read from b"".
+    result = await cmd
+    assert result == ""
+
+    # Pty mode reads from IGNORE; which hangs.
+    with pytest.raises(asyncio.TimeoutError):
+        await asyncio.wait_for(cmd.set(pty=True), 2.0)

@@ -193,6 +193,8 @@ class _RunOptions:  # pylint: disable=too-many-instance-attributes
             # Custom support for Redirect constants.
             if input_ == Redirect.INHERIT:
                 stdin = sys.stdin
+            elif input_ == Redirect.IGNORE:
+                input_bytes = None
             else:
                 # CAPTURE uses stdin == PIPE.
                 assert input_ == Redirect.CAPTURE
@@ -476,6 +478,8 @@ class Runner:
                         redir.write_stream(opts.input_bytes, stdin, eof),
                         "stdin",
                     )
+                    stdin = None
+                elif opts.command.options.input == Redirect.IGNORE:
                     stdin = None
 
         except (Exception, asyncio.CancelledError) as ex:

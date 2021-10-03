@@ -619,10 +619,5 @@ async def test_pty_echo_exit_code(echo_cmd):
     options = dict(return_result=True, exit_codes={7}, pty=True)
     result = await echo_cmd("abc").env(SHELLOUS_EXIT_CODE=7).set(**options)
 
-    if sys.platform == "linux":
-        expected_output = "abc"
-    else:
-        expected_output = "^D\x08\x08abc"
-
     assert result.exit_code == 7
-    assert result.output == expected_output
+    assert result.output == "abc"
