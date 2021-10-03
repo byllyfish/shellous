@@ -1229,3 +1229,18 @@ async def test_pty_timeout_fail(sh):
         encoding="utf-8",
         extra=None,
     )
+
+
+@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+async def test_pty_default_redirect_stderr(sh):
+    "Test that pty redirects stderr to stdout."
+
+    cmd = sh("ls", "DOES_NOT_EXIST")
+
+    # Non-pty mode redirects stderr to /dev/null.
+    result = await cmd.set(exit_codes={1})
+    assert result == ""
+
+    # Pty mode redirects stderr to stdout.
+    result = await cmd.set(exit_codes={1}, pty=True)
+    assert result == "ls: DOES_NOT_EXIST: No such file or directory\r\n"

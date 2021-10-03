@@ -29,21 +29,25 @@ class Redirect(enum.IntEnum):
         return self in {Redirect.CAPTURE, Redirect.INHERIT, Redirect.DEFAULT}
 
     @staticmethod
-    def from_default(obj, fd, pty):
+    def from_default(obj, fdesc, pty):
         "Return object with Redirect.DEFAULT replaced by actual value."
         if not isinstance(obj, Redirect) or obj != Redirect.DEFAULT:
             return obj
 
         assert obj == Redirect.DEFAULT
-        return _DEFAULT_REDIRECTION[fd]
+        return _DEFAULT_REDIRECTION[(fdesc, bool(pty))]
 
 
-# This table has the default redirections for stdin, stdout, stderr.
-# Used by Redirect.from_default().
+# This table has the default redirections for (src, pty).
+# Sources are stdin, stdout, stderr. Used by Redirect.from_default().
 _DEFAULT_REDIRECTION = {
-    _STDIN: b"",
-    _STDOUT: Redirect.CAPTURE,
-    _STDERR: Redirect.DEVNULL,
+    # (FD, PTY)
+    (_STDIN, False): b"",
+    (_STDIN, True): b"",
+    (_STDOUT, False): Redirect.CAPTURE,
+    (_STDOUT, True): Redirect.CAPTURE,
+    (_STDERR, False): Redirect.DEVNULL,
+    (_STDERR, True): Redirect.STDOUT,
 }
 
 # Used in Command and Pipeline to implement operator overloading.

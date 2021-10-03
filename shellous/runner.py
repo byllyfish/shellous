@@ -866,8 +866,8 @@ class PipeRunner:  # pylint: disable=too-many-instance-attributes
 
 def _is_multiple_capture(cmd):
     "Return true if stdin is CAPTURE or both stdout and stderr are CAPTURE."
-    input = Redirect.from_default(cmd.options.input, 0, cmd.options.pty)
-    if input == Redirect.CAPTURE:
+    input_ = Redirect.from_default(cmd.options.input, 0, cmd.options.pty)
+    if input_ == Redirect.CAPTURE:
         return True
 
     output = Redirect.from_default(cmd.options.output, 1, cmd.options.pty)
