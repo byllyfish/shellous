@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "shellous"
-version = "0.6.0"
+version = "0.7.0"
 description = "Async Processes and Pipelines"
 license = "Apache-2.0"
 authors = ["Bill Fisher <william.w.fisher@gmail.com>"]
@@ -10,6 +10,7 @@ classifiers = [
   "Development Status :: 3 - Alpha",
   "Operating System :: OS Independent",
   "Intended Audience :: Developers",
+  "Intended Audience :: System Administrators",
   "Programming Language :: Python :: 3.9",
   "Framework :: AsyncIO",
 ]

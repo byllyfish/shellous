@@ -3,7 +3,7 @@
 """
 __docformat__ = "restructuredtext"
 
-__version__ = "0.6.0"
+__version__ = "0.7.0"
 
 # pylint: disable=cyclic-import
 from .command import CmdContext, Command, Options  # noqa: F401
