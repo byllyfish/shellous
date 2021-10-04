@@ -2,6 +2,7 @@
 
 import asyncio
 import io
+import logging
 import os
 import re
 import signal
@@ -416,6 +417,19 @@ async def test_redirect_error_to_capture(python_script):
     "Test using CAPTURE when not using `async with`."
     with pytest.raises(ValueError, match="multiple capture requires 'async with'"):
         await python_script.stderr(CAPTURE)
+
+
+async def test_redirect_error_to_logger(python_script, capfd, caplog):
+    "Test redirection options with both stdout and stderr output (logger)."
+    test_logger = logging.getLogger("test_logger")
+    result = await python_script.stderr(test_logger)
+    assert result == "hi stdout\ngoodbye!"
+    assert capfd.readouterr() == ("", "")
+
+    logs = [tup for tup in caplog.record_tuples if tup[0] == "test_logger"]
+    assert logs == [
+        ("test_logger", 40, "hi stderr"),
+    ]
 
 
 async def test_async_context_manager(sh):

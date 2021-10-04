@@ -63,6 +63,7 @@ instead, set the `append` keyword argument to True. The behavior  depends on the
 | bytearray | Write output to mutable byte array. | TypeError
 | *file object*<sup>1</sup> | Write output to open file object. | TypeError
 | int | Write output to existing file descriptor. | TypeError
+| logging.Logger | Log each line of output. | TypeError
 | CAPTURE | Return standard output or error. See *Multiple Capture*. | TypeError
 | DEVNULL | Write output to `/dev/null`. | TypeError
 | INHERIT  | Write output to existing `sys.stdout` or `sys.stderr`. | TypeError
@@ -119,6 +120,13 @@ Default Settings
 - Standard input is read from the empty string.
 - Standard out is captured by the program and returned (CAPTURE).
 - Standard error is discarded (DEVNULL).
+
+Default Settings for Pseudo-Terminal
+------------------------------------
+
+- Standard input is ignored (IGNORE).
+- Standard out is captured by the program and returned (CAPTURE).
+- Standard error is redirected to standard output (STDOUT).
 
 
 ----

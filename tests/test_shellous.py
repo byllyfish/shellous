@@ -5,6 +5,7 @@
 import asyncio
 import hashlib
 import io
+import logging
 import os
 import sys
 from pathlib import Path
@@ -308,6 +309,19 @@ async def test_redirect_stdout_stringio(echo_cmd):
     result = await echo_cmd("abc").stdout(buf)
     assert result == ""
     assert buf.getvalue() == "abc"
+
+
+async def test_redirect_stdout_logger(echo_cmd, caplog):
+    "Test redirecting stdout to a Logger."
+    logger = logging.getLogger("test_logger")
+    result = await echo_cmd("abc %r\ndef %s").stdout(logger)
+    assert result == ""
+
+    logs = [tup for tup in caplog.record_tuples if tup[0] == "test_logger"]
+    assert logs == [
+        ("test_logger", 40, "abc %r"),
+        ("test_logger", 40, "def %s"),
+    ]
 
 
 async def test_redirect_stdin_bytearray(cat_cmd):
