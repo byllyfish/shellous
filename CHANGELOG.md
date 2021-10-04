@@ -1,6 +1,20 @@
 Shellous Change Log
 ===================
 
+0.7.0
+-----
+
+- [FEATURE] Add support for redirecting stdout/stderr to a logging.Logger.
+- [FEATURE] Add PEP 578 audit support: AUDIT_EVENT_SUBPROCESS_SPAWN (#83).
+- [FEATURE] Add IGNORE redirect option for stdin (#77).
+- [API] Change defaults for PTY redirections (stdin -> IGNORE, stderr -> STDOUT).
+- [BUGFIX] Fix character encoding issue with input (#88).
+- [BUGFIX] Fix clean up of subcommands when there is an exception (#82).
+- [BUGFIX] Return correct exit status from failed/cancelled pty commands.
+- [BUGFIX] Handle ECHILD properly in pty waitpid code.
+- [BUGFIX] Improve reliability of pty mode on FreeBSD and MacOS (#76, #84).
+- [LATERAL] Test readme REPL commands on all platforms except Windows.
+
 0.6.0
 -----
 
