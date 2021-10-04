@@ -67,6 +67,9 @@
                     <a class="function" href="#copy_stringio">copy_stringio</a>
             </li>
             <li>
+                    <a class="function" href="#copy_logger">copy_logger</a>
+            </li>
+            <li>
                     <a class="function" href="#copy_bytesio">copy_bytesio</a>
             </li>
             <li>
@@ -102,6 +105,7 @@
 <span class="kn">import</span> <span class="nn">enum</span>
 <span class="kn">import</span> <span class="nn">io</span>
 <span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">logging</span> <span class="kn">import</span> <span class="n">Logger</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span>
 
 <span class="kn">from</span> <span class="nn">shellous.log</span> <span class="kn">import</span> <span class="n">LOG_DETAIL</span><span class="p">,</span> <span class="n">log_method</span>
@@ -156,7 +160,7 @@
 
 <span class="c1"># Used in Command and Pipeline to implement operator overloading.</span>
 <span class="n">STDIN_TYPES</span> <span class="o">=</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">,</span> <span class="nb">bytearray</span><span class="p">,</span> <span class="n">io</span><span class="o">.</span><span class="n">IOBase</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="n">Redirect</span><span class="p">)</span>
-<span class="n">STDOUT_TYPES</span> <span class="o">=</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">,</span> <span class="nb">bytearray</span><span class="p">,</span> <span class="n">io</span><span class="o">.</span><span class="n">IOBase</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="n">Redirect</span><span class="p">)</span>
+<span class="n">STDOUT_TYPES</span> <span class="o">=</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">,</span> <span class="nb">bytearray</span><span class="p">,</span> <span class="n">io</span><span class="o">.</span><span class="n">IOBase</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="n">Redirect</span><span class="p">,</span> <span class="n">Logger</span><span class="p">)</span>
 <span class="n">STDOUT_APPEND_TYPES</span> <span class="o">=</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">)</span>
 
 
@@ -224,6 +228,18 @@
         <span class="c1"># Only convert to string once all output is collected.</span>
         <span class="c1"># (What if utf-8 codepoint is split between reads?)</span>
         <span class="n">dest</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">decode</span><span class="p">(</span><span class="n">buf</span><span class="o">.</span><span class="n">getvalue</span><span class="p">(),</span> <span class="n">encoding</span><span class="p">))</span>
+
+
+<span class="nd">@log_method</span><span class="p">(</span><span class="n">LOG_DETAIL</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">copy_logger</span><span class="p">(</span>
+    <span class="n">source</span><span class="p">:</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">StreamReader</span><span class="p">,</span>
+    <span class="n">dest</span><span class="p">:</span> <span class="n">Logger</span><span class="p">,</span>
+    <span class="n">encoding</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="s2">&quot;Copy lines from source stream to dest Logger.&quot;</span>
+    <span class="k">async</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">source</span><span class="p">:</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">decode</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="n">encoding</span><span class="p">)</span>
+        <span class="n">dest</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">rstrip</span><span class="p">())</span>
 
 
 <span class="nd">@log_method</span><span class="p">(</span><span class="n">LOG_DETAIL</span><span class="p">)</span>
@@ -537,6 +553,40 @@
         </details>
 
             <div class="docstring"><p>Copy bytes from source stream to dest StringIO.</p>
+</div>
+
+
+                </section>
+                <section id="copy_logger">
+                            <div class="attr function"><a class="headerlink" href="#copy_logger">#&nbsp;&nbsp</a>
+
+                <div class="decorator">@log_method(LOG_DETAIL)</div>
+
+            <span class="def">async def</span>
+            <span class="name">copy_logger</span><span class="signature">(
+    source: asyncio.streams.StreamReader,
+    dest: logging.Logger,
+    encoding: str
+)</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span><span class="nd">@log_method</span><span class="p">(</span><span class="n">LOG_DETAIL</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">copy_logger</span><span class="p">(</span>
+    <span class="n">source</span><span class="p">:</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">StreamReader</span><span class="p">,</span>
+    <span class="n">dest</span><span class="p">:</span> <span class="n">Logger</span><span class="p">,</span>
+    <span class="n">encoding</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="s2">&quot;Copy lines from source stream to dest Logger.&quot;</span>
+    <span class="k">async</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">source</span><span class="p">:</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">decode</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="n">encoding</span><span class="p">)</span>
+        <span class="n">dest</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">rstrip</span><span class="p">())</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Copy lines from source stream to dest Logger.</p>
 </div>
 
 
