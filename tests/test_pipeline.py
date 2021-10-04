@@ -3,6 +3,7 @@
 # pylint: disable=redefined-outer-name,invalid-name
 
 import io
+import logging
 from pathlib import Path
 
 import pytest
@@ -208,6 +209,13 @@ def test_pipeline_redirect_stringio(sh):
     buf = io.StringIO()
     cmd = sh("echo") | buf
     assert cmd == sh("echo").stdout(buf)
+
+
+def test_pipeline_redirect_logger(sh):
+    "Test use of StringIO in pipeline."
+    logger = logging.getLogger("test_logger")
+    cmd = sh("echo") | logger
+    assert cmd == sh("echo").stdout(logger)
 
 
 def test_pipeline_len_getitem(sh):

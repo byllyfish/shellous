@@ -4,6 +4,7 @@ import asyncio
 import io
 import os
 import sys
+from logging import Logger
 
 import shellous
 import shellous.redirect as redir
@@ -233,7 +234,7 @@ class _RunOptions:  # pylint: disable=too-many-instance-attributes
             stdout = output
             if close:
                 self.open_fds.append(stdout)
-        elif isinstance(output, (io.StringIO, io.BytesIO, bytearray)):
+        elif isinstance(output, (io.StringIO, io.BytesIO, bytearray, Logger)):
             pass
         elif isinstance(output, io.IOBase):
             # Client-managed File-like object.
@@ -542,6 +543,9 @@ class Runner:
             stream = None
         elif isinstance(sink, bytearray):
             self.add_task(redir.copy_bytearray(stream, sink), tag)
+            stream = None
+        elif isinstance(sink, Logger):
+            self.add_task(redir.copy_logger(stream, sink, encoding), tag)
             stream = None
         return stream
 

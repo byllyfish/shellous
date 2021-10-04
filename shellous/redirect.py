@@ -4,6 +4,7 @@ import asyncio
 import enum
 import io
 import os
+from logging import Logger
 from typing import Optional
 
 from shellous.log import LOG_DETAIL, log_method
@@ -58,7 +59,7 @@ _DEFAULT_REDIRECTION = {
 
 # Used in Command and Pipeline to implement operator overloading.
 STDIN_TYPES = (str, bytes, os.PathLike, bytearray, io.IOBase, int, Redirect)
-STDOUT_TYPES = (str, bytes, os.PathLike, bytearray, io.IOBase, int, Redirect)
+STDOUT_TYPES = (str, bytes, os.PathLike, bytearray, io.IOBase, int, Redirect, Logger)
 STDOUT_APPEND_TYPES = (str, bytes, os.PathLike)
 
 
@@ -126,6 +127,18 @@ async def copy_stringio(
         # Only convert to string once all output is collected.
         # (What if utf-8 codepoint is split between reads?)
         dest.write(decode(buf.getvalue(), encoding))
+
+
+@log_method(LOG_DETAIL)
+async def copy_logger(
+    source: asyncio.StreamReader,
+    dest: Logger,
+    encoding: str,
+):
+    "Copy lines from source stream to dest Logger."
+    async for line in source:
+        data = decode(line, encoding)
+        dest.error(data.rstrip())
 
 
 @log_method(LOG_DETAIL)
