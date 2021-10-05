@@ -1,7 +1,8 @@
+import asyncio
 import os
 
 import pytest
-from shellous.util import close_fds, coerce_env, decode
+from shellous.util import close_fds, coerce_env, decode, uninterrupted
 
 pytestmark = pytest.mark.asyncio
 
@@ -53,3 +54,24 @@ def test_close_fds(tmp_path):
 
     close_fds(open_files)
     assert not open_files
+
+
+async def test_uninterrupted():
+    "Test the uninterrupted() helper."
+
+    done = False
+
+    async def _test1():
+        nonlocal done
+        await asyncio.sleep(0.5)
+        done = True
+
+    async def task1():
+        return await uninterrupted(_test1())
+
+    with pytest.raises(asyncio.TimeoutError):
+        task = asyncio.create_task(task1())
+        await asyncio.wait_for(task, 0.1)
+
+    assert task.cancelled()
+    assert done

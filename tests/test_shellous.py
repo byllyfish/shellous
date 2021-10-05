@@ -665,7 +665,7 @@ async def test_quick_cancel(echo_cmd):
     "Test a command that is quickly cancelled, just before starting."
 
     async def _test_task():
-        # Cancel in _make_subprocess_transport (asyncio/unix_events.py)
+        # Cancel in Runner._subprocess_exec().
         asyncio.current_task().cancel()
         return await echo_cmd("hello").set(incomplete_result=True)
 
@@ -676,7 +676,7 @@ async def test_quick_cancel(echo_cmd):
 
     assert exc_info.value.result == Result(
         output_bytes=b"",
-        exit_code=KILL_EXIT_CODE,
+        exit_code=CANCELLED_EXIT_CODE,
         cancelled=True,
         encoding="utf-8",
         extra=None,
