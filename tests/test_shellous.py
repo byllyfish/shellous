@@ -210,7 +210,7 @@ async def test_pipe_cancel_incomplete(echo_cmd, cat_cmd):
 
     cmd = echo_cmd | cat_cmd
     with pytest.raises(ResultError) as exc_info:
-        await asyncio.wait_for(cmd, timeout=0.2)
+        await asyncio.wait_for(cmd, timeout=0.4)
 
     assert exc_info.type is ResultError
     assert exc_info.value.result == Result(
