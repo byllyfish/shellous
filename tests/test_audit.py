@@ -56,6 +56,7 @@ async def test_audit():
     if not _is_uvloop():
         # uvloop doesn't implement audit hooks.
         assert any(event.startswith("('subprocess.Popen',") for event in events)
+        assert any(event.startswith("('os.posix_spawn',") for event in events)
 
 
 @pytest.mark.xfail(_is_uvloop(), reason="uvloop")
