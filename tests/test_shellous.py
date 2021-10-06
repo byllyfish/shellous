@@ -23,6 +23,7 @@ PIPE_MAX_SIZE = 4 * 1024 * 1024 + 1
 # On Windows, the exit_code of a terminated process is 1.
 CANCELLED_EXIT_CODE = -15 if sys.platform != "win32" else 1
 KILL_EXIT_CODE = -9 if sys.platform != "win32" else 1
+UNLAUNCHED_EXIT_CODE = -255
 
 
 def _is_uvloop():
@@ -114,6 +115,12 @@ async def test_bulk(bulk_cmd):
     assert hash == "462d6c497b393d2c9e1584a7b4636592da837ef66cf4ff871dc937f3fe309459"
 
 
+async def test_nonexistant_cmd():
+    sh = context()
+    with pytest.raises(FileNotFoundError):
+        await sh("non_existant_command").set(return_result=True)
+
+
 async def test_pipeline(echo_cmd, cat_cmd, tr_cmd):
     pipe = echo_cmd("xyz") | cat_cmd() | tr_cmd()
     result = await pipe()
@@ -203,7 +210,7 @@ async def test_pipe_cancel_incomplete(echo_cmd, cat_cmd):
 
     cmd = echo_cmd | cat_cmd
     with pytest.raises(ResultError) as exc_info:
-        await asyncio.wait_for(cmd, timeout=0.2)
+        await asyncio.wait_for(cmd, timeout=0.4)
 
     assert exc_info.type is ResultError
     assert exc_info.value.result == Result(
@@ -665,7 +672,7 @@ async def test_quick_cancel(echo_cmd):
     "Test a command that is quickly cancelled, just before starting."
 
     async def _test_task():
-        # Cancel in _make_subprocess_transport (asyncio/unix_events.py)
+        # Cancel in Runner._subprocess_exec().
         asyncio.current_task().cancel()
         return await echo_cmd("hello").set(incomplete_result=True)
 
@@ -676,7 +683,7 @@ async def test_quick_cancel(echo_cmd):
 
     assert exc_info.value.result == Result(
         output_bytes=b"",
-        exit_code=KILL_EXIT_CODE,
+        exit_code=UNLAUNCHED_EXIT_CODE,
         cancelled=True,
         encoding="utf-8",
         extra=None,

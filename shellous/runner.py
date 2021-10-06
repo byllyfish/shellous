@@ -13,13 +13,14 @@ from shellous.harvest import harvest, harvest_results
 from shellous.log import LOG_DETAIL, LOG_ENTER, LOG_EXIT, LOGGER, log_method, log_timer
 from shellous.redirect import Redirect
 from shellous.result import Result, make_result
-from shellous.util import close_fds, verify_dev_fd, wait_pid
+from shellous.util import close_fds, uninterrupted, verify_dev_fd, wait_pid
 
 _KILL_TIMEOUT = 3.0
 _CLOSE_TIMEOUT = 0.25
 
-_KILL_EXIT_CODE = -9 if sys.platform != "win32" else 1
+_UNLAUNCHED_EXIT_CODE = -255
 _FLAKY_EXIT_CODE = 255
+
 _BSD = sys.platform.startswith("freebsd") or sys.platform == "darwin"
 
 AUDIT_EVENT_SUBPROCESS_SPAWN = "byllyfish/shellous.subprocess_spawn"
@@ -204,10 +205,12 @@ class _RunOptions:  # pylint: disable=too-many-instance-attributes
             stdin = input_
             if close:
                 self.open_fds.append(stdin)
-        else:
+        elif isinstance(input_, str):
             if encoding is None:
                 raise TypeError("when encoding is None, input must be bytes")
             input_bytes = input_.encode(*encoding.split(maxsplit=1))
+        else:
+            raise TypeError(f"unsupported input type: {input_!r}")
 
         return stdin, input_bytes
 
@@ -235,12 +238,13 @@ class _RunOptions:  # pylint: disable=too-many-instance-attributes
             if close:
                 self.open_fds.append(stdout)
         elif isinstance(output, (io.StringIO, io.BytesIO, bytearray, Logger)):
-            pass
+            # Shellous-supported output classes.
+            assert stdout == asyncio.subprocess.PIPE
         elif isinstance(output, io.IOBase):
             # Client-managed File-like object.
             stdout = output
         else:
-            raise TypeError(f"unsupported type: {output!r}")
+            raise TypeError(f"unsupported output type: {output!r}")
 
         return stdout
 
@@ -318,10 +322,9 @@ class Runner:
         if self.proc:
             code = self.proc.returncode
         else:
-            # The process was started but cancelled immediately; `self.proc`
-            # was never returned.
+            # The process was cancelled before starting.
             assert self.cancelled
-            code = _KILL_EXIT_CODE
+            code = _UNLAUNCHED_EXIT_CODE
 
         result = Result(
             output_bytes,
@@ -503,7 +506,7 @@ class Runner:
 
     @log_method(LOG_DETAIL)
     async def _subprocess_spawn(self, opts):
-        "Start the subprocess and assign to `self.proc`."
+        "Start the subprocess."
 
         # Second half of pty setup.
         if opts.pty_fds:
@@ -511,17 +514,27 @@ class Runner:
             if _BSD:
                 pty_util.patch_child_watcher()
 
+        # Check for task cancellation and yield right before exec'ing. If the
+        # current task is already cancelled, this will raise a CancelledError,
+        # and we save ourselves the work of launching and immediately killing
+        # a process.
+        await asyncio.sleep(0)
+        # Launch the subprocess (always completes even if cancelled).
+        await uninterrupted(self._subprocess_exec(opts))
+
+        # Launch the process substitution commands (if any).
+        for cmd in opts.subcmds:
+            self.add_task(cmd.coro(), "procsub")
+
+    @log_method(LOG_DETAIL)
+    async def _subprocess_exec(self, opts):
+        "Start the subprocess and assign to `self.proc`."
         with log_timer("asyncio.create_subprocess_exec"):
-            # AUDIT: subprocess spawn
             sys.audit(AUDIT_EVENT_SUBPROCESS_SPAWN, opts.args[0])
             self.proc = await asyncio.create_subprocess_exec(
                 *opts.args,
                 **opts.kwd_args,
             )
-
-        # Launch the process substitution commands (if any).
-        for cmd in opts.subcmds:
-            self.add_task(cmd.coro(), "procsub")
 
     @log_method(LOG_DETAIL)
     async def _waiter(self):

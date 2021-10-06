@@ -1,5 +1,6 @@
 "Implements various utility functions."
 
+import asyncio
 import io
 import os
 from typing import Any, Iterable, Optional, Union
@@ -84,3 +85,16 @@ def wait_pid(pid: int) -> Optional[int]:
         pass
 
     return status
+
+
+async def uninterrupted(coro):
+    "Run a coroutine so it completes even if the current task is cancelled."
+
+    task = asyncio.create_task(coro)
+    try:
+        return await asyncio.shield(task)
+
+    except asyncio.CancelledError:
+        if not task.cancelled():
+            await task
+        raise
