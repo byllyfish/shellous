@@ -215,6 +215,10 @@ class _RunOptions:  # pylint: disable=too-many-instance-attributes
             if encoding is None:
                 raise TypeError("when encoding is None, input must be bytes")
             input_bytes = input_.encode(*encoding.split(maxsplit=1))
+        elif isinstance(input_, asyncio.StreamReader):
+            # Shellous-supported input classes.
+            assert stdin == asyncio.subprocess.PIPE
+            assert input_bytes is None
         else:
             raise TypeError(f"unsupported input type: {input_!r}")
 
@@ -489,6 +493,11 @@ class Runner:
                         "stdin",
                     )
                     stdin = None
+                else:
+                    input_ = opts.command.options.input
+                    stdin = self._setup_input_source(
+                        stdin, input_, opts.encoding, "stdin"
+                    )
 
         except (Exception, asyncio.CancelledError) as ex:
             LOGGER.info("Runner._start %r ex=%r", self, ex)
@@ -549,6 +558,13 @@ class Runner:
             await self._wait_pid()
         else:
             await self.proc.wait()
+
+    def _setup_input_source(self, stream, source, encoding, tag):
+        "Set up a task to read from custom input source."
+        if isinstance(source, asyncio.StreamReader):
+            self.add_task(redir.write_reader(source, stream), tag)
+            stream = None
+        return stream
 
     def _setup_output_sink(self, stream, sink, encoding, tag):
         "Set up a task to write to custom output sink."

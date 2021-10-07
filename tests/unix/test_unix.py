@@ -1275,3 +1275,24 @@ async def test_pty_cat_hangs(sh):
     # Pty mode reads from IGNORE; which causes cat to hang.
     with pytest.raises(asyncio.TimeoutError):
         await asyncio.wait_for(cmd.set(pty=True), 2.0)
+
+
+async def test_redirect_stdin_streamreader(sh):
+    "Test reading stdin from StreamReader."
+
+    def _hello(_reader, writer):
+        writer.write(b"hello")
+        writer.close()
+
+    try:
+        sock_path = "/tmp/__streamreader__"
+        server = await asyncio.start_unix_server(_hello, sock_path)
+
+        reader, writer = await asyncio.open_unix_connection(sock_path)
+        result = await sh("cat").stdin(reader)
+        assert result == "hello"
+
+    finally:
+        writer.close()
+        server.close()
+        await server.wait_closed()

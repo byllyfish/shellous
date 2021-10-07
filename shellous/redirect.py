@@ -109,6 +109,24 @@ async def write_stream(
 
 
 @log_method(LOG_DETAIL)
+async def write_reader(
+    reader: asyncio.StreamReader,
+    stream: asyncio.StreamWriter,
+):
+    "Copy from reader to writer."
+
+    # FIXME: Handle pty protocol...
+    while True:
+        data = await reader.read(_CHUNK_SIZE)
+        if not data:
+            break
+        stream.write(data)
+        await stream.drain()
+
+    stream.close()
+
+
+@log_method(LOG_DETAIL)
 async def copy_stringio(
     source: asyncio.StreamReader,
     dest: io.StringIO,
