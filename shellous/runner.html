@@ -114,7 +114,7 @@
 <span class="kn">from</span> <span class="nn">shellous.log</span> <span class="kn">import</span> <span class="n">LOG_DETAIL</span><span class="p">,</span> <span class="n">LOG_ENTER</span><span class="p">,</span> <span class="n">LOG_EXIT</span><span class="p">,</span> <span class="n">LOGGER</span><span class="p">,</span> <span class="n">log_method</span><span class="p">,</span> <span class="n">log_timer</span>
 <span class="kn">from</span> <span class="nn">shellous.redirect</span> <span class="kn">import</span> <span class="n">Redirect</span>
 <span class="kn">from</span> <span class="nn">shellous.result</span> <span class="kn">import</span> <span class="n">Result</span><span class="p">,</span> <span class="n">make_result</span>
-<span class="kn">from</span> <span class="nn">shellous.util</span> <span class="kn">import</span> <span class="n">close_fds</span><span class="p">,</span> <span class="n">uninterrupted</span><span class="p">,</span> <span class="n">verify_dev_fd</span><span class="p">,</span> <span class="n">wait_pid</span>
+<span class="kn">from</span> <span class="nn">shellous.util</span> <span class="kn">import</span> <span class="n">close_fds</span><span class="p">,</span> <span class="n">uninterrupted</span><span class="p">,</span> <span class="n">verify_dev_fd</span><span class="p">,</span> <span class="n">wait_pid</span><span class="p">,</span> <span class="n">which</span>
 
 <span class="n">_KILL_TIMEOUT</span> <span class="o">=</span> <span class="mf">3.0</span>
 <span class="n">_CLOSE_TIMEOUT</span> <span class="o">=</span> <span class="mf">0.25</span>
@@ -178,6 +178,7 @@
             <span class="k">return</span> <span class="bp">self</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>
             <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;_RunOptions.enter </span><span class="si">%r</span><span class="s2"> ex=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">command</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">ex</span><span class="p">)</span>
+            <span class="n">_cleanup</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">command</span><span class="p">)</span>
             <span class="k">raise</span>
 
     <span class="k">def</span> <span class="fm">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_exc_type</span><span class="p">,</span> <span class="n">exc_value</span><span class="p">,</span> <span class="n">_exc_tb</span><span class="p">):</span>
@@ -265,7 +266,6 @@
             <span class="n">start_new_session</span> <span class="o">=</span> <span class="kc">True</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">input_bytes</span> <span class="o">=</span> <span class="n">input_bytes</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">args</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">command</span><span class="o">.</span><span class="n">args</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">kwd_args</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s2">&quot;stdin&quot;</span><span class="p">:</span> <span class="n">stdin</span><span class="p">,</span>
             <span class="s2">&quot;stdout&quot;</span><span class="p">:</span> <span class="n">stdout</span><span class="p">,</span>
@@ -273,12 +273,18 @@
             <span class="s2">&quot;env&quot;</span><span class="p">:</span> <span class="n">options</span><span class="o">.</span><span class="n">merge_env</span><span class="p">(),</span>
             <span class="s2">&quot;start_new_session&quot;</span><span class="p">:</span> <span class="n">start_new_session</span><span class="p">,</span>
             <span class="s2">&quot;preexec_fn&quot;</span><span class="p">:</span> <span class="n">preexec_fn</span><span class="p">,</span>
+            <span class="s2">&quot;close_fds&quot;</span><span class="p">:</span> <span class="n">options</span><span class="o">.</span><span class="n">close_fds</span><span class="p">,</span>
         <span class="p">}</span>
 
         <span class="k">if</span> <span class="n">options</span><span class="o">.</span><span class="n">pass_fds</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">kwd_args</span><span class="p">[</span><span class="s2">&quot;close_fds&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">kwd_args</span><span class="p">[</span><span class="s2">&quot;pass_fds&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">options</span><span class="o">.</span><span class="n">pass_fds</span>
             <span class="k">if</span> <span class="n">options</span><span class="o">.</span><span class="n">pass_fds_close</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">open_fds</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">options</span><span class="o">.</span><span class="n">pass_fds</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">args</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">command</span><span class="o">.</span><span class="n">args</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">which</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
 
     <span class="k">def</span> <span class="nf">_setup_input</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_</span><span class="p">,</span> <span class="n">close</span><span class="p">,</span> <span class="n">encoding</span><span class="p">):</span>
         <span class="s2">&quot;Set up process input.&quot;</span>

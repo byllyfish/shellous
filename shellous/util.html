@@ -48,6 +48,9 @@
             <li>
                     <a class="function" href="#uninterrupted">uninterrupted</a>
             </li>
+            <li>
+                    <a class="function" href="#which">which</a>
+            </li>
     </ul>
 
 
@@ -74,6 +77,7 @@
 <span class="kn">import</span> <span class="nn">asyncio</span>
 <span class="kn">import</span> <span class="nn">io</span>
 <span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">shutil</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="kn">from</span> <span class="nn">.log</span> <span class="kn">import</span> <span class="n">LOG_DETAIL</span><span class="p">,</span> <span class="n">LOGGER</span><span class="p">,</span> <span class="n">log_timer</span>
@@ -169,6 +173,14 @@
         <span class="k">if</span> <span class="ow">not</span> <span class="n">task</span><span class="o">.</span><span class="n">cancelled</span><span class="p">():</span>
             <span class="k">await</span> <span class="n">task</span>
         <span class="k">raise</span>
+
+
+<span class="k">def</span> <span class="nf">which</span><span class="p">(</span><span class="n">command</span><span class="p">):</span>
+    <span class="s2">&quot;Given a command without a directory, return the fully qualified path.&quot;</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="n">shutil</span><span class="o">.</span><span class="n">which</span><span class="p">(</span><span class="n">command</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">path</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="n">command</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">path</span>
 </pre></div>
 
         </details>
@@ -369,6 +381,31 @@ parent environment.</p>
         </details>
 
             <div class="docstring"><p>Run a coroutine so it completes even if the current task is cancelled.</p>
+</div>
+
+
+                </section>
+                <section id="which">
+                            <div class="attr function"><a class="headerlink" href="#which">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">which</span><span class="signature">(command)</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">which</span><span class="p">(</span><span class="n">command</span><span class="p">):</span>
+    <span class="s2">&quot;Given a command without a directory, return the fully qualified path.&quot;</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="n">shutil</span><span class="o">.</span><span class="n">which</span><span class="p">(</span><span class="n">command</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">path</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="n">command</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">path</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Given a command without a directory, return the fully qualified path.</p>
 </div>
 
 

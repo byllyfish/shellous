@@ -109,6 +109,9 @@
                                 <a class="variable" href="#Options.pty">pty</a>
                         </li>
                         <li>
+                                <a class="variable" href="#Options.close_fds">close_fds</a>
+                        </li>
+                        <li>
                                 <a class="function" href="#Options.merge_env">merge_env</a>
                         </li>
                         <li>
@@ -332,6 +335,9 @@ function to create these, rather than creating them directly.</p></li>
     <span class="n">pty</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="s2">&quot;True if child process should be controlled using a pseudo-terminal (pty).&quot;</span>
 
+    <span class="n">close_fds</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="s2">&quot;True if child process should close all file descriptors.&quot;</span>
+
     <span class="k">def</span> <span class="nf">merge_env</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Return our `env` merged with the global environment.&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">inherit_env</span><span class="p">:</span>
@@ -444,6 +450,7 @@ function to create these, rather than creating them directly.</p></li>
         <span class="n">start_new_session</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">preexec_fn</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">pty</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">close_fds</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;CmdContext&quot;</span><span class="p">:</span>
         <span class="s2">&quot;Return new context with custom options set.&quot;</span>
         <span class="n">kwargs</span> <span class="o">=</span> <span class="nb">locals</span><span class="p">()</span>
@@ -580,6 +587,7 @@ function to create these, rather than creating them directly.</p></li>
         <span class="n">start_new_session</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">preexec_fn</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">pty</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">close_fds</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Command&quot;</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Return new command with custom options set.</span>
 
@@ -609,6 +617,7 @@ function to create these, rather than creating them directly.</p></li>
 <span class="sd">        process. You may also set `pty` to a 1-arg function to call on the</span>
 <span class="sd">        child_fd for setup purposes. Setting `pty` forces `start_new_session`</span>
 <span class="sd">        to True.</span>
+<span class="sd">        - Set `close_fds` to True to close all file descriptors in child process.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">kwargs</span> <span class="o">=</span> <span class="nb">locals</span><span class="p">()</span>
         <span class="k">del</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;self&quot;</span><span class="p">]</span>
@@ -777,6 +786,9 @@ function to create these, rather than creating them directly.</p></li>
     <span class="n">pty</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="s2">&quot;True if child process should be controlled using a pseudo-terminal (pty).&quot;</span>
 
+    <span class="n">close_fds</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="s2">&quot;True if child process should close all file descriptors.&quot;</span>
+
     <span class="k">def</span> <span class="nf">merge_env</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Return our `env` merged with the global environment.&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">inherit_env</span><span class="p">:</span>
@@ -874,7 +886,8 @@ function to create these, rather than creating them directly.</p></li>
     write_mode: bool = False,
     start_new_session: bool = False,
     preexec_fn: Any = None,
-    pty: bool = False
+    pty: bool = False,
+    close_fds: bool = False
 )</span>
     </div>
 
@@ -1146,6 +1159,17 @@ function to create these, rather than creating them directly.</p></li>
 
 
                             </div>
+                            <div id="Options.close_fds" class="classattr">
+                                            <div class="attr variable"><a class="headerlink" href="#Options.close_fds">#&nbsp;&nbsp</a>
+
+        <span class="name">close_fds</span><span class="annotation">: bool</span><span class="default_value"> = False</span>
+    </div>
+
+            <div class="docstring"><p>True if child process should close all file descriptors.</p>
+</div>
+
+
+                            </div>
                             <div id="Options.merge_env" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#Options.merge_env">#&nbsp;&nbsp</a>
 
@@ -1378,6 +1402,7 @@ function to create these, rather than creating them directly.</p></li>
         <span class="n">start_new_session</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">preexec_fn</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">pty</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">close_fds</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;CmdContext&quot;</span><span class="p">:</span>
         <span class="s2">&quot;Return new context with custom options set.&quot;</span>
         <span class="n">kwargs</span> <span class="o">=</span> <span class="nb">locals</span><span class="p">()</span>
@@ -1583,7 +1608,8 @@ function to create these, rather than creating them directly.</p></li>
     write_mode=&lt;UNSET.UNSET: 1&gt;,
     start_new_session=&lt;UNSET.UNSET: 1&gt;,
     preexec_fn=&lt;UNSET.UNSET: 1&gt;,
-    pty=&lt;UNSET.UNSET: 1&gt;
+    pty=&lt;UNSET.UNSET: 1&gt;,
+    close_fds=&lt;UNSET.UNSET: 1&gt;
 ) -&gt; <a href="#CmdContext">shellous.command.CmdContext</a></span>:
     </div>
 
@@ -1606,6 +1632,7 @@ function to create these, rather than creating them directly.</p></li>
         <span class="n">start_new_session</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">preexec_fn</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">pty</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">close_fds</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;CmdContext&quot;</span><span class="p">:</span>
         <span class="s2">&quot;Return new context with custom options set.&quot;</span>
         <span class="n">kwargs</span> <span class="o">=</span> <span class="nb">locals</span><span class="p">()</span>
@@ -1717,6 +1744,7 @@ function to create these, rather than creating them directly.</p></li>
         <span class="n">start_new_session</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">preexec_fn</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">pty</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">close_fds</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Command&quot;</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Return new command with custom options set.</span>
 
@@ -1746,6 +1774,7 @@ function to create these, rather than creating them directly.</p></li>
 <span class="sd">        process. You may also set `pty` to a 1-arg function to call on the</span>
 <span class="sd">        child_fd for setup purposes. Setting `pty` forces `start_new_session`</span>
 <span class="sd">        to True.</span>
+<span class="sd">        - Set `close_fds` to True to close all file descriptors in child process.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">kwargs</span> <span class="o">=</span> <span class="nb">locals</span><span class="p">()</span>
         <span class="k">del</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;self&quot;</span><span class="p">]</span>
@@ -2012,7 +2041,8 @@ is set, return that instead.</p>
     write_mode: Union[bool, <a href="#UNSET">shellous.command.UNSET</a>] = &lt;UNSET.UNSET: 1&gt;,
     start_new_session: Union[bool, <a href="#UNSET">shellous.command.UNSET</a>] = &lt;UNSET.UNSET: 1&gt;,
     preexec_fn: Union[Any, <a href="#UNSET">shellous.command.UNSET</a>] = &lt;UNSET.UNSET: 1&gt;,
-    pty: Union[bool, <a href="#UNSET">shellous.command.UNSET</a>] = &lt;UNSET.UNSET: 1&gt;
+    pty: Union[bool, <a href="#UNSET">shellous.command.UNSET</a>] = &lt;UNSET.UNSET: 1&gt;,
+    close_fds: Union[bool, <a href="#UNSET">shellous.command.UNSET</a>] = &lt;UNSET.UNSET: 1&gt;
 ) -&gt; <a href="#Command">shellous.command.Command</a></span>:
     </div>
 
@@ -2035,6 +2065,7 @@ is set, return that instead.</p>
         <span class="n">start_new_session</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">preexec_fn</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">pty</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">close_fds</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Command&quot;</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Return new command with custom options set.</span>
 
@@ -2064,6 +2095,7 @@ is set, return that instead.</p>
 <span class="sd">        process. You may also set `pty` to a 1-arg function to call on the</span>
 <span class="sd">        child_fd for setup purposes. Setting `pty` forces `start_new_session`</span>
 <span class="sd">        to True.</span>
+<span class="sd">        - Set `close_fds` to True to close all file descriptors in child process.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">kwargs</span> <span class="o">=</span> <span class="nb">locals</span><span class="p">()</span>
         <span class="k">del</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;self&quot;</span><span class="p">]</span>
@@ -2101,6 +2133,7 @@ scripting language.</li>
 process. You may also set <code>pty</code> to a 1-arg function to call on the
 child_fd for setup purposes. Setting <code>pty</code> forces <code>start_new_session</code>
 to True.</li>
+<li>Set <code>close_fds</code> to True to close all file descriptors in child process.</li>
 </ul>
 </div>
 
