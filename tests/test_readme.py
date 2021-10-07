@@ -267,7 +267,7 @@ def _check_result(output, result):
         return
 
     # cat's stderr is displayed with full path name on Linux/Windows:
-    if result.startswith("'/usr/bin/cat:"):
+    if "/usr/bin/cat:" in result:
         result = result.replace("/usr/bin/cat", "cat")
 
     pattern = re.escape(output).replace(r"\.\.\.", ".*")
