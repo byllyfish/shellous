@@ -527,7 +527,8 @@ async def test_exit_codes(sh):
     sh = sh.stderr(STDOUT).set(exit_codes={1})
     cmd = sh("cat", "/tmp/__does_not_exist__")
     result = await cmd
-    assert result == "cat: /tmp/__does_not_exist__: No such file or directory\n"
+    # "cat" may be displayed as "/usr/bin/cat" on some systems.
+    assert result.endswith("cat: /tmp/__does_not_exist__: No such file or directory\n")
 
 
 async def test_pipeline_async_iteration(sh):

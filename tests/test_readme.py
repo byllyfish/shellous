@@ -109,11 +109,16 @@ async def test_run_asyncio_repl():
         ]
     )
 
+    if sys.platform in {"linux", "win32"}:
+        cat = "/usr/bin/cat"
+    else:
+        cat = "cat"
+
     assert result == [
         "",
         "",
         "'hello, world\\n'",
-        "'cat: does_not_exist: No such file or directory\\n'",
+        f"'{cat}: does_not_exist: No such file or directory\\n'",
     ]
 
 
@@ -260,6 +265,10 @@ def _check_result(output, result):
     PTYOUT = re.compile(r"'CHANGELOG.md(?:\s+|\\t)README.md\\r\\n'")
     if PTYOUT.fullmatch(result) and PTYOUT.fullmatch(output):
         return
+
+    # cat's stderr is displayed with full path name on Linux/Windows:
+    if result.startswith("'/usr/bin/cat:"):
+        result = result.replace("/usr/bin/cat", "cat")
 
     pattern = re.escape(output).replace(r"\.\.\.", ".*")
     if not re.fullmatch(pattern, result, re.DOTALL):
