@@ -3,6 +3,7 @@
 import asyncio
 import io
 import os
+import shutil
 from typing import Any, Iterable, Optional, Union
 
 from .log import LOG_DETAIL, LOGGER, log_timer
@@ -98,3 +99,11 @@ async def uninterrupted(coro):
         if not task.cancelled():
             await task
         raise
+
+
+def which(command):
+    "Given a command without a directory, return the fully qualified path."
+    path = shutil.which(command)
+    if path is None:
+        raise FileNotFoundError(command)
+    return path

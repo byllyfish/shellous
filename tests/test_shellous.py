@@ -121,6 +121,16 @@ async def test_nonexistant_cmd():
         await sh("non_existant_command").set(return_result=True)
 
 
+async def test_nonexecutable_cmd():
+    sh = context()
+    if sys.platform == "win32":
+        with pytest.raises(OSError, match="not a valid Win32 application"):
+            await sh("./README.md").set(return_result=True)
+    else:
+        with pytest.raises(PermissionError):
+            await sh("./README.md").set(return_result=True)
+
+
 async def test_pipeline(echo_cmd, cat_cmd, tr_cmd):
     pipe = echo_cmd("xyz") | cat_cmd() | tr_cmd()
     result = await pipe()

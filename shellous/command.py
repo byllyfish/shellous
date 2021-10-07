@@ -108,6 +108,9 @@ class Options:  # pylint: disable=too-many-instance-attributes
     pty: bool = False
     "True if child process should be controlled using a pseudo-terminal (pty)."
 
+    close_fds: bool = False
+    "True if child process should close all file descriptors."
+
     def merge_env(self):
         "Return our `env` merged with the global environment."
         if self.inherit_env:
@@ -220,6 +223,7 @@ class CmdContext:
         start_new_session=_UNSET,
         preexec_fn=_UNSET,
         pty=_UNSET,
+        close_fds=_UNSET,
     ) -> "CmdContext":
         "Return new context with custom options set."
         kwargs = locals()
@@ -356,6 +360,7 @@ class Command:
         start_new_session: Unset[bool] = _UNSET,
         preexec_fn: Unset[Any] = _UNSET,
         pty: Unset[bool] = _UNSET,
+        close_fds: Unset[bool] = _UNSET,
     ) -> "Command":
         """Return new command with custom options set.
 
@@ -385,6 +390,7 @@ class Command:
         process. You may also set `pty` to a 1-arg function to call on the
         child_fd for setup purposes. Setting `pty` forces `start_new_session`
         to True.
+        - Set `close_fds` to True to close all file descriptors in child process.
         """
         kwargs = locals()
         del kwargs["self"]

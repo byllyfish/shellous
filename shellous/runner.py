@@ -13,7 +13,7 @@ from shellous.harvest import harvest, harvest_results
 from shellous.log import LOG_DETAIL, LOG_ENTER, LOG_EXIT, LOGGER, log_method, log_timer
 from shellous.redirect import Redirect
 from shellous.result import Result, make_result
-from shellous.util import close_fds, uninterrupted, verify_dev_fd, wait_pid
+from shellous.util import close_fds, uninterrupted, verify_dev_fd, wait_pid, which
 
 _KILL_TIMEOUT = 3.0
 _CLOSE_TIMEOUT = 0.25
@@ -77,6 +77,7 @@ class _RunOptions:  # pylint: disable=too-many-instance-attributes
             return self
         except Exception as ex:
             LOGGER.warning("_RunOptions.enter %r ex=%r", self.command.name, ex)
+            _cleanup(self.command)
             raise
 
     def __exit__(self, _exc_type, exc_value, _exc_tb):
@@ -164,7 +165,6 @@ class _RunOptions:  # pylint: disable=too-many-instance-attributes
             start_new_session = True
 
         self.input_bytes = input_bytes
-        self.args = self.command.args
         self.kwd_args = {
             "stdin": stdin,
             "stdout": stdout,
@@ -172,12 +172,18 @@ class _RunOptions:  # pylint: disable=too-many-instance-attributes
             "env": options.merge_env(),
             "start_new_session": start_new_session,
             "preexec_fn": preexec_fn,
+            "close_fds": options.close_fds,
         }
 
         if options.pass_fds:
+            self.kwd_args["close_fds"] = True
             self.kwd_args["pass_fds"] = options.pass_fds
             if options.pass_fds_close:
                 self.open_fds.extend(options.pass_fds)
+
+        self.args = list(self.command.args)
+        if not os.path.dirname(self.args[0]):
+            self.args[0] = which(self.args[0])
 
     def _setup_input(self, input_, close, encoding):
         "Set up process input."

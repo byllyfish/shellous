@@ -1,4 +1,5 @@
 import os
+import shutil
 import sys
 
 import pytest
@@ -22,6 +23,10 @@ sys.addaudithook(_audit_hook)
 def _is_uvloop():
     "Return true if we're running under uvloop."
     return os.environ.get("SHELLOUS_LOOP_TYPE") == "uvloop"
+
+
+def _has_posix_spawn():
+    return not _is_uvloop() and sys.platform in ("darwin", "linux")
 
 
 async def test_audit():
@@ -56,6 +61,46 @@ async def test_audit():
     if not _is_uvloop():
         # uvloop doesn't implement audit hooks.
         assert any(event.startswith("('subprocess.Popen',") for event in events)
+
+    if _has_posix_spawn():
+        assert any(event.startswith("('os.posix_spawn',") for event in events)
+
+
+@pytest.mark.skipif(not _has_posix_spawn(), reason="posix_spawn")
+async def test_audit_posix_spawn():
+    "Test PEP 578 audit hooks."
+
+    global _HOOK
+    events = []
+
+    def _hook(*info):
+        events.append(repr(info))
+
+    try:
+        _HOOK = _hook
+
+        # This command does not include a directory path, so it is resolved
+        # through PATH.
+        sh = shellous.context()
+        result = await sh("ls", "README.md")
+
+    finally:
+        _HOOK = None
+
+    assert result.rstrip() == "README.md"
+
+    for event in events:
+        # Work-around Windows UnicodeEncodeError: '_winapi.CreateNamedPipe' evt.
+        print(event.encode("ascii", "backslashreplace").decode("ascii"))
+
+    # Check for my audit event.
+    assert any(
+        event.startswith(f"('{AUDIT_EVENT_SUBPROCESS_SPAWN}',") for event in events
+    )
+
+    # Check for subprocess.Popen and os.posix_spawn.
+    assert any(event.startswith("('subprocess.Popen',") for event in events)
+    assert any(event.startswith("('os.posix_spawn',") for event in events)
 
 
 @pytest.mark.xfail(_is_uvloop(), reason="uvloop")
@@ -110,9 +155,10 @@ async def test_audit_block_pipe_specific_cmd():
     "Test PEP 578 audit hooks to block a specific command (in a pipe)."
 
     global _HOOK
+    grep_path = shutil.which("grep")
 
     def _hook(event, args):
-        if event == AUDIT_EVENT_SUBPROCESS_SPAWN and args[0] == "grep":
+        if event == AUDIT_EVENT_SUBPROCESS_SPAWN and args[0] == grep_path:
             raise RuntimeError("grep blocked")
 
     try:
