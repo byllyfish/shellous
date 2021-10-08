@@ -486,8 +486,8 @@ class Runner:
                 )
 
             if stdin is not None:
+                eof = opts.pty_fds.eof if opts.pty_fds else None
                 if opts.input_bytes is not None:
-                    eof = opts.pty_fds.eof if opts.pty_fds else None
                     self.add_task(
                         redir.write_stream(opts.input_bytes, stdin, eof),
                         "stdin",
@@ -496,7 +496,7 @@ class Runner:
                 else:
                     input_ = opts.command.options.input
                     stdin = self._setup_input_source(
-                        stdin, input_, opts.encoding, "stdin"
+                        stdin, input_, opts.encoding, eof, "stdin"
                     )
 
         except (Exception, asyncio.CancelledError) as ex:
@@ -559,10 +559,10 @@ class Runner:
         else:
             await self.proc.wait()
 
-    def _setup_input_source(self, stream, source, encoding, tag):
+    def _setup_input_source(self, stream, source, encoding, eof, tag):
         "Set up a task to read from custom input source."
         if isinstance(source, asyncio.StreamReader):
-            self.add_task(redir.write_reader(source, stream), tag)
+            self.add_task(redir.write_reader(source, stream, eof), tag)
             stream = None
         return stream
 

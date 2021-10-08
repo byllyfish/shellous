@@ -1296,3 +1296,24 @@ async def test_redirect_stdin_streamreader(sh):
         writer.close()
         server.close()
         await server.wait_closed()
+
+
+async def test_pty_redirect_stdin_streamreader(sh):
+    "Test reading stdin from StreamReader."
+
+    def _hello(_reader, writer):
+        writer.write(b"hello\n")
+        writer.close()
+
+    try:
+        sock_path = "/tmp/__streamreader__"
+        server = await asyncio.start_unix_server(_hello, sock_path)
+
+        reader, writer = await asyncio.open_unix_connection(sock_path)
+        result = await sh("cat").stdin(reader).set(pty=True)
+        assert result.replace("^D\x08\x08", "") == "hello\r\nhello\r\n"
+
+    finally:
+        writer.close()
+        server.close()
+        await server.wait_closed()
