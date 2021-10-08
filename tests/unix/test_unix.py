@@ -1298,6 +1298,7 @@ async def test_redirect_stdin_streamreader(sh):
         await server.wait_closed()
 
 
+@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
 async def test_pty_redirect_stdin_streamreader(sh):
     "Test reading stdin from StreamReader."
 
