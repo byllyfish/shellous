@@ -58,7 +58,16 @@ _DEFAULT_REDIRECTION = {
 }
 
 # Used in Command and Pipeline to implement operator overloading.
-STDIN_TYPES = (str, bytes, os.PathLike, bytearray, io.IOBase, int, Redirect)
+STDIN_TYPES = (
+    str,
+    bytes,
+    os.PathLike,
+    bytearray,
+    io.IOBase,
+    int,
+    Redirect,
+    asyncio.StreamReader,
+)
 STDOUT_TYPES = (str, bytes, os.PathLike, bytearray, io.IOBase, int, Redirect, Logger)
 STDOUT_APPEND_TYPES = (str, bytes, os.PathLike)
 
@@ -101,7 +110,38 @@ async def write_stream(
         # of closing the pty. At the beginning of a line, we only need to
         # send one EOF. Otherwise, we need to send one EOF to end the
         # partial line and then another EOF to signal we are done.
-        if input_bytes and input_bytes[-1] != "\n":
+        if not input_bytes.endswith(b"\n"):
+            stream.write(eof + eof)
+        else:
+            stream.write(eof)
+        await _drain(stream)
+
+
+@log_method(LOG_DETAIL)
+async def write_reader(
+    reader: asyncio.StreamReader,
+    stream: asyncio.StreamWriter,
+    eof: Optional[bytes] = None,
+):
+    "Copy from reader to writer."
+
+    ends_with_newline = True
+    try:
+        while True:
+            data = await reader.read(_CHUNK_SIZE)
+            if not data:
+                break
+            ends_with_newline = data.endswith(b"\n")
+            stream.write(data)
+            await stream.drain()
+
+    except (BrokenPipeError, ConnectionResetError):
+        pass
+
+    if eof is None:
+        stream.close()
+    elif eof:
+        if not ends_with_newline:
             stream.write(eof + eof)
         else:
             stream.write(eof)

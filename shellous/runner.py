@@ -76,7 +76,8 @@ class _RunOptions:  # pylint: disable=too-many-instance-attributes
             self._setup_redirects()
             return self
         except Exception as ex:
-            LOGGER.warning("_RunOptions.enter %r ex=%r", self.command.name, ex)
+            if LOG_DETAIL:
+                LOGGER.warning("_RunOptions.enter %r ex=%r", self.command.name, ex)
             _cleanup(self.command)
             raise
 
@@ -84,9 +85,12 @@ class _RunOptions:  # pylint: disable=too-many-instance-attributes
         "Make sure those file descriptors are cleaned up."
         self.close_fds()
         if exc_value:
-            LOGGER.warning(
-                "_RunOptions.exit %r exc_value=%r", self.command.name, exc_value
-            )
+            if LOG_DETAIL:
+                LOGGER.warning(
+                    "_RunOptions.exit %r exc_value=%r",
+                    self.command.name,
+                    exc_value,
+                )
             for subcmd in self.subcmds:
                 _cleanup(subcmd)
 
@@ -215,6 +219,10 @@ class _RunOptions:  # pylint: disable=too-many-instance-attributes
             if encoding is None:
                 raise TypeError("when encoding is None, input must be bytes")
             input_bytes = input_.encode(*encoding.split(maxsplit=1))
+        elif isinstance(input_, asyncio.StreamReader):
+            # Shellous-supported input classes.
+            assert stdin == asyncio.subprocess.PIPE
+            assert input_bytes is None
         else:
             raise TypeError(f"unsupported input type: {input_!r}")
 
@@ -482,13 +490,18 @@ class Runner:
                 )
 
             if stdin is not None:
+                eof = opts.pty_fds.eof if opts.pty_fds else None
                 if opts.input_bytes is not None:
-                    eof = opts.pty_fds.eof if opts.pty_fds else None
                     self.add_task(
                         redir.write_stream(opts.input_bytes, stdin, eof),
                         "stdin",
                     )
                     stdin = None
+                else:
+                    input_ = opts.command.options.input
+                    stdin = self._setup_input_source(
+                        stdin, input_, opts.encoding, eof, "stdin"
+                    )
 
         except (Exception, asyncio.CancelledError) as ex:
             LOGGER.info("Runner._start %r ex=%r", self, ex)
@@ -549,6 +562,13 @@ class Runner:
             await self._wait_pid()
         else:
             await self.proc.wait()
+
+    def _setup_input_source(self, stream, source, encoding, eof, tag):
+        "Set up a task to read from custom input source."
+        if isinstance(source, asyncio.StreamReader):
+            self.add_task(redir.write_reader(source, stream, eof), tag)
+            stream = None
+        return stream
 
     def _setup_output_sink(self, stream, sink, encoding, tag):
         "Set up a task to write to custom output sink."

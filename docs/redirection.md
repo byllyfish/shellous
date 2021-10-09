@@ -27,6 +27,7 @@ pass for `arg`.
 | bytes, bytearray | Read input from bytes object. |
 | *file object*<sup>1</sup> | Read input from open file object. |
 | int | Read input from existing file descriptor. |
+| asyncio.StreamReader | Read input from `StreamReader`. |
 | DEVNULL | Read input from `/dev/null`. |
 | INHERIT  | Read input from existing `sys.stdin`. |
 | CAPTURE | See *Multiple Capture*. |
