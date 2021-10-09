@@ -68,7 +68,19 @@ STDIN_TYPES = (
     Redirect,
     asyncio.StreamReader,
 )
-STDOUT_TYPES = (str, bytes, os.PathLike, bytearray, io.IOBase, int, Redirect, Logger)
+
+STDOUT_TYPES = (
+    str,
+    bytes,
+    os.PathLike,
+    bytearray,
+    io.IOBase,
+    int,
+    Redirect,
+    Logger,
+    asyncio.StreamWriter,
+)
+
 STDOUT_APPEND_TYPES = (str, bytes, os.PathLike)
 
 
