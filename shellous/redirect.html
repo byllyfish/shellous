@@ -64,6 +64,9 @@
                     <a class="function" href="#write_stream">write_stream</a>
             </li>
             <li>
+                    <a class="function" href="#write_reader">write_reader</a>
+            </li>
+            <li>
                     <a class="function" href="#copy_stringio">copy_stringio</a>
             </li>
             <li>
@@ -159,7 +162,16 @@
 <span class="p">}</span>
 
 <span class="c1"># Used in Command and Pipeline to implement operator overloading.</span>
-<span class="n">STDIN_TYPES</span> <span class="o">=</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">,</span> <span class="nb">bytearray</span><span class="p">,</span> <span class="n">io</span><span class="o">.</span><span class="n">IOBase</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="n">Redirect</span><span class="p">)</span>
+<span class="n">STDIN_TYPES</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="nb">str</span><span class="p">,</span>
+    <span class="nb">bytes</span><span class="p">,</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">,</span>
+    <span class="nb">bytearray</span><span class="p">,</span>
+    <span class="n">io</span><span class="o">.</span><span class="n">IOBase</span><span class="p">,</span>
+    <span class="nb">int</span><span class="p">,</span>
+    <span class="n">Redirect</span><span class="p">,</span>
+    <span class="n">asyncio</span><span class="o">.</span><span class="n">StreamReader</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="n">STDOUT_TYPES</span> <span class="o">=</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">,</span> <span class="nb">bytearray</span><span class="p">,</span> <span class="n">io</span><span class="o">.</span><span class="n">IOBase</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="n">Redirect</span><span class="p">,</span> <span class="n">Logger</span><span class="p">)</span>
 <span class="n">STDOUT_APPEND_TYPES</span> <span class="o">=</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">)</span>
 
@@ -202,7 +214,38 @@
         <span class="c1"># of closing the pty. At the beginning of a line, we only need to</span>
         <span class="c1"># send one EOF. Otherwise, we need to send one EOF to end the</span>
         <span class="c1"># partial line and then another EOF to signal we are done.</span>
-        <span class="k">if</span> <span class="n">input_bytes</span> <span class="ow">and</span> <span class="n">input_bytes</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">input_bytes</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="sa">b</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">):</span>
+            <span class="n">stream</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">eof</span> <span class="o">+</span> <span class="n">eof</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">stream</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">eof</span><span class="p">)</span>
+        <span class="k">await</span> <span class="n">_drain</span><span class="p">(</span><span class="n">stream</span><span class="p">)</span>
+
+
+<span class="nd">@log_method</span><span class="p">(</span><span class="n">LOG_DETAIL</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">write_reader</span><span class="p">(</span>
+    <span class="n">reader</span><span class="p">:</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">StreamReader</span><span class="p">,</span>
+    <span class="n">stream</span><span class="p">:</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">StreamWriter</span><span class="p">,</span>
+    <span class="n">eof</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bytes</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="s2">&quot;Copy from reader to writer.&quot;</span>
+
+    <span class="n">ends_with_newline</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="k">await</span> <span class="n">reader</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">_CHUNK_SIZE</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">data</span><span class="p">:</span>
+                <span class="k">break</span>
+            <span class="n">ends_with_newline</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="sa">b</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">stream</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+            <span class="k">await</span> <span class="n">stream</span><span class="o">.</span><span class="n">drain</span><span class="p">()</span>
+
+    <span class="k">except</span> <span class="p">(</span><span class="ne">BrokenPipeError</span><span class="p">,</span> <span class="ne">ConnectionResetError</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="k">if</span> <span class="n">eof</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">stream</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="k">elif</span> <span class="n">eof</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">ends_with_newline</span><span class="p">:</span>
             <span class="n">stream</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">eof</span> <span class="o">+</span> <span class="n">eof</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">stream</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">eof</span><span class="p">)</span>
@@ -500,7 +543,7 @@
         <span class="c1"># of closing the pty. At the beginning of a line, we only need to</span>
         <span class="c1"># send one EOF. Otherwise, we need to send one EOF to end the</span>
         <span class="c1"># partial line and then another EOF to signal we are done.</span>
-        <span class="k">if</span> <span class="n">input_bytes</span> <span class="ow">and</span> <span class="n">input_bytes</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">input_bytes</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="sa">b</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">):</span>
             <span class="n">stream</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">eof</span> <span class="o">+</span> <span class="n">eof</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">stream</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">eof</span><span class="p">)</span>
@@ -510,6 +553,59 @@
         </details>
 
             <div class="docstring"><p>Write input_bytes to stream.</p>
+</div>
+
+
+                </section>
+                <section id="write_reader">
+                            <div class="attr function"><a class="headerlink" href="#write_reader">#&nbsp;&nbsp</a>
+
+                <div class="decorator">@log_method(LOG_DETAIL)</div>
+
+            <span class="def">async def</span>
+            <span class="name">write_reader</span><span class="signature">(
+    reader: asyncio.streams.StreamReader,
+    stream: asyncio.streams.StreamWriter,
+    eof: Optional[bytes] = None
+)</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span><span class="nd">@log_method</span><span class="p">(</span><span class="n">LOG_DETAIL</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">write_reader</span><span class="p">(</span>
+    <span class="n">reader</span><span class="p">:</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">StreamReader</span><span class="p">,</span>
+    <span class="n">stream</span><span class="p">:</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">StreamWriter</span><span class="p">,</span>
+    <span class="n">eof</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bytes</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="s2">&quot;Copy from reader to writer.&quot;</span>
+
+    <span class="n">ends_with_newline</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="k">await</span> <span class="n">reader</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">_CHUNK_SIZE</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">data</span><span class="p">:</span>
+                <span class="k">break</span>
+            <span class="n">ends_with_newline</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="sa">b</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">stream</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+            <span class="k">await</span> <span class="n">stream</span><span class="o">.</span><span class="n">drain</span><span class="p">()</span>
+
+    <span class="k">except</span> <span class="p">(</span><span class="ne">BrokenPipeError</span><span class="p">,</span> <span class="ne">ConnectionResetError</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="k">if</span> <span class="n">eof</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">stream</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="k">elif</span> <span class="n">eof</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">ends_with_newline</span><span class="p">:</span>
+            <span class="n">stream</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">eof</span> <span class="o">+</span> <span class="n">eof</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">stream</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">eof</span><span class="p">)</span>
+        <span class="k">await</span> <span class="n">_drain</span><span class="p">(</span><span class="n">stream</span><span class="p">)</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Copy from reader to writer.</p>
 </div>
 
 
