@@ -174,7 +174,7 @@ async def test_echo_cancel_stringio(echo_cmd):
     buf = io.StringIO()
     cmd = echo_cmd("abc").env(SHELLOUS_EXIT_SLEEP=2).stdout(buf)
     with pytest.raises(asyncio.TimeoutError):
-        await asyncio.wait_for(cmd, timeout=0.2)
+        await asyncio.wait_for(cmd, timeout=0.4)
 
     assert buf.getvalue() == "abc"
 
@@ -190,7 +190,7 @@ async def test_echo_cancel_stringio_incomplete(echo_cmd):
         .set(incomplete_result=True)
     )
     with pytest.raises(ResultError) as exc_info:
-        await asyncio.wait_for(cmd, timeout=0.2)
+        await asyncio.wait_for(cmd, timeout=0.4)
 
     assert buf.getvalue() == "abc"
     assert exc_info.type is ResultError
