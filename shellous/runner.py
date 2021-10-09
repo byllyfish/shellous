@@ -76,7 +76,8 @@ class _RunOptions:  # pylint: disable=too-many-instance-attributes
             self._setup_redirects()
             return self
         except Exception as ex:
-            LOGGER.warning("_RunOptions.enter %r ex=%r", self.command.name, ex)
+            if LOG_DETAIL:
+                LOGGER.warning("_RunOptions.enter %r ex=%r", self.command.name, ex)
             _cleanup(self.command)
             raise
 
@@ -84,9 +85,12 @@ class _RunOptions:  # pylint: disable=too-many-instance-attributes
         "Make sure those file descriptors are cleaned up."
         self.close_fds()
         if exc_value:
-            LOGGER.warning(
-                "_RunOptions.exit %r exc_value=%r", self.command.name, exc_value
-            )
+            if LOG_DETAIL:
+                LOGGER.warning(
+                    "_RunOptions.exit %r exc_value=%r",
+                    self.command.name,
+                    exc_value,
+                )
             for subcmd in self.subcmds:
                 _cleanup(subcmd)
 
