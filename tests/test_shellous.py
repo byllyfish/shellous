@@ -348,6 +348,27 @@ async def test_redirect_stdin_bytearray(cat_cmd):
     assert result == "123"
 
 
+async def test_redirect_stdin_bytesio(cat_cmd):
+    "Test reading stdin from BytesIO."
+    buf = io.BytesIO(b"123")
+    result = await cat_cmd().stdin(buf)
+    assert result == "123"
+
+
+async def test_redirect_stdin_stringio(cat_cmd):
+    "Test reading stdin from StringIO."
+    buf = io.StringIO("123")
+    result = await cat_cmd().stdin(buf)
+    assert result == "123"
+
+
+async def test_redirect_stdin_stringio_no_encoding(cat_cmd):
+    "Test reading stdin from StringIO with encoding=None"
+    buf = io.StringIO("123")
+    with pytest.raises(TypeError, match="input must be bytes"):
+        await cat_cmd().stdin(buf).set(encoding=None)
+
+
 async def test_pipe_redirect_stdin_capture(cat_cmd, tr_cmd):
     "Test setting stdin on pipe to CAPTURE without using `async with`."
     cmd = cat_cmd | tr_cmd

@@ -42,6 +42,12 @@ def _is_write_mode(cmd):
     return cmd.options.write_mode
 
 
+def _split(encoding):
+    if encoding is None:
+        raise TypeError("when encoding is None, input must be bytes")
+    return encoding.split(maxsplit=1)
+
+
 class _RunOptions:  # pylint: disable=too-many-instance-attributes
     """_RunOptions is context manager to assist in running a command.
 
@@ -216,10 +222,8 @@ class _RunOptions:  # pylint: disable=too-many-instance-attributes
             if close:
                 self.open_fds.append(stdin)
         elif isinstance(input_, str):
-            if encoding is None:
-                raise TypeError("when encoding is None, input must be bytes")
-            input_bytes = input_.encode(*encoding.split(maxsplit=1))
-        elif isinstance(input_, asyncio.StreamReader):
+            input_bytes = input_.encode(*_split(encoding))
+        elif isinstance(input_, (asyncio.StreamReader, io.BytesIO, io.StringIO)):
             # Shellous-supported input classes.
             assert stdin == asyncio.subprocess.PIPE
             assert input_bytes is None
@@ -492,18 +496,7 @@ class Runner:
                 )
 
             if stdin is not None:
-                eof = opts.pty_fds.eof if opts.pty_fds else None
-                if opts.input_bytes is not None:
-                    self.add_task(
-                        redir.write_stream(opts.input_bytes, stdin, eof),
-                        "stdin",
-                    )
-                    stdin = None
-                else:
-                    input_ = opts.command.options.input
-                    stdin = self._setup_input_source(
-                        stdin, input_, opts.encoding, eof, "stdin"
-                    )
+                stdin = self._setup_input_source(stdin, opts)
 
         except (Exception, asyncio.CancelledError) as ex:
             LOGGER.info("Runner._start %r ex=%r", self, ex)
@@ -565,11 +558,30 @@ class Runner:
         else:
             await self.proc.wait()
 
-    def _setup_input_source(self, stream, source, encoding, eof, tag):
+    def _setup_input_source(self, stream, opts):
         "Set up a task to read from custom input source."
+        tag = "stdin"
+        eof = opts.pty_fds.eof if opts.pty_fds else None
+
+        if opts.input_bytes is not None:
+            self.add_task(redir.write_stream(opts.input_bytes, stream, eof), tag)
+            return None
+
+        source = opts.command.options.input
+
         if isinstance(source, asyncio.StreamReader):
             self.add_task(redir.write_reader(source, stream, eof), tag)
-            stream = None
+            return None
+
+        if isinstance(source, io.BytesIO):
+            self.add_task(redir.write_stream(source.getvalue(), stream, eof), tag)
+            return None
+
+        if isinstance(source, io.StringIO):
+            input_bytes = source.getvalue().encode(*_split(opts.encoding))
+            self.add_task(redir.write_stream(input_bytes, stream, eof), tag)
+            return None
+
         return stream
 
     def _setup_output_sink(self, stream, sink, encoding, tag):
