@@ -79,6 +79,9 @@
                     <a class="function" href="#copy_bytearray">copy_bytearray</a>
             </li>
             <li>
+                    <a class="function" href="#copy_streamwriter">copy_streamwriter</a>
+            </li>
+            <li>
                     <a class="function" href="#read_lines">read_lines</a>
             </li>
     </ul>
@@ -172,7 +175,19 @@
     <span class="n">Redirect</span><span class="p">,</span>
     <span class="n">asyncio</span><span class="o">.</span><span class="n">StreamReader</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="n">STDOUT_TYPES</span> <span class="o">=</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">,</span> <span class="nb">bytearray</span><span class="p">,</span> <span class="n">io</span><span class="o">.</span><span class="n">IOBase</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="n">Redirect</span><span class="p">,</span> <span class="n">Logger</span><span class="p">)</span>
+
+<span class="n">STDOUT_TYPES</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="nb">str</span><span class="p">,</span>
+    <span class="nb">bytes</span><span class="p">,</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">,</span>
+    <span class="nb">bytearray</span><span class="p">,</span>
+    <span class="n">io</span><span class="o">.</span><span class="n">IOBase</span><span class="p">,</span>
+    <span class="nb">int</span><span class="p">,</span>
+    <span class="n">Redirect</span><span class="p">,</span>
+    <span class="n">Logger</span><span class="p">,</span>
+    <span class="n">asyncio</span><span class="o">.</span><span class="n">StreamWriter</span><span class="p">,</span>
+<span class="p">)</span>
+
 <span class="n">STDOUT_APPEND_TYPES</span> <span class="o">=</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">)</span>
 
 
@@ -305,6 +320,20 @@
         <span class="k">if</span> <span class="ow">not</span> <span class="n">data</span><span class="p">:</span>
             <span class="k">break</span>
         <span class="n">dest</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+
+<span class="nd">@log_method</span><span class="p">(</span><span class="n">LOG_DETAIL</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">copy_streamwriter</span><span class="p">(</span><span class="n">source</span><span class="p">:</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">StreamReader</span><span class="p">,</span> <span class="n">dest</span><span class="p">:</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">StreamWriter</span><span class="p">):</span>
+    <span class="s2">&quot;Copy bytes from source stream to dest StreamWriter.&quot;</span>
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="k">await</span> <span class="n">source</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">_CHUNK_SIZE</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">data</span><span class="p">:</span>
+            <span class="k">break</span>
+        <span class="n">dest</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">await</span> <span class="n">dest</span><span class="o">.</span><span class="n">drain</span><span class="p">()</span>
+
+    <span class="n">dest</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="k">await</span> <span class="n">dest</span><span class="o">.</span><span class="n">wait_closed</span><span class="p">()</span>
 
 
 <span class="nd">@log_method</span><span class="p">(</span><span class="n">LOG_DETAIL</span><span class="p">)</span>
@@ -741,6 +770,41 @@
         </details>
 
             <div class="docstring"><p>Copy bytes from source stream to dest bytearray.</p>
+</div>
+
+
+                </section>
+                <section id="copy_streamwriter">
+                            <div class="attr function"><a class="headerlink" href="#copy_streamwriter">#&nbsp;&nbsp</a>
+
+                <div class="decorator">@log_method(LOG_DETAIL)</div>
+
+            <span class="def">async def</span>
+            <span class="name">copy_streamwriter</span><span class="signature">(
+    source: asyncio.streams.StreamReader,
+    dest: asyncio.streams.StreamWriter
+)</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span><span class="nd">@log_method</span><span class="p">(</span><span class="n">LOG_DETAIL</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">copy_streamwriter</span><span class="p">(</span><span class="n">source</span><span class="p">:</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">StreamReader</span><span class="p">,</span> <span class="n">dest</span><span class="p">:</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">StreamWriter</span><span class="p">):</span>
+    <span class="s2">&quot;Copy bytes from source stream to dest StreamWriter.&quot;</span>
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="k">await</span> <span class="n">source</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">_CHUNK_SIZE</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">data</span><span class="p">:</span>
+            <span class="k">break</span>
+        <span class="n">dest</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">await</span> <span class="n">dest</span><span class="o">.</span><span class="n">drain</span><span class="p">()</span>
+
+    <span class="n">dest</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="k">await</span> <span class="n">dest</span><span class="o">.</span><span class="n">wait_closed</span><span class="p">()</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Copy bytes from source stream to dest StreamWriter.</p>
 </div>
 
 
