@@ -1318,3 +1318,27 @@ async def test_pty_redirect_stdin_streamreader(sh):
         writer.close()
         server.close()
         await server.wait_closed()
+
+
+async def test_redirect_stdout_streamwriter(sh):
+    "Test writing stdout to a StreamWriter."
+
+    buf = io.BytesIO()
+
+    async def _hello(reader, _writer):
+        buf.write(await reader.read())
+        _writer.close()
+
+    try:
+        sock_path = "/tmp/__streamreader__"
+        server = await asyncio.start_unix_server(_hello, sock_path)
+
+        _reader, writer = await asyncio.open_unix_connection(sock_path)
+        result = await sh("echo", "hello").stdout(writer)
+        assert result == ""
+        assert buf.getvalue() == b"hello\n"
+
+    finally:
+        writer.close()
+        server.close()
+        await server.wait_closed()

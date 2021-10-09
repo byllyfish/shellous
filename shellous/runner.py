@@ -251,7 +251,9 @@ class _RunOptions:  # pylint: disable=too-many-instance-attributes
             stdout = output
             if close:
                 self.open_fds.append(stdout)
-        elif isinstance(output, (io.StringIO, io.BytesIO, bytearray, Logger)):
+        elif isinstance(
+            output, (io.StringIO, io.BytesIO, bytearray, Logger, asyncio.StreamWriter)
+        ):
             # Shellous-supported output classes.
             assert stdout == asyncio.subprocess.PIPE
         elif isinstance(output, io.IOBase):
@@ -585,6 +587,9 @@ class Runner:
             stream = None
         elif isinstance(sink, Logger):
             self.add_task(redir.copy_logger(stream, sink, encoding), tag)
+            stream = None
+        elif isinstance(sink, asyncio.StreamWriter):
+            self.add_task(redir.copy_streamwriter(stream, sink), tag)
             stream = None
         return stream
 

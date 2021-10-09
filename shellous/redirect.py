@@ -204,6 +204,20 @@ async def copy_bytearray(source: asyncio.StreamReader, dest: bytearray):
 
 
 @log_method(LOG_DETAIL)
+async def copy_streamwriter(source: asyncio.StreamReader, dest: asyncio.StreamWriter):
+    "Copy bytes from source stream to dest StreamWriter."
+    while True:
+        data = await source.read(_CHUNK_SIZE)
+        if not data:
+            break
+        dest.write(data)
+        await dest.drain()
+
+    dest.close()
+    await dest.wait_closed()
+
+
+@log_method(LOG_DETAIL)
 async def read_lines(source: asyncio.StreamReader, encoding: Optional[str]):
     "Async iterator over lines in stream."
     if encoding is None:
