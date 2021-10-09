@@ -65,6 +65,7 @@ instead, set the `append` keyword argument to True. The behavior  depends on the
 | *file object*<sup>1</sup> | Write output to open file object. | TypeError
 | int | Write output to existing file descriptor. | TypeError
 | logging.Logger | Log each line of output. | TypeError
+| asyncio.StreamWriter | Write output to `StreamWriter`. | TypeError
 | CAPTURE | Return standard output or error. See *Multiple Capture*. | TypeError
 | DEVNULL | Write output to `/dev/null`. | TypeError
 | INHERIT  | Write output to existing `sys.stdout` or `sys.stderr`. | TypeError

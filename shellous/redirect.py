@@ -68,7 +68,19 @@ STDIN_TYPES = (
     Redirect,
     asyncio.StreamReader,
 )
-STDOUT_TYPES = (str, bytes, os.PathLike, bytearray, io.IOBase, int, Redirect, Logger)
+
+STDOUT_TYPES = (
+    str,
+    bytes,
+    os.PathLike,
+    bytearray,
+    io.IOBase,
+    int,
+    Redirect,
+    Logger,
+    asyncio.StreamWriter,
+)
+
 STDOUT_APPEND_TYPES = (str, bytes, os.PathLike)
 
 
@@ -201,6 +213,20 @@ async def copy_bytearray(source: asyncio.StreamReader, dest: bytearray):
         if not data:
             break
         dest.extend(data)
+
+
+@log_method(LOG_DETAIL)
+async def copy_streamwriter(source: asyncio.StreamReader, dest: asyncio.StreamWriter):
+    "Copy bytes from source stream to dest StreamWriter."
+    while True:
+        data = await source.read(_CHUNK_SIZE)
+        if not data:
+            break
+        dest.write(data)
+        await dest.drain()
+
+    dest.close()
+    await dest.wait_closed()
 
 
 @log_method(LOG_DETAIL)
