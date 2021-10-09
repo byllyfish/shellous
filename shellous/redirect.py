@@ -58,7 +58,16 @@ _DEFAULT_REDIRECTION = {
 }
 
 # Used in Command and Pipeline to implement operator overloading.
-STDIN_TYPES = (str, bytes, os.PathLike, bytearray, io.IOBase, int, Redirect)
+STDIN_TYPES = (
+    str,
+    bytes,
+    os.PathLike,
+    bytearray,
+    io.IOBase,
+    int,
+    Redirect,
+    asyncio.StreamReader,
+)
 STDOUT_TYPES = (str, bytes, os.PathLike, bytearray, io.IOBase, int, Redirect, Logger)
 STDOUT_APPEND_TYPES = (str, bytes, os.PathLike)
 

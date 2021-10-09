@@ -1311,7 +1311,7 @@ async def test_pty_redirect_stdin_streamreader(sh):
         server = await asyncio.start_unix_server(_hello, sock_path)
 
         reader, writer = await asyncio.open_unix_connection(sock_path)
-        result = await sh("cat").stdin(reader).set(pty=True)
+        result = await (reader | sh("cat").set(pty=True))
         assert result.replace("^D\x08\x08", "") == "hello\r\nhello\r\n"
 
     finally:
