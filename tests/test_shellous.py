@@ -729,3 +729,9 @@ async def test_pty_echo_exit_code(echo_cmd):
 
     assert result.exit_code == 7
     assert result.output == "abc"
+
+
+async def test_redirect_to_arbitrary_tuple(sh):
+    "Test redirection to an arbitrary tuple."
+    with pytest.raises(TypeError, match="unsupported output type"):
+        await (sh("echo") | (1, 2))
