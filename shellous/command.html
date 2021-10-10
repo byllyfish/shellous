@@ -351,9 +351,8 @@ function to create these, rather than creating them directly.</p></li>
 
     <span class="k">def</span> <span class="nf">set_stdin</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_</span><span class="p">,</span> <span class="n">close</span><span class="p">):</span>
         <span class="s2">&quot;Return new options with `input` configured.&quot;</span>
-        <span class="k">if</span> <span class="n">input_</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">input_</span> <span class="o">=</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">DEVNULL</span>
-        <span class="k">elif</span> <span class="n">input_</span> <span class="o">==</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">STDOUT</span><span class="p">:</span>
+        <span class="n">input_</span> <span class="o">=</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">from_literal</span><span class="p">(</span><span class="n">input_</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">input_</span> <span class="o">==</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">STDOUT</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;STDOUT is only supported by stderr&quot;</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">dataclasses</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span>
@@ -364,9 +363,8 @@ function to create these, rather than creating them directly.</p></li>
 
     <span class="k">def</span> <span class="nf">set_stdout</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output</span><span class="p">,</span> <span class="n">append</span><span class="p">,</span> <span class="n">close</span><span class="p">):</span>
         <span class="s2">&quot;Return new options with `output` configured.&quot;</span>
-        <span class="k">if</span> <span class="n">output</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">output</span> <span class="o">=</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">DEVNULL</span>
-        <span class="k">elif</span> <span class="n">output</span> <span class="o">==</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">STDOUT</span><span class="p">:</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">from_literal</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">output</span> <span class="o">==</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">STDOUT</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;STDOUT is only supported by stderr&quot;</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">dataclasses</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span>
@@ -378,9 +376,7 @@ function to create these, rather than creating them directly.</p></li>
 
     <span class="k">def</span> <span class="nf">set_stderr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">error</span><span class="p">,</span> <span class="n">append</span><span class="p">,</span> <span class="n">close</span><span class="p">):</span>
         <span class="s2">&quot;Return new options with `error` configured.&quot;</span>
-        <span class="k">if</span> <span class="n">error</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">error</span> <span class="o">=</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">DEVNULL</span>
-
+        <span class="n">error</span> <span class="o">=</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">from_literal</span><span class="p">(</span><span class="n">error</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">dataclasses</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span>
             <span class="n">error</span><span class="o">=</span><span class="n">error</span><span class="p">,</span>
@@ -802,9 +798,8 @@ function to create these, rather than creating them directly.</p></li>
 
     <span class="k">def</span> <span class="nf">set_stdin</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_</span><span class="p">,</span> <span class="n">close</span><span class="p">):</span>
         <span class="s2">&quot;Return new options with `input` configured.&quot;</span>
-        <span class="k">if</span> <span class="n">input_</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">input_</span> <span class="o">=</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">DEVNULL</span>
-        <span class="k">elif</span> <span class="n">input_</span> <span class="o">==</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">STDOUT</span><span class="p">:</span>
+        <span class="n">input_</span> <span class="o">=</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">from_literal</span><span class="p">(</span><span class="n">input_</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">input_</span> <span class="o">==</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">STDOUT</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;STDOUT is only supported by stderr&quot;</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">dataclasses</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span>
@@ -815,9 +810,8 @@ function to create these, rather than creating them directly.</p></li>
 
     <span class="k">def</span> <span class="nf">set_stdout</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output</span><span class="p">,</span> <span class="n">append</span><span class="p">,</span> <span class="n">close</span><span class="p">):</span>
         <span class="s2">&quot;Return new options with `output` configured.&quot;</span>
-        <span class="k">if</span> <span class="n">output</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">output</span> <span class="o">=</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">DEVNULL</span>
-        <span class="k">elif</span> <span class="n">output</span> <span class="o">==</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">STDOUT</span><span class="p">:</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">from_literal</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">output</span> <span class="o">==</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">STDOUT</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;STDOUT is only supported by stderr&quot;</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">dataclasses</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span>
@@ -829,9 +823,7 @@ function to create these, rather than creating them directly.</p></li>
 
     <span class="k">def</span> <span class="nf">set_stderr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">error</span><span class="p">,</span> <span class="n">append</span><span class="p">,</span> <span class="n">close</span><span class="p">):</span>
         <span class="s2">&quot;Return new options with `error` configured.&quot;</span>
-        <span class="k">if</span> <span class="n">error</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">error</span> <span class="o">=</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">DEVNULL</span>
-
+        <span class="n">error</span> <span class="o">=</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">from_literal</span><span class="p">(</span><span class="n">error</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">dataclasses</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span>
             <span class="n">error</span><span class="o">=</span><span class="n">error</span><span class="p">,</span>
@@ -1211,9 +1203,8 @@ function to create these, rather than creating them directly.</p></li>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">set_stdin</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_</span><span class="p">,</span> <span class="n">close</span><span class="p">):</span>
         <span class="s2">&quot;Return new options with `input` configured.&quot;</span>
-        <span class="k">if</span> <span class="n">input_</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">input_</span> <span class="o">=</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">DEVNULL</span>
-        <span class="k">elif</span> <span class="n">input_</span> <span class="o">==</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">STDOUT</span><span class="p">:</span>
+        <span class="n">input_</span> <span class="o">=</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">from_literal</span><span class="p">(</span><span class="n">input_</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">input_</span> <span class="o">==</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">STDOUT</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;STDOUT is only supported by stderr&quot;</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">dataclasses</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span>
@@ -1242,9 +1233,8 @@ function to create these, rather than creating them directly.</p></li>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">set_stdout</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output</span><span class="p">,</span> <span class="n">append</span><span class="p">,</span> <span class="n">close</span><span class="p">):</span>
         <span class="s2">&quot;Return new options with `output` configured.&quot;</span>
-        <span class="k">if</span> <span class="n">output</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">output</span> <span class="o">=</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">DEVNULL</span>
-        <span class="k">elif</span> <span class="n">output</span> <span class="o">==</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">STDOUT</span><span class="p">:</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">from_literal</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">output</span> <span class="o">==</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">STDOUT</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;STDOUT is only supported by stderr&quot;</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">dataclasses</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span>
@@ -1274,9 +1264,7 @@ function to create these, rather than creating them directly.</p></li>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">set_stderr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">error</span><span class="p">,</span> <span class="n">append</span><span class="p">,</span> <span class="n">close</span><span class="p">):</span>
         <span class="s2">&quot;Return new options with `error` configured.&quot;</span>
-        <span class="k">if</span> <span class="n">error</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">error</span> <span class="o">=</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">DEVNULL</span>
-
+        <span class="n">error</span> <span class="o">=</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">from_literal</span><span class="p">(</span><span class="n">error</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">dataclasses</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span>
             <span class="n">error</span><span class="o">=</span><span class="n">error</span><span class="p">,</span>
