@@ -1,12 +1,17 @@
 "Implements various utility functions."
 
 import asyncio
+import contextvars
 import io
 import os
 import shutil
+from collections import defaultdict
 from typing import Any, Iterable, Optional, Union
 
 from .log import LOG_DETAIL, LOGGER, log_timer
+
+# Stores current stack of context managers for immutable Command objects.
+_CTXT_STACK = contextvars.ContextVar("ctxt_stack", default=None)
 
 
 def decode(data: Optional[bytes], encoding: str) -> str:
@@ -107,3 +112,29 @@ def which(command):
     if path is None:
         raise FileNotFoundError(command)
     return path
+
+
+async def context_aenter(scope, ctxt_manager):
+    "Enter an async context manager."
+    ctxt_stack = _CTXT_STACK.get()
+    if ctxt_stack is None:
+        ctxt_stack = defaultdict(list)
+        _CTXT_STACK.set(ctxt_stack)
+
+    result = await ctxt_manager.__aenter__()
+    stack = ctxt_stack[scope]
+    stack.append(ctxt_manager)
+
+    return result
+
+
+async def context_aexit(scope, exc_type, exc_value, exc_tb):
+    "Exit an async context manager."
+    ctxt_stack = _CTXT_STACK.get()
+
+    stack = ctxt_stack[scope]
+    ctxt_manager = stack.pop()
+    if not stack:
+        _CTXT_STACK.set(None)
+
+    return await ctxt_manager.__aexit__(exc_type, exc_value, exc_tb)

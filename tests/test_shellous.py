@@ -735,3 +735,49 @@ async def test_redirect_to_arbitrary_tuple(sh):
     "Test redirection to an arbitrary tuple."
     with pytest.raises(TypeError, match="unsupported output type"):
         await (sh("echo") | (1, 2))
+
+
+async def test_command_context_manager_api(sh):
+    "Test running a command using its context manager."
+
+    async with sh("echo", "hello") as run:
+        out = await run.stdout.read()
+
+    assert out == b"hello\n"
+
+
+async def test_command_context_manager_api_reentrant(sh):
+    "Test running a command using its context manager."
+
+    cmd = sh("echo", "hello")
+    async with cmd as run1:
+        out1 = await run1.stdout.read()
+
+        # Re-enter context manager here for exact same command.
+        async with cmd as run2:
+            out2 = await run2.stdout.read()
+
+    assert out1 == out2 == b"hello\n"
+
+
+async def test_pipe_context_manager_api(sh):
+    "Test running a pipeline using its context manager."
+
+    async with sh("echo", "hello") | sh("cat") as run:
+        out = await run.stdout.read()
+
+    assert out == b"hello\n"
+
+
+async def test_pipe_context_manager_api_reentrant(sh):
+    "Test running a pipeline using its context manager."
+
+    cmd = sh("echo", "hello") | sh("cat")
+    async with cmd as run1:
+        out1 = await run1.stdout.read()
+
+        # Re-enter context manager here for exact same command.
+        async with cmd as run2:
+            out2 = await run2.stdout.read()
+
+    assert out1 == out2 == b"hello\n"

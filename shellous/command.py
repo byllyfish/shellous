@@ -19,7 +19,7 @@ from immutables import Map as ImmutableDict
 import shellous
 from shellous.redirect import STDIN_TYPES, STDOUT_APPEND_TYPES, STDOUT_TYPES, Redirect
 from shellous.runner import Runner
-from shellous.util import coerce_env
+from shellous.util import coerce_env, context_aenter, context_aexit
 
 # Sentinel used in "mergable" keyword arguments to indicate that a value
 # was not set by the caller. This is an enum class to make UNSET more visible
@@ -421,6 +421,14 @@ class Command:
     def __await__(self):
         "Run process and return the standard output."
         return self.coro().__await__()
+
+    async def __aenter__(self):
+        "Enter the async context manager."
+        return await context_aenter(id(self), self.run())
+
+    async def __aexit__(self, exc_type, exc_value, exc_tb):
+        "Exit the async context manager."
+        return await context_aexit(id(self), exc_type, exc_value, exc_tb)
 
     def __call__(self, *args):
         "Apply more arguments to the end of the command."

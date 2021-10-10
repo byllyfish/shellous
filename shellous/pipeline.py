@@ -6,6 +6,7 @@ from dataclasses import dataclass
 import shellous
 from shellous.redirect import STDIN_TYPES, STDOUT_APPEND_TYPES, STDOUT_TYPES
 from shellous.runner import PipeRunner
+from shellous.util import context_aenter, context_aexit
 
 
 @dataclass(frozen=True)
@@ -122,3 +123,11 @@ class Pipeline:
 
     def __await__(self):
         return self.coro().__await__()
+
+    async def __aenter__(self):
+        "Enter the async context manager."
+        return await context_aenter(id(self), self.run())
+
+    async def __aexit__(self, exc_type, exc_value, exc_tb):
+        "Exit the async context manager."
+        return await context_aexit(id(self), exc_type, exc_value, exc_tb)
