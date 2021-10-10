@@ -44,6 +44,19 @@ class Redirect(enum.IntEnum):
         assert obj == Redirect.DEFAULT
         return _DEFAULT_REDIRECTION[(fdesc, bool(pty))]
 
+    @staticmethod
+    def from_literal(literal, is_stderr=False):
+        "Return object with literal values replaced by Redirect constant."
+        # For stderr, the literal `1` indicates that stderr is redirected to
+        # the same place as STDOUT.
+        if is_stderr and isinstance(literal, int) and literal == 1:
+            return Redirect.STDOUT
+
+        try:
+            return _LITERAL_REDIRECT.get(literal, literal)
+        except TypeError:
+            return literal
+
 
 # This table has the default redirections for (src, pty).
 # Sources are stdin, stdout, stderr. Used by Redirect.from_default().
@@ -57,6 +70,12 @@ _DEFAULT_REDIRECTION = {
     (_STDERR, True): Redirect.STDOUT,
 }
 
+_LITERAL_REDIRECT = {
+    None: Redirect.DEVNULL,
+    ...: Redirect.INHERIT,
+    (): Redirect.CAPTURE,
+}
+
 # Used in Command and Pipeline to implement operator overloading.
 STDIN_TYPES = (
     str,
@@ -67,6 +86,9 @@ STDIN_TYPES = (
     int,
     Redirect,
     asyncio.StreamReader,
+    type(None),
+    type(...),
+    tuple,
 )
 
 STDOUT_TYPES = (
@@ -79,6 +101,9 @@ STDOUT_TYPES = (
     Redirect,
     Logger,
     asyncio.StreamWriter,
+    type(None),
+    type(...),
+    tuple,
 )
 
 STDOUT_APPEND_TYPES = (str, bytes, os.PathLike)

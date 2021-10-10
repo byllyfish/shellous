@@ -7,6 +7,7 @@ import logging
 from pathlib import Path
 
 import pytest
+import shellous
 from shellous import Pipeline, context
 from shellous.command import Command
 
@@ -211,6 +212,13 @@ def test_pipeline_redirect_stringio(sh):
     assert cmd == sh("echo").stdout(buf)
 
 
+def test_pipeline_redirect_stringio_stdin(sh):
+    "Test use of StringIO in pipeline."
+    buf = io.StringIO()
+    cmd = buf | sh("echo")
+    assert cmd == sh("echo").stdin(buf)
+
+
 def test_pipeline_redirect_logger(sh):
     "Test use of StringIO in pipeline."
     logger = logging.getLogger("test_logger")
@@ -227,3 +235,39 @@ def test_pipeline_len_getitem(sh):
     assert pipe[2] == sh("cmd3")
     assert pipe[-1] == sh("cmd3")
     assert pipe[-2] == sh("cmd2")
+
+
+def test_pipeline_redirect_none_stdin(sh):
+    "Test use of None in pipeline."
+    cmd = None | sh("echo")
+    assert cmd == sh("echo").stdin(shellous.DEVNULL)
+
+
+def test_pipeline_redirect_none_stdout(sh):
+    "Test use of None in pipeline."
+    cmd = sh("echo") | None
+    assert cmd == sh("echo").stdout(shellous.DEVNULL)
+
+
+def test_pipeline_redirect_ellipsis_stdin(sh):
+    "Test use of Ellipsis in pipeline."
+    cmd = ... | sh("echo")
+    assert cmd == sh("echo").stdin(shellous.INHERIT)
+
+
+def test_pipeline_redirect_ellipsis_stdout(sh):
+    "Test use of Ellipsis in pipeline."
+    cmd = sh("echo") | ...
+    assert cmd == sh("echo").stdout(shellous.INHERIT)
+
+
+def test_pipeline_redirect_tuple_stdin(sh):
+    "Test use of empty tuple in pipeline."
+    cmd = () | sh("echo")
+    assert cmd == sh("echo").stdin(shellous.CAPTURE)
+
+
+def test_pipeline_redirect_tuple_stdout(sh):
+    "Test use of empty tuple in pipeline."
+    cmd = sh("echo") | ()
+    assert cmd == sh("echo").stdout(shellous.CAPTURE)
