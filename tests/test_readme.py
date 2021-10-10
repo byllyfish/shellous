@@ -200,7 +200,7 @@ def _parse_readme(filename):
 
     Returns a list of commands and their corresponding outputs.
     """
-    with open(filename) as afile:
+    with open(filename, encoding="utf-8") as afile:
         data = afile.read()
 
     # Make a list of all the python-repl code blocks in the file.

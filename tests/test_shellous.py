@@ -783,21 +783,21 @@ async def test_pipe_context_manager_api_reentrant(sh):
     assert out1 == out2 == b"hello\n"
 
 
-async def test_command_iterator_api(sh):
+async def test_command_iterator_api(echo_cmd):
     "Test running a command's async iterator directly."
 
-    lines = [line.rstrip() async for line in sh("echo", "hello\n", "world")]
+    lines = [line.rstrip() async for line in echo_cmd("hello\n", "world")]
     assert lines == ["hello", " world"]
 
     # When the async iterator runs to completion, there is no problem with
     # extra tasks hanging around.
 
 
-async def test_command_iterator_api_interrupted(sh):
+async def test_command_iterator_api_interrupted(echo_cmd):
     "Test running a command's async iterator directly."
 
     async def _test():
-        async for line in sh("echo", "hello\n", "cruel\n", "world\n"):
+        async for line in echo_cmd("hello\n", "cruel\n", "world\n"):
             if "hello" in line:
                 return True
         return False
@@ -813,11 +813,11 @@ async def test_command_iterator_api_interrupted(sh):
     await asyncio.sleep(0.1)
 
 
-def test_command_iterator_api_interrupted_sync(sh):
+def test_command_iterator_api_interrupted_sync(echo_cmd):
     "Test running a command's async iterator directly."
 
     async def _test():
-        async for line in sh("echo", "hello\n", "cruel\n", "world\n"):
+        async for line in echo_cmd("hello\n", "cruel\n", "world\n"):
             if "hello" in line:
                 return True
         return False
