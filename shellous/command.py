@@ -430,6 +430,16 @@ class Command:
         "Exit the async context manager."
         return await context_aexit(id(self), exc_type, exc_value, exc_tb)
 
+    def __aiter__(self):
+        "Return async iterator to iterate over output lines."
+        return self._readlines()
+
+    async def _readlines(self):
+        "Async generator to iterate over lines."
+        async with self.run() as run:
+            async for line in run:
+                yield line
+
     def __call__(self, *args):
         "Apply more arguments to the end of the command."
         if not args:

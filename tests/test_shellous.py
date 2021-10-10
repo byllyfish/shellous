@@ -781,3 +781,47 @@ async def test_pipe_context_manager_api_reentrant(sh):
             out2 = await run2.stdout.read()
 
     assert out1 == out2 == b"hello\n"
+
+
+async def test_command_iterator_api(sh):
+    "Test running a command's async iterator directly."
+
+    lines = [line.rstrip() async for line in sh("echo", "hello\n", "world")]
+    assert lines == ["hello", " world"]
+
+    # When the async iterator runs to completion, there is no problem with
+    # extra tasks hanging around.
+
+
+async def test_command_iterator_api_interrupted(sh):
+    "Test running a command's async iterator directly."
+
+    async def _test():
+        async for line in sh("echo", "hello\n", "cruel\n", "world\n"):
+            if "hello" in line:
+                return True
+        return False
+
+    assert await _test()
+
+    # An async iterator was interrupted. At this point, there are still
+    # tasks running related to the command invocation in _test. The tasks will
+    # be cleaned up when the `GeneratorExit` exception is propagated.
+    await asyncio.sleep(0)
+
+    # We still need to wait for the process to asynchrously exit...
+    await asyncio.sleep(0.1)
+
+
+def test_command_iterator_api_interrupted_sync(sh):
+    "Test running a command's async iterator directly."
+
+    async def _test():
+        async for line in sh("echo", "hello\n", "cruel\n", "world\n"):
+            if "hello" in line:
+                return True
+        return False
+
+    # asyncio.run() should do all clean up for interrupted async iterator.
+    result = asyncio.run(_test())
+    assert result

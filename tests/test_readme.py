@@ -158,12 +158,12 @@ def test_parse_readme():
         'cmd = sh("ls") | sh("tee", ~sh("grep", "README") | buf) | shellous.DEVNULL',
         "await cmd",
         "buf",
-        "async with pipe.run() as run:\n"
-        "  data = await run.stdout.readline()\n"
-        "  print(data)\n",
-        "async with pipe.run() as run:\n"
+        "async with pipe as run:\n"
         "  async for line in run:\n"
         "    print(line.rstrip())\n",
+        "async with pipe as run:\n"
+        "  data = await run.stdout.readline()\n"
+        "  print(data)\n",
         'sleep = sh("sleep", 60).set(incomplete_result=True)',
         "t = asyncio.create_task(sleep.coro())",
         "t.cancel()",

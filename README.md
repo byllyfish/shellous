@@ -210,27 +210,31 @@ bytearray(b'README.md\n')
 Async With & For
 ----------------
 
-You can use `async with` to interact with the process streams directly. You have to be careful; you
-are responsible for correctly reading and writing multiple streams at the same time.
-
-```python-repl
->>> async with pipe.run() as run:
-...   data = await run.stdout.readline()
-...   print(data)
-... 
-b'README.md\n'
-```
-
 You can loop over a command's output by using the context manager as an iterator.
 
 ```python-repl
->>> async with pipe.run() as run:
+>>> async with pipe as run:
 ...   async for line in run:
 ...     print(line.rstrip())
 ... 
 README.md
 ```
 
+> <span style="font-size:1.5em;">⚠️ </span> You can also acquire an async iterator directly from
+> the command or pipeline object. This is discouraged because you will have less control over the final
+> clean up of the command invocation than with a context manager.
+
+
+You can use `async with` to interact with the process streams directly. You have to be careful; you
+are responsible for correctly reading and writing multiple streams at the same time.
+
+```python-repl
+>>> async with pipe as run:
+...   data = await run.stdout.readline()
+...   print(data)
+... 
+b'README.md\n'
+```
 
 Incomplete Results
 ------------------
