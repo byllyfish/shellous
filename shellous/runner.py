@@ -740,30 +740,36 @@ class PipeRunner:  # pylint: disable=too-many-instance-attributes
     ```
     """
 
+    stdin = None
+    "Pipeline standard input."
+
+    stdout = None
+    "Pipeline standard output."
+
+    stderr = None
+    "Pipeline standard error."
+
     def __init__(self, pipe, *, capturing):
         """`capturing=True` indicates we are within an `async with` block and
         client needs to access `stdin` and `stderr` streams.
         """
         assert len(pipe.commands) > 1
 
-        self.pipe = pipe
-        self.cancelled = False
-        self.tasks = []
-        self.results = None
-        self.capturing = capturing
-        self.encoding = pipe.options.encoding
-        self.stdin = None
-        self.stdout = None
-        self.stderr = None
+        self._pipe = pipe
+        self._cancelled = False
+        self._tasks = []
+        self._results = None
+        self._capturing = capturing
+        self._encoding = pipe.options.encoding
 
     @property
     def name(self):
         "Return name of the pipeline."
-        return self.pipe.name
+        return self._pipe.name
 
     def result(self):
         "Return `Result` object for PipeRunner."
-        return make_result(self.pipe, self.results, self.cancelled)
+        return make_result(self._pipe, self._results, self._cancelled)
 
     def add_task(self, coro, tag=None):
         "Add a background task."
@@ -772,23 +778,23 @@ class PipeRunner:  # pylint: disable=too-many-instance-attributes
         else:
             task_name = self.name
         task = asyncio.create_task(coro, name=task_name)
-        self.tasks.append(task)
+        self._tasks.append(task)
         return task
 
     @log_method(LOG_DETAIL)
     async def _wait(self, *, kill=False):
         "Wait for pipeline to finish."
-        assert self.results is None
-        assert self.tasks is not None
+        assert self._results is None
+        assert self._tasks is not None
 
         if kill:
             LOGGER.info("PipeRunner.wait killing pipe %r", self)
-            for task in self.tasks:
+            for task in self._tasks:
                 task.cancel()
 
-        cancelled, self.results = await harvest_results(*self.tasks, trustee=self)
+        cancelled, self._results = await harvest_results(*self._tasks, trustee=self)
         if cancelled:
-            self.cancelled = True
+            self._cancelled = True
 
     @log_method(LOG_ENTER)
     async def __aenter__(self):
@@ -798,7 +804,7 @@ class PipeRunner:  # pylint: disable=too-many-instance-attributes
         except (Exception, asyncio.CancelledError) as ex:
             LOGGER.warning("PipeRunner enter %r ex=%r", self, ex)
             if _is_cancelled(ex):
-                self.cancelled = True
+                self._cancelled = True
             await self._wait(kill=True)
             raise
 
@@ -810,7 +816,7 @@ class PipeRunner:  # pylint: disable=too-many-instance-attributes
             suppress = await self._finish(exc_value)
         except asyncio.CancelledError:
             LOGGER.warning("PipeRunner cancelled inside _finish %r", self)
-            self.cancelled = True
+            self._cancelled = True
         return suppress
 
     @log_method(LOG_DETAIL)
@@ -818,9 +824,9 @@ class PipeRunner:  # pylint: disable=too-many-instance-attributes
         "Wait for pipeline to exit and handle cancellation."
         if exc_value is not None:
             if _is_cancelled(exc_value):
-                self.cancelled = True
+                self._cancelled = True
             await self._wait(kill=True)
-            return self.cancelled
+            return self._cancelled
 
         await self._wait()
 
@@ -836,7 +842,7 @@ class PipeRunner:  # pylint: disable=too-many-instance-attributes
 
             cmds = self._setup_pipeline(open_fds)
 
-            if self.capturing:
+            if self._capturing:
                 stdin, stdout, stderr = await self._setup_capturing(cmds)
             else:
                 for cmd in cmds:
@@ -859,7 +865,7 @@ class PipeRunner:  # pylint: disable=too-many-instance-attributes
         Each created open file descriptor is added to `open_fds` so it can
         be closed if there's an exception later.
         """
-        cmds = list(self.pipe.commands)
+        cmds = list(self._pipe.commands)
 
         cmd_count = len(cmds)
         for i in range(cmd_count - 1):
@@ -906,11 +912,11 @@ class PipeRunner:  # pylint: disable=too-many-instance-attributes
     def __repr__(self):
         "Return string representation of PipeRunner."
         cancelled_info = ""
-        if self.cancelled:
+        if self._cancelled:
             cancelled_info = " cancelled"
         result_info = ""
-        if self.results:
-            result_info = f" results={self.results!r}"
+        if self._results:
+            result_info = f" results={self._results!r}"
         return f"<PipeRunner {self.name!r}{cancelled_info}{result_info}>"
 
     async def _readlines(self):
@@ -920,7 +926,7 @@ class PipeRunner:  # pylint: disable=too-many-instance-attributes
 
         stream = self.stdout or self.stderr
         if stream:
-            async for line in redir.read_lines(stream, self.encoding):
+            async for line in redir.read_lines(stream, self._encoding):
                 yield line
 
     def __aiter__(self):
