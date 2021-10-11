@@ -29,7 +29,7 @@ codecov = "^2.1.12"
 flake8 = "^3.9.2"
 pytest-dotenv = "^0.5.2"
 pytest-randomly = "^3.10.1"
-pytest-timeout = "^1.4.2"
+pytest-timeout = "^2.0.0"
 pdoc = "^8.0.0"
 
 [build-system]
