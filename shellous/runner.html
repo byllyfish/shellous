@@ -37,6 +37,15 @@
                                 <a class="function" href="#Runner.__init__">Runner</a>
                         </li>
                         <li>
+                                <a class="variable" href="#Runner.stdin">stdin</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Runner.stdout">stdout</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Runner.stderr">stderr</a>
+                        </li>
+                        <li>
                                 <a class="variable" href="#Runner.name">name</a>
                         </li>
                         <li>
@@ -44,6 +53,9 @@
                         </li>
                         <li>
                                 <a class="variable" href="#Runner.pid">pid</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Runner.cancelled">cancelled</a>
                         </li>
                         <li>
                                 <a class="function" href="#Runner.result">result</a>
@@ -62,6 +74,15 @@
                             <ul class="memberlist">
                         <li>
                                 <a class="function" href="#PipeRunner.__init__">PipeRunner</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#PipeRunner.stdin">stdin</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#PipeRunner.stdout">stdout</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#PipeRunner.stderr">stderr</a>
                         </li>
                         <li>
                                 <a class="variable" href="#PipeRunner.name">name</a>
@@ -412,49 +433,60 @@
 <span class="sd">    ```</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
+    <span class="n">stdin</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="s2">&quot;Process standard input.&quot;</span>
+
+    <span class="n">stdout</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="s2">&quot;Process standard output.&quot;</span>
+
+    <span class="n">stderr</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="s2">&quot;Process standard error.&quot;</span>
+
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">command</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">options</span> <span class="o">=</span> <span class="n">_RunOptions</span><span class="p">(</span><span class="n">command</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">cancelled</span> <span class="o">=</span> <span class="kc">False</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">proc</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">stdin</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">stdout</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">stderr</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_options</span> <span class="o">=</span> <span class="n">_RunOptions</span><span class="p">(</span><span class="n">command</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_cancelled</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_tasks</span> <span class="o">=</span> <span class="p">[]</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="s2">&quot;Return name of process to run.&quot;</span>
+        <span class="s2">&quot;Return name of process being run.&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">command</span><span class="o">.</span><span class="n">name</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">command</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Return the command being run.&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">command</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="o">.</span><span class="n">command</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">pid</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Return the command&#39;s process ID.&quot;</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">None</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">pid</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">pid</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">cancelled</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;Return True if the command was cancelled.&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cancelled</span>
 
     <span class="k">def</span> <span class="nf">result</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_bytes</span><span class="o">=</span><span class="sa">b</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
         <span class="s2">&quot;Check process exit code and raise a ResultError if necessary.&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="p">:</span>
-            <span class="n">code</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">returncode</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="p">:</span>
+            <span class="n">code</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">returncode</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="c1"># The process was cancelled before starting.</span>
-            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">cancelled</span>
+            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cancelled</span>
             <span class="n">code</span> <span class="o">=</span> <span class="n">_UNLAUNCHED_EXIT_CODE</span>
 
         <span class="n">result</span> <span class="o">=</span> <span class="n">Result</span><span class="p">(</span>
             <span class="n">output_bytes</span><span class="p">,</span>
             <span class="n">code</span><span class="p">,</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">cancelled</span><span class="p">,</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">encoding</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_cancelled</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="o">.</span><span class="n">encoding</span><span class="p">,</span>
         <span class="p">)</span>
 
-        <span class="k">return</span> <span class="n">make_result</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">command</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cancelled</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">make_result</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">command</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cancelled</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">add_task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coro</span><span class="p">,</span> <span class="n">tag</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="s2">&quot;Add a background task.&quot;</span>
@@ -463,28 +495,28 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="n">task_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
         <span class="n">task</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="n">coro</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">task_name</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">task</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_tasks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">task</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">task</span>
 
     <span class="k">def</span> <span class="nf">_is_bsd_pty</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Return true if we&#39;re running a pty on BSD.&quot;</span>
-        <span class="k">return</span> <span class="n">_BSD</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">pty_fds</span>
+        <span class="k">return</span> <span class="n">_BSD</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="o">.</span><span class="n">pty_fds</span>
 
     <span class="nd">@log_method</span><span class="p">(</span><span class="n">LOG_DETAIL</span><span class="p">)</span>
     <span class="k">async</span> <span class="k">def</span> <span class="nf">_wait</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Normal wait for background I/O tasks and process to finish.&quot;</span>
-        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span>
 
         <span class="k">try</span><span class="p">:</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">:</span>
-                <span class="k">await</span> <span class="n">harvest</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">,</span> <span class="n">trustee</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tasks</span><span class="p">:</span>
+                <span class="k">await</span> <span class="n">harvest</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">_tasks</span><span class="p">,</span> <span class="n">trustee</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_bsd_pty</span><span class="p">():</span>
                 <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_waiter</span><span class="p">()</span>
 
         <span class="k">except</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">CancelledError</span><span class="p">:</span>
             <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Runner.wait cancelled </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">cancelled</span> <span class="o">=</span> <span class="kc">True</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>  <span class="c1"># all tasks were cancelled</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_cancelled</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_tasks</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>  <span class="c1"># all tasks were cancelled</span>
             <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kill</span><span class="p">()</span>
 
     <span class="nd">@log_method</span><span class="p">(</span><span class="n">LOG_DETAIL</span><span class="p">)</span>
@@ -492,11 +524,11 @@
         <span class="s2">&quot;Manually poll `waitpid` until process finishes.&quot;</span>
         <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_bsd_pty</span><span class="p">()</span>
         <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
-            <span class="n">status</span> <span class="o">=</span> <span class="n">wait_pid</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">pid</span><span class="p">)</span>
+            <span class="n">status</span> <span class="o">=</span> <span class="n">wait_pid</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">pid</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">status</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="c1"># pylint: disable=protected-access</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">_transport</span><span class="o">.</span><span class="n">_returncode</span> <span class="o">=</span> <span class="n">status</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">_transport</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">returncode</span> <span class="o">=</span> <span class="n">status</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">_transport</span><span class="o">.</span><span class="n">_returncode</span> <span class="o">=</span> <span class="n">status</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">_transport</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">returncode</span> <span class="o">=</span> <span class="n">status</span>
                 <span class="k">break</span>
 
             <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.025</span><span class="p">)</span>
@@ -504,26 +536,26 @@
     <span class="nd">@log_method</span><span class="p">(</span><span class="n">LOG_DETAIL</span><span class="p">)</span>
     <span class="k">async</span> <span class="k">def</span> <span class="nf">_kill</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Kill process and wait for it to finish.&quot;</span>
-        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span>
 
         <span class="n">cancel_timeout</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">command</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">cancel_timeout</span>
         <span class="n">cancel_signal</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">command</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">cancel_signal</span>
 
         <span class="k">try</span><span class="p">:</span>
             <span class="c1"># If not already done, send cancel signal.</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">returncode</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">returncode</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_send_signal</span><span class="p">(</span><span class="n">cancel_signal</span><span class="p">)</span>
 
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">:</span>
-                <span class="k">await</span> <span class="n">harvest</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">cancel_timeout</span><span class="p">,</span> <span class="n">trustee</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tasks</span><span class="p">:</span>
+                <span class="k">await</span> <span class="n">harvest</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">_tasks</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">cancel_timeout</span><span class="p">,</span> <span class="n">trustee</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
 
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">returncode</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">returncode</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="k">await</span> <span class="n">harvest</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_waiter</span><span class="p">(),</span> <span class="n">timeout</span><span class="o">=</span><span class="n">cancel_timeout</span><span class="p">,</span> <span class="n">trustee</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
 
         <span class="k">except</span> <span class="p">(</span><span class="n">asyncio</span><span class="o">.</span><span class="n">CancelledError</span><span class="p">,</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">TimeoutError</span><span class="p">)</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>
             <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Runner.kill </span><span class="si">%r</span><span class="s2"> (ex)=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="n">ex</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">_is_cancelled</span><span class="p">(</span><span class="n">ex</span><span class="p">):</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">cancelled</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_cancelled</span> <span class="o">=</span> <span class="kc">True</span>
             <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kill_wait</span><span class="p">()</span>
 
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>
@@ -536,25 +568,25 @@
 
         <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Runner.signal </span><span class="si">%r</span><span class="s2"> signal=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="n">sig</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">sig</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">kill</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">kill</span><span class="p">()</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">send_signal</span><span class="p">(</span><span class="n">sig</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">send_signal</span><span class="p">(</span><span class="n">sig</span><span class="p">)</span>
 
     <span class="nd">@log_method</span><span class="p">(</span><span class="n">LOG_DETAIL</span><span class="p">)</span>
     <span class="k">async</span> <span class="k">def</span> <span class="nf">_kill_wait</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Wait for killed process to exit.&quot;</span>
-        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span>
 
         <span class="c1"># Check if process is already done.</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">returncode</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">returncode</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">return</span>
 
         <span class="k">try</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_send_signal</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
             <span class="k">await</span> <span class="n">harvest</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_waiter</span><span class="p">(),</span> <span class="n">timeout</span><span class="o">=</span><span class="n">_KILL_TIMEOUT</span><span class="p">,</span> <span class="n">trustee</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
         <span class="k">except</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">TimeoutError</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>
-            <span class="n">LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%r</span><span class="s2"> failed to kill process </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="p">)</span>
-            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unable to kill process </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">ex</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%r</span><span class="s2"> failed to kill process </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unable to kill process </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">ex</span>
 
     <span class="nd">@log_method</span><span class="p">(</span><span class="n">LOG_ENTER</span><span class="p">,</span> <span class="n">_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="k">async</span> <span class="k">def</span> <span class="fm">__aenter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -562,24 +594,24 @@
         <span class="k">try</span><span class="p">:</span>
             <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_start</span><span class="p">()</span>
         <span class="k">finally</span><span class="p">:</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cancelled</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">command</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">incomplete_result</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cancelled</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">command</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">incomplete_result</span><span class="p">:</span>
                 <span class="c1"># Raises ResultError instead of CancelledError.</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">result</span><span class="p">()</span>
 
     <span class="nd">@log_method</span><span class="p">(</span><span class="n">LOG_DETAIL</span><span class="p">)</span>
     <span class="k">async</span> <span class="k">def</span> <span class="nf">_start</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Set up redirections and launch subprocess.&quot;</span>
-        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span> <span class="ow">is</span> <span class="kc">None</span>
-        <span class="k">assert</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span> <span class="ow">is</span> <span class="kc">None</span>
+        <span class="k">assert</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tasks</span>
 
         <span class="k">try</span><span class="p">:</span>
             <span class="c1"># Set up subprocess arguments and launch subprocess.</span>
-            <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span> <span class="k">as</span> <span class="n">opts</span><span class="p">:</span>
+            <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_options</span> <span class="k">as</span> <span class="n">opts</span><span class="p">:</span>
                 <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_subprocess_spawn</span><span class="p">(</span><span class="n">opts</span><span class="p">)</span>
 
-            <span class="n">stdin</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">stdin</span>
-            <span class="n">stdout</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">stdout</span>
-            <span class="n">stderr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">stderr</span>
+            <span class="n">stdin</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">stdin</span>
+            <span class="n">stdout</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">stdout</span>
+            <span class="n">stderr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">stderr</span>
 
             <span class="c1"># Assign pty streams.</span>
             <span class="k">if</span> <span class="n">opts</span><span class="o">.</span><span class="n">pty_fds</span><span class="p">:</span>
@@ -602,8 +634,8 @@
         <span class="k">except</span> <span class="p">(</span><span class="ne">Exception</span><span class="p">,</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">CancelledError</span><span class="p">)</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>
             <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Runner._start </span><span class="si">%r</span><span class="s2"> ex=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="n">ex</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">_is_cancelled</span><span class="p">(</span><span class="n">ex</span><span class="p">):</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">cancelled</span> <span class="o">=</span> <span class="kc">True</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_cancelled</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="p">:</span>
                 <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kill</span><span class="p">()</span>
             <span class="k">raise</span>
 
@@ -646,7 +678,7 @@
         <span class="s2">&quot;Start the subprocess and assign to `self.proc`.&quot;</span>
         <span class="k">with</span> <span class="n">log_timer</span><span class="p">(</span><span class="s2">&quot;asyncio.create_subprocess_exec&quot;</span><span class="p">):</span>
             <span class="n">sys</span><span class="o">.</span><span class="n">audit</span><span class="p">(</span><span class="n">AUDIT_EVENT_SUBPROCESS_SPAWN</span><span class="p">,</span> <span class="n">opts</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">proc</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_subprocess_exec</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_subprocess_exec</span><span class="p">(</span>
                 <span class="o">*</span><span class="n">opts</span><span class="o">.</span><span class="n">args</span><span class="p">,</span>
                 <span class="o">**</span><span class="n">opts</span><span class="o">.</span><span class="n">kwd_args</span><span class="p">,</span>
             <span class="p">)</span>
@@ -657,7 +689,7 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_bsd_pty</span><span class="p">():</span>
             <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wait_pid</span><span class="p">()</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">_setup_input_source</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stream</span><span class="p">,</span> <span class="n">opts</span><span class="p">):</span>
         <span class="s2">&quot;Set up a task to read from custom input source.&quot;</span>
@@ -714,20 +746,20 @@
             <span class="n">suppress</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_finish</span><span class="p">(</span><span class="n">exc_value</span><span class="p">)</span>
         <span class="k">except</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">CancelledError</span><span class="p">:</span>
             <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Runner cancelled inside _finish </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">cancelled</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_cancelled</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="k">return</span> <span class="n">suppress</span>
 
     <span class="nd">@log_method</span><span class="p">(</span><span class="n">LOG_DETAIL</span><span class="p">)</span>
     <span class="k">async</span> <span class="k">def</span> <span class="nf">_finish</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exc_value</span><span class="p">):</span>
         <span class="s2">&quot;Finish the run. Return True only if `exc_value` should be suppressed.&quot;</span>
-        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span>
 
         <span class="k">try</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">exc_value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">_is_cancelled</span><span class="p">(</span><span class="n">exc_value</span><span class="p">):</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">cancelled</span> <span class="o">=</span> <span class="kc">True</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_cancelled</span> <span class="o">=</span> <span class="kc">True</span>
                 <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kill</span><span class="p">()</span>
-                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">cancelled</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cancelled</span>
 
             <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wait</span><span class="p">()</span>
             <span class="k">return</span> <span class="kc">False</span>
@@ -738,46 +770,46 @@
     <span class="nd">@log_method</span><span class="p">(</span><span class="n">LOG_DETAIL</span><span class="p">)</span>
     <span class="k">async</span> <span class="k">def</span> <span class="nf">_close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Make sure that our resources are properly closed.&quot;</span>
-        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span>
 
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">pty_fds</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">pty_fds</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="o">.</span><span class="n">pty_fds</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="o">.</span><span class="n">pty_fds</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 
         <span class="c1"># _close can be called when unwinding exceptions. We need to handle</span>
         <span class="c1"># the case that the process has not exited yet. Remember to close the</span>
         <span class="c1"># transport.</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">returncode</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">LOGGER</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;Runner._close process still running </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">_transport</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>  <span class="c1"># pylint: disable=protected-access</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">returncode</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;Runner._close process still running </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">_transport</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>  <span class="c1"># pylint: disable=protected-access</span>
             <span class="k">return</span>
 
         <span class="c1"># asyncio child watcher artifact.</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">returncode</span> <span class="o">==</span> <span class="n">_FLAKY_EXIT_CODE</span><span class="p">:</span>
-            <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Runner._close exit code=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">returncode</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">returncode</span> <span class="o">==</span> <span class="n">_FLAKY_EXIT_CODE</span><span class="p">:</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Runner._close exit code=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">returncode</span><span class="p">)</span>
 
         <span class="k">try</span><span class="p">:</span>
             <span class="c1"># Make sure the transport is closed (for asyncio and uvloop).</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">_transport</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>  <span class="c1"># pylint: disable=protected-access</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">_transport</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>  <span class="c1"># pylint: disable=protected-access</span>
 
             <span class="c1"># Make sure that original stdin is properly closed. `wait_closed`</span>
             <span class="c1"># will raise a BrokenPipeError if not all input was properly written.</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">stdin</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">stdin</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
                 <span class="k">await</span> <span class="n">harvest</span><span class="p">(</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">wait_closed</span><span class="p">(),</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">wait_closed</span><span class="p">(),</span>
                     <span class="n">timeout</span><span class="o">=</span><span class="n">_CLOSE_TIMEOUT</span><span class="p">,</span>
                     <span class="n">cancel_finish</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># finish `wait_closed` if cancelled</span>
                     <span class="n">trustee</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span>
                 <span class="p">)</span>
 
         <span class="k">except</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">TimeoutError</span><span class="p">:</span>
-            <span class="n">LOGGER</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;Runner._close </span><span class="si">%r</span><span class="s2"> timeout stdin=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">stdin</span><span class="p">)</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;Runner._close </span><span class="si">%r</span><span class="s2"> timeout stdin=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">stdin</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Return string representation of Runner.&quot;</span>
-        <span class="n">cancelled</span> <span class="o">=</span> <span class="s2">&quot; cancelled&quot;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cancelled</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="p">:</span>
-            <span class="n">procinfo</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot; pid=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">pid</span><span class="si">}</span><span class="s2"> exit_code=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">returncode</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="n">cancelled</span> <span class="o">=</span> <span class="s2">&quot; cancelled&quot;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cancelled</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="p">:</span>
+            <span class="n">procinfo</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot; pid=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">pid</span><span class="si">}</span><span class="s2"> exit_code=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">returncode</span><span class="si">}</span><span class="s2">&quot;</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">procinfo</span> <span class="o">=</span> <span class="s2">&quot; pid=None&quot;</span>
         <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;&lt;Runner </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">!r}{</span><span class="n">cancelled</span><span class="si">}{</span><span class="n">procinfo</span><span class="si">}</span><span class="s2">&gt;&quot;</span>
@@ -789,7 +821,7 @@
 
         <span class="n">stream</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stdout</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">stderr</span>
         <span class="k">if</span> <span class="n">stream</span><span class="p">:</span>
-            <span class="k">async</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">redir</span><span class="o">.</span><span class="n">read_lines</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">encoding</span><span class="p">):</span>
+            <span class="k">async</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">redir</span><span class="o">.</span><span class="n">read_lines</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="o">.</span><span class="n">encoding</span><span class="p">):</span>
                 <span class="k">yield</span> <span class="n">line</span>
 
     <span class="k">def</span> <span class="fm">__aiter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -830,30 +862,36 @@
 <span class="sd">    ```</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
+    <span class="n">stdin</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="s2">&quot;Pipeline standard input.&quot;</span>
+
+    <span class="n">stdout</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="s2">&quot;Pipeline standard output.&quot;</span>
+
+    <span class="n">stderr</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="s2">&quot;Pipeline standard error.&quot;</span>
+
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pipe</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">capturing</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;`capturing=True` indicates we are within an `async with` block and</span>
 <span class="sd">        client needs to access `stdin` and `stderr` streams.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">pipe</span><span class="o">.</span><span class="n">commands</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">pipe</span> <span class="o">=</span> <span class="n">pipe</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">cancelled</span> <span class="o">=</span> <span class="kc">False</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">capturing</span> <span class="o">=</span> <span class="n">capturing</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">encoding</span> <span class="o">=</span> <span class="n">pipe</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">encoding</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">stdin</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">stdout</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">stderr</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pipe</span> <span class="o">=</span> <span class="n">pipe</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_cancelled</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_tasks</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_results</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_capturing</span> <span class="o">=</span> <span class="n">capturing</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_encoding</span> <span class="o">=</span> <span class="n">pipe</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">encoding</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Return name of the pipeline.&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">pipe</span><span class="o">.</span><span class="n">name</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pipe</span><span class="o">.</span><span class="n">name</span>
 
     <span class="k">def</span> <span class="nf">result</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Return `Result` object for PipeRunner.&quot;</span>
-        <span class="k">return</span> <span class="n">make_result</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pipe</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cancelled</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">make_result</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_pipe</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_results</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cancelled</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">add_task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coro</span><span class="p">,</span> <span class="n">tag</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="s2">&quot;Add a background task.&quot;</span>
@@ -862,23 +900,23 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="n">task_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
         <span class="n">task</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="n">coro</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">task_name</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">task</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_tasks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">task</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">task</span>
 
     <span class="nd">@log_method</span><span class="p">(</span><span class="n">LOG_DETAIL</span><span class="p">)</span>
     <span class="k">async</span> <span class="k">def</span> <span class="nf">_wait</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">kill</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="s2">&quot;Wait for pipeline to finish.&quot;</span>
-        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="ow">is</span> <span class="kc">None</span>
-        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">_results</span> <span class="ow">is</span> <span class="kc">None</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tasks</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
 
         <span class="k">if</span> <span class="n">kill</span><span class="p">:</span>
             <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;PipeRunner.wait killing pipe </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
-            <span class="k">for</span> <span class="n">task</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">task</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tasks</span><span class="p">:</span>
                 <span class="n">task</span><span class="o">.</span><span class="n">cancel</span><span class="p">()</span>
 
-        <span class="n">cancelled</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="o">=</span> <span class="k">await</span> <span class="n">harvest_results</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">,</span> <span class="n">trustee</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+        <span class="n">cancelled</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_results</span> <span class="o">=</span> <span class="k">await</span> <span class="n">harvest_results</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">_tasks</span><span class="p">,</span> <span class="n">trustee</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">cancelled</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">cancelled</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_cancelled</span> <span class="o">=</span> <span class="kc">True</span>
 
     <span class="nd">@log_method</span><span class="p">(</span><span class="n">LOG_ENTER</span><span class="p">)</span>
     <span class="k">async</span> <span class="k">def</span> <span class="fm">__aenter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -888,7 +926,7 @@
         <span class="k">except</span> <span class="p">(</span><span class="ne">Exception</span><span class="p">,</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">CancelledError</span><span class="p">)</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>
             <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;PipeRunner enter </span><span class="si">%r</span><span class="s2"> ex=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="n">ex</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">_is_cancelled</span><span class="p">(</span><span class="n">ex</span><span class="p">):</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">cancelled</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_cancelled</span> <span class="o">=</span> <span class="kc">True</span>
             <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wait</span><span class="p">(</span><span class="n">kill</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
             <span class="k">raise</span>
 
@@ -900,7 +938,7 @@
             <span class="n">suppress</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_finish</span><span class="p">(</span><span class="n">exc_value</span><span class="p">)</span>
         <span class="k">except</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">CancelledError</span><span class="p">:</span>
             <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;PipeRunner cancelled inside _finish </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">cancelled</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_cancelled</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="k">return</span> <span class="n">suppress</span>
 
     <span class="nd">@log_method</span><span class="p">(</span><span class="n">LOG_DETAIL</span><span class="p">)</span>
@@ -908,9 +946,9 @@
         <span class="s2">&quot;Wait for pipeline to exit and handle cancellation.&quot;</span>
         <span class="k">if</span> <span class="n">exc_value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">_is_cancelled</span><span class="p">(</span><span class="n">exc_value</span><span class="p">):</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">cancelled</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_cancelled</span> <span class="o">=</span> <span class="kc">True</span>
             <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wait</span><span class="p">(</span><span class="n">kill</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">cancelled</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cancelled</span>
 
         <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wait</span><span class="p">()</span>
 
@@ -926,7 +964,7 @@
 
             <span class="n">cmds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_setup_pipeline</span><span class="p">(</span><span class="n">open_fds</span><span class="p">)</span>
 
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">capturing</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_capturing</span><span class="p">:</span>
                 <span class="n">stdin</span><span class="p">,</span> <span class="n">stdout</span><span class="p">,</span> <span class="n">stderr</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_setup_capturing</span><span class="p">(</span><span class="n">cmds</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">for</span> <span class="n">cmd</span> <span class="ow">in</span> <span class="n">cmds</span><span class="p">:</span>
@@ -949,7 +987,7 @@
 <span class="sd">        Each created open file descriptor is added to `open_fds` so it can</span>
 <span class="sd">        be closed if there&#39;s an exception later.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">cmds</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pipe</span><span class="o">.</span><span class="n">commands</span><span class="p">)</span>
+        <span class="n">cmds</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_pipe</span><span class="o">.</span><span class="n">commands</span><span class="p">)</span>
 
         <span class="n">cmd_count</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">cmds</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">cmd_count</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
@@ -996,11 +1034,11 @@
     <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Return string representation of PipeRunner.&quot;</span>
         <span class="n">cancelled_info</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cancelled</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cancelled</span><span class="p">:</span>
             <span class="n">cancelled_info</span> <span class="o">=</span> <span class="s2">&quot; cancelled&quot;</span>
         <span class="n">result_info</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">:</span>
-            <span class="n">result_info</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot; results=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="si">!r}</span><span class="s2">&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_results</span><span class="p">:</span>
+            <span class="n">result_info</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot; results=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_results</span><span class="si">!r}</span><span class="s2">&quot;</span>
         <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;&lt;PipeRunner </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">!r}{</span><span class="n">cancelled_info</span><span class="si">}{</span><span class="n">result_info</span><span class="si">}</span><span class="s2">&gt;&quot;</span>
 
     <span class="k">async</span> <span class="k">def</span> <span class="nf">_readlines</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -1010,7 +1048,7 @@
 
         <span class="n">stream</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stdout</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">stderr</span>
         <span class="k">if</span> <span class="n">stream</span><span class="p">:</span>
-            <span class="k">async</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">redir</span><span class="o">.</span><span class="n">read_lines</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoding</span><span class="p">):</span>
+            <span class="k">async</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">redir</span><span class="o">.</span><span class="n">read_lines</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_encoding</span><span class="p">):</span>
                 <span class="k">yield</span> <span class="n">line</span>
 
     <span class="k">def</span> <span class="fm">__aiter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -1082,49 +1120,60 @@
 <span class="sd">    ```</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
+    <span class="n">stdin</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="s2">&quot;Process standard input.&quot;</span>
+
+    <span class="n">stdout</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="s2">&quot;Process standard output.&quot;</span>
+
+    <span class="n">stderr</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="s2">&quot;Process standard error.&quot;</span>
+
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">command</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">options</span> <span class="o">=</span> <span class="n">_RunOptions</span><span class="p">(</span><span class="n">command</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">cancelled</span> <span class="o">=</span> <span class="kc">False</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">proc</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">stdin</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">stdout</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">stderr</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_options</span> <span class="o">=</span> <span class="n">_RunOptions</span><span class="p">(</span><span class="n">command</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_cancelled</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_tasks</span> <span class="o">=</span> <span class="p">[]</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="s2">&quot;Return name of process to run.&quot;</span>
+        <span class="s2">&quot;Return name of process being run.&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">command</span><span class="o">.</span><span class="n">name</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">command</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Return the command being run.&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">command</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="o">.</span><span class="n">command</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">pid</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Return the command&#39;s process ID.&quot;</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">None</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">pid</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">pid</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">cancelled</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;Return True if the command was cancelled.&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cancelled</span>
 
     <span class="k">def</span> <span class="nf">result</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_bytes</span><span class="o">=</span><span class="sa">b</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
         <span class="s2">&quot;Check process exit code and raise a ResultError if necessary.&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="p">:</span>
-            <span class="n">code</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">returncode</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="p">:</span>
+            <span class="n">code</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">returncode</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="c1"># The process was cancelled before starting.</span>
-            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">cancelled</span>
+            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cancelled</span>
             <span class="n">code</span> <span class="o">=</span> <span class="n">_UNLAUNCHED_EXIT_CODE</span>
 
         <span class="n">result</span> <span class="o">=</span> <span class="n">Result</span><span class="p">(</span>
             <span class="n">output_bytes</span><span class="p">,</span>
             <span class="n">code</span><span class="p">,</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">cancelled</span><span class="p">,</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">encoding</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_cancelled</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="o">.</span><span class="n">encoding</span><span class="p">,</span>
         <span class="p">)</span>
 
-        <span class="k">return</span> <span class="n">make_result</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">command</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cancelled</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">make_result</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">command</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cancelled</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">add_task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coro</span><span class="p">,</span> <span class="n">tag</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="s2">&quot;Add a background task.&quot;</span>
@@ -1133,28 +1182,28 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="n">task_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
         <span class="n">task</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="n">coro</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">task_name</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">task</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_tasks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">task</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">task</span>
 
     <span class="k">def</span> <span class="nf">_is_bsd_pty</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Return true if we&#39;re running a pty on BSD.&quot;</span>
-        <span class="k">return</span> <span class="n">_BSD</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">pty_fds</span>
+        <span class="k">return</span> <span class="n">_BSD</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="o">.</span><span class="n">pty_fds</span>
 
     <span class="nd">@log_method</span><span class="p">(</span><span class="n">LOG_DETAIL</span><span class="p">)</span>
     <span class="k">async</span> <span class="k">def</span> <span class="nf">_wait</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Normal wait for background I/O tasks and process to finish.&quot;</span>
-        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span>
 
         <span class="k">try</span><span class="p">:</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">:</span>
-                <span class="k">await</span> <span class="n">harvest</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">,</span> <span class="n">trustee</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tasks</span><span class="p">:</span>
+                <span class="k">await</span> <span class="n">harvest</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">_tasks</span><span class="p">,</span> <span class="n">trustee</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_bsd_pty</span><span class="p">():</span>
                 <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_waiter</span><span class="p">()</span>
 
         <span class="k">except</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">CancelledError</span><span class="p">:</span>
             <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Runner.wait cancelled </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">cancelled</span> <span class="o">=</span> <span class="kc">True</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>  <span class="c1"># all tasks were cancelled</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_cancelled</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_tasks</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>  <span class="c1"># all tasks were cancelled</span>
             <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kill</span><span class="p">()</span>
 
     <span class="nd">@log_method</span><span class="p">(</span><span class="n">LOG_DETAIL</span><span class="p">)</span>
@@ -1162,11 +1211,11 @@
         <span class="s2">&quot;Manually poll `waitpid` until process finishes.&quot;</span>
         <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_bsd_pty</span><span class="p">()</span>
         <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
-            <span class="n">status</span> <span class="o">=</span> <span class="n">wait_pid</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">pid</span><span class="p">)</span>
+            <span class="n">status</span> <span class="o">=</span> <span class="n">wait_pid</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">pid</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">status</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="c1"># pylint: disable=protected-access</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">_transport</span><span class="o">.</span><span class="n">_returncode</span> <span class="o">=</span> <span class="n">status</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">_transport</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">returncode</span> <span class="o">=</span> <span class="n">status</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">_transport</span><span class="o">.</span><span class="n">_returncode</span> <span class="o">=</span> <span class="n">status</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">_transport</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">returncode</span> <span class="o">=</span> <span class="n">status</span>
                 <span class="k">break</span>
 
             <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.025</span><span class="p">)</span>
@@ -1174,26 +1223,26 @@
     <span class="nd">@log_method</span><span class="p">(</span><span class="n">LOG_DETAIL</span><span class="p">)</span>
     <span class="k">async</span> <span class="k">def</span> <span class="nf">_kill</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Kill process and wait for it to finish.&quot;</span>
-        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span>
 
         <span class="n">cancel_timeout</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">command</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">cancel_timeout</span>
         <span class="n">cancel_signal</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">command</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">cancel_signal</span>
 
         <span class="k">try</span><span class="p">:</span>
             <span class="c1"># If not already done, send cancel signal.</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">returncode</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">returncode</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_send_signal</span><span class="p">(</span><span class="n">cancel_signal</span><span class="p">)</span>
 
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">:</span>
-                <span class="k">await</span> <span class="n">harvest</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">cancel_timeout</span><span class="p">,</span> <span class="n">trustee</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tasks</span><span class="p">:</span>
+                <span class="k">await</span> <span class="n">harvest</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">_tasks</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">cancel_timeout</span><span class="p">,</span> <span class="n">trustee</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
 
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">returncode</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">returncode</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="k">await</span> <span class="n">harvest</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_waiter</span><span class="p">(),</span> <span class="n">timeout</span><span class="o">=</span><span class="n">cancel_timeout</span><span class="p">,</span> <span class="n">trustee</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
 
         <span class="k">except</span> <span class="p">(</span><span class="n">asyncio</span><span class="o">.</span><span class="n">CancelledError</span><span class="p">,</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">TimeoutError</span><span class="p">)</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>
             <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Runner.kill </span><span class="si">%r</span><span class="s2"> (ex)=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="n">ex</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">_is_cancelled</span><span class="p">(</span><span class="n">ex</span><span class="p">):</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">cancelled</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_cancelled</span> <span class="o">=</span> <span class="kc">True</span>
             <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kill_wait</span><span class="p">()</span>
 
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>
@@ -1206,25 +1255,25 @@
 
         <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Runner.signal </span><span class="si">%r</span><span class="s2"> signal=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="n">sig</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">sig</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">kill</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">kill</span><span class="p">()</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">send_signal</span><span class="p">(</span><span class="n">sig</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">send_signal</span><span class="p">(</span><span class="n">sig</span><span class="p">)</span>
 
     <span class="nd">@log_method</span><span class="p">(</span><span class="n">LOG_DETAIL</span><span class="p">)</span>
     <span class="k">async</span> <span class="k">def</span> <span class="nf">_kill_wait</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Wait for killed process to exit.&quot;</span>
-        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span>
 
         <span class="c1"># Check if process is already done.</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">returncode</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">returncode</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">return</span>
 
         <span class="k">try</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_send_signal</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
             <span class="k">await</span> <span class="n">harvest</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_waiter</span><span class="p">(),</span> <span class="n">timeout</span><span class="o">=</span><span class="n">_KILL_TIMEOUT</span><span class="p">,</span> <span class="n">trustee</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
         <span class="k">except</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">TimeoutError</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>
-            <span class="n">LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%r</span><span class="s2"> failed to kill process </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="p">)</span>
-            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unable to kill process </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">ex</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%r</span><span class="s2"> failed to kill process </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unable to kill process </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">ex</span>
 
     <span class="nd">@log_method</span><span class="p">(</span><span class="n">LOG_ENTER</span><span class="p">,</span> <span class="n">_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="k">async</span> <span class="k">def</span> <span class="fm">__aenter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -1232,24 +1281,24 @@
         <span class="k">try</span><span class="p">:</span>
             <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_start</span><span class="p">()</span>
         <span class="k">finally</span><span class="p">:</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cancelled</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">command</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">incomplete_result</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cancelled</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">command</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">incomplete_result</span><span class="p">:</span>
                 <span class="c1"># Raises ResultError instead of CancelledError.</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">result</span><span class="p">()</span>
 
     <span class="nd">@log_method</span><span class="p">(</span><span class="n">LOG_DETAIL</span><span class="p">)</span>
     <span class="k">async</span> <span class="k">def</span> <span class="nf">_start</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Set up redirections and launch subprocess.&quot;</span>
-        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span> <span class="ow">is</span> <span class="kc">None</span>
-        <span class="k">assert</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span> <span class="ow">is</span> <span class="kc">None</span>
+        <span class="k">assert</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tasks</span>
 
         <span class="k">try</span><span class="p">:</span>
             <span class="c1"># Set up subprocess arguments and launch subprocess.</span>
-            <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span> <span class="k">as</span> <span class="n">opts</span><span class="p">:</span>
+            <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_options</span> <span class="k">as</span> <span class="n">opts</span><span class="p">:</span>
                 <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_subprocess_spawn</span><span class="p">(</span><span class="n">opts</span><span class="p">)</span>
 
-            <span class="n">stdin</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">stdin</span>
-            <span class="n">stdout</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">stdout</span>
-            <span class="n">stderr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">stderr</span>
+            <span class="n">stdin</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">stdin</span>
+            <span class="n">stdout</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">stdout</span>
+            <span class="n">stderr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">stderr</span>
 
             <span class="c1"># Assign pty streams.</span>
             <span class="k">if</span> <span class="n">opts</span><span class="o">.</span><span class="n">pty_fds</span><span class="p">:</span>
@@ -1272,8 +1321,8 @@
         <span class="k">except</span> <span class="p">(</span><span class="ne">Exception</span><span class="p">,</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">CancelledError</span><span class="p">)</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>
             <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Runner._start </span><span class="si">%r</span><span class="s2"> ex=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="n">ex</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">_is_cancelled</span><span class="p">(</span><span class="n">ex</span><span class="p">):</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">cancelled</span> <span class="o">=</span> <span class="kc">True</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_cancelled</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="p">:</span>
                 <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kill</span><span class="p">()</span>
             <span class="k">raise</span>
 
@@ -1316,7 +1365,7 @@
         <span class="s2">&quot;Start the subprocess and assign to `self.proc`.&quot;</span>
         <span class="k">with</span> <span class="n">log_timer</span><span class="p">(</span><span class="s2">&quot;asyncio.create_subprocess_exec&quot;</span><span class="p">):</span>
             <span class="n">sys</span><span class="o">.</span><span class="n">audit</span><span class="p">(</span><span class="n">AUDIT_EVENT_SUBPROCESS_SPAWN</span><span class="p">,</span> <span class="n">opts</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">proc</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_subprocess_exec</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_subprocess_exec</span><span class="p">(</span>
                 <span class="o">*</span><span class="n">opts</span><span class="o">.</span><span class="n">args</span><span class="p">,</span>
                 <span class="o">**</span><span class="n">opts</span><span class="o">.</span><span class="n">kwd_args</span><span class="p">,</span>
             <span class="p">)</span>
@@ -1327,7 +1376,7 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_bsd_pty</span><span class="p">():</span>
             <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wait_pid</span><span class="p">()</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">_setup_input_source</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stream</span><span class="p">,</span> <span class="n">opts</span><span class="p">):</span>
         <span class="s2">&quot;Set up a task to read from custom input source.&quot;</span>
@@ -1384,20 +1433,20 @@
             <span class="n">suppress</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_finish</span><span class="p">(</span><span class="n">exc_value</span><span class="p">)</span>
         <span class="k">except</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">CancelledError</span><span class="p">:</span>
             <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Runner cancelled inside _finish </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">cancelled</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_cancelled</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="k">return</span> <span class="n">suppress</span>
 
     <span class="nd">@log_method</span><span class="p">(</span><span class="n">LOG_DETAIL</span><span class="p">)</span>
     <span class="k">async</span> <span class="k">def</span> <span class="nf">_finish</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exc_value</span><span class="p">):</span>
         <span class="s2">&quot;Finish the run. Return True only if `exc_value` should be suppressed.&quot;</span>
-        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span>
 
         <span class="k">try</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">exc_value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">_is_cancelled</span><span class="p">(</span><span class="n">exc_value</span><span class="p">):</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">cancelled</span> <span class="o">=</span> <span class="kc">True</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_cancelled</span> <span class="o">=</span> <span class="kc">True</span>
                 <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kill</span><span class="p">()</span>
-                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">cancelled</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cancelled</span>
 
             <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wait</span><span class="p">()</span>
             <span class="k">return</span> <span class="kc">False</span>
@@ -1408,46 +1457,46 @@
     <span class="nd">@log_method</span><span class="p">(</span><span class="n">LOG_DETAIL</span><span class="p">)</span>
     <span class="k">async</span> <span class="k">def</span> <span class="nf">_close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Make sure that our resources are properly closed.&quot;</span>
-        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span>
 
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">pty_fds</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">pty_fds</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="o">.</span><span class="n">pty_fds</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="o">.</span><span class="n">pty_fds</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 
         <span class="c1"># _close can be called when unwinding exceptions. We need to handle</span>
         <span class="c1"># the case that the process has not exited yet. Remember to close the</span>
         <span class="c1"># transport.</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">returncode</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">LOGGER</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;Runner._close process still running </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">_transport</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>  <span class="c1"># pylint: disable=protected-access</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">returncode</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;Runner._close process still running </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">_transport</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>  <span class="c1"># pylint: disable=protected-access</span>
             <span class="k">return</span>
 
         <span class="c1"># asyncio child watcher artifact.</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">returncode</span> <span class="o">==</span> <span class="n">_FLAKY_EXIT_CODE</span><span class="p">:</span>
-            <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Runner._close exit code=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">returncode</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">returncode</span> <span class="o">==</span> <span class="n">_FLAKY_EXIT_CODE</span><span class="p">:</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Runner._close exit code=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">returncode</span><span class="p">)</span>
 
         <span class="k">try</span><span class="p">:</span>
             <span class="c1"># Make sure the transport is closed (for asyncio and uvloop).</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">_transport</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>  <span class="c1"># pylint: disable=protected-access</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">_transport</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>  <span class="c1"># pylint: disable=protected-access</span>
 
             <span class="c1"># Make sure that original stdin is properly closed. `wait_closed`</span>
             <span class="c1"># will raise a BrokenPipeError if not all input was properly written.</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">stdin</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">stdin</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
                 <span class="k">await</span> <span class="n">harvest</span><span class="p">(</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">wait_closed</span><span class="p">(),</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">wait_closed</span><span class="p">(),</span>
                     <span class="n">timeout</span><span class="o">=</span><span class="n">_CLOSE_TIMEOUT</span><span class="p">,</span>
                     <span class="n">cancel_finish</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># finish `wait_closed` if cancelled</span>
                     <span class="n">trustee</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span>
                 <span class="p">)</span>
 
         <span class="k">except</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">TimeoutError</span><span class="p">:</span>
-            <span class="n">LOGGER</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;Runner._close </span><span class="si">%r</span><span class="s2"> timeout stdin=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">stdin</span><span class="p">)</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;Runner._close </span><span class="si">%r</span><span class="s2"> timeout stdin=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">stdin</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Return string representation of Runner.&quot;</span>
-        <span class="n">cancelled</span> <span class="o">=</span> <span class="s2">&quot; cancelled&quot;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cancelled</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="p">:</span>
-            <span class="n">procinfo</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot; pid=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">pid</span><span class="si">}</span><span class="s2"> exit_code=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">returncode</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="n">cancelled</span> <span class="o">=</span> <span class="s2">&quot; cancelled&quot;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cancelled</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="p">:</span>
+            <span class="n">procinfo</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot; pid=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">pid</span><span class="si">}</span><span class="s2"> exit_code=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">returncode</span><span class="si">}</span><span class="s2">&quot;</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">procinfo</span> <span class="o">=</span> <span class="s2">&quot; pid=None&quot;</span>
         <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;&lt;Runner </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">!r}{</span><span class="n">cancelled</span><span class="si">}{</span><span class="n">procinfo</span><span class="si">}</span><span class="s2">&gt;&quot;</span>
@@ -1459,7 +1508,7 @@
 
         <span class="n">stream</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stdout</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">stderr</span>
         <span class="k">if</span> <span class="n">stream</span><span class="p">:</span>
-            <span class="k">async</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">redir</span><span class="o">.</span><span class="n">read_lines</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">encoding</span><span class="p">):</span>
+            <span class="k">async</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">redir</span><span class="o">.</span><span class="n">read_lines</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="o">.</span><span class="n">encoding</span><span class="p">):</span>
                 <span class="k">yield</span> <span class="n">line</span>
 
     <span class="k">def</span> <span class="fm">__aiter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -1511,18 +1560,48 @@ result = run.result()
                 <details>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">command</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">options</span> <span class="o">=</span> <span class="n">_RunOptions</span><span class="p">(</span><span class="n">command</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">cancelled</span> <span class="o">=</span> <span class="kc">False</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">proc</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">stdin</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">stdout</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">stderr</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_options</span> <span class="o">=</span> <span class="n">_RunOptions</span><span class="p">(</span><span class="n">command</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_cancelled</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_tasks</span> <span class="o">=</span> <span class="p">[]</span>
 </pre></div>
 
         </details>
 
     
+
+                            </div>
+                            <div id="Runner.stdin" class="classattr">
+                                            <div class="attr variable"><a class="headerlink" href="#Runner.stdin">#&nbsp;&nbsp</a>
+
+        <span class="name">stdin</span><span class="default_value"> = None</span>
+    </div>
+
+            <div class="docstring"><p>Process standard input.</p>
+</div>
+
+
+                            </div>
+                            <div id="Runner.stdout" class="classattr">
+                                            <div class="attr variable"><a class="headerlink" href="#Runner.stdout">#&nbsp;&nbsp</a>
+
+        <span class="name">stdout</span><span class="default_value"> = None</span>
+    </div>
+
+            <div class="docstring"><p>Process standard output.</p>
+</div>
+
+
+                            </div>
+                            <div id="Runner.stderr" class="classattr">
+                                            <div class="attr variable"><a class="headerlink" href="#Runner.stderr">#&nbsp;&nbsp</a>
+
+        <span class="name">stderr</span><span class="default_value"> = None</span>
+    </div>
+
+            <div class="docstring"><p>Process standard error.</p>
+</div>
+
 
                             </div>
                             <div id="Runner.name" class="classattr">
@@ -1531,7 +1610,7 @@ result = run.result()
         <span class="name">name</span>
     </div>
 
-            <div class="docstring"><p>Return name of process to run.</p>
+            <div class="docstring"><p>Return name of process being run.</p>
 </div>
 
 
@@ -1558,6 +1637,17 @@ result = run.result()
 
 
                             </div>
+                            <div id="Runner.cancelled" class="classattr">
+                                            <div class="attr variable"><a class="headerlink" href="#Runner.cancelled">#&nbsp;&nbsp</a>
+
+        <span class="name">cancelled</span>
+    </div>
+
+            <div class="docstring"><p>Return True if the command was cancelled.</p>
+</div>
+
+
+                            </div>
                             <div id="Runner.result" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#Runner.result">#&nbsp;&nbsp</a>
 
@@ -1570,21 +1660,21 @@ result = run.result()
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">result</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_bytes</span><span class="o">=</span><span class="sa">b</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
         <span class="s2">&quot;Check process exit code and raise a ResultError if necessary.&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="p">:</span>
-            <span class="n">code</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">returncode</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="p">:</span>
+            <span class="n">code</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">returncode</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="c1"># The process was cancelled before starting.</span>
-            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">cancelled</span>
+            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cancelled</span>
             <span class="n">code</span> <span class="o">=</span> <span class="n">_UNLAUNCHED_EXIT_CODE</span>
 
         <span class="n">result</span> <span class="o">=</span> <span class="n">Result</span><span class="p">(</span>
             <span class="n">output_bytes</span><span class="p">,</span>
             <span class="n">code</span><span class="p">,</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">cancelled</span><span class="p">,</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">encoding</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_cancelled</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="o">.</span><span class="n">encoding</span><span class="p">,</span>
         <span class="p">)</span>
 
-        <span class="k">return</span> <span class="n">make_result</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">command</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cancelled</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">make_result</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">command</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cancelled</span><span class="p">)</span>
 </pre></div>
 
         </details>
@@ -1611,7 +1701,7 @@ result = run.result()
         <span class="k">else</span><span class="p">:</span>
             <span class="n">task_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
         <span class="n">task</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="n">coro</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">task_name</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">task</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_tasks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">task</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">task</span>
 </pre></div>
 
@@ -1686,30 +1776,36 @@ result = run.result()
 <span class="sd">    ```</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
+    <span class="n">stdin</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="s2">&quot;Pipeline standard input.&quot;</span>
+
+    <span class="n">stdout</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="s2">&quot;Pipeline standard output.&quot;</span>
+
+    <span class="n">stderr</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="s2">&quot;Pipeline standard error.&quot;</span>
+
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pipe</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">capturing</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;`capturing=True` indicates we are within an `async with` block and</span>
 <span class="sd">        client needs to access `stdin` and `stderr` streams.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">pipe</span><span class="o">.</span><span class="n">commands</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">pipe</span> <span class="o">=</span> <span class="n">pipe</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">cancelled</span> <span class="o">=</span> <span class="kc">False</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">capturing</span> <span class="o">=</span> <span class="n">capturing</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">encoding</span> <span class="o">=</span> <span class="n">pipe</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">encoding</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">stdin</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">stdout</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">stderr</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pipe</span> <span class="o">=</span> <span class="n">pipe</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_cancelled</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_tasks</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_results</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_capturing</span> <span class="o">=</span> <span class="n">capturing</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_encoding</span> <span class="o">=</span> <span class="n">pipe</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">encoding</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Return name of the pipeline.&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">pipe</span><span class="o">.</span><span class="n">name</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pipe</span><span class="o">.</span><span class="n">name</span>
 
     <span class="k">def</span> <span class="nf">result</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Return `Result` object for PipeRunner.&quot;</span>
-        <span class="k">return</span> <span class="n">make_result</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pipe</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cancelled</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">make_result</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_pipe</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_results</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cancelled</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">add_task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coro</span><span class="p">,</span> <span class="n">tag</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="s2">&quot;Add a background task.&quot;</span>
@@ -1718,23 +1814,23 @@ result = run.result()
         <span class="k">else</span><span class="p">:</span>
             <span class="n">task_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
         <span class="n">task</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="n">coro</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">task_name</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">task</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_tasks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">task</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">task</span>
 
     <span class="nd">@log_method</span><span class="p">(</span><span class="n">LOG_DETAIL</span><span class="p">)</span>
     <span class="k">async</span> <span class="k">def</span> <span class="nf">_wait</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">kill</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="s2">&quot;Wait for pipeline to finish.&quot;</span>
-        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="ow">is</span> <span class="kc">None</span>
-        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">_results</span> <span class="ow">is</span> <span class="kc">None</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tasks</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
 
         <span class="k">if</span> <span class="n">kill</span><span class="p">:</span>
             <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;PipeRunner.wait killing pipe </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
-            <span class="k">for</span> <span class="n">task</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">task</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tasks</span><span class="p">:</span>
                 <span class="n">task</span><span class="o">.</span><span class="n">cancel</span><span class="p">()</span>
 
-        <span class="n">cancelled</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="o">=</span> <span class="k">await</span> <span class="n">harvest_results</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="p">,</span> <span class="n">trustee</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+        <span class="n">cancelled</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_results</span> <span class="o">=</span> <span class="k">await</span> <span class="n">harvest_results</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">_tasks</span><span class="p">,</span> <span class="n">trustee</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">cancelled</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">cancelled</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_cancelled</span> <span class="o">=</span> <span class="kc">True</span>
 
     <span class="nd">@log_method</span><span class="p">(</span><span class="n">LOG_ENTER</span><span class="p">)</span>
     <span class="k">async</span> <span class="k">def</span> <span class="fm">__aenter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -1744,7 +1840,7 @@ result = run.result()
         <span class="k">except</span> <span class="p">(</span><span class="ne">Exception</span><span class="p">,</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">CancelledError</span><span class="p">)</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>
             <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;PipeRunner enter </span><span class="si">%r</span><span class="s2"> ex=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="n">ex</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">_is_cancelled</span><span class="p">(</span><span class="n">ex</span><span class="p">):</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">cancelled</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_cancelled</span> <span class="o">=</span> <span class="kc">True</span>
             <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wait</span><span class="p">(</span><span class="n">kill</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
             <span class="k">raise</span>
 
@@ -1756,7 +1852,7 @@ result = run.result()
             <span class="n">suppress</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_finish</span><span class="p">(</span><span class="n">exc_value</span><span class="p">)</span>
         <span class="k">except</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">CancelledError</span><span class="p">:</span>
             <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;PipeRunner cancelled inside _finish </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">cancelled</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_cancelled</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="k">return</span> <span class="n">suppress</span>
 
     <span class="nd">@log_method</span><span class="p">(</span><span class="n">LOG_DETAIL</span><span class="p">)</span>
@@ -1764,9 +1860,9 @@ result = run.result()
         <span class="s2">&quot;Wait for pipeline to exit and handle cancellation.&quot;</span>
         <span class="k">if</span> <span class="n">exc_value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">_is_cancelled</span><span class="p">(</span><span class="n">exc_value</span><span class="p">):</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">cancelled</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_cancelled</span> <span class="o">=</span> <span class="kc">True</span>
             <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wait</span><span class="p">(</span><span class="n">kill</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">cancelled</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cancelled</span>
 
         <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wait</span><span class="p">()</span>
 
@@ -1782,7 +1878,7 @@ result = run.result()
 
             <span class="n">cmds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_setup_pipeline</span><span class="p">(</span><span class="n">open_fds</span><span class="p">)</span>
 
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">capturing</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_capturing</span><span class="p">:</span>
                 <span class="n">stdin</span><span class="p">,</span> <span class="n">stdout</span><span class="p">,</span> <span class="n">stderr</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_setup_capturing</span><span class="p">(</span><span class="n">cmds</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">for</span> <span class="n">cmd</span> <span class="ow">in</span> <span class="n">cmds</span><span class="p">:</span>
@@ -1805,7 +1901,7 @@ result = run.result()
 <span class="sd">        Each created open file descriptor is added to `open_fds` so it can</span>
 <span class="sd">        be closed if there&#39;s an exception later.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">cmds</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pipe</span><span class="o">.</span><span class="n">commands</span><span class="p">)</span>
+        <span class="n">cmds</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_pipe</span><span class="o">.</span><span class="n">commands</span><span class="p">)</span>
 
         <span class="n">cmd_count</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">cmds</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">cmd_count</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
@@ -1852,11 +1948,11 @@ result = run.result()
     <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Return string representation of PipeRunner.&quot;</span>
         <span class="n">cancelled_info</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cancelled</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cancelled</span><span class="p">:</span>
             <span class="n">cancelled_info</span> <span class="o">=</span> <span class="s2">&quot; cancelled&quot;</span>
         <span class="n">result_info</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">:</span>
-            <span class="n">result_info</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot; results=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="si">!r}</span><span class="s2">&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_results</span><span class="p">:</span>
+            <span class="n">result_info</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot; results=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_results</span><span class="si">!r}</span><span class="s2">&quot;</span>
         <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;&lt;PipeRunner </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">!r}{</span><span class="n">cancelled_info</span><span class="si">}{</span><span class="n">result_info</span><span class="si">}</span><span class="s2">&gt;&quot;</span>
 
     <span class="k">async</span> <span class="k">def</span> <span class="nf">_readlines</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -1866,7 +1962,7 @@ result = run.result()
 
         <span class="n">stream</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stdout</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">stderr</span>
         <span class="k">if</span> <span class="n">stream</span><span class="p">:</span>
-            <span class="k">async</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">redir</span><span class="o">.</span><span class="n">read_lines</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoding</span><span class="p">):</span>
+            <span class="k">async</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">redir</span><span class="o">.</span><span class="n">read_lines</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_encoding</span><span class="p">):</span>
                 <span class="k">yield</span> <span class="n">line</span>
 
     <span class="k">def</span> <span class="fm">__aiter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -1909,21 +2005,51 @@ result = run.result()
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">pipe</span><span class="o">.</span><span class="n">commands</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">pipe</span> <span class="o">=</span> <span class="n">pipe</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">cancelled</span> <span class="o">=</span> <span class="kc">False</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">capturing</span> <span class="o">=</span> <span class="n">capturing</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">encoding</span> <span class="o">=</span> <span class="n">pipe</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">encoding</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">stdin</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">stdout</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">stderr</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pipe</span> <span class="o">=</span> <span class="n">pipe</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_cancelled</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_tasks</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_results</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_capturing</span> <span class="o">=</span> <span class="n">capturing</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_encoding</span> <span class="o">=</span> <span class="n">pipe</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">encoding</span>
 </pre></div>
 
         </details>
 
             <div class="docstring"><p><code>capturing=True</code> indicates we are within an <code>async with</code> block and
-client needs to access <code>stdin</code> and <code>stderr</code> streams.</p>
+client needs to access <code><a href="#PipeRunner.stdin">stdin</a></code> and <code><a href="#PipeRunner.stderr">stderr</a></code> streams.</p>
+</div>
+
+
+                            </div>
+                            <div id="PipeRunner.stdin" class="classattr">
+                                            <div class="attr variable"><a class="headerlink" href="#PipeRunner.stdin">#&nbsp;&nbsp</a>
+
+        <span class="name">stdin</span><span class="default_value"> = None</span>
+    </div>
+
+            <div class="docstring"><p>Pipeline standard input.</p>
+</div>
+
+
+                            </div>
+                            <div id="PipeRunner.stdout" class="classattr">
+                                            <div class="attr variable"><a class="headerlink" href="#PipeRunner.stdout">#&nbsp;&nbsp</a>
+
+        <span class="name">stdout</span><span class="default_value"> = None</span>
+    </div>
+
+            <div class="docstring"><p>Pipeline standard output.</p>
+</div>
+
+
+                            </div>
+                            <div id="PipeRunner.stderr" class="classattr">
+                                            <div class="attr variable"><a class="headerlink" href="#PipeRunner.stderr">#&nbsp;&nbsp</a>
+
+        <span class="name">stderr</span><span class="default_value"> = None</span>
+    </div>
+
+            <div class="docstring"><p>Pipeline standard error.</p>
 </div>
 
 
@@ -1951,7 +2077,7 @@ client needs to access <code>stdin</code> and <code>stderr</code> streams.</p>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">result</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Return `Result` object for PipeRunner.&quot;</span>
-        <span class="k">return</span> <span class="n">make_result</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pipe</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cancelled</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">make_result</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_pipe</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_results</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cancelled</span><span class="p">)</span>
 </pre></div>
 
         </details>
@@ -1978,7 +2104,7 @@ client needs to access <code>stdin</code> and <code>stderr</code> streams.</p>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">task_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
         <span class="n">task</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="n">coro</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">task_name</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">tasks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">task</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_tasks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">task</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">task</span>
 </pre></div>
 
