@@ -271,23 +271,35 @@ bytearray(b'README.md\n')
 
 <h2 id="async-with-for">Async With &amp; For</h2>
 
-<p>You can use <code>async with</code> to interact with the process streams directly. You have to be careful; you
-are responsible for correctly reading and writing multiple streams at the same time.</p>
-
-<pre><code>&gt;&gt;&gt; async with pipe.run() as run:
-...   data = await run.stdout.readline()
-...   print(data)
-... 
-b'README.md\n'
-</code></pre>
-
 <p>You can loop over a command's output by using the context manager as an iterator.</p>
 
-<pre><code>&gt;&gt;&gt; async with pipe.run() as run:
+<pre><code>&gt;&gt;&gt; async with pipe as run:
 ...   async for line in run:
 ...     print(line.rstrip())
 ... 
 README.md
+</code></pre>
+
+<blockquote>
+  <p><span style="font-size:1.5em;">⚠️ </span> You can also acquire an async iterator directly from
+  the command or pipeline object. This is discouraged because you will have less control over the final
+  clean up of the command invocation than with a context manager.</p>
+</blockquote>
+
+<pre><code>&gt;&gt;&gt; async for line in pipe:   # Use caution!
+...   print(line.rstrip())
+... 
+README.md
+</code></pre>
+
+<p>You can use <code>async with</code> to interact with the process streams directly. You have to be careful; you
+are responsible for correctly reading and writing multiple streams at the same time.</p>
+
+<pre><code>&gt;&gt;&gt; async with pipe as run:
+...   data = await run.stdout.readline()
+...   print(data)
+... 
+b'README.md\n'
 </code></pre>
 
 <h2 id="incomplete-results">Incomplete Results</h2>
