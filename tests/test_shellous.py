@@ -735,3 +735,144 @@ async def test_redirect_to_arbitrary_tuple(sh):
     "Test redirection to an arbitrary tuple."
     with pytest.raises(TypeError, match="unsupported output type"):
         await (sh("echo") | (1, 2))
+
+
+async def test_command_context_manager_api(sh):
+    "Test running a command using its context manager."
+
+    async with sh("echo", "hello") as run:
+        out = await run.stdout.read()
+
+    assert out == b"hello\n"
+
+
+async def test_command_context_manager_api_reentrant(sh):
+    "Test running a command using its context manager."
+
+    cmd = sh("echo", "hello")
+    async with cmd as run1:
+        out1 = await run1.stdout.read()
+
+        # Re-enter context manager here for exact same command.
+        async with cmd as run2:
+            out2 = await run2.stdout.read()
+
+    assert out1 == out2 == b"hello\n"
+
+
+async def test_pipe_context_manager_api(sh):
+    "Test running a pipeline using its context manager."
+
+    async with sh("echo", "hello") | sh("cat") as run:
+        out = await run.stdout.read()
+
+    assert out == b"hello\n"
+
+
+async def test_pipe_context_manager_api_reentrant(sh):
+    "Test running a pipeline using its context manager."
+
+    cmd = sh("echo", "hello") | sh("cat")
+    async with cmd as run1:
+        out1 = await run1.stdout.read()
+
+        # Re-enter context manager here for exact same command.
+        async with cmd as run2:
+            out2 = await run2.stdout.read()
+
+    assert out1 == out2 == b"hello\n"
+
+
+async def test_command_iterator_api(echo_cmd):
+    "Test running a command's async iterator directly."
+
+    lines = [line.rstrip() async for line in echo_cmd("hello\n", "world")]
+    assert lines == ["hello", " world"]
+
+    # When the async iterator runs to completion, there is no problem with
+    # extra tasks hanging around.
+    assert len(asyncio.all_tasks()) == 1
+
+
+async def test_command_iterator_api_interrupted(echo_cmd):
+    "Test running a command's async iterator directly."
+
+    async def _test():
+        async for line in echo_cmd("hello\n", "cruel\n", "world\n"):
+            if "hello" in line:
+                return True
+        return False
+
+    assert await _test()
+
+    # An async iterator was interrupted. At this point, there are still
+    # tasks running related to the command invocation in _test. The tasks will
+    # be cleaned up when the `GeneratorExit` exception is propagated.
+    assert len(asyncio.all_tasks()) > 1
+    await asyncio.sleep(0)
+
+    # We still need to wait for the process to asynchrously exit...
+    await asyncio.sleep(0.1)
+
+
+def test_command_iterator_api_interrupted_sync(echo_cmd):
+    "Test running a command's async iterator directly."
+
+    async def _test():
+        async for line in echo_cmd("hello\n", "cruel\n", "world\n"):
+            if "hello" in line:
+                return True
+        return False
+
+    # asyncio.run() should do all clean up for interrupted async iterator.
+    result = asyncio.run(_test())
+    assert result
+
+
+async def test_pipe_iterator_api(echo_cmd, cat_cmd):
+    "Test running a command's async iterator directly."
+
+    cmd = echo_cmd("hello\n", "world") | cat_cmd()
+    lines = [line.rstrip() async for line in cmd]
+    assert lines == ["hello", " world"]
+
+    # When the async iterator runs to completion, there is no problem with
+    # extra tasks hanging around.
+    assert len(asyncio.all_tasks()) == 1
+
+
+async def test_pipe_iterator_api_interrupted(echo_cmd, cat_cmd):
+    "Test running a command's async iterator directly."
+
+    async def _test():
+        cmd = echo_cmd("hello\n", "cruel\n", "world\n") | cat_cmd()
+        async for line in cmd:
+            if "hello" in line:
+                return True
+        return False
+
+    assert await _test()
+
+    # An async iterator was interrupted. At this point, there are still
+    # tasks running related to the command invocation in _test. The tasks will
+    # be cleaned up when the `GeneratorExit` exception is propagated.
+    assert len(asyncio.all_tasks()) > 1
+    await asyncio.sleep(0)
+
+    # We still need to wait for the process to asynchrously exit...
+    await asyncio.sleep(0.1)
+
+
+def test_pipe_iterator_api_interrupted_sync(echo_cmd, cat_cmd):
+    "Test running a command's async iterator directly."
+
+    async def _test():
+        cmd = echo_cmd("hello\n", "cruel\n", "world\n") | cat_cmd()
+        async for line in cmd:
+            if "hello" in line:
+                return True
+        return False
+
+    # asyncio.run() should do all clean up for interrupted async iterator.
+    result = asyncio.run(_test())
+    assert result
