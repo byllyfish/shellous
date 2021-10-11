@@ -311,49 +311,60 @@ class Runner:
     ```
     """
 
+    stdin = None
+    "Process standard input."
+
+    stdout = None
+    "Process standard output."
+
+    stderr = None
+    "Process standard error."
+
     def __init__(self, command):
-        self.options = _RunOptions(command)
-        self.cancelled = False
-        self.proc = None
-        self.tasks = []
-        self.stdin = None
-        self.stdout = None
-        self.stderr = None
+        self._options = _RunOptions(command)
+        self._cancelled = False
+        self._proc = None
+        self._tasks = []
 
     @property
     def name(self):
-        "Return name of process to run."
+        "Return name of process being run."
         return self.command.name
 
     @property
     def command(self):
         "Return the command being run."
-        return self.options.command
+        return self._options.command
 
     @property
     def pid(self):
         "Return the command's process ID."
-        if not self.proc:
+        if not self._proc:
             return None
-        return self.proc.pid
+        return self._proc.pid
+
+    @property
+    def cancelled(self):
+        "Return True if the command was cancelled."
+        return self._cancelled
 
     def result(self, output_bytes=b""):
         "Check process exit code and raise a ResultError if necessary."
-        if self.proc:
-            code = self.proc.returncode
+        if self._proc:
+            code = self._proc.returncode
         else:
             # The process was cancelled before starting.
-            assert self.cancelled
+            assert self._cancelled
             code = _UNLAUNCHED_EXIT_CODE
 
         result = Result(
             output_bytes,
             code,
-            self.cancelled,
-            self.options.encoding,
+            self._cancelled,
+            self._options.encoding,
         )
 
-        return make_result(self.command, result, self.cancelled)
+        return make_result(self.command, result, self._cancelled)
 
     def add_task(self, coro, tag=None):
         "Add a background task."
@@ -362,28 +373,28 @@ class Runner:
         else:
             task_name = self.name
         task = asyncio.create_task(coro, name=task_name)
-        self.tasks.append(task)
+        self._tasks.append(task)
         return task
 
     def _is_bsd_pty(self):
         "Return true if we're running a pty on BSD."
-        return _BSD and self.options.pty_fds
+        return _BSD and self._options.pty_fds
 
     @log_method(LOG_DETAIL)
     async def _wait(self):
         "Normal wait for background I/O tasks and process to finish."
-        assert self.proc
+        assert self._proc
 
         try:
-            if self.tasks:
-                await harvest(*self.tasks, trustee=self)
+            if self._tasks:
+                await harvest(*self._tasks, trustee=self)
             if self._is_bsd_pty():
                 await self._waiter()
 
         except asyncio.CancelledError:
             LOGGER.info("Runner.wait cancelled %r", self)
-            self.cancelled = True
-            self.tasks.clear()  # all tasks were cancelled
+            self._cancelled = True
+            self._tasks.clear()  # all tasks were cancelled
             await self._kill()
 
     @log_method(LOG_DETAIL)
@@ -391,11 +402,11 @@ class Runner:
         "Manually poll `waitpid` until process finishes."
         assert self._is_bsd_pty()
         while True:
-            status = wait_pid(self.proc.pid)
+            status = wait_pid(self._proc.pid)
             if status is not None:
                 # pylint: disable=protected-access
-                self.proc._transport._returncode = status
-                self.proc._transport._proc.returncode = status
+                self._proc._transport._returncode = status
+                self._proc._transport._proc.returncode = status
                 break
 
             await asyncio.sleep(0.025)
@@ -403,26 +414,26 @@ class Runner:
     @log_method(LOG_DETAIL)
     async def _kill(self):
         "Kill process and wait for it to finish."
-        assert self.proc
+        assert self._proc
 
         cancel_timeout = self.command.options.cancel_timeout
         cancel_signal = self.command.options.cancel_signal
 
         try:
             # If not already done, send cancel signal.
-            if self.proc.returncode is None:
+            if self._proc.returncode is None:
                 self._send_signal(cancel_signal)
 
-            if self.tasks:
-                await harvest(*self.tasks, timeout=cancel_timeout, trustee=self)
+            if self._tasks:
+                await harvest(*self._tasks, timeout=cancel_timeout, trustee=self)
 
-            if self.proc.returncode is None:
+            if self._proc.returncode is None:
                 await harvest(self._waiter(), timeout=cancel_timeout, trustee=self)
 
         except (asyncio.CancelledError, asyncio.TimeoutError) as ex:
             LOGGER.warning("Runner.kill %r (ex)=%r", self, ex)
             if _is_cancelled(ex):
-                self.cancelled = True
+                self._cancelled = True
             await self._kill_wait()
 
         except Exception as ex:
@@ -435,25 +446,25 @@ class Runner:
 
         LOGGER.info("Runner.signal %r signal=%r", self, sig)
         if sig is None:
-            self.proc.kill()
+            self._proc.kill()
         else:
-            self.proc.send_signal(sig)
+            self._proc.send_signal(sig)
 
     @log_method(LOG_DETAIL)
     async def _kill_wait(self):
         "Wait for killed process to exit."
-        assert self.proc
+        assert self._proc
 
         # Check if process is already done.
-        if self.proc.returncode is not None:
+        if self._proc.returncode is not None:
             return
 
         try:
             self._send_signal(None)
             await harvest(self._waiter(), timeout=_KILL_TIMEOUT, trustee=self)
         except asyncio.TimeoutError as ex:
-            LOGGER.error("%r failed to kill process %r", self, self.proc)
-            raise RuntimeError(f"Unable to kill process {self.proc!r}") from ex
+            LOGGER.error("%r failed to kill process %r", self, self._proc)
+            raise RuntimeError(f"Unable to kill process {self._proc!r}") from ex
 
     @log_method(LOG_ENTER, _info=True)
     async def __aenter__(self):
@@ -461,24 +472,24 @@ class Runner:
         try:
             return await self._start()
         finally:
-            if self.cancelled and self.command.options.incomplete_result:
+            if self._cancelled and self.command.options.incomplete_result:
                 # Raises ResultError instead of CancelledError.
                 self.result()
 
     @log_method(LOG_DETAIL)
     async def _start(self):
         "Set up redirections and launch subprocess."
-        assert self.proc is None
-        assert not self.tasks
+        assert self._proc is None
+        assert not self._tasks
 
         try:
             # Set up subprocess arguments and launch subprocess.
-            with self.options as opts:
+            with self._options as opts:
                 await self._subprocess_spawn(opts)
 
-            stdin = self.proc.stdin
-            stdout = self.proc.stdout
-            stderr = self.proc.stderr
+            stdin = self._proc.stdin
+            stdout = self._proc.stdout
+            stderr = self._proc.stderr
 
             # Assign pty streams.
             if opts.pty_fds:
@@ -501,8 +512,8 @@ class Runner:
         except (Exception, asyncio.CancelledError) as ex:
             LOGGER.info("Runner._start %r ex=%r", self, ex)
             if _is_cancelled(ex):
-                self.cancelled = True
-            if self.proc:
+                self._cancelled = True
+            if self._proc:
                 await self._kill()
             raise
 
@@ -545,7 +556,7 @@ class Runner:
         "Start the subprocess and assign to `self.proc`."
         with log_timer("asyncio.create_subprocess_exec"):
             sys.audit(AUDIT_EVENT_SUBPROCESS_SPAWN, opts.args[0])
-            self.proc = await asyncio.create_subprocess_exec(
+            self._proc = await asyncio.create_subprocess_exec(
                 *opts.args,
                 **opts.kwd_args,
             )
@@ -556,7 +567,7 @@ class Runner:
         if self._is_bsd_pty():
             await self._wait_pid()
         else:
-            await self.proc.wait()
+            await self._proc.wait()
 
     def _setup_input_source(self, stream, opts):
         "Set up a task to read from custom input source."
@@ -613,20 +624,20 @@ class Runner:
             suppress = await self._finish(exc_value)
         except asyncio.CancelledError:
             LOGGER.info("Runner cancelled inside _finish %r", self)
-            self.cancelled = True
+            self._cancelled = True
         return suppress
 
     @log_method(LOG_DETAIL)
     async def _finish(self, exc_value):
         "Finish the run. Return True only if `exc_value` should be suppressed."
-        assert self.proc
+        assert self._proc
 
         try:
             if exc_value is not None:
                 if _is_cancelled(exc_value):
-                    self.cancelled = True
+                    self._cancelled = True
                 await self._kill()
-                return self.cancelled
+                return self._cancelled
 
             await self._wait()
             return False
@@ -637,46 +648,46 @@ class Runner:
     @log_method(LOG_DETAIL)
     async def _close(self):
         "Make sure that our resources are properly closed."
-        assert self.proc
+        assert self._proc
 
-        if self.options.pty_fds:
-            self.options.pty_fds.close()
+        if self._options.pty_fds:
+            self._options.pty_fds.close()
 
         # _close can be called when unwinding exceptions. We need to handle
         # the case that the process has not exited yet. Remember to close the
         # transport.
-        if self.proc.returncode is None:
-            LOGGER.critical("Runner._close process still running %r", self.proc)
-            self.proc._transport.close()  # pylint: disable=protected-access
+        if self._proc.returncode is None:
+            LOGGER.critical("Runner._close process still running %r", self._proc)
+            self._proc._transport.close()  # pylint: disable=protected-access
             return
 
         # asyncio child watcher artifact.
-        if self.proc.returncode == _FLAKY_EXIT_CODE:
-            LOGGER.warning("Runner._close exit code=%r", self.proc.returncode)
+        if self._proc.returncode == _FLAKY_EXIT_CODE:
+            LOGGER.warning("Runner._close exit code=%r", self._proc.returncode)
 
         try:
             # Make sure the transport is closed (for asyncio and uvloop).
-            self.proc._transport.close()  # pylint: disable=protected-access
+            self._proc._transport.close()  # pylint: disable=protected-access
 
             # Make sure that original stdin is properly closed. `wait_closed`
             # will raise a BrokenPipeError if not all input was properly written.
-            if self.proc.stdin is not None:
-                self.proc.stdin.close()
+            if self._proc.stdin is not None:
+                self._proc.stdin.close()
                 await harvest(
-                    self.proc.stdin.wait_closed(),
+                    self._proc.stdin.wait_closed(),
                     timeout=_CLOSE_TIMEOUT,
                     cancel_finish=True,  # finish `wait_closed` if cancelled
                     trustee=self,
                 )
 
         except asyncio.TimeoutError:
-            LOGGER.critical("Runner._close %r timeout stdin=%r", self, self.proc.stdin)
+            LOGGER.critical("Runner._close %r timeout stdin=%r", self, self._proc.stdin)
 
     def __repr__(self):
         "Return string representation of Runner."
-        cancelled = " cancelled" if self.cancelled else ""
-        if self.proc:
-            procinfo = f" pid={self.proc.pid} exit_code={self.proc.returncode}"
+        cancelled = " cancelled" if self._cancelled else ""
+        if self._proc:
+            procinfo = f" pid={self._proc.pid} exit_code={self._proc.returncode}"
         else:
             procinfo = " pid=None"
         return f"<Runner {self.name!r}{cancelled}{procinfo}>"
@@ -688,7 +699,7 @@ class Runner:
 
         stream = self.stdout or self.stderr
         if stream:
-            async for line in redir.read_lines(stream, self.options.encoding):
+            async for line in redir.read_lines(stream, self._options.encoding):
                 yield line
 
     def __aiter__(self):
@@ -729,30 +740,36 @@ class PipeRunner:  # pylint: disable=too-many-instance-attributes
     ```
     """
 
+    stdin = None
+    "Pipeline standard input."
+
+    stdout = None
+    "Pipeline standard output."
+
+    stderr = None
+    "Pipeline standard error."
+
     def __init__(self, pipe, *, capturing):
         """`capturing=True` indicates we are within an `async with` block and
         client needs to access `stdin` and `stderr` streams.
         """
         assert len(pipe.commands) > 1
 
-        self.pipe = pipe
-        self.cancelled = False
-        self.tasks = []
-        self.results = None
-        self.capturing = capturing
-        self.encoding = pipe.options.encoding
-        self.stdin = None
-        self.stdout = None
-        self.stderr = None
+        self._pipe = pipe
+        self._cancelled = False
+        self._tasks = []
+        self._results = None
+        self._capturing = capturing
+        self._encoding = pipe.options.encoding
 
     @property
     def name(self):
         "Return name of the pipeline."
-        return self.pipe.name
+        return self._pipe.name
 
     def result(self):
         "Return `Result` object for PipeRunner."
-        return make_result(self.pipe, self.results, self.cancelled)
+        return make_result(self._pipe, self._results, self._cancelled)
 
     def add_task(self, coro, tag=None):
         "Add a background task."
@@ -761,23 +778,23 @@ class PipeRunner:  # pylint: disable=too-many-instance-attributes
         else:
             task_name = self.name
         task = asyncio.create_task(coro, name=task_name)
-        self.tasks.append(task)
+        self._tasks.append(task)
         return task
 
     @log_method(LOG_DETAIL)
     async def _wait(self, *, kill=False):
         "Wait for pipeline to finish."
-        assert self.results is None
-        assert self.tasks is not None
+        assert self._results is None
+        assert self._tasks is not None
 
         if kill:
             LOGGER.info("PipeRunner.wait killing pipe %r", self)
-            for task in self.tasks:
+            for task in self._tasks:
                 task.cancel()
 
-        cancelled, self.results = await harvest_results(*self.tasks, trustee=self)
+        cancelled, self._results = await harvest_results(*self._tasks, trustee=self)
         if cancelled:
-            self.cancelled = True
+            self._cancelled = True
 
     @log_method(LOG_ENTER)
     async def __aenter__(self):
@@ -787,7 +804,7 @@ class PipeRunner:  # pylint: disable=too-many-instance-attributes
         except (Exception, asyncio.CancelledError) as ex:
             LOGGER.warning("PipeRunner enter %r ex=%r", self, ex)
             if _is_cancelled(ex):
-                self.cancelled = True
+                self._cancelled = True
             await self._wait(kill=True)
             raise
 
@@ -799,7 +816,7 @@ class PipeRunner:  # pylint: disable=too-many-instance-attributes
             suppress = await self._finish(exc_value)
         except asyncio.CancelledError:
             LOGGER.warning("PipeRunner cancelled inside _finish %r", self)
-            self.cancelled = True
+            self._cancelled = True
         return suppress
 
     @log_method(LOG_DETAIL)
@@ -807,9 +824,9 @@ class PipeRunner:  # pylint: disable=too-many-instance-attributes
         "Wait for pipeline to exit and handle cancellation."
         if exc_value is not None:
             if _is_cancelled(exc_value):
-                self.cancelled = True
+                self._cancelled = True
             await self._wait(kill=True)
-            return self.cancelled
+            return self._cancelled
 
         await self._wait()
 
@@ -825,7 +842,7 @@ class PipeRunner:  # pylint: disable=too-many-instance-attributes
 
             cmds = self._setup_pipeline(open_fds)
 
-            if self.capturing:
+            if self._capturing:
                 stdin, stdout, stderr = await self._setup_capturing(cmds)
             else:
                 for cmd in cmds:
@@ -848,7 +865,7 @@ class PipeRunner:  # pylint: disable=too-many-instance-attributes
         Each created open file descriptor is added to `open_fds` so it can
         be closed if there's an exception later.
         """
-        cmds = list(self.pipe.commands)
+        cmds = list(self._pipe.commands)
 
         cmd_count = len(cmds)
         for i in range(cmd_count - 1):
@@ -895,11 +912,11 @@ class PipeRunner:  # pylint: disable=too-many-instance-attributes
     def __repr__(self):
         "Return string representation of PipeRunner."
         cancelled_info = ""
-        if self.cancelled:
+        if self._cancelled:
             cancelled_info = " cancelled"
         result_info = ""
-        if self.results:
-            result_info = f" results={self.results!r}"
+        if self._results:
+            result_info = f" results={self._results!r}"
         return f"<PipeRunner {self.name!r}{cancelled_info}{result_info}>"
 
     async def _readlines(self):
@@ -909,7 +926,7 @@ class PipeRunner:  # pylint: disable=too-many-instance-attributes
 
         stream = self.stdout or self.stderr
         if stream:
-            async for line in redir.read_lines(stream, self.encoding):
+            async for line in redir.read_lines(stream, self._encoding):
                 yield line
 
     def __aiter__(self):
