@@ -791,6 +791,7 @@ async def test_command_iterator_api(echo_cmd):
 
     # When the async iterator runs to completion, there is no problem with
     # extra tasks hanging around.
+    assert len(asyncio.all_tasks()) == 1
 
 
 async def test_command_iterator_api_interrupted(echo_cmd):
@@ -807,6 +808,7 @@ async def test_command_iterator_api_interrupted(echo_cmd):
     # An async iterator was interrupted. At this point, there are still
     # tasks running related to the command invocation in _test. The tasks will
     # be cleaned up when the `GeneratorExit` exception is propagated.
+    assert len(asyncio.all_tasks()) > 1
     await asyncio.sleep(0)
 
     # We still need to wait for the process to asynchrously exit...
@@ -818,6 +820,55 @@ def test_command_iterator_api_interrupted_sync(echo_cmd):
 
     async def _test():
         async for line in echo_cmd("hello\n", "cruel\n", "world\n"):
+            if "hello" in line:
+                return True
+        return False
+
+    # asyncio.run() should do all clean up for interrupted async iterator.
+    result = asyncio.run(_test())
+    assert result
+
+
+async def test_pipe_iterator_api(echo_cmd, cat_cmd):
+    "Test running a command's async iterator directly."
+
+    cmd = echo_cmd("hello\n", "world") | cat_cmd()
+    lines = [line.rstrip() async for line in cmd]
+    assert lines == ["hello", " world"]
+
+    # When the async iterator runs to completion, there is no problem with
+    # extra tasks hanging around.
+    assert len(asyncio.all_tasks()) == 1
+
+
+async def test_pipe_iterator_api_interrupted(echo_cmd, cat_cmd):
+    "Test running a command's async iterator directly."
+
+    async def _test():
+        cmd = echo_cmd("hello\n", "cruel\n", "world\n") | cat_cmd()
+        async for line in cmd:
+            if "hello" in line:
+                return True
+        return False
+
+    assert await _test()
+
+    # An async iterator was interrupted. At this point, there are still
+    # tasks running related to the command invocation in _test. The tasks will
+    # be cleaned up when the `GeneratorExit` exception is propagated.
+    assert len(asyncio.all_tasks()) > 1
+    await asyncio.sleep(0)
+
+    # We still need to wait for the process to asynchrously exit...
+    await asyncio.sleep(0.1)
+
+
+def test_pipe_iterator_api_interrupted_sync(echo_cmd, cat_cmd):
+    "Test running a command's async iterator directly."
+
+    async def _test():
+        cmd = echo_cmd("hello\n", "cruel\n", "world\n") | cat_cmd()
+        async for line in cmd:
             if "hello" in line:
                 return True
         return False
