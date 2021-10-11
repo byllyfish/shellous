@@ -224,6 +224,12 @@ README.md
 > the command or pipeline object. This is discouraged because you will have less control over the final
 > clean up of the command invocation than with a context manager.
 
+```python-repl
+>>> async for line in pipe:   # Use caution!
+...   print(line.rstrip())
+... 
+README.md
+```
 
 You can use `async with` to interact with the process streams directly. You have to be careful; you
 are responsible for correctly reading and writing multiple streams at the same time.

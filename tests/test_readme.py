@@ -161,6 +161,7 @@ def test_parse_readme():
         "async with pipe as run:\n"
         "  async for line in run:\n"
         "    print(line.rstrip())\n",
+        "async for line in pipe:   # Use caution!\n  print(line.rstrip())\n",
         "async with pipe as run:\n"
         "  data = await run.stdout.readline()\n"
         "  print(data)\n",
