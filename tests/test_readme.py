@@ -171,6 +171,9 @@ def test_parse_readme():
         "await t",
         'ls = sh("ls").set(pty=shellous.canonical(cols=40, rows=10, echo=False))',
         'await ls("README.md", "CHANGELOG.md")',
+        'auditor = lambda phase, info: print(phase, info["runner"].name)',
+        "sh1 = sh.set(audit_callback=auditor)",
+        'await sh1("echo", "goodbye")',
     ]
 
 
