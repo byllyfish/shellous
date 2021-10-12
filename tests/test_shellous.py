@@ -955,5 +955,5 @@ async def test_audit_pipe_cancel(echo_cmd, tr_cmd):
         ("start", "tr", None, None),
         ("stop", "echo", 0, None),
         ("signal", "tr", None, signal.SIGTERM),
-        ("stop", "tr", -15, None),
+        ("stop", "tr", CANCELLED_EXIT_CODE, None),
     ]
