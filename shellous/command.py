@@ -111,6 +111,9 @@ class Options:  # pylint: disable=too-many-instance-attributes
     close_fds: bool = False
     "True if child process should close all file descriptors."
 
+    audit_callback: Any = None
+    "Function called to audit stages of process execution."
+
     def merge_env(self):
         "Return our `env` merged with the global environment."
         if self.inherit_env:
@@ -220,6 +223,7 @@ class CmdContext:
         preexec_fn=_UNSET,
         pty=_UNSET,
         close_fds=_UNSET,
+        audit_callback=_UNSET,
     ) -> "CmdContext":
         "Return new context with custom options set."
         kwargs = locals()
@@ -357,6 +361,7 @@ class Command:
         preexec_fn: Unset[Any] = _UNSET,
         pty: Unset[bool] = _UNSET,
         close_fds: Unset[bool] = _UNSET,
+        audit_callback: Unset[Any] = _UNSET,
     ) -> "Command":
         """Return new command with custom options set.
 
@@ -387,6 +392,8 @@ class Command:
         child_fd for setup purposes. Setting `pty` forces `start_new_session`
         to True.
         - Set `close_fds` to True to close all file descriptors in child process.
+        - Set `audit_callback` to a function that is called when process runner
+        stage changes.
         """
         kwargs = locals()
         del kwargs["self"]

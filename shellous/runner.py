@@ -344,6 +344,13 @@ class Runner:
         return self._proc.pid
 
     @property
+    def returncode(self):
+        "Process's exit code."
+        if not self._proc:
+            return None
+        return self._proc.returncode
+
+    @property
     def cancelled(self):
         "Return True if the command was cancelled."
         return self._cancelled
@@ -445,6 +452,8 @@ class Runner:
         "Send a signal to the process."
 
         LOGGER.info("Runner.signal %r signal=%r", self, sig)
+        self._audit_callback("signal", signal=sig)
+
         if sig is None:
             self._proc.kill()
         else:
@@ -469,8 +478,12 @@ class Runner:
     @log_method(LOG_ENTER, _info=True)
     async def __aenter__(self):
         "Set up redirections and launch subprocess."
+        self._audit_callback("start")
         try:
             return await self._start()
+        except BaseException as ex:
+            self._audit_callback("stop", failure=type(ex).__name__)
+            raise
         finally:
             if self._cancelled and self.command.options.incomplete_result:
                 # Raises ResultError instead of CancelledError.
@@ -625,6 +638,8 @@ class Runner:
         except asyncio.CancelledError:
             LOGGER.info("Runner cancelled inside _finish %r", self)
             self._cancelled = True
+        finally:
+            self._audit_callback("stop")
         return suppress
 
     @log_method(LOG_DETAIL)
@@ -682,6 +697,17 @@ class Runner:
 
         except asyncio.TimeoutError:
             LOGGER.critical("Runner._close %r timeout stdin=%r", self, self._proc.stdin)
+
+    def _audit_callback(self, phase, *, failure=None, signal=None):
+        "Call `audit_callback` if there is one."
+        callback = self.command.options.audit_callback
+        if callback:
+            info = {"runner": self}
+            if failure:
+                info["failure"] = failure
+            if phase == "signal":
+                info["signal"] = signal
+            callback(phase, info)
 
     def __repr__(self):
         "Return string representation of Runner."

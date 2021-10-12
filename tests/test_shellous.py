@@ -876,3 +876,84 @@ def test_pipe_iterator_api_interrupted_sync(echo_cmd, cat_cmd):
     # asyncio.run() should do all clean up for interrupted async iterator.
     result = asyncio.run(_test())
     assert result
+
+
+async def test_audit_callback(echo_cmd):
+    "Test the audit callback hook."
+
+    calls = []
+
+    def _audit(phase, info):
+        runner = info["runner"]
+        failure = info.get("failure")
+        calls.append((phase, runner.name, runner.returncode, failure))
+
+    echo = echo_cmd.set(audit_callback=_audit)
+
+    result = await echo("hello")
+    assert result == "hello"
+    assert calls == [
+        ("start", "echo", None, None),
+        ("stop", "echo", 0, None),
+    ]
+
+
+async def test_audit_callback_launch_failure(sh):
+    "Test the audit callback hook with a failure-to-launch error."
+
+    calls = []
+
+    def _audit(phase, info):
+        runner = info["runner"]
+        failure = info.get("failure")
+        calls.append((phase, runner.name, runner.pid, runner.returncode, failure))
+
+    malformed = sh("__does_not_exist__").set(audit_callback=_audit)
+
+    with pytest.raises(FileNotFoundError):
+        await malformed("hello")
+
+    assert calls == [
+        (
+            "start",
+            "__does_not_exist__",
+            None,
+            None,
+            None,
+        ),
+        (
+            "stop",
+            "__does_not_exist__",
+            None,
+            None,
+            "FileNotFoundError",
+        ),
+    ]
+
+
+async def test_audit_pipe_cancel(echo_cmd, tr_cmd):
+    "Test audit callback when a pipe is cancelled."
+
+    import signal
+
+    calls = []
+
+    def _audit(phase, info):
+        runner = info["runner"]
+        signal = info.get("signal")
+        calls.append((phase, runner.name, runner.returncode, signal))
+
+    echo_cmd = echo_cmd("abc").set(audit_callback=_audit)
+    tr_cmd = tr_cmd.env(SHELLOUS_EXIT_SLEEP=2).set(audit_callback=_audit)
+
+    cmd = echo_cmd | tr_cmd
+    with pytest.raises(asyncio.TimeoutError):
+        await asyncio.wait_for(cmd, timeout=0.2)
+
+    assert calls == [
+        ("start", "echo", None, None),
+        ("start", "tr", None, None),
+        ("stop", "echo", 0, None),
+        ("signal", "tr", None, signal.SIGTERM),
+        ("stop", "tr", -15, None),
+    ]
