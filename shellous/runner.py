@@ -706,7 +706,9 @@ class Runner:
             if failure:
                 info["failure"] = failure
             if phase == "signal":
-                info["signal"] = signal
+                if signal is None:
+                    signal = "Signals.SIGKILL"  # SIGKILL (even on win32)
+                info["signal"] = str(signal)
             callback(phase, info)
 
     def __repr__(self):

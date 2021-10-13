@@ -406,8 +406,10 @@ class Command:
         `cancel_signal`. If the process does not exit after waiting for
         `cancel_timeout` seconds, we send a kill signal to the process.
 
-        **cancel_signal** (signals.Signal) default=signal.SIGTERM<br>
-        Signal sent to a process when it is cancelled.
+        **cancel_signal** (signals.Signal | None) default=signal.SIGTERM<br>
+        Signal sent to a process when it is cancelled. If `cancel_signal` is
+        None, send a `SIGKILL` on Unix and `SIGTERM` (TerminateProcess) on
+        Windows.
 
         **alt_name** (str| None) default=None<br>
         Alternative name of the command displayed in logs. Used to resolve
@@ -441,9 +443,12 @@ class Command:
 
         **close_fds** (bool) default=False<br>
         Close all unnecessary file descriptors in the child process. This
-        defaults to False to align with `posix_spawn` defaults.
+        defaults to False to align with `posix_spawn` requirements. Please refer
+        to the documentation on [inheritance of file descriptors](
+        https://docs.python.org/3/library/os.html#inheritance-of-file-descriptors)
+        for behavior on Unix and Windows.
 
-        **audit_callback** (Callable(phase, info) | None)<br>
+        **audit_callback** (Callable(phase, info) | None) default=None<br>
         Specify a function to call as the command execution goes through its
         lifecycle. `audit_callback` is a function called with two arguments,
         *phase* and *info*.
@@ -452,7 +457,7 @@ class Command:
 
             "start": The process is about to start.
 
-            "stop": The process stopped.
+            "stop": The process finally stopped.
 
             "signal": The process is being sent a signal.
 
@@ -461,11 +466,11 @@ class Command:
 
             "runner" (Runner): Reference to the Runner object.
 
-            "failure" (str): When *phase* is "stop", optional string with the
+            "failure" (str): When phase is "stop", optional string with the
             name of the exception from launching the process.
 
-            "signal" (str): When *phase* is "signal", the string name of the
-            signal sent to the subprocess.
+            "signal" (str): When phase is "signal", the signal name/number
+            sent to the process, e.g. "Signals.SIGTERM".
 
         The primary use case for `audit_callback` is measuring how long each
         command takes to run and exporting this information to a metrics

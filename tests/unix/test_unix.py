@@ -1367,3 +1367,30 @@ async def test_pty_redirect_stdout_streamwriter(sh):
         writer.close()
         server.close()
         await server.wait_closed()
+
+
+async def test_audit_cancel_nohup(sh):
+    "Test audit callback when a command is cancelled."
+
+    calls = []
+
+    def _audit(phase, info):
+        runner = info["runner"]
+        signal = info.get("signal")
+        calls.append((phase, runner.name, runner.returncode, signal))
+
+    sh = sh.set(
+        cancel_signal=signal.SIGHUP,
+        cancel_timeout=0.2,
+        audit_callback=_audit,
+    )
+
+    with pytest.raises(asyncio.TimeoutError):
+        await asyncio.wait_for(sh("nohup", "sleep", "10"), timeout=0.2)
+
+    assert calls == [
+        ("start", "nohup", None, None),
+        ("signal", "nohup", None, "Signals.SIGHUP"),
+        ("signal", "nohup", None, "Signals.SIGKILL"),
+        ("stop", "nohup", -9, None),
+    ]

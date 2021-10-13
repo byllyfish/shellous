@@ -934,8 +934,6 @@ async def test_audit_callback_launch_failure(sh):
 async def test_audit_pipe_cancel(echo_cmd, tr_cmd):
     "Test audit callback when a pipe is cancelled."
 
-    import signal
-
     calls = []
 
     def _audit(phase, info):
@@ -954,6 +952,6 @@ async def test_audit_pipe_cancel(echo_cmd, tr_cmd):
         ("start", "echo", None, None),
         ("start", "tr", None, None),
         ("stop", "echo", 0, None),
-        ("signal", "tr", None, signal.SIGTERM),
+        ("signal", "tr", None, "Signals.SIGTERM"),
         ("stop", "tr", CANCELLED_EXIT_CODE, None),
     ]
