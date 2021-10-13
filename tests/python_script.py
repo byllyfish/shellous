@@ -11,9 +11,15 @@ SHELLOUS_EXIT_SLEEP = int(os.environ.get("SHELLOUS_EXIT_SLEEP") or 0)
 
 def _write(data):
     "Write data to stdout as bytes."
-    if data:
-        sys.stdout.buffer.write(data)
-        sys.stdout.buffer.flush()
+    try:
+        if data:
+            sys.stdout.buffer.write(data)
+            sys.stdout.buffer.flush()
+    except BrokenPipeError:
+        # https://docs.python.org/3/library/signal.html#note-on-sigpipe
+        devnull = os.open(os.devnull, os.O_WRONLY)
+        os.dup2(devnull, sys.stdout.fileno())
+        sys.exit(1)  # Python exits with error code 1 on EPIPE
 
 
 if SHELLOUS_CMD == "echo":
