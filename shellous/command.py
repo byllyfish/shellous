@@ -168,7 +168,10 @@ class Options:  # pylint: disable=too-many-instance-attributes
         return dataclasses.replace(self, env=new_env)
 
     def set(self, kwds):
-        "Return new options with given properties updated."
+        """Return new options with given properties updated.
+
+        See `Command.set` for option reference.
+        """
         kwds = {key: value for key, value in kwds.items() if value is not _UNSET}
         return dataclasses.replace(self, **kwds)
 
@@ -225,7 +228,10 @@ class CmdContext:
         close_fds=_UNSET,
         audit_callback=_UNSET,
     ) -> "CmdContext":
-        "Return new context with custom options set."
+        """Return new context with custom options set.
+
+        See `Command.set` for option reference.
+        """
         kwargs = locals()
         del kwargs["self"]
         return CmdContext(self.options.set(kwargs))
@@ -365,35 +371,105 @@ class Command:
     ) -> "Command":
         """Return new command with custom options set.
 
-        - Set `inherit_env` to False to prevent the command from inheriting
-        the parent environment.
-        - Set `encoding` to a string encoding like "utf-8", or "utf-8 replace".
-        If `encoding` is None, use raw bytes.
-        - Set `return_result` to True to return a `Result` object instead of
-        the standard output. The `Result` object includes the exit code.
-        - Set `incomplete_result` to True to return a `ResultError` object when
-        the command is cancelled, instead of a CancelledError.
-        - Set `exit_codes` to the set of allowed exit codes that will not raise
-        a `ResultError`. None means {0}.
-        - Set `cancel_timeout` to the timeout in seconds to wait for a process
-        to terminate after sending it the cancel signal.
-        - Set `cancel_signal` to the signal used to stop a process when it is
-        cancelled.
-        - Set `alt_name` to an alternative name of the command to be displayed
-        in logs. Used to resolve ambiguity when the actual command name is a
-        scripting language.
-        - Set `pass_fds` to pass open file descriptors to the command.
-        - Set `pass_fds_close` to True to auto-close the `pass_fds`.
-        - Set `write_mode` to True when using process substitution for writing.
-        - Set `start_new_session` to True to start a new session.
-        - Set `preexec_fn` to a function to call in child process.
-        - Set `pty` to True to use a pseudo-terminal (pty) to control the child
-        process. You may also set `pty` to a 1-arg function to call on the
-        child_fd for setup purposes. Setting `pty` forces `start_new_session`
-        to True.
-        - Set `close_fds` to True to close all file descriptors in child process.
-        - Set `audit_callback` to a function that is called when process runner
-        stage changes.
+        **inherit_env** (bool) default=True<br>
+        Subprocess should inherit the parent process environment. If this is
+        False, the subprocess will only have environment variables specified
+        by `Command.env`. If `inherit_env` is True, the parent process
+        environment is augmented/overriden by any variables specified in
+        `Command.env`.
+
+        **encoding** (str | None) default="utf-8"<br>
+        String encoding to use for subprocess input/output. If `encoding` is
+        None, use raw bytes. To specify `errors`, append it after a space. For
+        example, use "utf-8 replace" to specify "utf-8" with errors "replace".
+
+        **return_result** (bool) default=False<br>
+        When True, return a `Result` object instead of the standard output.
+
+        **incomplete_result** (bool) default=False<br>
+        When True, raise a `ResultError` when the command is cancelled. On the
+        plus side, this gives you access to the initial output of the command.
+        On the negative side, the `ResultError` swallows the `CancelledError`.
+        Your code may need to re-raise a CancelledError after dealing with the
+        partial result. When `incomplete_result` is False, a cancelled command
+        will raise a `CancelledError`.
+
+        **exit_codes** (set[int] | None) default=None<br>
+        Set of allowed exit codes that will not raise a `ResultError`. By default,
+        `exit_codes` is `None` which indicates that 0 is the only valid exit
+        status. Any other exit status will raise a `ResultError`. In addition to
+        sets of integers, you can use a `range` object, e.g. `range(256)` for
+        any positive exit status.
+
+        **cancel_timeout** (float) default=3.0 seconds<br>
+        Timeout in seconds to wait for a process to exit after sending it a
+        `cancel_signal`. If the process does not exit after waiting for
+        `cancel_timeout` seconds, we send a kill signal to the process.
+
+        **cancel_signal** (signals.Signal) default=signal.SIGTERM<br>
+        Signal sent to a process when it is cancelled.
+
+        **alt_name** (str| None) default=None<br>
+        Alternative name of the command displayed in logs. Used to resolve
+        ambiguity when the actual command name is a scripting language.
+
+        **pass_fds** (Iterable[int]) default=()<br>
+        Specify open file descriptors to pass to the subprocess.
+
+        **pass_fds_close** (bool) default=False<br>
+        Close the file descriptors in `pass_fds` immediately in the current
+        process immediately after launching the subprocess.
+
+        **write_mode** (bool) default=False<br>
+        Used to indicate process substitution is writing.
+
+        **start_new_session** (bool) default=False<br>
+        Tell subprocess to start a new session.
+
+        **preexec_fn** (Callable() | None) default=None<br>
+        Specify a function to call in the subprocess before calling exec().
+
+        **pty** (bool | Callable(int)) default=False<br>
+        If True, use a pseudo-terminal (pty) to control the child process.
+        If `pty` is set to a callable, the function must take one int argument
+        for the child side of the pty. The function is called to set the child
+        pty's termios settings before spawning the subprocess.
+
+        shellous provides three utility functions: `shellous.canonical`,
+        `shellous.raw` and `shellous.cbreak` that can be used as arguments to
+        the `pty` option.
+
+        **close_fds** (bool) default=False<br>
+        Close all unnecessary file descriptors in the child process. This
+        defaults to False to align with `posix_spawn` defaults.
+
+        **audit_callback** (Callable(phase, info) | None)<br>
+        Specify a function to call as the command execution goes through its
+        lifecycle. `audit_callback` is a function called with two arguments,
+        *phase* and *info*.
+
+        *phase* can be one of three values:
+
+            "start": The process is about to start.
+
+            "stop": The process stopped.
+
+            "signal": The process is being sent a signal.
+
+        *info* is a dictionary providing more information for the callback. The
+        following keys are currently defined:
+
+            "runner" (Runner): Reference to the Runner object.
+
+            "failure" (str): When *phase* is "stop", optional string with the
+            name of the exception from launching the process.
+
+            "signal" (str): When *phase* is "signal", the string name of the
+            signal sent to the subprocess.
+
+        The primary use case for `audit_callback` is measuring how long each
+        command takes to run and exporting this information to a metrics
+        framework like Prometheus.
         """
         kwargs = locals()
         del kwargs["self"]
