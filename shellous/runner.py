@@ -162,8 +162,8 @@ class _RunOptions:  # pylint: disable=too-many-instance-attributes
         )
 
         # Set up PTY here. This is the first half. Second half in `Runner`.
-        start_new_session = options.start_new_session
-        preexec_fn = options.preexec_fn
+        start_new_session = options._start_new_session
+        preexec_fn = options._preexec_fn
         if options.pty:
             assert preexec_fn is None
             stdin, stdout, stderr, preexec_fn = self._setup_pty1(

@@ -99,10 +99,10 @@ class Options:  # pylint: disable=too-many-instance-attributes
     write_mode: bool = False
     "True if using process substitution in write mode."
 
-    start_new_session: bool = False
+    _start_new_session: bool = False
     "True if child process should start a new session with setsid()."
 
-    preexec_fn: Any = None
+    _preexec_fn: Any = None
     "Function to call in child process after fork from parent."
 
     pty: bool = False
@@ -222,8 +222,8 @@ class CmdContext:
         pass_fds=_UNSET,
         pass_fds_closed=_UNSET,
         write_mode=_UNSET,
-        start_new_session=_UNSET,
-        preexec_fn=_UNSET,
+        _start_new_session=_UNSET,
+        _preexec_fn=_UNSET,
         pty=_UNSET,
         close_fds=_UNSET,
         audit_callback=_UNSET,
@@ -363,8 +363,8 @@ class Command:
         pass_fds: Unset[Iterable[int]] = _UNSET,
         pass_fds_close: Unset[bool] = _UNSET,
         write_mode: Unset[bool] = _UNSET,
-        start_new_session: Unset[bool] = _UNSET,
-        preexec_fn: Unset[Any] = _UNSET,
+        _start_new_session: Unset[bool] = _UNSET,
+        _preexec_fn: Unset[Any] = _UNSET,
         pty: Unset[bool] = _UNSET,
         close_fds: Unset[bool] = _UNSET,
         audit_callback: Unset[Any] = _UNSET,
@@ -425,11 +425,11 @@ class Command:
         **write_mode** (bool) default=False<br>
         Used to indicate process substitution is writing.
 
-        **start_new_session** (bool) default=False<br>
-        Tell subprocess to start a new session.
+        **_start_new_session** (bool) default=False<br>
+        Provided for testing purposes only.
 
-        **preexec_fn** (Callable() | None) default=None<br>
-        Specify a function to call in the subprocess before calling exec().
+        **_preexec_fn** (Callable() | None) default=None<br>
+        Provided for testing purposes only.
 
         **pty** (bool | Callable(int)) default=False<br>
         If True, use a pseudo-terminal (pty) to control the child process.
