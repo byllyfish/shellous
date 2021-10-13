@@ -426,7 +426,7 @@ async def test_broken_pipe_in_failed_pipeline(cat_cmd, echo_cmd):
             cancelled=False,
             encoding="utf-8",
             extra=(
-                PipeResult(exit_code=120, cancelled=True),
+                PipeResult(exit_code=1, cancelled=True),
                 PipeResult(exit_code=7, cancelled=False),
             ),
         )
