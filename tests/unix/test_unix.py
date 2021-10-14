@@ -794,7 +794,7 @@ async def test_process_substitution_write_pipe_alt(sh, tmp_path):
 
 
 async def test_start_new_session(sh):
-    """Test `start_new_session` option."""
+    """Test `_start_new_session` option."""
 
     script = """import os; print(os.getsid(0) == os.getpid())"""
     cmd = sh(sys.executable, "-c", script)
@@ -802,10 +802,10 @@ async def test_start_new_session(sh):
     result = await cmd
     assert result == "False\n"
 
-    result = await cmd.set(start_new_session=False)
+    result = await cmd.set(_start_new_session=False)
     assert result == "False\n"
 
-    result = await cmd.set(start_new_session=True)
+    result = await cmd.set(_start_new_session=True)
     assert result == "True\n"
 
 
@@ -821,7 +821,7 @@ async def test_pty_manual(sh):
     cmd = (
         tr.stdin(child_fd, close=True)
         .stdout(child_fd, close=True)
-        .set(start_new_session=True)
+        .set(_start_new_session=True)
     )
 
     async with cmd.run():
@@ -849,7 +849,10 @@ async def test_pty_manual_ls(sh):
         sh("ls", "README.md")
         .stdin(child_fd, close=False)
         .stdout(child_fd, close=False)
-        .set(start_new_session=True, preexec_fn=shellous.pty_util.set_ctty(child_fd))
+        .set(
+            _start_new_session=True,
+            _preexec_fn=shellous.pty_util.set_ctty(child_fd),
+        )
     )
 
     result = bytearray()
@@ -922,7 +925,7 @@ async def test_pty_manual_streams(sh):
     cmd = (
         tr.stdin(child_fd, close=True)
         .stdout(child_fd, close=True)
-        .set(start_new_session=True)
+        .set(_start_new_session=True)
     )
 
     reader, writer = await _get_streams(parent_fd)
@@ -1367,3 +1370,30 @@ async def test_pty_redirect_stdout_streamwriter(sh):
         writer.close()
         server.close()
         await server.wait_closed()
+
+
+async def test_audit_cancel_nohup(sh):
+    "Test audit callback when a command is cancelled."
+
+    calls = []
+
+    def _audit(phase, info):
+        runner = info["runner"]
+        signal = info.get("signal")
+        calls.append((phase, runner.name, runner.returncode, signal))
+
+    sh = sh.set(
+        cancel_signal=signal.SIGHUP,
+        cancel_timeout=0.2,
+        audit_callback=_audit,
+    )
+
+    with pytest.raises(asyncio.TimeoutError):
+        await asyncio.wait_for(sh("nohup", "sleep", "10"), timeout=0.2)
+
+    assert calls == [
+        ("start", "nohup", None, None),
+        ("signal", "nohup", None, "Signals.SIGHUP"),
+        ("signal", "nohup", None, "Signals.SIGKILL"),
+        ("stop", "nohup", -9, None),
+    ]

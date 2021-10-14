@@ -34,7 +34,7 @@ Requirements
 - Requires Python 3.9 or later.
 - Requires an asyncio event loop.
 - Process substitution requires a Unix system with /dev/fd support.
-- Pseudo-terminals require a Unix system.
+- Pseudo-terminals require a Unix system. Pty's do not work on [uvloop](https://github.com/MagicStack/uvloop).
 
 Basic Usage
 -----------
@@ -274,4 +274,24 @@ a function to configure the tty mode and size.
 >>> ls = sh("ls").set(pty=shellous.canonical(cols=40, rows=10, echo=False))
 >>> await ls("README.md", "CHANGELOG.md")
 'CHANGELOG.md\tREADME.md\r\n'
+```
+
+Context Objects
+---------------
+
+You can specify shared command settings in a context object. Context objects are immutable,
+so you must store the result of your changes in a new variable.
+
+```python-repl
+>>> auditor = lambda phase, info: print(phase, info["runner"].name)
+>>> sh1 = sh.set(audit_callback=auditor)
+```
+
+Now all commands run with `sh1` will log their progress using the audit callback.
+
+```python-repl
+>>> await sh1("echo", "goodbye")
+start echo
+stop echo
+'goodbye\n'
 ```
