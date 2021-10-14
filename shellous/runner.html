@@ -142,9 +142,7 @@
 
 <span class="n">_KILL_TIMEOUT</span> <span class="o">=</span> <span class="mf">3.0</span>
 <span class="n">_CLOSE_TIMEOUT</span> <span class="o">=</span> <span class="mf">0.25</span>
-
 <span class="n">_UNLAUNCHED_EXIT_CODE</span> <span class="o">=</span> <span class="o">-</span><span class="mi">255</span>
-<span class="n">_FLAKY_EXIT_CODE</span> <span class="o">=</span> <span class="mi">255</span>
 
 <span class="n">_BSD</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;freebsd&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span> <span class="o">==</span> <span class="s2">&quot;darwin&quot;</span>
 
@@ -498,12 +496,9 @@
 
         <span class="k">return</span> <span class="n">make_result</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">command</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cancelled</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">add_task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coro</span><span class="p">,</span> <span class="n">tag</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">add_task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coro</span><span class="p">,</span> <span class="n">tag</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
         <span class="s2">&quot;Add a background task.&quot;</span>
-        <span class="k">if</span> <span class="n">tag</span><span class="p">:</span>
-            <span class="n">task_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">#</span><span class="si">{</span><span class="n">tag</span><span class="si">}</span><span class="s2">&quot;</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">task_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+        <span class="n">task_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">#</span><span class="si">{</span><span class="n">tag</span><span class="si">}</span><span class="s2">&quot;</span>
         <span class="n">task</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="n">coro</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">task_name</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_tasks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">task</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">task</span>
@@ -801,10 +796,6 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">_transport</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>  <span class="c1"># pylint: disable=protected-access</span>
             <span class="k">return</span>
 
-        <span class="c1"># asyncio child watcher artifact.</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">returncode</span> <span class="o">==</span> <span class="n">_FLAKY_EXIT_CODE</span><span class="p">:</span>
-            <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Runner._close exit code=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">returncode</span><span class="p">)</span>
-
         <span class="k">try</span><span class="p">:</span>
             <span class="c1"># Make sure the transport is closed (for asyncio and uvloop).</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">_transport</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>  <span class="c1"># pylint: disable=protected-access</span>
@@ -924,12 +915,9 @@
         <span class="s2">&quot;Return `Result` object for PipeRunner.&quot;</span>
         <span class="k">return</span> <span class="n">make_result</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_pipe</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_results</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cancelled</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">add_task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coro</span><span class="p">,</span> <span class="n">tag</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">add_task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coro</span><span class="p">,</span> <span class="n">tag</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
         <span class="s2">&quot;Add a background task.&quot;</span>
-        <span class="k">if</span> <span class="n">tag</span><span class="p">:</span>
-            <span class="n">task_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">#</span><span class="si">{</span><span class="n">tag</span><span class="si">}</span><span class="s2">&quot;</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">task_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+        <span class="n">task_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">#</span><span class="si">{</span><span class="n">tag</span><span class="si">}</span><span class="s2">&quot;</span>
         <span class="n">task</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="n">coro</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">task_name</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_tasks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">task</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">task</span>
@@ -1213,12 +1201,9 @@
 
         <span class="k">return</span> <span class="n">make_result</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">command</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cancelled</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">add_task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coro</span><span class="p">,</span> <span class="n">tag</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">add_task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coro</span><span class="p">,</span> <span class="n">tag</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
         <span class="s2">&quot;Add a background task.&quot;</span>
-        <span class="k">if</span> <span class="n">tag</span><span class="p">:</span>
-            <span class="n">task_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">#</span><span class="si">{</span><span class="n">tag</span><span class="si">}</span><span class="s2">&quot;</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">task_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+        <span class="n">task_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">#</span><span class="si">{</span><span class="n">tag</span><span class="si">}</span><span class="s2">&quot;</span>
         <span class="n">task</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="n">coro</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">task_name</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_tasks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">task</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">task</span>
@@ -1516,10 +1501,6 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">_transport</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>  <span class="c1"># pylint: disable=protected-access</span>
             <span class="k">return</span>
 
-        <span class="c1"># asyncio child watcher artifact.</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">returncode</span> <span class="o">==</span> <span class="n">_FLAKY_EXIT_CODE</span><span class="p">:</span>
-            <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Runner._close exit code=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">returncode</span><span class="p">)</span>
-
         <span class="k">try</span><span class="p">:</span>
             <span class="c1"># Make sure the transport is closed (for asyncio and uvloop).</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">_transport</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>  <span class="c1"># pylint: disable=protected-access</span>
@@ -1759,17 +1740,14 @@ result = run.result()
 
         
             <span class="def">def</span>
-            <span class="name">add_task</span><span class="signature">(self, coro, tag=None)</span>:
+            <span class="name">add_task</span><span class="signature">(self, coro, tag=&#39;&#39;)</span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">add_task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coro</span><span class="p">,</span> <span class="n">tag</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">add_task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coro</span><span class="p">,</span> <span class="n">tag</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
         <span class="s2">&quot;Add a background task.&quot;</span>
-        <span class="k">if</span> <span class="n">tag</span><span class="p">:</span>
-            <span class="n">task_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">#</span><span class="si">{</span><span class="n">tag</span><span class="si">}</span><span class="s2">&quot;</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">task_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+        <span class="n">task_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">#</span><span class="si">{</span><span class="n">tag</span><span class="si">}</span><span class="s2">&quot;</span>
         <span class="n">task</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="n">coro</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">task_name</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_tasks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">task</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">task</span>
@@ -1877,12 +1855,9 @@ result = run.result()
         <span class="s2">&quot;Return `Result` object for PipeRunner.&quot;</span>
         <span class="k">return</span> <span class="n">make_result</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_pipe</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_results</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cancelled</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">add_task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coro</span><span class="p">,</span> <span class="n">tag</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">add_task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coro</span><span class="p">,</span> <span class="n">tag</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
         <span class="s2">&quot;Add a background task.&quot;</span>
-        <span class="k">if</span> <span class="n">tag</span><span class="p">:</span>
-            <span class="n">task_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">#</span><span class="si">{</span><span class="n">tag</span><span class="si">}</span><span class="s2">&quot;</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">task_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+        <span class="n">task_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">#</span><span class="si">{</span><span class="n">tag</span><span class="si">}</span><span class="s2">&quot;</span>
         <span class="n">task</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="n">coro</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">task_name</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_tasks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">task</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">task</span>
@@ -2162,17 +2137,14 @@ client needs to access <code><a href="#PipeRunner.stdin">stdin</a></code> and <c
 
         
             <span class="def">def</span>
-            <span class="name">add_task</span><span class="signature">(self, coro, tag=None)</span>:
+            <span class="name">add_task</span><span class="signature">(self, coro, tag=&#39;&#39;)</span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">add_task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coro</span><span class="p">,</span> <span class="n">tag</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">add_task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coro</span><span class="p">,</span> <span class="n">tag</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
         <span class="s2">&quot;Add a background task.&quot;</span>
-        <span class="k">if</span> <span class="n">tag</span><span class="p">:</span>
-            <span class="n">task_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">#</span><span class="si">{</span><span class="n">tag</span><span class="si">}</span><span class="s2">&quot;</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">task_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+        <span class="n">task_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">#</span><span class="si">{</span><span class="n">tag</span><span class="si">}</span><span class="s2">&quot;</span>
         <span class="n">task</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="n">coro</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">task_name</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_tasks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">task</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">task</span>
