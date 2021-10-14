@@ -972,3 +972,13 @@ async def test_audit_pipe_cancel(echo_cmd, tr_cmd):
         ("signal", "tr", None, "Signals.SIGTERM"),
         ("stop", "tr", CANCELLED_EXIT_CODE, None),
     ]
+
+
+async def test_multiple_pipe(echo_cmd, cat_cmd):
+    "Test a pipeline of 7 commands."
+
+    cat = cat_cmd
+    cmd = echo_cmd("xyz") | cat | cat | cat | cat | cat | cat
+
+    result = await cmd
+    assert result == "xyz"

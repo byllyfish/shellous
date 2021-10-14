@@ -371,12 +371,9 @@ class Runner:
 
         return make_result(self.command, result, self._cancelled)
 
-    def add_task(self, coro, tag=None):
+    def add_task(self, coro, tag=""):
         "Add a background task."
-        if tag:
-            task_name = f"{self.name}#{tag}"
-        else:
-            task_name = self.name
+        task_name = f"{self.name}#{tag}"
         task = asyncio.create_task(coro, name=task_name)
         self._tasks.append(task)
         return task
@@ -793,12 +790,9 @@ class PipeRunner:  # pylint: disable=too-many-instance-attributes
         "Return `Result` object for PipeRunner."
         return make_result(self._pipe, self._results, self._cancelled)
 
-    def add_task(self, coro, tag=None):
+    def add_task(self, coro, tag=""):
         "Add a background task."
-        if tag:
-            task_name = f"{self.name}#{tag}"
-        else:
-            task_name = self.name
+        task_name = f"{self.name}#{tag}"
         task = asyncio.create_task(coro, name=task_name)
         self._tasks.append(task)
         return task
