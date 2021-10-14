@@ -17,9 +17,7 @@ from shellous.util import close_fds, uninterrupted, verify_dev_fd, wait_pid, whi
 
 _KILL_TIMEOUT = 3.0
 _CLOSE_TIMEOUT = 0.25
-
 _UNLAUNCHED_EXIT_CODE = -255
-_FLAKY_EXIT_CODE = 255
 
 _BSD = sys.platform.startswith("freebsd") or sys.platform == "darwin"
 
@@ -675,10 +673,6 @@ class Runner:
             LOGGER.critical("Runner._close process still running %r", self._proc)
             self._proc._transport.close()  # pylint: disable=protected-access
             return
-
-        # asyncio child watcher artifact.
-        if self._proc.returncode == _FLAKY_EXIT_CODE:
-            LOGGER.warning("Runner._close exit code=%r", self._proc.returncode)
 
         try:
             # Make sure the transport is closed (for asyncio and uvloop).

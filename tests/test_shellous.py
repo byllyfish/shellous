@@ -369,6 +369,18 @@ async def test_redirect_stdin_stringio_no_encoding(cat_cmd):
         await cat_cmd().stdin(buf).set(encoding=None)
 
 
+async def test_redirect_stdin_inherit(echo_cmd):
+    "Test reading stdin from INHERIT."
+    result = await echo_cmd("abc").stdin(INHERIT)
+    assert result == "abc"
+
+
+async def test_redirect_stdin_unsupported_type(cat_cmd):
+    "Test reading stdin from unsupported type."
+    with pytest.raises(TypeError, match="unsupported input type"):
+        await cat_cmd("abc").stdin(1 + 2j)
+
+
 async def test_pipe_redirect_stdin_capture(cat_cmd, tr_cmd):
     "Test setting stdin on pipe to CAPTURE without using `async with`."
     cmd = cat_cmd | tr_cmd
