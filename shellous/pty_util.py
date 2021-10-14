@@ -13,7 +13,7 @@ try:
     import pty
     import termios
     import tty
-except ImportError:
+except ImportError:  # pragma: no cover
     pass
 
 from .log import LOG_DETAIL, LOGGER, log_method
@@ -232,7 +232,7 @@ def _inherit_term_size(rows, cols):
     "Override ... with terminal setting from current stdin."
     try:
         zeros = struct.pack("HHHH", 0, 0, 0, 0)
-        winsz = fcntl.ioctl(_STDIN_FILENO, tty.TIOCGWINSZ, zeros)
+        winsz = fcntl.ioctl(_STDOUT_FILENO, tty.TIOCGWINSZ, zeros)
         winsz = struct.unpack("HHHH", winsz)
     except (OSError, struct.error) as ex:
         winsz = (0, 0, 0, 0)
