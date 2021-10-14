@@ -66,11 +66,14 @@ def verify_dev_fd(fdesc: int) -> None:
 def wait_pid(pid: int) -> Optional[int]:
     """Call os.waitpid and return exit status.
 
+    Not supported on Windows; raises an AttributeError.
+
     Return None if process is still running.
     """
     assert pid is not None and pid > 0
 
     try:
+        # os.WNOHANG is not available on Windows.
         result_pid, status = os.waitpid(pid, os.WNOHANG)
     except ChildProcessError as ex:
         # Set status to 255 if process not found.
@@ -86,8 +89,10 @@ def wait_pid(pid: int) -> Optional[int]:
     # Convert os.waitpid status to an exit status.
     try:
         status = os.waitstatus_to_exitcode(status)
-    except ValueError:
-        # See https://github.com/python/cpython/blob/7e5c107541726b90d3f2e6e69ef37180cf58335d/Lib/asyncio/unix_events.py#L47
+    except ValueError:  # pragma: no cover
+        # waitstatus_to_exitcode can theoretically raise a ValueError if
+        # the status is not understood. In this case, we do what
+        # asyncio/unix_events.py does: return the original status.
         pass
 
     return status

@@ -1,8 +1,16 @@
 import asyncio
 import os
+import sys
 
 import pytest
-from shellous.util import close_fds, coerce_env, decode, uninterrupted
+from shellous.util import (
+    close_fds,
+    coerce_env,
+    decode,
+    uninterrupted,
+    verify_dev_fd,
+    wait_pid,
+)
 
 pytestmark = pytest.mark.asyncio
 
@@ -75,3 +83,20 @@ async def test_uninterrupted():
 
     assert task.cancelled()
     assert done
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="Windows")
+def test_wait_pid(caplog):
+    "Test wait_pid utility function with bogus pid."
+
+    result = wait_pid(os.getpid())
+
+    assert result == 255
+    assert "ChildProcessError" in caplog.record_tuples[0][2]
+
+
+def test_verify_dev_fd():
+    "Test verify_dev_fd utility function with bogus fd."
+
+    with pytest.raises(RuntimeError, match="fdescfs"):
+        verify_dev_fd(999)

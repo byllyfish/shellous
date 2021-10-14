@@ -369,6 +369,23 @@ async def test_redirect_stdin_stringio_no_encoding(cat_cmd):
         await cat_cmd().stdin(buf).set(encoding=None)
 
 
+async def test_redirect_stdin_inherit(echo_cmd):
+    "Test reading stdin from INHERIT."
+
+    try:
+        result = await echo_cmd("abc").stdin(INHERIT)
+        assert result == "abc"
+    except io.UnsupportedOperation as ex:
+        # Raises UnsupportedOperation under code coverage.
+        pass
+
+
+async def test_redirect_stdin_unsupported_type(cat_cmd):
+    "Test reading stdin from unsupported type."
+    with pytest.raises(TypeError, match="unsupported input type"):
+        await cat_cmd("abc").stdin(1 + 2j)
+
+
 async def test_pipe_redirect_stdin_capture(cat_cmd, tr_cmd):
     "Test setting stdin on pipe to CAPTURE without using `async with`."
     cmd = cat_cmd | tr_cmd
@@ -955,3 +972,13 @@ async def test_audit_pipe_cancel(echo_cmd, tr_cmd):
         ("signal", "tr", None, "Signals.SIGTERM"),
         ("stop", "tr", CANCELLED_EXIT_CODE, None),
     ]
+
+
+async def test_multiple_pipe(echo_cmd, cat_cmd):
+    "Test a pipeline of 7 commands."
+
+    cat = cat_cmd
+    cmd = echo_cmd("xyz") | cat | cat | cat | cat | cat | cat
+
+    result = await cmd
+    assert result == "xyz"

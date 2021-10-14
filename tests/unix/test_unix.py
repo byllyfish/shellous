@@ -1380,7 +1380,7 @@ async def test_audit_cancel_nohup(sh):
     def _audit(phase, info):
         runner = info["runner"]
         signal = info.get("signal")
-        calls.append((phase, runner.name, runner.returncode, signal))
+        calls.append((phase, runner.name, runner.returncode, runner.cancelled, signal))
 
     sh = sh.set(
         cancel_signal=signal.SIGHUP,
@@ -1392,8 +1392,35 @@ async def test_audit_cancel_nohup(sh):
         await asyncio.wait_for(sh("nohup", "sleep", "10"), timeout=0.2)
 
     assert calls == [
-        ("start", "nohup", None, None),
-        ("signal", "nohup", None, "Signals.SIGHUP"),
-        ("signal", "nohup", None, "Signals.SIGKILL"),
-        ("stop", "nohup", -9, None),
+        ("start", "nohup", None, False, None),
+        ("signal", "nohup", None, True, "Signals.SIGHUP"),
+        ("signal", "nohup", None, True, "Signals.SIGKILL"),
+        ("stop", "nohup", -9, True, None),
+    ]
+
+
+async def test_set_cancel_signal_invalid(sh):
+    "Test audit callback when a command is cancelled."
+
+    calls = []
+
+    def _audit(phase, info):
+        runner = info["runner"]
+        signal = info.get("signal")
+        calls.append((phase, runner.name, runner.returncode, runner.cancelled, signal))
+
+    sh = sh.set(
+        cancel_signal="INVALID",
+        cancel_timeout=0.2,
+        audit_callback=_audit,
+    )
+
+    with pytest.raises(TypeError):
+        await asyncio.wait_for(sh("nohup", "sleep", "10"), timeout=0.2)
+
+    assert calls == [
+        ("start", "nohup", None, False, None),
+        ("signal", "nohup", None, True, "INVALID"),
+        ("signal", "nohup", None, True, "Signals.SIGKILL"),
+        ("stop", "nohup", -9, True, None),
     ]

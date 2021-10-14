@@ -17,9 +17,7 @@ from shellous.util import close_fds, uninterrupted, verify_dev_fd, wait_pid, whi
 
 _KILL_TIMEOUT = 3.0
 _CLOSE_TIMEOUT = 0.25
-
 _UNLAUNCHED_EXIT_CODE = -255
-_FLAKY_EXIT_CODE = 255
 
 _BSD = sys.platform.startswith("freebsd") or sys.platform == "darwin"
 
@@ -373,12 +371,9 @@ class Runner:
 
         return make_result(self.command, result, self._cancelled)
 
-    def add_task(self, coro, tag=None):
+    def add_task(self, coro, tag=""):
         "Add a background task."
-        if tag:
-            task_name = f"{self.name}#{tag}"
-        else:
-            task_name = self.name
+        task_name = f"{self.name}#{tag}"
         task = asyncio.create_task(coro, name=task_name)
         self._tasks.append(task)
         return task
@@ -676,10 +671,6 @@ class Runner:
             self._proc._transport.close()  # pylint: disable=protected-access
             return
 
-        # asyncio child watcher artifact.
-        if self._proc.returncode == _FLAKY_EXIT_CODE:
-            LOGGER.warning("Runner._close exit code=%r", self._proc.returncode)
-
         try:
             # Make sure the transport is closed (for asyncio and uvloop).
             self._proc._transport.close()  # pylint: disable=protected-access
@@ -799,12 +790,9 @@ class PipeRunner:  # pylint: disable=too-many-instance-attributes
         "Return `Result` object for PipeRunner."
         return make_result(self._pipe, self._results, self._cancelled)
 
-    def add_task(self, coro, tag=None):
+    def add_task(self, coro, tag=""):
         "Add a background task."
-        if tag:
-            task_name = f"{self.name}#{tag}"
-        else:
-            task_name = self.name
+        task_name = f"{self.name}#{tag}"
         task = asyncio.create_task(coro, name=task_name)
         self._tasks.append(task)
         return task

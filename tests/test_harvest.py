@@ -166,3 +166,44 @@ async def test_harvest_cancel_finish():
         await task
 
     assert _finished
+
+
+async def test_harvest_cancel_failed():
+    "Test the harvest function with a task that refuses to cancel."
+
+    async def _coro():
+        try:
+            await asyncio.sleep(60.0)
+        except asyncio.CancelledError:
+            pass
+        await asyncio.sleep(60.0)
+
+    with pytest.raises(RuntimeError, match="_cancel_waiter failed"):
+        await harvest(_coro(), timeout=0.2, cancel_timeout=0.2)
+
+    # Give cancelled task a chance to exit.
+    await asyncio.sleep(0.001)
+
+
+async def test_harvest_cancel_wait_cancelled():
+    "Test the harvest function when _cancel_wait is itself cancelled."
+
+    async def _coro():
+        try:
+            await asyncio.sleep(60.0)
+        except asyncio.CancelledError:
+            pass
+        await asyncio.sleep(60.0)
+
+    async def _task1():
+        await harvest(_coro(), timeout=0.2, cancel_timeout=0.5)
+
+    task = asyncio.create_task(_task1())
+    await asyncio.sleep(0.4)
+    task.cancel()
+
+    with pytest.raises(RuntimeError, match="_cancel_waiter failed"):
+        await task
+
+    # Give cancelled task a chance to exit.
+    await asyncio.sleep(0.001)

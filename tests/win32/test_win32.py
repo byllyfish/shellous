@@ -42,3 +42,10 @@ async def test_empty_env_system_root(sh):
     cmd = sh(sys.executable, "-c", "print('test1')")
     result = await cmd.set(inherit_env=False).env(SystemRoot=...)
     assert result == "test1\r\n"
+
+
+async def test_process_substitution(sh):
+    "Test that process substitution raises an error."
+    cmd = sh(sys.executable, "-c", "pass")
+    with pytest.raises(RuntimeError, match="process substitution not supported"):
+        await cmd(cmd())

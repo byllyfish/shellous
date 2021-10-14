@@ -162,26 +162,34 @@ async def _cancel_wait(tasks, trustee, cancel_timeout, cancel_finish=False):
             for task in tasks:
                 task.cancel()
 
-        _, pending = await asyncio.wait(
-            tasks,
-            timeout=cancel_timeout,
-            return_when=asyncio.ALL_COMPLETED,
-        )
-
-        if pending:
-            LOGGER.error(
-                "harvest._cancel_wait pending=%r trustee=%r",
-                pending,
-                trustee,
-            )
-            raise RuntimeError("Harvest._cancel_wait failed")
+        await _cancel_waiter(tasks, trustee, cancel_timeout)
 
     except asyncio.CancelledError:
-        if LOG_DETAIL:
-            LOGGER.warning(
-                "harvest._cancel_wait cancelled itself? trustee=%r",
-                trustee,
-            )
+        # Retry once if _cancel_wait is itself cancelled.
+        LOGGER.warning("Harvest._cancel_wait cancelled itself trustee=%r", trustee)
+        await _cancel_waiter(tasks, trustee, cancel_timeout)
+
+
+async def _cancel_waiter(tasks, trustee, timeout):
+    "Handle case where _cancel_wait is cancelled itself."
+
+    _, pending = await asyncio.wait(
+        tasks,
+        timeout=timeout,
+        return_when=asyncio.ALL_COMPLETED,
+    )
+
+    if pending:
+        LOGGER.error(
+            "harvest._cancel_waiter pending=%r trustee=%r",
+            pending,
+            trustee,
+        )
+
+        for task in pending:
+            task.cancel()
+
+        raise RuntimeError("Harvest._cancel_waiter failed")
 
 
 def _to_result(task):

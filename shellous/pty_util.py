@@ -13,7 +13,7 @@ try:
     import pty
     import termios
     import tty
-except ImportError:
+except ImportError:  # pragma: no cover
     pass
 
 from .log import LOG_DETAIL, LOGGER, log_method
@@ -159,45 +159,45 @@ async def _open_pty_streams(parent_fd: int, child_fd: ChildFd):
     return reader, writer
 
 
-def raw(rows=0, cols=0, xpixel=0, ypixel=0):
+def raw(rows=0, cols=0):
     "Return a function that sets PtyOptions.child_fd to raw mode."
 
-    if Ellipsis in (rows, cols, xpixel, ypixel):
-        rows, cols, xpixel, ypixel = _inherit_term_size(rows, cols, xpixel, ypixel)
+    if Ellipsis in (rows, cols):
+        rows, cols = _inherit_term_size(rows, cols)
 
     def _pty_set_raw(fdesc):
         tty.setraw(fdesc)
-        if rows or cols or xpixel or ypixel:
-            _set_term_size(fdesc, rows, cols, xpixel, ypixel)
+        if rows or cols:
+            _set_term_size(fdesc, rows, cols)
         assert _get_eof(fdesc) == b""
 
     return _pty_set_raw
 
 
-def cbreak(rows=0, cols=0, xpixel=0, ypixel=0):
+def cbreak(rows=0, cols=0):
     "Return a function that sets PtyOptions.child_fd to cbreak mode."
 
-    if Ellipsis in (rows, cols, xpixel, ypixel):
-        rows, cols, xpixel, ypixel = _inherit_term_size(rows, cols, xpixel, ypixel)
+    if Ellipsis in (rows, cols):
+        rows, cols = _inherit_term_size(rows, cols)
 
     def _pty_set_cbreak(fdesc):
         tty.setcbreak(fdesc)
-        if rows or cols or xpixel or ypixel:
-            _set_term_size(fdesc, rows, cols, xpixel, ypixel)
+        if rows or cols:
+            _set_term_size(fdesc, rows, cols)
         assert _get_eof(fdesc) == b""
 
     return _pty_set_cbreak
 
 
-def canonical(rows=0, cols=0, xpixel=0, ypixel=0, echo=True):
+def canonical(rows=0, cols=0, echo=True):
     "Return a function that leaves PtyOptions.child_fd in canonical mode."
 
-    if Ellipsis in (rows, cols, xpixel, ypixel):
-        rows, cols, xpixel, ypixel = _inherit_term_size(rows, cols, xpixel, ypixel)
+    if Ellipsis in (rows, cols):
+        rows, cols = _inherit_term_size(rows, cols)
 
     def _pty_set_canonical(fdesc):
-        if rows or cols or xpixel or ypixel:
-            _set_term_size(fdesc, rows, cols, xpixel, ypixel)
+        if rows or cols:
+            _set_term_size(fdesc, rows, cols)
         if not echo:
             _set_term_echo(fdesc, False)
         assert _get_eof(fdesc) == b"\x04"
@@ -219,20 +219,20 @@ def _set_term_echo(fdesc, echo):
         termios.tcsetattr(fdesc, termios.TCSADRAIN, attrs)
 
 
-def _set_term_size(fdesc, rows, cols, xpixel, ypixel):
+def _set_term_size(fdesc, rows, cols):
     "Set pseudo-terminal size."
     try:
-        winsz = struct.pack("HHHH", rows, cols, xpixel, ypixel)
+        winsz = struct.pack("HHHH", rows, cols, 0, 0)
         fcntl.ioctl(fdesc, tty.TIOCSWINSZ, winsz)
     except OSError as ex:
         LOGGER.warning("_set_term_size ex=%r", ex)
 
 
-def _inherit_term_size(rows, cols, xpixel, ypixel):
+def _inherit_term_size(rows, cols):
     "Override ... with terminal setting from current stdin."
     try:
         zeros = struct.pack("HHHH", 0, 0, 0, 0)
-        winsz = fcntl.ioctl(_STDIN_FILENO, tty.TIOCGWINSZ, zeros)
+        winsz = fcntl.ioctl(_STDOUT_FILENO, tty.TIOCGWINSZ, zeros)
         winsz = struct.unpack("HHHH", winsz)
     except (OSError, struct.error) as ex:
         winsz = (0, 0, 0, 0)
@@ -242,12 +242,8 @@ def _inherit_term_size(rows, cols, xpixel, ypixel):
         rows = winsz[0]
     if cols is Ellipsis:
         cols = winsz[1]
-    if xpixel is Ellipsis:
-        xpixel = winsz[2]
-    if ypixel is Ellipsis:
-        ypixel = winsz[3]
 
-    return rows, cols, xpixel, ypixel
+    return rows, cols
 
 
 def _get_eof(fdesc):
