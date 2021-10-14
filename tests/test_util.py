@@ -1,5 +1,6 @@
 import asyncio
 import os
+import sys
 
 import pytest
 from shellous.util import (
@@ -84,6 +85,7 @@ async def test_uninterrupted():
     assert done
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="Windows")
 def test_wait_pid(caplog):
     "Test wait_pid utility function with bogus pid."
 

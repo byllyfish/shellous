@@ -66,11 +66,14 @@ def verify_dev_fd(fdesc: int) -> None:
 def wait_pid(pid: int) -> Optional[int]:
     """Call os.waitpid and return exit status.
 
+    Not supported on Windows; raises an AttributeError.
+
     Return None if process is still running.
     """
     assert pid is not None and pid > 0
 
     try:
+        # os.WNOHANG is not available on Windows.
         result_pid, status = os.waitpid(pid, os.WNOHANG)
     except ChildProcessError as ex:
         # Set status to 255 if process not found.
