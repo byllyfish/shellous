@@ -1,6 +1,20 @@
 Shellous Change Log
 ===================
 
+0.8.0
+-----
+
+- [API] Rename preexec_fn and start_new_session options, and reserve them for testing.
+- [FEATURE] Add support for redirecting to and from asyncio StreamWriter/StreamReader.
+- [FEATURE] Add `close_fds` option and align defaults with posix_spawn (#78).
+- [FEATURE] Add support for redirection constant literals: ..., (), and 1.
+- [FEATURE] Add support for async context manager API directly to Command and Pipeline.
+- [FEATURE] Add support for direct iteration (using an implicit context manager.)
+- [FEATURE] Add the `audit_callback` option.
+- [BUGFIX] Fix stdin redirects from BytesIO and StringIO.
+- [BUGFIX] Do not allow create_subprocess_exec to be interrupted when cancelled.
+- [LATERAL] Refactor and improve test coverage.
+
 0.7.0
 -----
 
