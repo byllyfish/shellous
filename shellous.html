@@ -44,6 +44,7 @@
     <li><a href="#async-with-for">Async With &amp; For</a></li>
     <li><a href="#incomplete-results">Incomplete Results</a></li>
     <li><a href="#pseudo-terminal-support-unix-only">Pseudo-Terminal Support (Unix Only)</a></li>
+    <li><a href="#context-objects">Context Objects</a></li>
   </ul></li>
 </ul>
 
@@ -117,7 +118,7 @@ similar to and inspired by <a href="https://pypi.org/project/sh/">sh</a>.</p>
 <li>Requires Python 3.9 or later.</li>
 <li>Requires an asyncio event loop.</li>
 <li>Process substitution requires a Unix system with /dev/fd support.</li>
-<li>Pseudo-terminals require a Unix system.</li>
+<li>Pseudo-terminals require a Unix system. Pty's do not work on <a href="https://github.com/MagicStack/uvloop">uvloop</a>.</li>
 </ul>
 
 <h2 id="basic-usage">Basic Usage</h2>
@@ -330,6 +331,23 @@ a function to configure the tty mode and size.</p>
 <pre><code>&gt;&gt;&gt; ls = sh("ls").set(pty=<a href="#canonical">shellous.canonical</a>(cols=40, rows=10, echo=False))
 &gt;&gt;&gt; await ls("README.md", "CHANGELOG.md")
 'CHANGELOG.md\tREADME.md\r\n'
+</code></pre>
+
+<h2 id="context-objects">Context Objects</h2>
+
+<p>You can specify shared command settings in a context object. Context objects are immutable,
+so you must store the result of your changes in a new variable.</p>
+
+<pre><code>&gt;&gt;&gt; auditor = lambda phase, info: print(phase, info["runner"].name)
+&gt;&gt;&gt; sh1 = sh.set(audit_callback=auditor)
+</code></pre>
+
+<p>Now all commands run with <code>sh1</code> will log their progress using the audit callback.</p>
+
+<pre><code>&gt;&gt;&gt; await sh1("echo", "goodbye")
+start echo
+stop echo
+'goodbye\n'
 </code></pre>
 </div>
 

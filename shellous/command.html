@@ -100,16 +100,13 @@
                                 <a class="variable" href="#Options.write_mode">write_mode</a>
                         </li>
                         <li>
-                                <a class="variable" href="#Options.start_new_session">start_new_session</a>
-                        </li>
-                        <li>
-                                <a class="variable" href="#Options.preexec_fn">preexec_fn</a>
-                        </li>
-                        <li>
                                 <a class="variable" href="#Options.pty">pty</a>
                         </li>
                         <li>
                                 <a class="variable" href="#Options.close_fds">close_fds</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Options.audit_callback">audit_callback</a>
                         </li>
                         <li>
                                 <a class="function" href="#Options.merge_env">merge_env</a>
@@ -326,10 +323,10 @@ function to create these, rather than creating them directly.</p></li>
     <span class="n">write_mode</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="s2">&quot;True if using process substitution in write mode.&quot;</span>
 
-    <span class="n">start_new_session</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">_start_new_session</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="s2">&quot;True if child process should start a new session with setsid().&quot;</span>
 
-    <span class="n">preexec_fn</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">_preexec_fn</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="s2">&quot;Function to call in child process after fork from parent.&quot;</span>
 
     <span class="n">pty</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
@@ -337,6 +334,9 @@ function to create these, rather than creating them directly.</p></li>
 
     <span class="n">close_fds</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="s2">&quot;True if child process should close all file descriptors.&quot;</span>
+
+    <span class="n">audit_callback</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="s2">&quot;Function called to audit stages of process execution.&quot;</span>
 
     <span class="k">def</span> <span class="nf">merge_env</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Return our `env` merged with the global environment.&quot;</span>
@@ -392,7 +392,10 @@ function to create these, rather than creating them directly.</p></li>
         <span class="k">return</span> <span class="n">dataclasses</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">env</span><span class="o">=</span><span class="n">new_env</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">set</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kwds</span><span class="p">):</span>
-        <span class="s2">&quot;Return new options with given properties updated.&quot;</span>
+        <span class="sd">&quot;&quot;&quot;Return new options with given properties updated.</span>
+
+<span class="sd">        See `Command.set` for option reference.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">kwds</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">value</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">kwds</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">_UNSET</span><span class="p">}</span>
         <span class="k">return</span> <span class="n">dataclasses</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">)</span>
 
@@ -443,12 +446,16 @@ function to create these, rather than creating them directly.</p></li>
         <span class="n">pass_fds</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">pass_fds_closed</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">write_mode</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
-        <span class="n">start_new_session</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
-        <span class="n">preexec_fn</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">_start_new_session</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">_preexec_fn</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">pty</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">close_fds</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">audit_callback</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;CmdContext&quot;</span><span class="p">:</span>
-        <span class="s2">&quot;Return new context with custom options set.&quot;</span>
+        <span class="sd">&quot;&quot;&quot;Return new context with custom options set.</span>
+
+<span class="sd">        See `Command.set` for option reference.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">kwargs</span> <span class="o">=</span> <span class="nb">locals</span><span class="p">()</span>
         <span class="k">del</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;self&quot;</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">CmdContext</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">kwargs</span><span class="p">))</span>
@@ -580,40 +587,118 @@ function to create these, rather than creating them directly.</p></li>
         <span class="n">pass_fds</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Iterable</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">pass_fds_close</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">write_mode</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
-        <span class="n">start_new_session</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
-        <span class="n">preexec_fn</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">_start_new_session</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">_preexec_fn</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">pty</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">close_fds</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">audit_callback</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Command&quot;</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Return new command with custom options set.</span>
 
-<span class="sd">        - Set `inherit_env` to False to prevent the command from inheriting</span>
-<span class="sd">        the parent environment.</span>
-<span class="sd">        - Set `encoding` to a string encoding like &quot;utf-8&quot;, or &quot;utf-8 replace&quot;.</span>
-<span class="sd">        If `encoding` is None, use raw bytes.</span>
-<span class="sd">        - Set `return_result` to True to return a `Result` object instead of</span>
-<span class="sd">        the standard output. The `Result` object includes the exit code.</span>
-<span class="sd">        - Set `incomplete_result` to True to return a `ResultError` object when</span>
-<span class="sd">        the command is cancelled, instead of a CancelledError.</span>
-<span class="sd">        - Set `exit_codes` to the set of allowed exit codes that will not raise</span>
-<span class="sd">        a `ResultError`. None means {0}.</span>
-<span class="sd">        - Set `cancel_timeout` to the timeout in seconds to wait for a process</span>
-<span class="sd">        to terminate after sending it the cancel signal.</span>
-<span class="sd">        - Set `cancel_signal` to the signal used to stop a process when it is</span>
-<span class="sd">        cancelled.</span>
-<span class="sd">        - Set `alt_name` to an alternative name of the command to be displayed</span>
-<span class="sd">        in logs. Used to resolve ambiguity when the actual command name is a</span>
-<span class="sd">        scripting language.</span>
-<span class="sd">        - Set `pass_fds` to pass open file descriptors to the command.</span>
-<span class="sd">        - Set `pass_fds_close` to True to auto-close the `pass_fds`.</span>
-<span class="sd">        - Set `write_mode` to True when using process substitution for writing.</span>
-<span class="sd">        - Set `start_new_session` to True to start a new session.</span>
-<span class="sd">        - Set `preexec_fn` to a function to call in child process.</span>
-<span class="sd">        - Set `pty` to True to use a pseudo-terminal (pty) to control the child</span>
-<span class="sd">        process. You may also set `pty` to a 1-arg function to call on the</span>
-<span class="sd">        child_fd for setup purposes. Setting `pty` forces `start_new_session`</span>
-<span class="sd">        to True.</span>
-<span class="sd">        - Set `close_fds` to True to close all file descriptors in child process.</span>
+<span class="sd">        **inherit_env** (bool) default=True&lt;br&gt;</span>
+<span class="sd">        Subprocess should inherit the parent process environment. If this is</span>
+<span class="sd">        False, the subprocess will only have environment variables specified</span>
+<span class="sd">        by `Command.env`. If `inherit_env` is True, the parent process</span>
+<span class="sd">        environment is augmented/overriden by any variables specified in</span>
+<span class="sd">        `Command.env`.</span>
+
+<span class="sd">        **encoding** (str | None) default=&quot;utf-8&quot;&lt;br&gt;</span>
+<span class="sd">        String encoding to use for subprocess input/output. If `encoding` is</span>
+<span class="sd">        None, use raw bytes. To specify `errors`, append it after a space. For</span>
+<span class="sd">        example, use &quot;utf-8 replace&quot; to specify &quot;utf-8&quot; with errors &quot;replace&quot;.</span>
+
+<span class="sd">        **return_result** (bool) default=False&lt;br&gt;</span>
+<span class="sd">        When True, return a `Result` object instead of the standard output.</span>
+
+<span class="sd">        **incomplete_result** (bool) default=False&lt;br&gt;</span>
+<span class="sd">        When True, raise a `ResultError` when the command is cancelled. On the</span>
+<span class="sd">        plus side, this gives you access to the initial output of the command.</span>
+<span class="sd">        On the negative side, the `ResultError` swallows the `CancelledError`.</span>
+<span class="sd">        Your code may need to re-raise a CancelledError after dealing with the</span>
+<span class="sd">        partial result. When `incomplete_result` is False, a cancelled command</span>
+<span class="sd">        will raise a `CancelledError`.</span>
+
+<span class="sd">        **exit_codes** (set[int] | None) default=None&lt;br&gt;</span>
+<span class="sd">        Set of allowed exit codes that will not raise a `ResultError`. By default,</span>
+<span class="sd">        `exit_codes` is `None` which indicates that 0 is the only valid exit</span>
+<span class="sd">        status. Any other exit status will raise a `ResultError`. In addition to</span>
+<span class="sd">        sets of integers, you can use a `range` object, e.g. `range(256)` for</span>
+<span class="sd">        any positive exit status.</span>
+
+<span class="sd">        **cancel_timeout** (float) default=3.0 seconds&lt;br&gt;</span>
+<span class="sd">        Timeout in seconds to wait for a process to exit after sending it a</span>
+<span class="sd">        `cancel_signal`. If the process does not exit after waiting for</span>
+<span class="sd">        `cancel_timeout` seconds, we send a kill signal to the process.</span>
+
+<span class="sd">        **cancel_signal** (signals.Signal | None) default=signal.SIGTERM&lt;br&gt;</span>
+<span class="sd">        Signal sent to a process when it is cancelled. If `cancel_signal` is</span>
+<span class="sd">        None, send a `SIGKILL` on Unix and `SIGTERM` (TerminateProcess) on</span>
+<span class="sd">        Windows.</span>
+
+<span class="sd">        **alt_name** (str| None) default=None&lt;br&gt;</span>
+<span class="sd">        Alternative name of the command displayed in logs. Used to resolve</span>
+<span class="sd">        ambiguity when the actual command name is a scripting language.</span>
+
+<span class="sd">        **pass_fds** (Iterable[int]) default=()&lt;br&gt;</span>
+<span class="sd">        Specify open file descriptors to pass to the subprocess.</span>
+
+<span class="sd">        **pass_fds_close** (bool) default=False&lt;br&gt;</span>
+<span class="sd">        Close the file descriptors in `pass_fds` immediately in the current</span>
+<span class="sd">        process immediately after launching the subprocess.</span>
+
+<span class="sd">        **write_mode** (bool) default=False&lt;br&gt;</span>
+<span class="sd">        Used to indicate process substitution is writing.</span>
+
+<span class="sd">        **_start_new_session** (bool) default=False&lt;br&gt;</span>
+<span class="sd">        Provided for testing purposes only.</span>
+
+<span class="sd">        **_preexec_fn** (Callable() | None) default=None&lt;br&gt;</span>
+<span class="sd">        Provided for testing purposes only.</span>
+
+<span class="sd">        **pty** (bool | Callable(int)) default=False&lt;br&gt;</span>
+<span class="sd">        If True, use a pseudo-terminal (pty) to control the child process.</span>
+<span class="sd">        If `pty` is set to a callable, the function must take one int argument</span>
+<span class="sd">        for the child side of the pty. The function is called to set the child</span>
+<span class="sd">        pty&#39;s termios settings before spawning the subprocess.</span>
+
+<span class="sd">        shellous provides three utility functions: `shellous.canonical`,</span>
+<span class="sd">        `shellous.raw` and `shellous.cbreak` that can be used as arguments to</span>
+<span class="sd">        the `pty` option.</span>
+
+<span class="sd">        **close_fds** (bool) default=False&lt;br&gt;</span>
+<span class="sd">        Close all unnecessary file descriptors in the child process. This</span>
+<span class="sd">        defaults to False to align with `posix_spawn` requirements. Please refer</span>
+<span class="sd">        to the documentation on [inheritance of file descriptors](</span>
+<span class="sd">        https://docs.python.org/3/library/os.html#inheritance-of-file-descriptors)</span>
+<span class="sd">        for behavior on Unix and Windows.</span>
+
+<span class="sd">        **audit_callback** (Callable(phase, info) | None) default=None&lt;br&gt;</span>
+<span class="sd">        Specify a function to call as the command execution goes through its</span>
+<span class="sd">        lifecycle. `audit_callback` is a function called with two arguments,</span>
+<span class="sd">        *phase* and *info*.</span>
+
+<span class="sd">        *phase* can be one of three values:</span>
+
+<span class="sd">            &quot;start&quot;: The process is about to start.</span>
+
+<span class="sd">            &quot;stop&quot;: The process finally stopped.</span>
+
+<span class="sd">            &quot;signal&quot;: The process is being sent a signal.</span>
+
+<span class="sd">        *info* is a dictionary providing more information for the callback. The</span>
+<span class="sd">        following keys are currently defined:</span>
+
+<span class="sd">            &quot;runner&quot; (Runner): Reference to the Runner object.</span>
+
+<span class="sd">            &quot;failure&quot; (str): When phase is &quot;stop&quot;, optional string with the</span>
+<span class="sd">            name of the exception from launching the process.</span>
+
+<span class="sd">            &quot;signal&quot; (str): When phase is &quot;signal&quot;, the signal name/number</span>
+<span class="sd">            sent to the process, e.g. &quot;Signals.SIGTERM&quot;.</span>
+
+<span class="sd">        The primary use case for `audit_callback` is measuring how long each</span>
+<span class="sd">        command takes to run and exporting this information to a metrics</span>
+<span class="sd">        framework like Prometheus.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">kwargs</span> <span class="o">=</span> <span class="nb">locals</span><span class="p">()</span>
         <span class="k">del</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;self&quot;</span><span class="p">]</span>
@@ -791,10 +876,10 @@ function to create these, rather than creating them directly.</p></li>
     <span class="n">write_mode</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="s2">&quot;True if using process substitution in write mode.&quot;</span>
 
-    <span class="n">start_new_session</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">_start_new_session</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="s2">&quot;True if child process should start a new session with setsid().&quot;</span>
 
-    <span class="n">preexec_fn</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">_preexec_fn</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="s2">&quot;Function to call in child process after fork from parent.&quot;</span>
 
     <span class="n">pty</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
@@ -802,6 +887,9 @@ function to create these, rather than creating them directly.</p></li>
 
     <span class="n">close_fds</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="s2">&quot;True if child process should close all file descriptors.&quot;</span>
+
+    <span class="n">audit_callback</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="s2">&quot;Function called to audit stages of process execution.&quot;</span>
 
     <span class="k">def</span> <span class="nf">merge_env</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Return our `env` merged with the global environment.&quot;</span>
@@ -857,7 +945,10 @@ function to create these, rather than creating them directly.</p></li>
         <span class="k">return</span> <span class="n">dataclasses</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">env</span><span class="o">=</span><span class="n">new_env</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">set</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kwds</span><span class="p">):</span>
-        <span class="s2">&quot;Return new options with given properties updated.&quot;</span>
+        <span class="sd">&quot;&quot;&quot;Return new options with given properties updated.</span>
+
+<span class="sd">        See `Command.set` for option reference.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">kwds</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">value</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">kwds</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">_UNSET</span><span class="p">}</span>
         <span class="k">return</span> <span class="n">dataclasses</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">)</span>
 </pre></div>
@@ -894,10 +985,11 @@ function to create these, rather than creating them directly.</p></li>
     pass_fds: collections.abc.Iterable = (),
     pass_fds_close: bool = False,
     write_mode: bool = False,
-    start_new_session: bool = False,
-    preexec_fn: Any = None,
+    _start_new_session: bool = False,
+    _preexec_fn: Any = None,
     pty: bool = False,
-    close_fds: bool = False
+    close_fds: bool = False,
+    audit_callback: Any = None
 )</span>
     </div>
 
@@ -1136,28 +1228,6 @@ function to create these, rather than creating them directly.</p></li>
 
 
                             </div>
-                            <div id="Options.start_new_session" class="classattr">
-                                            <div class="attr variable"><a class="headerlink" href="#Options.start_new_session">#&nbsp;&nbsp</a>
-
-        <span class="name">start_new_session</span><span class="annotation">: bool</span><span class="default_value"> = False</span>
-    </div>
-
-            <div class="docstring"><p>True if child process should start a new session with setsid().</p>
-</div>
-
-
-                            </div>
-                            <div id="Options.preexec_fn" class="classattr">
-                                            <div class="attr variable"><a class="headerlink" href="#Options.preexec_fn">#&nbsp;&nbsp</a>
-
-        <span class="name">preexec_fn</span><span class="annotation">: Any</span><span class="default_value"> = None</span>
-    </div>
-
-            <div class="docstring"><p>Function to call in child process after fork from parent.</p>
-</div>
-
-
-                            </div>
                             <div id="Options.pty" class="classattr">
                                             <div class="attr variable"><a class="headerlink" href="#Options.pty">#&nbsp;&nbsp</a>
 
@@ -1176,6 +1246,17 @@ function to create these, rather than creating them directly.</p></li>
     </div>
 
             <div class="docstring"><p>True if child process should close all file descriptors.</p>
+</div>
+
+
+                            </div>
+                            <div id="Options.audit_callback" class="classattr">
+                                            <div class="attr variable"><a class="headerlink" href="#Options.audit_callback">#&nbsp;&nbsp</a>
+
+        <span class="name">audit_callback</span><span class="annotation">: Any</span><span class="default_value"> = None</span>
+    </div>
+
+            <div class="docstring"><p>Function called to audit stages of process execution.</p>
 </div>
 
 
@@ -1334,7 +1415,10 @@ function to create these, rather than creating them directly.</p></li>
                 <details>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">set</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kwds</span><span class="p">):</span>
-        <span class="s2">&quot;Return new options with given properties updated.&quot;</span>
+        <span class="sd">&quot;&quot;&quot;Return new options with given properties updated.</span>
+
+<span class="sd">        See `Command.set` for option reference.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">kwds</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">value</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">kwds</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">_UNSET</span><span class="p">}</span>
         <span class="k">return</span> <span class="n">dataclasses</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">)</span>
 </pre></div>
@@ -1342,6 +1426,8 @@ function to create these, rather than creating them directly.</p></li>
         </details>
 
             <div class="docstring"><p>Return new options with given properties updated.</p>
+
+<p>See <code><a href="#Command.set">Command.set</a></code> for option reference.</p>
 </div>
 
 
@@ -1405,12 +1491,16 @@ function to create these, rather than creating them directly.</p></li>
         <span class="n">pass_fds</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">pass_fds_closed</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">write_mode</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
-        <span class="n">start_new_session</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
-        <span class="n">preexec_fn</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">_start_new_session</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">_preexec_fn</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">pty</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">close_fds</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">audit_callback</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;CmdContext&quot;</span><span class="p">:</span>
-        <span class="s2">&quot;Return new context with custom options set.&quot;</span>
+        <span class="sd">&quot;&quot;&quot;Return new context with custom options set.</span>
+
+<span class="sd">        See `Command.set` for option reference.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">kwargs</span> <span class="o">=</span> <span class="nb">locals</span><span class="p">()</span>
         <span class="k">del</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;self&quot;</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">CmdContext</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">kwargs</span><span class="p">))</span>
@@ -1612,10 +1702,11 @@ function to create these, rather than creating them directly.</p></li>
     pass_fds=&lt;UNSET.UNSET: 1&gt;,
     pass_fds_closed=&lt;UNSET.UNSET: 1&gt;,
     write_mode=&lt;UNSET.UNSET: 1&gt;,
-    start_new_session=&lt;UNSET.UNSET: 1&gt;,
-    preexec_fn=&lt;UNSET.UNSET: 1&gt;,
+    _start_new_session=&lt;UNSET.UNSET: 1&gt;,
+    _preexec_fn=&lt;UNSET.UNSET: 1&gt;,
     pty=&lt;UNSET.UNSET: 1&gt;,
-    close_fds=&lt;UNSET.UNSET: 1&gt;
+    close_fds=&lt;UNSET.UNSET: 1&gt;,
+    audit_callback=&lt;UNSET.UNSET: 1&gt;
 ) -&gt; <a href="#CmdContext">shellous.command.CmdContext</a></span>:
     </div>
 
@@ -1635,12 +1726,16 @@ function to create these, rather than creating them directly.</p></li>
         <span class="n">pass_fds</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">pass_fds_closed</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">write_mode</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
-        <span class="n">start_new_session</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
-        <span class="n">preexec_fn</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">_start_new_session</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">_preexec_fn</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">pty</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">close_fds</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">audit_callback</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;CmdContext&quot;</span><span class="p">:</span>
-        <span class="s2">&quot;Return new context with custom options set.&quot;</span>
+        <span class="sd">&quot;&quot;&quot;Return new context with custom options set.</span>
+
+<span class="sd">        See `Command.set` for option reference.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">kwargs</span> <span class="o">=</span> <span class="nb">locals</span><span class="p">()</span>
         <span class="k">del</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;self&quot;</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">CmdContext</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">kwargs</span><span class="p">))</span>
@@ -1649,6 +1744,8 @@ function to create these, rather than creating them directly.</p></li>
         </details>
 
             <div class="docstring"><p>Return new context with custom options set.</p>
+
+<p>See <code><a href="#Command.set">Command.set</a></code> for option reference.</p>
 </div>
 
 
@@ -1747,40 +1844,118 @@ function to create these, rather than creating them directly.</p></li>
         <span class="n">pass_fds</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Iterable</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">pass_fds_close</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">write_mode</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
-        <span class="n">start_new_session</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
-        <span class="n">preexec_fn</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">_start_new_session</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">_preexec_fn</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">pty</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">close_fds</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">audit_callback</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Command&quot;</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Return new command with custom options set.</span>
 
-<span class="sd">        - Set `inherit_env` to False to prevent the command from inheriting</span>
-<span class="sd">        the parent environment.</span>
-<span class="sd">        - Set `encoding` to a string encoding like &quot;utf-8&quot;, or &quot;utf-8 replace&quot;.</span>
-<span class="sd">        If `encoding` is None, use raw bytes.</span>
-<span class="sd">        - Set `return_result` to True to return a `Result` object instead of</span>
-<span class="sd">        the standard output. The `Result` object includes the exit code.</span>
-<span class="sd">        - Set `incomplete_result` to True to return a `ResultError` object when</span>
-<span class="sd">        the command is cancelled, instead of a CancelledError.</span>
-<span class="sd">        - Set `exit_codes` to the set of allowed exit codes that will not raise</span>
-<span class="sd">        a `ResultError`. None means {0}.</span>
-<span class="sd">        - Set `cancel_timeout` to the timeout in seconds to wait for a process</span>
-<span class="sd">        to terminate after sending it the cancel signal.</span>
-<span class="sd">        - Set `cancel_signal` to the signal used to stop a process when it is</span>
-<span class="sd">        cancelled.</span>
-<span class="sd">        - Set `alt_name` to an alternative name of the command to be displayed</span>
-<span class="sd">        in logs. Used to resolve ambiguity when the actual command name is a</span>
-<span class="sd">        scripting language.</span>
-<span class="sd">        - Set `pass_fds` to pass open file descriptors to the command.</span>
-<span class="sd">        - Set `pass_fds_close` to True to auto-close the `pass_fds`.</span>
-<span class="sd">        - Set `write_mode` to True when using process substitution for writing.</span>
-<span class="sd">        - Set `start_new_session` to True to start a new session.</span>
-<span class="sd">        - Set `preexec_fn` to a function to call in child process.</span>
-<span class="sd">        - Set `pty` to True to use a pseudo-terminal (pty) to control the child</span>
-<span class="sd">        process. You may also set `pty` to a 1-arg function to call on the</span>
-<span class="sd">        child_fd for setup purposes. Setting `pty` forces `start_new_session`</span>
-<span class="sd">        to True.</span>
-<span class="sd">        - Set `close_fds` to True to close all file descriptors in child process.</span>
+<span class="sd">        **inherit_env** (bool) default=True&lt;br&gt;</span>
+<span class="sd">        Subprocess should inherit the parent process environment. If this is</span>
+<span class="sd">        False, the subprocess will only have environment variables specified</span>
+<span class="sd">        by `Command.env`. If `inherit_env` is True, the parent process</span>
+<span class="sd">        environment is augmented/overriden by any variables specified in</span>
+<span class="sd">        `Command.env`.</span>
+
+<span class="sd">        **encoding** (str | None) default=&quot;utf-8&quot;&lt;br&gt;</span>
+<span class="sd">        String encoding to use for subprocess input/output. If `encoding` is</span>
+<span class="sd">        None, use raw bytes. To specify `errors`, append it after a space. For</span>
+<span class="sd">        example, use &quot;utf-8 replace&quot; to specify &quot;utf-8&quot; with errors &quot;replace&quot;.</span>
+
+<span class="sd">        **return_result** (bool) default=False&lt;br&gt;</span>
+<span class="sd">        When True, return a `Result` object instead of the standard output.</span>
+
+<span class="sd">        **incomplete_result** (bool) default=False&lt;br&gt;</span>
+<span class="sd">        When True, raise a `ResultError` when the command is cancelled. On the</span>
+<span class="sd">        plus side, this gives you access to the initial output of the command.</span>
+<span class="sd">        On the negative side, the `ResultError` swallows the `CancelledError`.</span>
+<span class="sd">        Your code may need to re-raise a CancelledError after dealing with the</span>
+<span class="sd">        partial result. When `incomplete_result` is False, a cancelled command</span>
+<span class="sd">        will raise a `CancelledError`.</span>
+
+<span class="sd">        **exit_codes** (set[int] | None) default=None&lt;br&gt;</span>
+<span class="sd">        Set of allowed exit codes that will not raise a `ResultError`. By default,</span>
+<span class="sd">        `exit_codes` is `None` which indicates that 0 is the only valid exit</span>
+<span class="sd">        status. Any other exit status will raise a `ResultError`. In addition to</span>
+<span class="sd">        sets of integers, you can use a `range` object, e.g. `range(256)` for</span>
+<span class="sd">        any positive exit status.</span>
+
+<span class="sd">        **cancel_timeout** (float) default=3.0 seconds&lt;br&gt;</span>
+<span class="sd">        Timeout in seconds to wait for a process to exit after sending it a</span>
+<span class="sd">        `cancel_signal`. If the process does not exit after waiting for</span>
+<span class="sd">        `cancel_timeout` seconds, we send a kill signal to the process.</span>
+
+<span class="sd">        **cancel_signal** (signals.Signal | None) default=signal.SIGTERM&lt;br&gt;</span>
+<span class="sd">        Signal sent to a process when it is cancelled. If `cancel_signal` is</span>
+<span class="sd">        None, send a `SIGKILL` on Unix and `SIGTERM` (TerminateProcess) on</span>
+<span class="sd">        Windows.</span>
+
+<span class="sd">        **alt_name** (str| None) default=None&lt;br&gt;</span>
+<span class="sd">        Alternative name of the command displayed in logs. Used to resolve</span>
+<span class="sd">        ambiguity when the actual command name is a scripting language.</span>
+
+<span class="sd">        **pass_fds** (Iterable[int]) default=()&lt;br&gt;</span>
+<span class="sd">        Specify open file descriptors to pass to the subprocess.</span>
+
+<span class="sd">        **pass_fds_close** (bool) default=False&lt;br&gt;</span>
+<span class="sd">        Close the file descriptors in `pass_fds` immediately in the current</span>
+<span class="sd">        process immediately after launching the subprocess.</span>
+
+<span class="sd">        **write_mode** (bool) default=False&lt;br&gt;</span>
+<span class="sd">        Used to indicate process substitution is writing.</span>
+
+<span class="sd">        **_start_new_session** (bool) default=False&lt;br&gt;</span>
+<span class="sd">        Provided for testing purposes only.</span>
+
+<span class="sd">        **_preexec_fn** (Callable() | None) default=None&lt;br&gt;</span>
+<span class="sd">        Provided for testing purposes only.</span>
+
+<span class="sd">        **pty** (bool | Callable(int)) default=False&lt;br&gt;</span>
+<span class="sd">        If True, use a pseudo-terminal (pty) to control the child process.</span>
+<span class="sd">        If `pty` is set to a callable, the function must take one int argument</span>
+<span class="sd">        for the child side of the pty. The function is called to set the child</span>
+<span class="sd">        pty&#39;s termios settings before spawning the subprocess.</span>
+
+<span class="sd">        shellous provides three utility functions: `shellous.canonical`,</span>
+<span class="sd">        `shellous.raw` and `shellous.cbreak` that can be used as arguments to</span>
+<span class="sd">        the `pty` option.</span>
+
+<span class="sd">        **close_fds** (bool) default=False&lt;br&gt;</span>
+<span class="sd">        Close all unnecessary file descriptors in the child process. This</span>
+<span class="sd">        defaults to False to align with `posix_spawn` requirements. Please refer</span>
+<span class="sd">        to the documentation on [inheritance of file descriptors](</span>
+<span class="sd">        https://docs.python.org/3/library/os.html#inheritance-of-file-descriptors)</span>
+<span class="sd">        for behavior on Unix and Windows.</span>
+
+<span class="sd">        **audit_callback** (Callable(phase, info) | None) default=None&lt;br&gt;</span>
+<span class="sd">        Specify a function to call as the command execution goes through its</span>
+<span class="sd">        lifecycle. `audit_callback` is a function called with two arguments,</span>
+<span class="sd">        *phase* and *info*.</span>
+
+<span class="sd">        *phase* can be one of three values:</span>
+
+<span class="sd">            &quot;start&quot;: The process is about to start.</span>
+
+<span class="sd">            &quot;stop&quot;: The process finally stopped.</span>
+
+<span class="sd">            &quot;signal&quot;: The process is being sent a signal.</span>
+
+<span class="sd">        *info* is a dictionary providing more information for the callback. The</span>
+<span class="sd">        following keys are currently defined:</span>
+
+<span class="sd">            &quot;runner&quot; (Runner): Reference to the Runner object.</span>
+
+<span class="sd">            &quot;failure&quot; (str): When phase is &quot;stop&quot;, optional string with the</span>
+<span class="sd">            name of the exception from launching the process.</span>
+
+<span class="sd">            &quot;signal&quot; (str): When phase is &quot;signal&quot;, the signal name/number</span>
+<span class="sd">            sent to the process, e.g. &quot;Signals.SIGTERM&quot;.</span>
+
+<span class="sd">        The primary use case for `audit_callback` is measuring how long each</span>
+<span class="sd">        command takes to run and exporting this information to a metrics</span>
+<span class="sd">        framework like Prometheus.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">kwargs</span> <span class="o">=</span> <span class="nb">locals</span><span class="p">()</span>
         <span class="k">del</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;self&quot;</span><span class="p">]</span>
@@ -2063,10 +2238,11 @@ is set, return that instead.</p>
     pass_fds: Union[collections.abc.Iterable[int], <a href="#UNSET">shellous.command.UNSET</a>] = &lt;UNSET.UNSET: 1&gt;,
     pass_fds_close: Union[bool, <a href="#UNSET">shellous.command.UNSET</a>] = &lt;UNSET.UNSET: 1&gt;,
     write_mode: Union[bool, <a href="#UNSET">shellous.command.UNSET</a>] = &lt;UNSET.UNSET: 1&gt;,
-    start_new_session: Union[bool, <a href="#UNSET">shellous.command.UNSET</a>] = &lt;UNSET.UNSET: 1&gt;,
-    preexec_fn: Union[Any, <a href="#UNSET">shellous.command.UNSET</a>] = &lt;UNSET.UNSET: 1&gt;,
+    _start_new_session: Union[bool, <a href="#UNSET">shellous.command.UNSET</a>] = &lt;UNSET.UNSET: 1&gt;,
+    _preexec_fn: Union[Any, <a href="#UNSET">shellous.command.UNSET</a>] = &lt;UNSET.UNSET: 1&gt;,
     pty: Union[bool, <a href="#UNSET">shellous.command.UNSET</a>] = &lt;UNSET.UNSET: 1&gt;,
-    close_fds: Union[bool, <a href="#UNSET">shellous.command.UNSET</a>] = &lt;UNSET.UNSET: 1&gt;
+    close_fds: Union[bool, <a href="#UNSET">shellous.command.UNSET</a>] = &lt;UNSET.UNSET: 1&gt;,
+    audit_callback: Union[Any, <a href="#UNSET">shellous.command.UNSET</a>] = &lt;UNSET.UNSET: 1&gt;
 ) -&gt; <a href="#Command">shellous.command.Command</a></span>:
     </div>
 
@@ -2086,40 +2262,118 @@ is set, return that instead.</p>
         <span class="n">pass_fds</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Iterable</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">pass_fds_close</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">write_mode</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
-        <span class="n">start_new_session</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
-        <span class="n">preexec_fn</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">_start_new_session</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">_preexec_fn</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">pty</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">close_fds</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">audit_callback</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Command&quot;</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Return new command with custom options set.</span>
 
-<span class="sd">        - Set `inherit_env` to False to prevent the command from inheriting</span>
-<span class="sd">        the parent environment.</span>
-<span class="sd">        - Set `encoding` to a string encoding like &quot;utf-8&quot;, or &quot;utf-8 replace&quot;.</span>
-<span class="sd">        If `encoding` is None, use raw bytes.</span>
-<span class="sd">        - Set `return_result` to True to return a `Result` object instead of</span>
-<span class="sd">        the standard output. The `Result` object includes the exit code.</span>
-<span class="sd">        - Set `incomplete_result` to True to return a `ResultError` object when</span>
-<span class="sd">        the command is cancelled, instead of a CancelledError.</span>
-<span class="sd">        - Set `exit_codes` to the set of allowed exit codes that will not raise</span>
-<span class="sd">        a `ResultError`. None means {0}.</span>
-<span class="sd">        - Set `cancel_timeout` to the timeout in seconds to wait for a process</span>
-<span class="sd">        to terminate after sending it the cancel signal.</span>
-<span class="sd">        - Set `cancel_signal` to the signal used to stop a process when it is</span>
-<span class="sd">        cancelled.</span>
-<span class="sd">        - Set `alt_name` to an alternative name of the command to be displayed</span>
-<span class="sd">        in logs. Used to resolve ambiguity when the actual command name is a</span>
-<span class="sd">        scripting language.</span>
-<span class="sd">        - Set `pass_fds` to pass open file descriptors to the command.</span>
-<span class="sd">        - Set `pass_fds_close` to True to auto-close the `pass_fds`.</span>
-<span class="sd">        - Set `write_mode` to True when using process substitution for writing.</span>
-<span class="sd">        - Set `start_new_session` to True to start a new session.</span>
-<span class="sd">        - Set `preexec_fn` to a function to call in child process.</span>
-<span class="sd">        - Set `pty` to True to use a pseudo-terminal (pty) to control the child</span>
-<span class="sd">        process. You may also set `pty` to a 1-arg function to call on the</span>
-<span class="sd">        child_fd for setup purposes. Setting `pty` forces `start_new_session`</span>
-<span class="sd">        to True.</span>
-<span class="sd">        - Set `close_fds` to True to close all file descriptors in child process.</span>
+<span class="sd">        **inherit_env** (bool) default=True&lt;br&gt;</span>
+<span class="sd">        Subprocess should inherit the parent process environment. If this is</span>
+<span class="sd">        False, the subprocess will only have environment variables specified</span>
+<span class="sd">        by `Command.env`. If `inherit_env` is True, the parent process</span>
+<span class="sd">        environment is augmented/overriden by any variables specified in</span>
+<span class="sd">        `Command.env`.</span>
+
+<span class="sd">        **encoding** (str | None) default=&quot;utf-8&quot;&lt;br&gt;</span>
+<span class="sd">        String encoding to use for subprocess input/output. If `encoding` is</span>
+<span class="sd">        None, use raw bytes. To specify `errors`, append it after a space. For</span>
+<span class="sd">        example, use &quot;utf-8 replace&quot; to specify &quot;utf-8&quot; with errors &quot;replace&quot;.</span>
+
+<span class="sd">        **return_result** (bool) default=False&lt;br&gt;</span>
+<span class="sd">        When True, return a `Result` object instead of the standard output.</span>
+
+<span class="sd">        **incomplete_result** (bool) default=False&lt;br&gt;</span>
+<span class="sd">        When True, raise a `ResultError` when the command is cancelled. On the</span>
+<span class="sd">        plus side, this gives you access to the initial output of the command.</span>
+<span class="sd">        On the negative side, the `ResultError` swallows the `CancelledError`.</span>
+<span class="sd">        Your code may need to re-raise a CancelledError after dealing with the</span>
+<span class="sd">        partial result. When `incomplete_result` is False, a cancelled command</span>
+<span class="sd">        will raise a `CancelledError`.</span>
+
+<span class="sd">        **exit_codes** (set[int] | None) default=None&lt;br&gt;</span>
+<span class="sd">        Set of allowed exit codes that will not raise a `ResultError`. By default,</span>
+<span class="sd">        `exit_codes` is `None` which indicates that 0 is the only valid exit</span>
+<span class="sd">        status. Any other exit status will raise a `ResultError`. In addition to</span>
+<span class="sd">        sets of integers, you can use a `range` object, e.g. `range(256)` for</span>
+<span class="sd">        any positive exit status.</span>
+
+<span class="sd">        **cancel_timeout** (float) default=3.0 seconds&lt;br&gt;</span>
+<span class="sd">        Timeout in seconds to wait for a process to exit after sending it a</span>
+<span class="sd">        `cancel_signal`. If the process does not exit after waiting for</span>
+<span class="sd">        `cancel_timeout` seconds, we send a kill signal to the process.</span>
+
+<span class="sd">        **cancel_signal** (signals.Signal | None) default=signal.SIGTERM&lt;br&gt;</span>
+<span class="sd">        Signal sent to a process when it is cancelled. If `cancel_signal` is</span>
+<span class="sd">        None, send a `SIGKILL` on Unix and `SIGTERM` (TerminateProcess) on</span>
+<span class="sd">        Windows.</span>
+
+<span class="sd">        **alt_name** (str| None) default=None&lt;br&gt;</span>
+<span class="sd">        Alternative name of the command displayed in logs. Used to resolve</span>
+<span class="sd">        ambiguity when the actual command name is a scripting language.</span>
+
+<span class="sd">        **pass_fds** (Iterable[int]) default=()&lt;br&gt;</span>
+<span class="sd">        Specify open file descriptors to pass to the subprocess.</span>
+
+<span class="sd">        **pass_fds_close** (bool) default=False&lt;br&gt;</span>
+<span class="sd">        Close the file descriptors in `pass_fds` immediately in the current</span>
+<span class="sd">        process immediately after launching the subprocess.</span>
+
+<span class="sd">        **write_mode** (bool) default=False&lt;br&gt;</span>
+<span class="sd">        Used to indicate process substitution is writing.</span>
+
+<span class="sd">        **_start_new_session** (bool) default=False&lt;br&gt;</span>
+<span class="sd">        Provided for testing purposes only.</span>
+
+<span class="sd">        **_preexec_fn** (Callable() | None) default=None&lt;br&gt;</span>
+<span class="sd">        Provided for testing purposes only.</span>
+
+<span class="sd">        **pty** (bool | Callable(int)) default=False&lt;br&gt;</span>
+<span class="sd">        If True, use a pseudo-terminal (pty) to control the child process.</span>
+<span class="sd">        If `pty` is set to a callable, the function must take one int argument</span>
+<span class="sd">        for the child side of the pty. The function is called to set the child</span>
+<span class="sd">        pty&#39;s termios settings before spawning the subprocess.</span>
+
+<span class="sd">        shellous provides three utility functions: `shellous.canonical`,</span>
+<span class="sd">        `shellous.raw` and `shellous.cbreak` that can be used as arguments to</span>
+<span class="sd">        the `pty` option.</span>
+
+<span class="sd">        **close_fds** (bool) default=False&lt;br&gt;</span>
+<span class="sd">        Close all unnecessary file descriptors in the child process. This</span>
+<span class="sd">        defaults to False to align with `posix_spawn` requirements. Please refer</span>
+<span class="sd">        to the documentation on [inheritance of file descriptors](</span>
+<span class="sd">        https://docs.python.org/3/library/os.html#inheritance-of-file-descriptors)</span>
+<span class="sd">        for behavior on Unix and Windows.</span>
+
+<span class="sd">        **audit_callback** (Callable(phase, info) | None) default=None&lt;br&gt;</span>
+<span class="sd">        Specify a function to call as the command execution goes through its</span>
+<span class="sd">        lifecycle. `audit_callback` is a function called with two arguments,</span>
+<span class="sd">        *phase* and *info*.</span>
+
+<span class="sd">        *phase* can be one of three values:</span>
+
+<span class="sd">            &quot;start&quot;: The process is about to start.</span>
+
+<span class="sd">            &quot;stop&quot;: The process finally stopped.</span>
+
+<span class="sd">            &quot;signal&quot;: The process is being sent a signal.</span>
+
+<span class="sd">        *info* is a dictionary providing more information for the callback. The</span>
+<span class="sd">        following keys are currently defined:</span>
+
+<span class="sd">            &quot;runner&quot; (Runner): Reference to the Runner object.</span>
+
+<span class="sd">            &quot;failure&quot; (str): When phase is &quot;stop&quot;, optional string with the</span>
+<span class="sd">            name of the exception from launching the process.</span>
+
+<span class="sd">            &quot;signal&quot; (str): When phase is &quot;signal&quot;, the signal name/number</span>
+<span class="sd">            sent to the process, e.g. &quot;Signals.SIGTERM&quot;.</span>
+
+<span class="sd">        The primary use case for `audit_callback` is measuring how long each</span>
+<span class="sd">        command takes to run and exporting this information to a metrics</span>
+<span class="sd">        framework like Prometheus.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">kwargs</span> <span class="o">=</span> <span class="nb">locals</span><span class="p">()</span>
         <span class="k">del</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;self&quot;</span><span class="p">]</span>
@@ -2130,35 +2384,111 @@ is set, return that instead.</p>
 
             <div class="docstring"><p>Return new command with custom options set.</p>
 
-<ul>
-<li>Set <code>inherit_env</code> to False to prevent the command from inheriting
-the parent environment.</li>
-<li>Set <code>encoding</code> to a string encoding like "utf-8", or "utf-8 replace".
-If <code>encoding</code> is None, use raw bytes.</li>
-<li>Set <code>return_result</code> to True to return a <code>Result</code> object instead of
-the standard output. The <code>Result</code> object includes the exit code.</li>
-<li>Set <code>incomplete_result</code> to True to return a <code>ResultError</code> object when
-the command is cancelled, instead of a CancelledError.</li>
-<li>Set <code>exit_codes</code> to the set of allowed exit codes that will not raise
-a <code>ResultError</code>. None means {0}.</li>
-<li>Set <code>cancel_timeout</code> to the timeout in seconds to wait for a process
-to terminate after sending it the cancel signal.</li>
-<li>Set <code>cancel_signal</code> to the signal used to stop a process when it is
-cancelled.</li>
-<li>Set <code>alt_name</code> to an alternative name of the command to be displayed
-in logs. Used to resolve ambiguity when the actual command name is a
-scripting language.</li>
-<li>Set <code>pass_fds</code> to pass open file descriptors to the command.</li>
-<li>Set <code>pass_fds_close</code> to True to auto-close the <code>pass_fds</code>.</li>
-<li>Set <code>write_mode</code> to True when using process substitution for writing.</li>
-<li>Set <code>start_new_session</code> to True to start a new session.</li>
-<li>Set <code>preexec_fn</code> to a function to call in child process.</li>
-<li>Set <code>pty</code> to True to use a pseudo-terminal (pty) to control the child
-process. You may also set <code>pty</code> to a 1-arg function to call on the
-child_fd for setup purposes. Setting <code>pty</code> forces <code>start_new_session</code>
-to True.</li>
-<li>Set <code>close_fds</code> to True to close all file descriptors in child process.</li>
-</ul>
+<p><strong>inherit_env</strong> (bool) default=True<br>
+Subprocess should inherit the parent process environment. If this is
+False, the subprocess will only have environment variables specified
+by <code><a href="#Command.env">Command.env</a></code>. If <code>inherit_env</code> is True, the parent process
+environment is augmented/overriden by any variables specified in
+<code><a href="#Command.env">Command.env</a></code>.</p>
+
+<p><strong>encoding</strong> (str | None) default="utf-8"<br>
+String encoding to use for subprocess input/output. If <code>encoding</code> is
+None, use raw bytes. To specify <code>errors</code>, append it after a space. For
+example, use "utf-8 replace" to specify "utf-8" with errors "replace".</p>
+
+<p><strong>return_result</strong> (bool) default=False<br>
+When True, return a <code>Result</code> object instead of the standard output.</p>
+
+<p><strong>incomplete_result</strong> (bool) default=False<br>
+When True, raise a <code>ResultError</code> when the command is cancelled. On the
+plus side, this gives you access to the initial output of the command.
+On the negative side, the <code>ResultError</code> swallows the <code>CancelledError</code>.
+Your code may need to re-raise a CancelledError after dealing with the
+partial result. When <code>incomplete_result</code> is False, a cancelled command
+will raise a <code>CancelledError</code>.</p>
+
+<p><strong>exit_codes</strong> (set[int] | None) default=None<br>
+Set of allowed exit codes that will not raise a <code>ResultError</code>. By default,
+<code>exit_codes</code> is <code>None</code> which indicates that 0 is the only valid exit
+status. Any other exit status will raise a <code>ResultError</code>. In addition to
+sets of integers, you can use a <code>range</code> object, e.g. <code>range(256)</code> for
+any positive exit status.</p>
+
+<p><strong>cancel_timeout</strong> (float) default=3.0 seconds<br>
+Timeout in seconds to wait for a process to exit after sending it a
+<code>cancel_signal</code>. If the process does not exit after waiting for
+<code>cancel_timeout</code> seconds, we send a kill signal to the process.</p>
+
+<p><strong>cancel_signal</strong> (signals.Signal | None) default=signal.SIGTERM<br>
+Signal sent to a process when it is cancelled. If <code>cancel_signal</code> is
+None, send a <code>SIGKILL</code> on Unix and <code>SIGTERM</code> (TerminateProcess) on
+Windows.</p>
+
+<p><strong>alt_name</strong> (str| None) default=None<br>
+Alternative name of the command displayed in logs. Used to resolve
+ambiguity when the actual command name is a scripting language.</p>
+
+<p><strong>pass_fds</strong> (Iterable[int]) default=()<br>
+Specify open file descriptors to pass to the subprocess.</p>
+
+<p><strong>pass_fds_close</strong> (bool) default=False<br>
+Close the file descriptors in <code>pass_fds</code> immediately in the current
+process immediately after launching the subprocess.</p>
+
+<p><strong>write_mode</strong> (bool) default=False<br>
+Used to indicate process substitution is writing.</p>
+
+<p><strong>_start_new_session</strong> (bool) default=False<br>
+Provided for testing purposes only.</p>
+
+<p><strong>_preexec_fn</strong> (Callable() | None) default=None<br>
+Provided for testing purposes only.</p>
+
+<p><strong>pty</strong> (bool | Callable(int)) default=False<br>
+If True, use a pseudo-terminal (pty) to control the child process.
+If <code>pty</code> is set to a callable, the function must take one int argument
+for the child side of the pty. The function is called to set the child
+pty's termios settings before spawning the subprocess.</p>
+
+<p>shellous provides three utility functions: <code><a href="../shellous.html#canonical">shellous.canonical</a></code>,
+<code><a href="../shellous.html#raw">shellous.raw</a></code> and <code><a href="../shellous.html#cbreak">shellous.cbreak</a></code> that can be used as arguments to
+the <code>pty</code> option.</p>
+
+<p><strong>close_fds</strong> (bool) default=False<br>
+Close all unnecessary file descriptors in the child process. This
+defaults to False to align with <code>posix_spawn</code> requirements. Please refer
+to the documentation on <a href="https://docs.python.org/3/library/os.html#inheritance-of-file-descriptors">inheritance of file descriptors</a>
+for behavior on Unix and Windows.</p>
+
+<p><strong>audit_callback</strong> (Callable(phase, info) | None) default=None<br>
+Specify a function to call as the command execution goes through its
+lifecycle. <code>audit_callback</code> is a function called with two arguments,
+<em>phase</em> and <em>info</em>.</p>
+
+<p><em>phase</em> can be one of three values:</p>
+
+<pre><code>"start": The process is about to start.
+
+"stop": The process finally stopped.
+
+"signal": The process is being sent a signal.
+</code></pre>
+
+<p><em>info</em> is a dictionary providing more information for the callback. The
+following keys are currently defined:</p>
+
+<pre><code>"runner" (Runner): Reference to the Runner object.
+
+"failure" (str): When phase is "stop", optional string with the
+name of the exception from launching the process.
+
+"signal" (str): When phase is "signal", the signal name/number
+sent to the process, e.g. "Signals.SIGTERM".
+</code></pre>
+
+<p>The primary use case for <code>audit_callback</code> is measuring how long each
+command takes to run and exporting this information to a metrics
+framework like Prometheus.</p>
 </div>
 
 
