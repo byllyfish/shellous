@@ -133,7 +133,7 @@
 <span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">import</span> <span class="nn">struct</span>
 <span class="kn">from</span> <span class="nn">dataclasses</span> <span class="kn">import</span> <span class="n">dataclass</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">NamedTuple</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">NamedTuple</span><span class="p">,</span> <span class="n">Optional</span>
 
 <span class="c1"># The following modules are not supported on Windows.</span>
 <span class="k">try</span><span class="p">:</span>
@@ -228,7 +228,7 @@
 <span class="k">class</span> <span class="nc">PtyStreamReaderProtocol</span><span class="p">(</span><span class="n">asyncio</span><span class="o">.</span><span class="n">StreamReaderProtocol</span><span class="p">):</span>
     <span class="s2">&quot;Custom subclass of StreamReaderProtocol for pty&#39;s.&quot;</span>
 
-    <span class="n">_pty_child_fd</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">_pty_child_fd</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ChildFd</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="k">def</span> <span class="nf">connection_lost</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exc</span><span class="p">):</span>
         <span class="s2">&quot;Intercept EIO error and treat it as EOF.&quot;</span>
@@ -268,9 +268,8 @@
         <span class="n">os</span><span class="o">.</span><span class="n">fdopen</span><span class="p">(</span><span class="n">parent_fd</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">closefd</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
     <span class="p">)</span>
 
-    <span class="n">writer_protocol</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">streams</span><span class="o">.</span><span class="n">FlowControlMixin</span><span class="p">()</span>
     <span class="n">writer_transport</span><span class="p">,</span> <span class="n">writer_protocol</span> <span class="o">=</span> <span class="k">await</span> <span class="n">loop</span><span class="o">.</span><span class="n">connect_write_pipe</span><span class="p">(</span>
-        <span class="k">lambda</span><span class="p">:</span> <span class="n">writer_protocol</span><span class="p">,</span>
+        <span class="n">asyncio</span><span class="o">.</span><span class="n">streams</span><span class="o">.</span><span class="n">FlowControlMixin</span><span class="p">,</span>
         <span class="n">os</span><span class="o">.</span><span class="n">fdopen</span><span class="p">(</span><span class="n">parent_fd</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">closefd</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
     <span class="p">)</span>
     <span class="n">writer</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">StreamWriter</span><span class="p">(</span><span class="n">writer_transport</span><span class="p">,</span> <span class="n">writer_protocol</span><span class="p">,</span> <span class="n">reader</span><span class="p">,</span> <span class="n">loop</span><span class="p">)</span>
@@ -282,7 +281,7 @@
         <span class="n">_orig_close</span><span class="p">()</span>
         <span class="n">reader_transport</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 
-    <span class="n">writer_transport</span><span class="o">.</span><span class="n">close</span><span class="p">,</span> <span class="n">_orig_close</span> <span class="o">=</span> <span class="n">_close</span><span class="p">,</span> <span class="n">writer_transport</span><span class="o">.</span><span class="n">close</span>
+    <span class="n">writer_transport</span><span class="o">.</span><span class="n">close</span><span class="p">,</span> <span class="n">_orig_close</span> <span class="o">=</span> <span class="n">_close</span><span class="p">,</span> <span class="n">writer_transport</span><span class="o">.</span><span class="n">close</span>  <span class="c1"># type: ignore</span>
 
     <span class="k">return</span> <span class="n">reader</span><span class="p">,</span> <span class="n">writer</span>
 
@@ -735,7 +734,7 @@
             <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">PtyStreamReaderProtocol</span><span class="p">(</span><span class="n">asyncio</span><span class="o">.</span><span class="n">StreamReaderProtocol</span><span class="p">):</span>
     <span class="s2">&quot;Custom subclass of StreamReaderProtocol for pty&#39;s.&quot;</span>
 
-    <span class="n">_pty_child_fd</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">_pty_child_fd</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ChildFd</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="k">def</span> <span class="nf">connection_lost</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exc</span><span class="p">):</span>
         <span class="s2">&quot;Intercept EIO error and treat it as EOF.&quot;</span>

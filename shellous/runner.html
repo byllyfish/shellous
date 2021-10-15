@@ -285,8 +285,9 @@
         <span class="p">)</span>
 
         <span class="c1"># Set up PTY here. This is the first half. Second half in `Runner`.</span>
-        <span class="n">start_new_session</span> <span class="o">=</span> <span class="n">options</span><span class="o">.</span><span class="n">_start_new_session</span>
-        <span class="n">preexec_fn</span> <span class="o">=</span> <span class="n">options</span><span class="o">.</span><span class="n">_preexec_fn</span>
+        <span class="n">start_session</span> <span class="o">=</span> <span class="n">options</span><span class="o">.</span><span class="n">_start_new_session</span>  <span class="c1"># pylint: disable=protected-access</span>
+        <span class="n">preexec_fn</span> <span class="o">=</span> <span class="n">options</span><span class="o">.</span><span class="n">_preexec_fn</span>  <span class="c1"># pylint: disable=protected-access</span>
+
         <span class="k">if</span> <span class="n">options</span><span class="o">.</span><span class="n">pty</span><span class="p">:</span>
             <span class="k">assert</span> <span class="n">preexec_fn</span> <span class="ow">is</span> <span class="kc">None</span>
             <span class="n">stdin</span><span class="p">,</span> <span class="n">stdout</span><span class="p">,</span> <span class="n">stderr</span><span class="p">,</span> <span class="n">preexec_fn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_setup_pty1</span><span class="p">(</span>
@@ -295,7 +296,7 @@
                 <span class="n">stderr</span><span class="p">,</span>
                 <span class="n">options</span><span class="o">.</span><span class="n">pty</span><span class="p">,</span>
             <span class="p">)</span>
-            <span class="n">start_new_session</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">start_session</span> <span class="o">=</span> <span class="kc">True</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">input_bytes</span> <span class="o">=</span> <span class="n">input_bytes</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">kwd_args</span> <span class="o">=</span> <span class="p">{</span>
@@ -303,7 +304,7 @@
             <span class="s2">&quot;stdout&quot;</span><span class="p">:</span> <span class="n">stdout</span><span class="p">,</span>
             <span class="s2">&quot;stderr&quot;</span><span class="p">:</span> <span class="n">stderr</span><span class="p">,</span>
             <span class="s2">&quot;env&quot;</span><span class="p">:</span> <span class="n">options</span><span class="o">.</span><span class="n">merge_env</span><span class="p">(),</span>
-            <span class="s2">&quot;start_new_session&quot;</span><span class="p">:</span> <span class="n">start_new_session</span><span class="p">,</span>
+            <span class="s2">&quot;start_new_session&quot;</span><span class="p">:</span> <span class="n">start_session</span><span class="p">,</span>
             <span class="s2">&quot;preexec_fn&quot;</span><span class="p">:</span> <span class="n">preexec_fn</span><span class="p">,</span>
             <span class="s2">&quot;close_fds&quot;</span><span class="p">:</span> <span class="n">options</span><span class="o">.</span><span class="n">close_fds</span><span class="p">,</span>
         <span class="p">}</span>
