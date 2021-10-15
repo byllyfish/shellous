@@ -160,8 +160,9 @@ class _RunOptions:  # pylint: disable=too-many-instance-attributes
         )
 
         # Set up PTY here. This is the first half. Second half in `Runner`.
-        start_new_session = options._start_new_session
-        preexec_fn = options._preexec_fn
+        start_session = options._start_new_session  # pylint: disable=protected-access
+        preexec_fn = options._preexec_fn  # pylint: disable=protected-access
+
         if options.pty:
             assert preexec_fn is None
             stdin, stdout, stderr, preexec_fn = self._setup_pty1(
@@ -170,7 +171,7 @@ class _RunOptions:  # pylint: disable=too-many-instance-attributes
                 stderr,
                 options.pty,
             )
-            start_new_session = True
+            start_session = True
 
         self.input_bytes = input_bytes
         self.kwd_args = {
@@ -178,7 +179,7 @@ class _RunOptions:  # pylint: disable=too-many-instance-attributes
             "stdout": stdout,
             "stderr": stderr,
             "env": options.merge_env(),
-            "start_new_session": start_new_session,
+            "start_new_session": start_session,
             "preexec_fn": preexec_fn,
             "close_fds": options.close_fds,
         }

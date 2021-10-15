@@ -141,7 +141,7 @@ async def _open_pty_streams(parent_fd: int, child_fd: ChildFd):
     )
 
     writer_transport, writer_protocol = await loop.connect_write_pipe(
-        lambda: asyncio.streams.FlowControlMixin(),
+        asyncio.streams.FlowControlMixin,
         os.fdopen(parent_fd, "wb", 0, closefd=True),
     )
     writer = asyncio.StreamWriter(writer_transport, writer_protocol, reader, loop)
