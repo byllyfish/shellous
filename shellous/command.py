@@ -12,7 +12,7 @@ import os
 import signal
 from collections.abc import Iterable
 from dataclasses import dataclass, field
-from typing import Any, Optional, TypeVar, Union
+from typing import Any, Callable, Optional, TypeVar, Union
 
 from immutables import Map as ImmutableDict
 
@@ -31,6 +31,10 @@ _UNSET = _UnsetEnum.UNSET
 _T = TypeVar("_T")
 Unset = Union[_T, _UnsetEnum]
 
+_Redirect_T = Any  # type: ignore
+_Preexec_Fn_T = Optional[Callable[[], None]]  # pylint: disable=invalid-name
+_Audit_Fn_T = Optional[Callable[[str, dict], None]]  # pylint: disable=invalid-name
+
 
 @dataclass(frozen=True)
 class Options:  # pylint: disable=too-many-instance-attributes
@@ -45,13 +49,13 @@ class Options:  # pylint: disable=too-many-instance-attributes
     inherit_env: bool = True
     "True if subprocess should inherit the current environment variables."
 
-    input: Any = Redirect.DEFAULT
+    input: _Redirect_T = Redirect.DEFAULT
     "Input object to bind to stdin."
 
     input_close: bool = False
     "True if input object should be closed after subprocess launch."
 
-    output: Any = Redirect.DEFAULT
+    output: _Redirect_T = Redirect.DEFAULT
     "Output object to bind to stdout."
 
     output_append: bool = False
@@ -60,7 +64,7 @@ class Options:  # pylint: disable=too-many-instance-attributes
     output_close: bool = False
     "True if output object should be closed after subprocess launch."
 
-    error: Any = Redirect.DEFAULT
+    error: _Redirect_T = Redirect.DEFAULT
     "Error object to bind to stderr."
 
     error_append: bool = False
@@ -84,7 +88,7 @@ class Options:  # pylint: disable=too-many-instance-attributes
     cancel_timeout: float = 3.0
     "Timeout in seconds that we wait for a cancelled process to terminate."
 
-    cancel_signal: Optional[Any] = signal.SIGTERM
+    cancel_signal: Optional[signal.Signals] = signal.SIGTERM
     "The signal sent to terminate a cancelled process."
 
     alt_name: Optional[str] = None
@@ -102,7 +106,7 @@ class Options:  # pylint: disable=too-many-instance-attributes
     _start_new_session: bool = False
     "True if child process should start a new session with setsid()."
 
-    _preexec_fn: Any = None
+    _preexec_fn: _Preexec_Fn_T = None
     "Function to call in child process after fork from parent."
 
     pty: bool = False
@@ -111,7 +115,7 @@ class Options:  # pylint: disable=too-many-instance-attributes
     close_fds: bool = False
     "True if child process should close all file descriptors."
 
-    audit_callback: Any = None
+    audit_callback: _Audit_Fn_T = None
     "Function called to audit stages of process execution."
 
     def merge_env(self):
@@ -358,16 +362,16 @@ class Command:
         incomplete_result: Unset[bool] = _UNSET,
         exit_codes: Unset[Optional[set]] = _UNSET,
         cancel_timeout: Unset[float] = _UNSET,
-        cancel_signal: Unset[Any] = _UNSET,
+        cancel_signal: Unset[Optional[signal.Signals]] = _UNSET,
         alt_name: Unset[Optional[str]] = _UNSET,
         pass_fds: Unset[Iterable[int]] = _UNSET,
         pass_fds_close: Unset[bool] = _UNSET,
         write_mode: Unset[bool] = _UNSET,
         _start_new_session: Unset[bool] = _UNSET,
-        _preexec_fn: Unset[Any] = _UNSET,
+        _preexec_fn: Unset[_Preexec_Fn_T] = _UNSET,
         pty: Unset[bool] = _UNSET,
         close_fds: Unset[bool] = _UNSET,
-        audit_callback: Unset[Any] = _UNSET,
+        audit_callback: Unset[_Audit_Fn_T] = _UNSET,
     ) -> "Command":
         """Return new command with custom options set.
 
