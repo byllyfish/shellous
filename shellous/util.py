@@ -88,7 +88,7 @@ def wait_pid(pid: int) -> Optional[int]:
 
     # Convert os.waitpid status to an exit status.
     try:
-        status = os.waitstatus_to_exitcode(status)
+        status = os.waitstatus_to_exitcode(status)  # type: ignore
     except ValueError:  # pragma: no cover
         # waitstatus_to_exitcode can theoretically raise a ValueError if
         # the status is not understood. In this case, we do what

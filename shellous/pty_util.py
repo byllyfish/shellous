@@ -5,7 +5,7 @@ import errno
 import os
 import struct
 from dataclasses import dataclass
-from typing import Any, NamedTuple
+from typing import Any, NamedTuple, Optional
 
 # The following modules are not supported on Windows.
 try:
@@ -100,7 +100,7 @@ def set_ctty(child_fd):
 class PtyStreamReaderProtocol(asyncio.StreamReaderProtocol):
     "Custom subclass of StreamReaderProtocol for pty's."
 
-    _pty_child_fd = None
+    _pty_child_fd: Optional[ChildFd] = None
 
     def connection_lost(self, exc):
         "Intercept EIO error and treat it as EOF."
@@ -140,9 +140,8 @@ async def _open_pty_streams(parent_fd: int, child_fd: ChildFd):
         os.fdopen(parent_fd, "rb", 0, closefd=False),
     )
 
-    writer_protocol = asyncio.streams.FlowControlMixin()
     writer_transport, writer_protocol = await loop.connect_write_pipe(
-        lambda: writer_protocol,
+        lambda: asyncio.streams.FlowControlMixin(),
         os.fdopen(parent_fd, "wb", 0, closefd=True),
     )
     writer = asyncio.StreamWriter(writer_transport, writer_protocol, reader, loop)
@@ -154,7 +153,7 @@ async def _open_pty_streams(parent_fd: int, child_fd: ChildFd):
         _orig_close()
         reader_transport.close()
 
-    writer_transport.close, _orig_close = _close, writer_transport.close
+    writer_transport.close, _orig_close = _close, writer_transport.close  # type: ignore
 
     return reader, writer
 
