@@ -1280,6 +1280,23 @@ async def test_pty_cat_hangs(sh):
         await asyncio.wait_for(cmd.set(pty=True), 2.0)
 
 
+async def test_pty_separate_stderr(sh, caplog):
+    "Test that stderr can be separately redirected from stdout with pty."
+
+    cat = (
+        sh("cat", "__does_not_exist__")
+        .set(pty=True)
+        .stderr(logging.getLogger("test_logger"))
+    )
+
+    result = await cat.set(exit_codes={0, 1})
+    assert result == ""
+
+    test_logs = [entry for entry in caplog.record_tuples if entry[0] == "test_logger"]
+    assert len(test_logs) == 1
+    assert "__does_not_exist__" in test_logs[0][2]
+
+
 async def test_redirect_stdin_streamreader(sh):
     "Test reading stdin from StreamReader."
 
