@@ -79,7 +79,7 @@ jobs:
       env:
         SHELLOUS_LOOP_TYPE: "uvloop"
     - name: Run Tests with PidfdWatcher (Linux)
-      if: matrix.os == 'ubuntu-latest'
+      if: matrix.os == 'ubuntu-latest' && matrix.python-version != '3.8'
       run: |
         $POETRY_RUN python -m pytest -vv -s --log-cli-level=DEBUG | ./ci/annotate.awk -v step=PidfdWatcher
       env:
