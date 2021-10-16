@@ -2,6 +2,7 @@
 
 import dataclasses
 from dataclasses import dataclass
+from typing import Tuple
 
 import shellous
 from shellous.redirect import STDIN_TYPES, STDOUT_APPEND_TYPES, STDOUT_TYPES
@@ -13,7 +14,7 @@ from shellous.util import context_aenter, context_aexit
 class Pipeline:
     "A Pipeline is a sequence of commands."
 
-    commands: tuple[shellous.Command, ...] = ()
+    commands: Tuple[shellous.Command, ...] = ()
 
     @staticmethod
     def create(*commands) -> "Pipeline":

@@ -5,11 +5,15 @@ import contextvars
 import io
 import os
 import shutil
+import sys
 from asyncio.subprocess import Process
 from collections import defaultdict
 from typing import Any, Iterable, Optional, Union
 
 from .log import LOG_DETAIL, LOGGER, log_timer
+
+_PY39 = sys.version_info >= (3, 9)
+
 
 # Stores current stack of context managers for immutable Command objects.
 _CTXT_STACK = contextvars.ContextVar("ctxt_stack", default=None)
@@ -22,7 +26,7 @@ def decode(data: Optional[bytes], encoding: str) -> str:
     return data.decode(*encoding.split(maxsplit=1))
 
 
-def coerce_env(env: dict[str, Any]) -> dict[str, str]:
+def coerce_env(env: dict) -> dict:
     """Utility function to coerce environment variables to string.
 
     If the value of an environment variable is `...`, grab the value from the
@@ -86,16 +90,30 @@ def wait_pid(pid: int, *, block: bool = False) -> Optional[int]:
     if result_pid != pid:
         return None
 
-    # Convert os.waitpid status to an exit status.
-    try:
-        status = os.waitstatus_to_exitcode(status)  # type: ignore
-    except ValueError:  # pragma: no cover
-        # waitstatus_to_exitcode can theoretically raise a ValueError if
-        # the status is not understood. In this case, we do what
-        # asyncio/unix_events.py does: return the original status.
-        pass
+    return _waitstatus_to_exitcode(status)
 
-    return status
+
+def _waitstatus_to_exitcode(status):
+    "Convert os.waitpid status to an exit status."
+
+    if _PY39:
+        # Python 3.9 implements this for us...
+        try:
+            return os.waitstatus_to_exitcode(status)  # type: ignore
+        except ValueError:  # pragma: no cover
+            # waitstatus_to_exitcode can theoretically raise a ValueError if
+            # the status is not understood. Just return original status value.
+            return status
+
+    if os.WIFSIGNALED(status):
+        # The child process died because of a signal.
+        return -os.WTERMSIG(status)
+    elif os.WIFEXITED(status):
+        # The child process exited (e.g sys.exit()).
+        return os.WEXITSTATUS(status)
+    else:
+        # Just return the original status value.
+        return status
 
 
 def poll_wait_pid(proc: Process) -> bool:

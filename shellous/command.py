@@ -12,7 +12,7 @@ import os
 import signal
 from collections.abc import Iterable
 from dataclasses import dataclass, field
-from typing import Any, Callable, Optional, TypeVar, Union
+from typing import Any, Callable, Optional, Tuple, TypeVar, Union
 
 from immutables import Map as ImmutableDict
 
@@ -94,7 +94,7 @@ class Options:  # pylint: disable=too-many-instance-attributes
     alt_name: Optional[str] = None
     "Alternate name for the command to use when logging."
 
-    pass_fds: Iterable[int] = ()
+    pass_fds: Iterable = ()
     "File descriptors to pass to the command."
 
     pass_fds_close: bool = False
@@ -123,7 +123,7 @@ class Options:  # pylint: disable=too-many-instance-attributes
         if self.inherit_env:
             if not self.env:
                 return None
-            return os.environ | self.env
+            return {**os.environ, **self.env}  # os.environ | self.env
 
         if self.env:
             return dict(self.env)  # convert ImmutableDict to dict (uvloop)
@@ -261,7 +261,7 @@ class Command:
     ```
     """
 
-    args: tuple[Union[str, bytes, os.PathLike], ...]
+    args: Tuple[Union[str, bytes, os.PathLike], ...]
     "Command arguments including the program name as first argument."
 
     options: Options
@@ -320,7 +320,7 @@ class Command:
         cancel_timeout: Unset[float] = _UNSET,
         cancel_signal: Unset[Optional[signal.Signals]] = _UNSET,
         alt_name: Unset[Optional[str]] = _UNSET,
-        pass_fds: Unset[Iterable[int]] = _UNSET,
+        pass_fds: Unset[Iterable] = _UNSET,
         pass_fds_close: Unset[bool] = _UNSET,
         writable: Unset[bool] = _UNSET,
         _start_new_session: Unset[bool] = _UNSET,
