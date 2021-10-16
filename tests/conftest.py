@@ -205,3 +205,113 @@ if sys.platform != "win32":
         @_serialize
         def _sig_chld(self, signum, frame):
             super()._sig_chld(signum, frame)
+
+
+# ===============================================================================
+
+"""
+The tests will not pass on Python 3.8 because b.p.o 40607 is not backported.
+
+Monkey patch asyncio.wait_for for testing purposes.
+
+Copied from: https://github.com/python/cpython/blob/main/Lib/asyncio/tasks.py
+"""
+
+import functools
+from asyncio import ensure_future, events, exceptions
+
+
+def _release_waiter(waiter, *args):
+    if not waiter.done():
+        waiter.set_result(None)
+
+
+async def wait_for(fut, timeout):
+    """Wait for the single Future or coroutine to complete, with timeout.
+    Coroutine will be wrapped in Task.
+    Returns result of the Future or coroutine.  When a timeout occurs,
+    it cancels the task and raises TimeoutError.  To avoid the task
+    cancellation, wrap it in shield().
+    If the wait is cancelled, the task is also cancelled.
+    This function is a coroutine.
+    """
+    loop = events.get_running_loop()
+
+    if timeout is None:
+        return await fut
+
+    if timeout <= 0:
+        fut = ensure_future(fut, loop=loop)
+
+        if fut.done():
+            return fut.result()
+
+        await _cancel_and_wait(fut, loop=loop)
+        try:
+            fut.result()
+        except exceptions.CancelledError as exc:
+            raise exceptions.TimeoutError() from exc
+        else:
+            raise exceptions.TimeoutError()
+
+    waiter = loop.create_future()
+    timeout_handle = loop.call_later(timeout, _release_waiter, waiter)
+    cb = functools.partial(_release_waiter, waiter)
+
+    fut = ensure_future(fut, loop=loop)
+    fut.add_done_callback(cb)
+
+    try:
+        # wait until the future completes or the timeout
+        try:
+            await waiter
+        except exceptions.CancelledError:
+            if fut.done():
+                return fut.result()
+            else:
+                fut.remove_done_callback(cb)
+                # We must ensure that the task is not running
+                # after wait_for() returns.
+                # See https://bugs.python.org/issue32751
+                await _cancel_and_wait(fut, loop=loop)
+                raise
+
+        if fut.done():
+            return fut.result()
+        else:
+            fut.remove_done_callback(cb)
+            # We must ensure that the task is not running
+            # after wait_for() returns.
+            # See https://bugs.python.org/issue32751
+            await _cancel_and_wait(fut, loop=loop)
+            # In case task cancellation failed with some
+            # exception, we should re-raise it
+            # See https://bugs.python.org/issue40607
+            try:
+                fut.result()
+            except exceptions.CancelledError as exc:
+                raise exceptions.TimeoutError() from exc
+            else:
+                raise exceptions.TimeoutError()
+    finally:
+        timeout_handle.cancel()
+
+
+async def _cancel_and_wait(fut, loop):
+    """Cancel the *fut* future or task and wait until it completes."""
+
+    waiter = loop.create_future()
+    cb = functools.partial(_release_waiter, waiter)
+    fut.add_done_callback(cb)
+
+    try:
+        fut.cancel()
+        # We cannot wait on *fut* directly to make
+        # sure _cancel_and_wait itself is reliably cancellable.
+        await waiter
+    finally:
+        fut.remove_done_callback(cb)
+
+
+# MONKEY PATCH here...
+asyncio.wait_for = wait_for
