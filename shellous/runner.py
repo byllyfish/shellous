@@ -294,8 +294,6 @@ class _RunOptions:  # pylint: disable=too-many-instance-attributes
 
         if stderr == asyncio.subprocess.STDOUT:
             stderr = child_fd
-        elif stderr == asyncio.subprocess.PIPE:
-            raise RuntimeError("pty can't separate stderr from stdout")
 
         return stdin, stdout, stderr, lambda: pty_util.set_ctty(child_fd)
 
@@ -502,7 +500,7 @@ class Runner:
 
             # Assign pty streams.
             if opts.pty_fds:
-                assert (stdin, stdout, stderr) == (None, None, None)
+                assert (stdin, stdout) == (None, None)
                 stdin, stdout = opts.pty_fds.writer, opts.pty_fds.reader
 
             if stderr is not None:

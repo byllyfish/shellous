@@ -1280,6 +1280,29 @@ async def test_pty_cat_hangs(sh):
         await asyncio.wait_for(cmd.set(pty=True), 2.0)
 
 
+@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+async def test_pty_separate_stderr(sh, caplog):
+    "Test that stderr can be separately redirected from stdout with pty."
+
+    script = """
+import sys
+print('test1', flush=True)
+print('__test2__', file=sys.stderr, flush=True)
+"""
+    cmd = (
+        sh(sys.executable, "-c", script)
+        .set(pty=True)
+        .stderr(logging.getLogger("test_logger"))
+    )
+
+    result = await cmd
+    assert result == "test1\r\n"
+
+    test_logs = [entry for entry in caplog.record_tuples if entry[0] == "test_logger"]
+    assert len(test_logs) == 1
+    assert "__test2__" in test_logs[0][2]
+
+
 async def test_redirect_stdin_streamreader(sh):
     "Test reading stdin from StreamReader."
 
