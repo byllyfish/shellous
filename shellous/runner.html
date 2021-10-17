@@ -419,8 +419,6 @@
 
         <span class="k">if</span> <span class="n">stderr</span> <span class="o">==</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">subprocess</span><span class="o">.</span><span class="n">STDOUT</span><span class="p">:</span>
             <span class="n">stderr</span> <span class="o">=</span> <span class="n">child_fd</span>
-        <span class="k">elif</span> <span class="n">stderr</span> <span class="o">==</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;pty can&#39;t separate stderr from stdout&quot;</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">stdin</span><span class="p">,</span> <span class="n">stdout</span><span class="p">,</span> <span class="n">stderr</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">pty_util</span><span class="o">.</span><span class="n">set_ctty</span><span class="p">(</span><span class="n">child_fd</span><span class="p">)</span>
 
@@ -627,7 +625,7 @@
 
             <span class="c1"># Assign pty streams.</span>
             <span class="k">if</span> <span class="n">opts</span><span class="o">.</span><span class="n">pty_fds</span><span class="p">:</span>
-                <span class="k">assert</span> <span class="p">(</span><span class="n">stdin</span><span class="p">,</span> <span class="n">stdout</span><span class="p">,</span> <span class="n">stderr</span><span class="p">)</span> <span class="o">==</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+                <span class="k">assert</span> <span class="p">(</span><span class="n">stdin</span><span class="p">,</span> <span class="n">stdout</span><span class="p">)</span> <span class="o">==</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
                 <span class="n">stdin</span><span class="p">,</span> <span class="n">stdout</span> <span class="o">=</span> <span class="n">opts</span><span class="o">.</span><span class="n">pty_fds</span><span class="o">.</span><span class="n">writer</span><span class="p">,</span> <span class="n">opts</span><span class="o">.</span><span class="n">pty_fds</span><span class="o">.</span><span class="n">reader</span>
 
             <span class="k">if</span> <span class="n">stderr</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -1332,7 +1330,7 @@
 
             <span class="c1"># Assign pty streams.</span>
             <span class="k">if</span> <span class="n">opts</span><span class="o">.</span><span class="n">pty_fds</span><span class="p">:</span>
-                <span class="k">assert</span> <span class="p">(</span><span class="n">stdin</span><span class="p">,</span> <span class="n">stdout</span><span class="p">,</span> <span class="n">stderr</span><span class="p">)</span> <span class="o">==</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+                <span class="k">assert</span> <span class="p">(</span><span class="n">stdin</span><span class="p">,</span> <span class="n">stdout</span><span class="p">)</span> <span class="o">==</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
                 <span class="n">stdin</span><span class="p">,</span> <span class="n">stdout</span> <span class="o">=</span> <span class="n">opts</span><span class="o">.</span><span class="n">pty_fds</span><span class="o">.</span><span class="n">writer</span><span class="p">,</span> <span class="n">opts</span><span class="o">.</span><span class="n">pty_fds</span><span class="o">.</span><span class="n">reader</span>
 
             <span class="k">if</span> <span class="n">stderr</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
