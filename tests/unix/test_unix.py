@@ -1275,7 +1275,7 @@ async def test_pty_cat_hangs(sh):
     result = await cmd
     assert result == ""
 
-    # Pty mode reads from IGNORE; which causes cat to hang.
+    # Pty mode reads from CAPTURE; which causes cat to hang.
     with pytest.raises(asyncio.TimeoutError):
         await asyncio.wait_for(cmd.set(pty=True), 2.0)
 

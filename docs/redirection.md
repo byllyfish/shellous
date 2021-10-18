@@ -129,7 +129,7 @@ Default Settings
 Default Settings for Pseudo-Terminal
 ------------------------------------
 
-- Standard input is ignored (IGNORE).
+- Standard input is ignored (CAPTURE).
 - Standard out is captured by the program and returned (CAPTURE).
 - Standard error is redirected to standard output (STDOUT).
 

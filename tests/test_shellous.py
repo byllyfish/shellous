@@ -386,13 +386,6 @@ async def test_redirect_stdin_unsupported_type(cat_cmd):
         await cat_cmd("abc").stdin(1 + 2j)
 
 
-async def test_pipe_redirect_stdin_capture(cat_cmd, tr_cmd):
-    "Test setting stdin on pipe to CAPTURE without using `async with`."
-    cmd = cat_cmd | tr_cmd
-    with pytest.raises(ValueError, match="multiple capture requires 'async with'"):
-        await cmd.stdin(CAPTURE)
-
-
 async def test_broken_pipe(sh):
     """Test broken pipe error for large data passed to stdin.
 
