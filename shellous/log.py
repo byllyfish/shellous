@@ -4,6 +4,7 @@ import asyncio
 import functools
 import inspect
 import logging
+import os
 import platform
 import sys
 import threading
@@ -20,9 +21,19 @@ PYTHON_VERS = platform.python_version()
 _LOG_IGNORE_STEPIN = -1
 _LOG_IGNORE_STEPOUT = -2
 
-LOG_ENTER = True
-LOG_EXIT = True
-LOG_DETAIL = True
+# If SHELLOUS_DEBUG option is enabled, use detailed logging. Otherwise, we
+# just log command's inbound stepin and outbound stepout.
+
+SHELLOUS_DEBUG = os.environ.get("SHELLOUS_DEBUG")
+
+if SHELLOUS_DEBUG:
+    LOG_ENTER = True
+    LOG_EXIT = True
+    LOG_DETAIL = True
+else:
+    LOG_ENTER = _LOG_IGNORE_STEPOUT
+    LOG_EXIT = _LOG_IGNORE_STEPIN
+    LOG_DETAIL = False
 
 
 def _exc():
