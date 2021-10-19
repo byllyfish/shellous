@@ -210,8 +210,6 @@ class _RunOptions:  # pylint: disable=too-many-instance-attributes
             # Custom support for Redirect constants.
             if input_ == Redirect.INHERIT:
                 stdin = sys.stdin
-            elif input_ == Redirect.IGNORE:
-                input_bytes = None
             else:
                 # CAPTURE uses stdin == PIPE.
                 assert input_ == Redirect.CAPTURE
@@ -959,11 +957,7 @@ class PipeRunner:  # pylint: disable=too-many-instance-attributes
 
 
 def _is_multiple_capture(cmd):
-    "Return true if stdin is CAPTURE or both stdout and stderr are CAPTURE."
-    input_ = Redirect.from_default(cmd.options.input, 0, cmd.options.pty)
-    if input_ == Redirect.CAPTURE:
-        return True
-
+    "Return true if both stdout and stderr are CAPTURE."
     output = Redirect.from_default(cmd.options.output, 1, cmd.options.pty)
     error = Redirect.from_default(cmd.options.error, 2, cmd.options.pty)
     return output == Redirect.CAPTURE and error == Redirect.CAPTURE
