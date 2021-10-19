@@ -46,9 +46,6 @@
                                 <a class="variable" href="#Redirect.INHERIT">INHERIT</a>
                         </li>
                         <li>
-                                <a class="variable" href="#Redirect.IGNORE">IGNORE</a>
-                        </li>
-                        <li>
                                 <a class="variable" href="#Redirect.DEFAULT">DEFAULT</a>
                         </li>
                         <li>
@@ -133,7 +130,6 @@
     <span class="n">DEVNULL</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">subprocess</span><span class="o">.</span><span class="n">DEVNULL</span>  <span class="c1"># -3</span>
     <span class="n">CAPTURE</span> <span class="o">=</span> <span class="o">-</span><span class="mi">10</span>
     <span class="n">INHERIT</span> <span class="o">=</span> <span class="o">-</span><span class="mi">11</span>
-    <span class="n">IGNORE</span> <span class="o">=</span> <span class="o">-</span><span class="mi">12</span>
     <span class="n">DEFAULT</span> <span class="o">=</span> <span class="o">-</span><span class="mi">20</span>
 
     <span class="k">def</span> <span class="nf">is_custom</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -141,7 +137,6 @@
         <span class="k">return</span> <span class="bp">self</span> <span class="ow">in</span> <span class="p">{</span>
             <span class="n">Redirect</span><span class="o">.</span><span class="n">CAPTURE</span><span class="p">,</span>
             <span class="n">Redirect</span><span class="o">.</span><span class="n">INHERIT</span><span class="p">,</span>
-            <span class="n">Redirect</span><span class="o">.</span><span class="n">IGNORE</span><span class="p">,</span>
             <span class="n">Redirect</span><span class="o">.</span><span class="n">DEFAULT</span><span class="p">,</span>
         <span class="p">}</span>
 
@@ -173,7 +168,7 @@
 <span class="n">_DEFAULT_REDIRECTION</span> <span class="o">=</span> <span class="p">{</span>
     <span class="c1"># (FD, PTY)</span>
     <span class="p">(</span><span class="n">_STDIN</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
-    <span class="p">(</span><span class="n">_STDIN</span><span class="p">,</span> <span class="kc">True</span><span class="p">):</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">IGNORE</span><span class="p">,</span>
+    <span class="p">(</span><span class="n">_STDIN</span><span class="p">,</span> <span class="kc">True</span><span class="p">):</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">CAPTURE</span><span class="p">,</span>
     <span class="p">(</span><span class="n">_STDOUT</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">CAPTURE</span><span class="p">,</span>
     <span class="p">(</span><span class="n">_STDOUT</span><span class="p">,</span> <span class="kc">True</span><span class="p">):</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">CAPTURE</span><span class="p">,</span>
     <span class="p">(</span><span class="n">_STDERR</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">DEVNULL</span><span class="p">,</span>
@@ -397,7 +392,6 @@
     <span class="n">DEVNULL</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">subprocess</span><span class="o">.</span><span class="n">DEVNULL</span>  <span class="c1"># -3</span>
     <span class="n">CAPTURE</span> <span class="o">=</span> <span class="o">-</span><span class="mi">10</span>
     <span class="n">INHERIT</span> <span class="o">=</span> <span class="o">-</span><span class="mi">11</span>
-    <span class="n">IGNORE</span> <span class="o">=</span> <span class="o">-</span><span class="mi">12</span>
     <span class="n">DEFAULT</span> <span class="o">=</span> <span class="o">-</span><span class="mi">20</span>
 
     <span class="k">def</span> <span class="nf">is_custom</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -405,7 +399,6 @@
         <span class="k">return</span> <span class="bp">self</span> <span class="ow">in</span> <span class="p">{</span>
             <span class="n">Redirect</span><span class="o">.</span><span class="n">CAPTURE</span><span class="p">,</span>
             <span class="n">Redirect</span><span class="o">.</span><span class="n">INHERIT</span><span class="p">,</span>
-            <span class="n">Redirect</span><span class="o">.</span><span class="n">IGNORE</span><span class="p">,</span>
             <span class="n">Redirect</span><span class="o">.</span><span class="n">DEFAULT</span><span class="p">,</span>
         <span class="p">}</span>
 
@@ -474,15 +467,6 @@
     
 
                             </div>
-                            <div id="Redirect.IGNORE" class="classattr">
-                                            <div class="attr variable"><a class="headerlink" href="#Redirect.IGNORE">#&nbsp;&nbsp</a>
-
-        <span class="name">IGNORE</span><span class="default_value"> = &lt;<a href="#Redirect.IGNORE">Redirect.IGNORE</a>: -12&gt;</span>
-    </div>
-
-    
-
-                            </div>
                             <div id="Redirect.DEFAULT" class="classattr">
                                             <div class="attr variable"><a class="headerlink" href="#Redirect.DEFAULT">#&nbsp;&nbsp</a>
 
@@ -507,7 +491,6 @@
         <span class="k">return</span> <span class="bp">self</span> <span class="ow">in</span> <span class="p">{</span>
             <span class="n">Redirect</span><span class="o">.</span><span class="n">CAPTURE</span><span class="p">,</span>
             <span class="n">Redirect</span><span class="o">.</span><span class="n">INHERIT</span><span class="p">,</span>
-            <span class="n">Redirect</span><span class="o">.</span><span class="n">IGNORE</span><span class="p">,</span>
             <span class="n">Redirect</span><span class="o">.</span><span class="n">DEFAULT</span><span class="p">,</span>
         <span class="p">}</span>
 </pre></div>
