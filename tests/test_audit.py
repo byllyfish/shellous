@@ -161,13 +161,30 @@ async def test_audit_block_pipe_specific_cmd():
         if event == AUDIT_EVENT_SUBPROCESS_SPAWN and args[0] == grep_path:
             raise RuntimeError("grep blocked")
 
+    callbacks = []
+
+    def _callback(phase, info):
+        runner = info["runner"]
+        failure = info.get("failure")
+        callbacks.append(f"{phase}:{runner.name}:{runner.returncode}:{failure}")
+
     try:
         _HOOK = _hook
 
-        sh = shellous.context()
-        cmd = sh(sys.executable, "-c", "print('hello')") | sh("grep")
+        sh = shellous.context().set(audit_callback=_callback)
+        hello = sh(sys.executable, "-c", "print('hello')").set(alt_name="hello")
+        cmd = hello | sh("grep")
         with pytest.raises(RuntimeError, match="grep blocked"):
             await cmd
 
     finally:
         _HOOK = None
+
+    exit_code = 1 if sys.platform == "win32" else -15
+    assert callbacks == [
+        "start:hello:None:None",
+        "start:grep:None:None",
+        "stop:grep:None:RuntimeError",
+        "signal:hello:None:None",
+        f"stop:hello:{exit_code}:CancelledError",
+    ]

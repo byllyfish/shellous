@@ -27,6 +27,7 @@ Benefits
 - Easily construct [pipelines](https://en.wikipedia.org/wiki/Pipeline_(Unix)) and use [process substitution](https://en.wikipedia.org/wiki/Process_substitution).
 - Run a program with a pseudo-terminal (pty).
 - Runs on Linux, MacOS, FreeBSD and Windows.
+- Monitor processes being started and stopped with `audit_callback` API.
 
 Requirements
 ------------
@@ -35,6 +36,7 @@ Requirements
 - Requires an asyncio event loop.
 - Process substitution requires a Unix system with /dev/fd support.
 - Pseudo-terminals require a Unix system. Pty's do not work on [uvloop](https://github.com/MagicStack/uvloop).
+- [FastChildWatcher](https://docs.python.org/3/library/asyncio-policy.html#asyncio.FastChildWatcher) is not supported.
 
 Basic Usage
 -----------
