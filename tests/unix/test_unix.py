@@ -793,6 +793,34 @@ async def test_process_substitution_write_pipe_alt(sh, tmp_path):
     assert out.read_bytes() == b"b\n"
 
 
+async def test_process_substitution_error_filenotfound(sh):
+    """Test process substitution with FileNotFoundError error."""
+
+    cmd = sh("diff", sh("echo", "a"), sh("_unknown_", "b")).set(exit_codes={0, 1})
+
+    with pytest.raises(FileNotFoundError, match="_unknown_"):
+        await cmd
+
+
+async def test_process_substitution_error_exit_1(sh):
+    """Test process substitution with FileNotFoundError error."""
+
+    # sleep exits with code 1 if no argument passed.
+    cmd = sh("diff", sh("echo", "a"), sh("sleep")).set(exit_codes={0, 1})
+
+    with pytest.raises(ResultError) as exc_info:
+        await cmd
+
+    result = exc_info.value.result
+    assert result == Result(
+        output_bytes=b"",
+        exit_code=1,
+        cancelled=False,
+        encoding="utf-8",
+        extra=None,  # FIXME: should report failed command
+    )
+
+
 async def test_start_new_session(sh):
     """Test `_start_new_session` option."""
 
