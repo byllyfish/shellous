@@ -6,6 +6,9 @@ name: ci
 on:
   push:
     branches: [ "*" ]
+  schedule:
+    # Every day at 2:02.
+    - cron: '2 2 * * *'
 
 jobs:
   build:
