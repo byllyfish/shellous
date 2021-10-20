@@ -88,12 +88,3 @@ jobs:
       env:
         SHELLOUS_CHILDWATCHER_TYPE: "multi"
       continue-on-error: true  # not confident yet
-    - name: Run Tests with FastChildWatcher (Linux)
-      # FastChildWatcher is not supported on FreeBSD or MacOS (pty doesn't work).
-      # FastChildWatcher also appears to be unreliable.
-      if: matrix.os == 'ubuntu-latest'
-      run: |
-        $POETRY_RUN python -m pytest -vv -s --log-cli-level=DEBUG
-      env:
-        SHELLOUS_CHILDWATCHER_TYPE: "fast"
-      continue-on-error: true  # FastChildWatcher is unreliable
