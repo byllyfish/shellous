@@ -1,6 +1,16 @@
 Shellous Change Log
 ===================
 
+0.9.0
+-----
+
+- [API] Rename shellous.canonical() helper function to cooked().
+- [FEATURE] Add SHELLOUS_DEBUG environment variable to enable detailed logging.
+- [FEATURE] It's possible to redirect stderr to a pipe even with a pseudo-terminal (#99).
+- [LATERAL] Remove Redirect.IGNORE option and just use CAPTURE for stdin under pty.
+- [LATERAL] Fix mypy/typing issues.
+- [LATERAL] Change development status to Beta.
+
 0.8.0
 -----
 
