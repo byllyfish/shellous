@@ -166,7 +166,10 @@ async def test_audit_block_pipe_specific_cmd():
     def _callback(phase, info):
         runner = info["runner"]
         failure = info.get("failure")
-        callbacks.append(f"{phase}:{runner.name}:{runner.returncode}:{failure}")
+        exit_code = runner.returncode
+        if exit_code is not None:
+            exit_code = "Zero" if exit_code == 0 else "NonZero"
+        callbacks.append(f"{phase}:{runner.name}:{exit_code}:{failure}")
 
     try:
         _HOOK = _hook
@@ -180,11 +183,10 @@ async def test_audit_block_pipe_specific_cmd():
     finally:
         _HOOK = None
 
-    exit_code = 1 if sys.platform == "win32" else -15
     assert callbacks == [
         "start:hello:None:None",
         "start:grep:None:None",
         "stop:grep:None:RuntimeError",
         "signal:hello:None:None",
-        f"stop:hello:{exit_code}:CancelledError",
+        "stop:hello:NonZero:CancelledError",
     ]
