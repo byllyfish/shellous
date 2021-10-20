@@ -188,8 +188,8 @@ def cbreak(rows=0, cols=0):
     return _pty_set_cbreak
 
 
-def canonical(rows=0, cols=0, echo=True):
-    "Return a function that leaves PtyOptions.child_fd in canonical mode."
+def cooked(rows=0, cols=0, echo=True):
+    "Return a function that leaves PtyOptions.child_fd in cooked mode."
 
     if Ellipsis in (rows, cols):
         rows, cols = _inherit_term_size(rows, cols)
