@@ -1,13 +1,13 @@
 [tool.poetry]
 name = "shellous"
-version = "0.8.0"
+version = "0.9.0"
 description = "Async Processes and Pipelines"
 license = "Apache-2.0"
 authors = ["Bill Fisher <william.w.fisher@gmail.com>"]
 readme = "README.md"
 homepage = "https://github.com/byllyfish/shellous"
 classifiers = [
-  "Development Status :: 3 - Alpha",
+  "Development Status :: 4 - Beta",
   "Operating System :: OS Independent",
   "Intended Audience :: Developers",
   "Intended Audience :: System Administrators",
