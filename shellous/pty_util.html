@@ -100,7 +100,7 @@
                     <a class="function" href="#cbreak">cbreak</a>
             </li>
             <li>
-                    <a class="function" href="#canonical">canonical</a>
+                    <a class="function" href="#cooked">cooked</a>
             </li>
             <li>
                     <a class="function" href="#patch_child_watcher">patch_child_watcher</a>
@@ -316,8 +316,8 @@
     <span class="k">return</span> <span class="n">_pty_set_cbreak</span>
 
 
-<span class="k">def</span> <span class="nf">canonical</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">cols</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">echo</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-    <span class="s2">&quot;Return a function that leaves PtyOptions.child_fd in canonical mode.&quot;</span>
+<span class="k">def</span> <span class="nf">cooked</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">cols</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">echo</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="s2">&quot;Return a function that leaves PtyOptions.child_fd in cooked mode.&quot;</span>
 
     <span class="k">if</span> <span class="bp">Ellipsis</span> <span class="ow">in</span> <span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">):</span>
         <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span> <span class="o">=</span> <span class="n">_inherit_term_size</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">)</span>
@@ -919,18 +919,18 @@
 
 
                 </section>
-                <section id="canonical">
-                            <div class="attr function"><a class="headerlink" href="#canonical">#&nbsp;&nbsp</a>
+                <section id="cooked">
+                            <div class="attr function"><a class="headerlink" href="#cooked">#&nbsp;&nbsp</a>
 
         
             <span class="def">def</span>
-            <span class="name">canonical</span><span class="signature">(rows=0, cols=0, echo=True)</span>:
+            <span class="name">cooked</span><span class="signature">(rows=0, cols=0, echo=True)</span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">canonical</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">cols</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">echo</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-    <span class="s2">&quot;Return a function that leaves PtyOptions.child_fd in canonical mode.&quot;</span>
+            <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">cooked</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">cols</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">echo</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="s2">&quot;Return a function that leaves PtyOptions.child_fd in cooked mode.&quot;</span>
 
     <span class="k">if</span> <span class="bp">Ellipsis</span> <span class="ow">in</span> <span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">):</span>
         <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span> <span class="o">=</span> <span class="n">_inherit_term_size</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">)</span>
@@ -947,7 +947,7 @@
 
         </details>
 
-            <div class="docstring"><p>Return a function that leaves PtyOptions.child_fd in canonical mode.</p>
+            <div class="docstring"><p>Return a function that leaves PtyOptions.child_fd in cooked mode.</p>
 </div>
 
 
