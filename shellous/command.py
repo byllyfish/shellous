@@ -441,7 +441,7 @@ class Command:
         for the child side of the pty. The function is called to set the child
         pty's termios settings before spawning the subprocess.
 
-        shellous provides three utility functions: `shellous.canonical`,
+        shellous provides three utility functions: `shellous.cooked`,
         `shellous.raw` and `shellous.cbreak` that can be used as arguments to
         the `pty` option.
 

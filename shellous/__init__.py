@@ -8,7 +8,7 @@ __version__ = "0.8.0"
 # pylint: disable=cyclic-import
 from .command import CmdContext, Command, Options  # noqa: F401
 from .pipeline import Pipeline  # noqa: F401
-from .pty_util import canonical, cbreak, raw  # noqa: F401
+from .pty_util import cbreak, cooked, raw  # noqa: F401
 from .redirect import Redirect
 from .result import PipeResult, Result, ResultError  # noqa: F401
 from .runner import AUDIT_EVENT_SUBPROCESS_SPAWN  # noqa: F401

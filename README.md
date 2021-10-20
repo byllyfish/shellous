@@ -273,7 +273,7 @@ To run a command through a pseudo-terminal, set the `pty` option to True. Altern
 a function to configure the tty mode and size.
 
 ```python-repl
->>> ls = sh("ls").set(pty=shellous.canonical(cols=40, rows=10, echo=False))
+>>> ls = sh("ls").set(pty=shellous.cooked(cols=40, rows=10, echo=False))
 >>> await ls("README.md", "CHANGELOG.md")
 'CHANGELOG.md\tREADME.md\r\n'
 ```

@@ -17,9 +17,9 @@ from shellous import (
     PipeResult,
     Result,
     ResultError,
-    canonical,
     cbreak,
     context,
+    cooked,
     raw,
 )
 from shellous.harvest import harvest_results
@@ -1186,7 +1186,7 @@ async def test_pty_cat_auto_eof(sh):
 async def test_pty_cat_iteration_no_echo(sh):
     "Test the `pty` option with string input, iteration, and echo=False."
 
-    cmd = "abc\ndef\nghi" | sh("cat").set(pty=canonical(echo=False))
+    cmd = "abc\ndef\nghi" | sh("cat").set(pty=cooked(echo=False))
 
     async with cmd.run() as run:
         lines = [line async for line in run]
@@ -1198,7 +1198,7 @@ async def test_pty_cat_iteration_no_echo(sh):
 async def test_pty_canonical_ls(sh):
     "Test canonical ls output through pty is in columns."
     cmd = sh("ls", "README.md", "CHANGELOG.md").set(
-        pty=canonical(cols=20, rows=10, echo=False)
+        pty=cooked(cols=20, rows=10, echo=False)
     )
     result = await cmd
     assert result == "CHANGELOG.md\r\nREADME.md\r\n"
@@ -1232,7 +1232,7 @@ async def test_pty_compare_small_ls_output(sh):
 @pytest.mark.xfail(_is_uvloop(), reason="uvloop")
 async def test_stress_pty_canonical_ls_parallel(sh, report_children):
     "Test canonical ls output through pty is in columns (parallel stress test)."
-    pty = canonical(cols=20, rows=10, echo=False)
+    pty = cooked(cols=20, rows=10, echo=False)
     cmd = sh("ls", "README.md", "CHANGELOG.md").set(pty=pty)
 
     # Execute command 10 times in parallel.
@@ -1246,7 +1246,7 @@ async def test_stress_pty_canonical_ls_parallel(sh, report_children):
 @pytest.mark.xfail(_is_uvloop(), reason="uvloop")
 async def test_stress_pty_canonical_ls_sequence(sh, report_children):
     "Test canonical ls output through pty is in columns (sequence stress test)."
-    pty = canonical(cols=20, rows=10, echo=False)
+    pty = cooked(cols=20, rows=10, echo=False)
     cmd = sh("ls", "README.md", "CHANGELOG.md").set(pty=pty)
 
     # Execute command 10 times sequentially.
