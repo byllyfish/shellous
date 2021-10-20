@@ -817,7 +817,7 @@ async def test_process_substitution_error_exit_1(sh):
         exit_code=1,
         cancelled=False,
         encoding="utf-8",
-        extra=None,  # FIXME: should report failed command
+        extra=None,  # FIXME: This should indicate that "sleep" failed...
     )
 
 
