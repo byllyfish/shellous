@@ -56,7 +56,7 @@ jobs:
         # Run pytest.
         $POETRY_RUN python -m pytest -vv -s --durations=20 --log-cli-level=DEBUG
     - name: Run Code Coverage (Linux and MacOS)
-      if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
+      if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11'
       run: |
         # Run coverage and upload report to codecov.
         $POETRY_RUN coverage run --source shellous -m pytest
@@ -64,7 +64,7 @@ jobs:
       env:
         SHELLOUS_CODE_COVERAGE: 1
     - name: Run Tests with uvloop (Linux and MacOS)
-      if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
+      if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11'
       run: |
         $POETRY_RUN python -m pytest -vv -s --log-cli-level=DEBUG
       env:
@@ -76,13 +76,13 @@ jobs:
       env:
         SHELLOUS_CHILDWATCHER_TYPE: "pidfd"
     - name: Run Tests with SafeChildWatcher (Linux and MacOS)
-      if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
+      if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11'
       run: |
         $POETRY_RUN python -m pytest -vv -s --log-cli-level=DEBUG
       env:
         SHELLOUS_CHILDWATCHER_TYPE: "safe"
     - name: Run Tests with MultiLoopChildWatcher (Linux and MacOS)
-      if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
+      if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11'
       run: |
         $POETRY_RUN python -m pytest -vv -s --log-cli-level=$LOG_LEVEL
       env:
