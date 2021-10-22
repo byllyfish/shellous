@@ -53,7 +53,10 @@ def _init_child_watcher():
     elif childwatcher_type == "pidfd":
         asyncio.set_child_watcher(asyncio.PidfdChildWatcher())
     elif childwatcher_type == "multi":
-        asyncio.set_child_watcher(asyncio.MultiLoopChildWatcher())
+        cw = asyncio.MultiLoopChildWatcher()
+        cw.add_child_handler = _log_func(cw.add_child_handler)
+        cw._sig_chld = _log_func(cw._sig_chld)
+        asyncio.set_child_watcher(cw)
 
 
 @pytest.fixture(autouse=True)
@@ -131,3 +134,18 @@ async def _get_children():
                     children.add(f"{m.group(1)}/{m.group(2).strip()}")
 
     return children
+
+
+def _log_func(func):
+    import logging
+
+    logger = logging.getLogger(__name__)
+
+    def _log(*args, **kwargs):
+        try:
+            logger.debug("enter %r %r", func.__name__, args[0])
+            return func(*args, **kwargs)
+        finally:
+            logger.debug("exit %r %r", func.__name__, args[0])
+
+    return _log
