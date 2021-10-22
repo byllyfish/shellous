@@ -261,7 +261,9 @@ def patch_child_watcher():
     watcher = asyncio.get_child_watcher()
     saved_add_handler = watcher.add_child_handler
 
-    def _add_child_handler(*_args):
+    def _add_child_handler(*args):
+        if LOG_DETAIL:
+            LOGGER.info("add_child_handler ignored: %r", args)
         watcher.add_child_handler = saved_add_handler
 
     watcher.add_child_handler = _add_child_handler
