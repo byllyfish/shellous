@@ -3,7 +3,6 @@
 import asyncio
 import contextlib
 import gc
-import logging
 import os
 import re
 import sys
@@ -54,20 +53,7 @@ def _init_child_watcher():
     elif childwatcher_type == "pidfd":
         asyncio.set_child_watcher(asyncio.PidfdChildWatcher())
     elif childwatcher_type == "multi":
-        child_watcher = asyncio.MultiLoopChildWatcher()
-        logger = logging.getLogger(__name__)
-
-        def _add_child_handler(*args):
-            logger.info("MLCW.add_child_handler %r", args)
-            return child_watcher.add_child_handler(*args)
-
-        def _rmv_child_handler(*args):
-            logger.info("MLCW.remove_child_handler %r", args)
-            return child_watcher.remove_child_handler(*args)
-
-        child_watcher.add_child_handler = _add_child_handler
-        child_watcher.remove_child_handler = _rmv_child_handler
-        asyncio.set_child_watcher(child_watcher)
+        asyncio.set_child_watcher(asyncio.MultiLoopChildWatcher())
 
 
 @pytest.fixture(autouse=True)
