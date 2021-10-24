@@ -2,6 +2,7 @@
 
 import asyncio
 import functools
+import os
 import sys
 import threading
 import time
@@ -82,16 +83,43 @@ def run_in_thread(child_watcher_name="ThreadedChildWatcher"):
             if child_watcher_name == "MultiLoopChildWatcher":
                 child_watcher.attach_loop(None)
 
-            with EventLoopThread() as thread:
-                fut = thread.future(coro(*args, **kwargs))
-                fut.result()
+            if child_watcher_name not in ("FastChildWatcher", "SafeChildWatcher"):
+                # Run every other child watcher using a daemon thread while the
+                # main thread is blocked in concurrent.Future.
+                with EventLoopThread() as thread:
+                    fut = thread.future(coro(*args, **kwargs))
+                    fut.result()
+            else:
+                # SafeChildWatcher and FastChildWatcher require a viable
+                # asyncio event loop in the main thread, so give them one...
+
+                def blocking_call():
+                    with EventLoopThread() as thread:
+                        fut = thread.future(coro(*args, **kwargs))
+                        fut.result()
+
+                async def _main():
+                    await asyncio.to_thread(blocking_call)
+
+                asyncio.run(_main())
 
         return _wrap
 
     return _decorator
 
 
-@run_in_thread("MultiLoopChildWatcher")
+_CHILD_WATCHER_MAP = {
+    "fast": "FastChildWatcher",
+    "safe": "SafeChildWatcher",
+    "pidfd": "PidfdChildWatcher",
+    "multi": "MultiLoopChildWatcher",
+}
+
+_CW_TYPE = os.environ.get("SHELLOUS_CHILDWATCHER_TYPE")
+CHILD_WATCHER = _CHILD_WATCHER_MAP.get(_CW_TYPE, "ThreadedChildWatcher")
+
+
+@run_in_thread(CHILD_WATCHER)
 async def test_thread_echo():
     "Test echo in another thread."
     sh = shellous.context()
@@ -99,7 +127,7 @@ async def test_thread_echo():
     assert result == "abc\n"
 
 
-@run_in_thread("MultiLoopChildWatcher")
+@run_in_thread(CHILD_WATCHER)
 async def test_thread_pipe():
     "Test pipe in another thread."
     sh = shellous.context()
@@ -107,7 +135,7 @@ async def test_thread_pipe():
     assert result == "abc\n"
 
 
-@run_in_thread("MultiLoopChildWatcher")
+@run_in_thread(CHILD_WATCHER)
 async def test_thread_procsub():
     "Test process substituion in another thread."
     sh = shellous.context()
@@ -115,7 +143,7 @@ async def test_thread_procsub():
     assert result == "abc\ndef\n"
 
 
-@run_in_thread("MultiLoopChildWatcher")
+@run_in_thread(CHILD_WATCHER)
 async def test_thread_pty():
     "Test pty in another thread."
     sh = shellous.context()
