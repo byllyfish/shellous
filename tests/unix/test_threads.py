@@ -9,6 +9,7 @@ import time
 
 import pytest
 import shellous
+from shellous.log import log_method
 
 unix_only = pytest.mark.skipif(sys.platform == "win32", reason="Unix")
 pytestmark = [pytest.mark.asyncio, unix_only]
@@ -47,6 +48,7 @@ class EventLoopThread(threading.Thread):
         self.loop.call_soon_threadsafe(self._stop)
         self.join()
 
+    @log_method(True)
     async def _wait(self):
         "Wait for shutdown future to be triggered."
         loop = asyncio.get_running_loop()
@@ -55,8 +57,10 @@ class EventLoopThread(threading.Thread):
         with self._lock:
             self._loop = loop
 
-        # asyncio.run doesn't provide a nice way to call attach_loop on a
-        # PidfdChildWatcher? (FIXME)
+        # FIXME: asyncio.run doesn't provide a nice way to call attach_loop on a
+        # PidfdChildWatcher. We call it here using the running loop. I'm not
+        # sure what happens if you run the same PidfdChildWatcher in
+        # multiple threads though...
         cw = asyncio.get_child_watcher()
         if cw.__class__.__name__ in ("PidfdChildWatcher"):
             cw.attach_loop(loop)
@@ -86,17 +90,12 @@ def run_in_thread(child_watcher_name="ThreadedChildWatcher"):
             asyncio.set_child_watcher(child_watcher)
 
             # MultiLoopChildWatcher: call attach_loop to prepare for action.
-            # `attach_loop` must be called from MainThread.
+            # `attach_loop` must be called from MainThread. The loop argument
+            # is not used.
             if child_watcher_name == "MultiLoopChildWatcher":
                 child_watcher.attach_loop(None)
 
-            if child_watcher_name not in ("FastChildWatcher", "SafeChildWatcher"):
-                # Run every other child watcher using a daemon thread while the
-                # main thread is blocked in concurrent.Future.
-                with EventLoopThread() as thread:
-                    fut = thread.future(coro(*args, **kwargs))
-                    fut.result()
-            else:
+            if child_watcher_name in ("FastChildWatcher", "SafeChildWatcher"):
                 # SafeChildWatcher and FastChildWatcher require a viable
                 # asyncio event loop in the main thread, so give them one...
 
@@ -109,6 +108,14 @@ def run_in_thread(child_watcher_name="ThreadedChildWatcher"):
                     await asyncio.to_thread(blocking_call)
 
                 asyncio.run(_main())
+
+            else:
+                # Run every other child watcher using a daemon thread while the
+                # main thread waits in concurrent.Future.
+
+                with EventLoopThread() as thread:
+                    fut = thread.future(coro(*args, **kwargs))
+                    fut.result()
 
         return _wrap
 

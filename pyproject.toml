@@ -40,7 +40,7 @@ build-backend = "poetry.core.masonry.api"
 [tool.pytest.ini_options]
 filterwarnings = ["default"]
 env_files = ["tests/tests.env"]
-addopts = '--timeout=10 --color=yes --log-cli-format="%(created).03f %(levelname)s %(message)s" --log-level=INFO --log-file-format="%(created).03f %(levelname)s %(message)s"'
+addopts = '--timeout=10 --color=yes --log-cli-format="%(created).03f %(levelname)s %(name)s %(message)s" --log-level=INFO --log-file-format="%(created).03f %(levelname)s %(name)s %(message)s"'
 
 [tool.pylint.'TYPECHECK']
 extension-pkg-allow-list = ["termios,fcntl"]

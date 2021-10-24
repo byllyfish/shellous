@@ -53,10 +53,7 @@ def _init_child_watcher():
     elif childwatcher_type == "pidfd":
         asyncio.set_child_watcher(asyncio.PidfdChildWatcher())
     elif childwatcher_type == "multi":
-        cw = asyncio.MultiLoopChildWatcher()
-        cw.add_child_handler = _log_func(cw.add_child_handler)
-        cw._sig_chld = _log_func(cw._sig_chld)
-        asyncio.set_child_watcher(cw)
+        asyncio.set_child_watcher(asyncio.MultiLoopChildWatcher())
 
 
 @pytest.fixture(autouse=True)
@@ -137,6 +134,8 @@ async def _get_children():
 
 
 def _log_func(func):
+    "Debugging decorator that logs entry and exit from regular methods."
+
     import logging
 
     logger = logging.getLogger(__name__)
