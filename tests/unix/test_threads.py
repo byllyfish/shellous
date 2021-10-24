@@ -55,6 +55,12 @@ class EventLoopThread(threading.Thread):
         with self._lock:
             self._loop = loop
 
+        # asyncio.run doesn't provide a nice way to call attach_loop on a
+        # PidfdChildWatcher? (FIXME)
+        cw = asyncio.get_child_watcher()
+        if cw.__class__.__name__ in ("PidfdChildWatcher"):
+            cw.attach_loop(loop)
+
         await self._shutdown_fut
 
     def _stop(self):
