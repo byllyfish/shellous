@@ -86,6 +86,7 @@ def run_in_thread(child_watcher_name="ThreadedChildWatcher"):
             asyncio.set_child_watcher(child_watcher)
 
             # MultiLoopChildWatcher: call attach_loop to prepare for action.
+            # `attach_loop` must be called from MainThread.
             if child_watcher_name == "MultiLoopChildWatcher":
                 child_watcher.attach_loop(None)
 
@@ -122,9 +123,12 @@ _CHILD_WATCHER_MAP = {
 }
 
 _CW_TYPE = os.environ.get("SHELLOUS_CHILDWATCHER_TYPE")
+
 CHILD_WATCHER = _CHILD_WATCHER_MAP.get(_CW_TYPE, "ThreadedChildWatcher")
+XFAIL_CHILDWATCHER = CHILD_WATCHER in ("SafeChildWatcher", "FastChildWatcher")
 
 
+@pytest.mark.xfail(XFAIL_CHILDWATCHER, reason="xfail_childwatcher")
 @run_in_thread(CHILD_WATCHER)
 async def test_thread_echo():
     "Test echo in another thread."
@@ -133,6 +137,7 @@ async def test_thread_echo():
     assert result == "abc\n"
 
 
+@pytest.mark.xfail(XFAIL_CHILDWATCHER, reason="xfail_childwatcher")
 @run_in_thread(CHILD_WATCHER)
 async def test_thread_pipe():
     "Test pipe in another thread."
@@ -141,6 +146,7 @@ async def test_thread_pipe():
     assert result == "abc\n"
 
 
+@pytest.mark.xfail(XFAIL_CHILDWATCHER, reason="xfail_childwatcher")
 @run_in_thread(CHILD_WATCHER)
 async def test_thread_procsub():
     "Test process substituion in another thread."
@@ -149,6 +155,7 @@ async def test_thread_procsub():
     assert result == "abc\ndef\n"
 
 
+@pytest.mark.xfail(XFAIL_CHILDWATCHER, reason="xfail_childwatcher")
 @run_in_thread(CHILD_WATCHER)
 async def test_thread_pty():
     "Test pty in another thread."
