@@ -528,6 +528,11 @@
         <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
             <span class="n">status</span> <span class="o">=</span> <span class="n">wait_pid</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">pid</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">status</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                    <span class="s2">&quot;process </span><span class="si">%r</span><span class="s2"> exited with returncode </span><span class="si">%r</span><span class="s2"> (wait_pid)&quot;</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">pid</span><span class="p">,</span>
+                    <span class="n">status</span><span class="p">,</span>
+                <span class="p">)</span>
                 <span class="c1"># pylint: disable=protected-access</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">_transport</span><span class="o">.</span><span class="n">_returncode</span> <span class="o">=</span> <span class="n">status</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">_transport</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">returncode</span> <span class="o">=</span> <span class="n">status</span>
@@ -666,14 +671,13 @@
         <span class="c1"># Second half of pty setup.</span>
         <span class="k">if</span> <span class="n">opts</span><span class="o">.</span><span class="n">pty_fds</span><span class="p">:</span>
             <span class="n">opts</span><span class="o">.</span><span class="n">pty_fds</span> <span class="o">=</span> <span class="k">await</span> <span class="n">opts</span><span class="o">.</span><span class="n">pty_fds</span><span class="o">.</span><span class="n">open_streams</span><span class="p">()</span>
-            <span class="k">if</span> <span class="n">_BSD</span><span class="p">:</span>
-                <span class="n">pty_util</span><span class="o">.</span><span class="n">patch_child_watcher</span><span class="p">()</span>
 
         <span class="c1"># Check for task cancellation and yield right before exec&#39;ing. If the</span>
         <span class="c1"># current task is already cancelled, this will raise a CancelledError,</span>
         <span class="c1"># and we save ourselves the work of launching and immediately killing</span>
         <span class="c1"># a process.</span>
         <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
         <span class="c1"># Launch the subprocess (always completes even if cancelled).</span>
         <span class="k">await</span> <span class="n">uninterrupted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_subprocess_exec</span><span class="p">(</span><span class="n">opts</span><span class="p">))</span>
 
@@ -686,6 +690,8 @@
         <span class="s2">&quot;Start the subprocess and assign to `self.proc`.&quot;</span>
         <span class="k">with</span> <span class="n">log_timer</span><span class="p">(</span><span class="s2">&quot;asyncio.create_subprocess_exec&quot;</span><span class="p">):</span>
             <span class="n">sys</span><span class="o">.</span><span class="n">audit</span><span class="p">(</span><span class="n">AUDIT_EVENT_SUBPROCESS_SPAWN</span><span class="p">,</span> <span class="n">opts</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">opts</span><span class="o">.</span><span class="n">pty_fds</span> <span class="ow">and</span> <span class="n">_BSD</span><span class="p">:</span>
+                <span class="n">pty_util</span><span class="o">.</span><span class="n">patch_child_watcher</span><span class="p">()</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_subprocess_exec</span><span class="p">(</span>
                 <span class="o">*</span><span class="n">opts</span><span class="o">.</span><span class="n">args</span><span class="p">,</span>
                 <span class="o">**</span><span class="n">opts</span><span class="o">.</span><span class="n">kwd_args</span><span class="p">,</span>
@@ -1229,6 +1235,11 @@
         <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
             <span class="n">status</span> <span class="o">=</span> <span class="n">wait_pid</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">pid</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">status</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                    <span class="s2">&quot;process </span><span class="si">%r</span><span class="s2"> exited with returncode </span><span class="si">%r</span><span class="s2"> (wait_pid)&quot;</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">pid</span><span class="p">,</span>
+                    <span class="n">status</span><span class="p">,</span>
+                <span class="p">)</span>
                 <span class="c1"># pylint: disable=protected-access</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">_transport</span><span class="o">.</span><span class="n">_returncode</span> <span class="o">=</span> <span class="n">status</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">_transport</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">returncode</span> <span class="o">=</span> <span class="n">status</span>
@@ -1367,14 +1378,13 @@
         <span class="c1"># Second half of pty setup.</span>
         <span class="k">if</span> <span class="n">opts</span><span class="o">.</span><span class="n">pty_fds</span><span class="p">:</span>
             <span class="n">opts</span><span class="o">.</span><span class="n">pty_fds</span> <span class="o">=</span> <span class="k">await</span> <span class="n">opts</span><span class="o">.</span><span class="n">pty_fds</span><span class="o">.</span><span class="n">open_streams</span><span class="p">()</span>
-            <span class="k">if</span> <span class="n">_BSD</span><span class="p">:</span>
-                <span class="n">pty_util</span><span class="o">.</span><span class="n">patch_child_watcher</span><span class="p">()</span>
 
         <span class="c1"># Check for task cancellation and yield right before exec&#39;ing. If the</span>
         <span class="c1"># current task is already cancelled, this will raise a CancelledError,</span>
         <span class="c1"># and we save ourselves the work of launching and immediately killing</span>
         <span class="c1"># a process.</span>
         <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
         <span class="c1"># Launch the subprocess (always completes even if cancelled).</span>
         <span class="k">await</span> <span class="n">uninterrupted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_subprocess_exec</span><span class="p">(</span><span class="n">opts</span><span class="p">))</span>
 
@@ -1387,6 +1397,8 @@
         <span class="s2">&quot;Start the subprocess and assign to `self.proc`.&quot;</span>
         <span class="k">with</span> <span class="n">log_timer</span><span class="p">(</span><span class="s2">&quot;asyncio.create_subprocess_exec&quot;</span><span class="p">):</span>
             <span class="n">sys</span><span class="o">.</span><span class="n">audit</span><span class="p">(</span><span class="n">AUDIT_EVENT_SUBPROCESS_SPAWN</span><span class="p">,</span> <span class="n">opts</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">opts</span><span class="o">.</span><span class="n">pty_fds</span> <span class="ow">and</span> <span class="n">_BSD</span><span class="p">:</span>
+                <span class="n">pty_util</span><span class="o">.</span><span class="n">patch_child_watcher</span><span class="p">()</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_subprocess_exec</span><span class="p">(</span>
                 <span class="o">*</span><span class="n">opts</span><span class="o">.</span><span class="n">args</span><span class="p">,</span>
                 <span class="o">**</span><span class="n">opts</span><span class="o">.</span><span class="n">kwd_args</span><span class="p">,</span>
