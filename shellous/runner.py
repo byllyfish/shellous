@@ -403,6 +403,11 @@ class Runner:
         while True:
             status = wait_pid(self._proc.pid)
             if status is not None:
+                LOGGER.debug(
+                    "process %r exited with returncode %r (wait_pid)",
+                    self._proc.pid,
+                    status,
+                )
                 # pylint: disable=protected-access
                 self._proc._transport._returncode = status
                 self._proc._transport._proc.returncode = status
@@ -541,14 +546,13 @@ class Runner:
         # Second half of pty setup.
         if opts.pty_fds:
             opts.pty_fds = await opts.pty_fds.open_streams()
-            if _BSD:
-                pty_util.patch_child_watcher()
 
         # Check for task cancellation and yield right before exec'ing. If the
         # current task is already cancelled, this will raise a CancelledError,
         # and we save ourselves the work of launching and immediately killing
         # a process.
         await asyncio.sleep(0)
+
         # Launch the subprocess (always completes even if cancelled).
         await uninterrupted(self._subprocess_exec(opts))
 
@@ -561,6 +565,8 @@ class Runner:
         "Start the subprocess and assign to `self.proc`."
         with log_timer("asyncio.create_subprocess_exec"):
             sys.audit(AUDIT_EVENT_SUBPROCESS_SPAWN, opts.args[0])
+            if opts.pty_fds and _BSD:
+                pty_util.patch_child_watcher()
             self._proc = await asyncio.create_subprocess_exec(
                 *opts.args,
                 **opts.kwd_args,

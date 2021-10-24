@@ -131,3 +131,20 @@ async def _get_children():
                     children.add(f"{m.group(1)}/{m.group(2).strip()}")
 
     return children
+
+
+def _log_func(func):
+    "Debugging decorator that logs entry and exit from regular methods."
+
+    import logging
+
+    logger = logging.getLogger(__name__)
+
+    def _log(*args, **kwargs):
+        try:
+            logger.debug("enter %r %r", func.__name__, args[0])
+            return func(*args, **kwargs)
+        finally:
+            logger.debug("exit %r %r", func.__name__, args[0])
+
+    return _log
