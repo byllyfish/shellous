@@ -132,7 +132,11 @@ _CHILD_WATCHER_MAP = {
 _CW_TYPE = os.environ.get("SHELLOUS_CHILDWATCHER_TYPE")
 
 CHILD_WATCHER = _CHILD_WATCHER_MAP.get(_CW_TYPE, "ThreadedChildWatcher")
-XFAIL_CHILDWATCHER = CHILD_WATCHER in ("SafeChildWatcher", "FastChildWatcher")
+XFAIL_CHILDWATCHER = CHILD_WATCHER in (
+    "SafeChildWatcher",
+    "FastChildWatcher",
+    "MultiLoopChildWatcher",
+)
 
 
 @pytest.mark.xfail(XFAIL_CHILDWATCHER, reason="xfail_childwatcher")
@@ -169,3 +173,18 @@ async def test_thread_pty():
     sh = shellous.context()
     result = await sh("ls", "README.md").set(pty=True)
     assert result == "README.md\r\n"
+
+
+@pytest.mark.xfail(XFAIL_CHILDWATCHER, reason="xfail_childwatcher")
+@run_in_thread(CHILD_WATCHER)
+async def test_thread_pipe_long():
+    "Test pipe in another thread."
+    sh = shellous.context()
+
+    # Create a pipe with 1 echo, and 9 cat commands.
+    pipe = sh("echo", "xyz")
+    for _ in range(9):
+        pipe |= sh("cat")
+
+    result = await pipe
+    assert result == "xyz\n"
