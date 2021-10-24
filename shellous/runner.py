@@ -403,6 +403,11 @@ class Runner:
         while True:
             status = wait_pid(self._proc.pid)
             if status is not None:
+                LOGGER.debug(
+                    "process %r exited with returncode %r (wait_pid)",
+                    self._proc.pid,
+                    status,
+                )
                 # pylint: disable=protected-access
                 self._proc._transport._returncode = status
                 self._proc._transport._proc.returncode = status
