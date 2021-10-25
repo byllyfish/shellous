@@ -1,8 +1,15 @@
-freebsd_instance:
-  image_family: freebsd-13-0
+# Cirrus CI Configuration
 
-task:
+freebsd_task:
   name: CI / build
+
+  matrix:
+    - name: FreeBSD 13.0
+      freebsd_instance:
+        image_family: freebsd-13-0
+    - name: FreeBSD 12.2
+      freebsd_instance:
+        image_family: freebsd-12-2
 
   install_script:
     - pkg install -y python39
