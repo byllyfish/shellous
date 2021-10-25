@@ -2,6 +2,7 @@
 
 import asyncio
 import contextlib
+import functools
 import gc
 import os
 import re
@@ -53,7 +54,9 @@ def _init_child_watcher():
     elif childwatcher_type == "pidfd":
         asyncio.set_child_watcher(asyncio.PidfdChildWatcher())
     elif childwatcher_type == "multi":
-        asyncio.set_child_watcher(asyncio.MultiLoopChildWatcher())
+        cw = asyncio.MultiLoopChildWatcher()
+        cw._sig_chld = _log_func(_serialize(cw._sig_chld))
+        asyncio.set_child_watcher(cw)
 
 
 @pytest.fixture(autouse=True)
@@ -140,6 +143,7 @@ def _log_func(func):
 
     logger = logging.getLogger(__name__)
 
+    @functools.wraps(func)
     def _log(*args, **kwargs):
         try:
             logger.debug("enter %r %r", func.__name__, args[0])
@@ -148,3 +152,29 @@ def _log_func(func):
             logger.debug("exit %r %r", func.__name__, args[0])
 
     return _log
+
+
+def _serialize(func):
+    """Debugging decorator to serialize a non-reentrant signal function."""
+
+    lock = threading.Lock()  # Used as atomic test-and-set.
+    retry = False
+
+    @functools.wraps(func)
+    def _decorator(*args, **kwargs):
+        nonlocal retry
+
+        while True:
+            if lock.acquire(blocking=False):
+                try:
+                    retry = False
+                    func(*args, **kwargs)
+                finally:
+                    lock.release()
+                if retry:
+                    continue
+            else:
+                retry = True
+            break
+
+    return _decorator

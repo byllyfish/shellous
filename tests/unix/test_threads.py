@@ -10,6 +10,7 @@ import time
 import pytest
 import shellous
 from shellous.log import log_method
+from tests.conftest import _log_func, _serialize
 
 unix_only = pytest.mark.skipif(sys.platform == "win32", reason="Unix")
 pytestmark = [pytest.mark.asyncio, unix_only]
@@ -93,6 +94,7 @@ def run_in_thread(child_watcher_name="ThreadedChildWatcher"):
             # `attach_loop` must be called from MainThread. The loop argument
             # is not used.
             if child_watcher_name == "MultiLoopChildWatcher":
+                child_watcher._sig_chld = _log_func(_serialize(child_watcher._sig_chld))
                 child_watcher.attach_loop(None)
 
             if child_watcher_name in ("FastChildWatcher", "SafeChildWatcher"):
