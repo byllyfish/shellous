@@ -244,10 +244,10 @@ are responsible for correctly reading and writing multiple streams at the same t
 b'README.md\n'
 ```
 
-Incomplete Results
-------------------
+Cancellation
+------------
 
-When a command is cancelled, shellous normally cleans up after itself and re-raises a `CancelledError`.
+When a command is cancelled, shellous terminates the process and raises a `CancelledError`.
 
 You can retrieve the partial result by setting `incomplete_result` to True. Shellous will return a
 `ResultError` when the specified command is cancelled.
