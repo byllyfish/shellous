@@ -815,13 +815,11 @@ async def test_command_iterator_api_interrupted(echo_cmd):
 
     assert await _test()
 
-    # An async iterator was interrupted. At this point, there are still
+    # An async iterator was interrupted. At this point, there *may* still be
     # tasks running related to the command invocation in _test. The tasks will
     # be cleaned up when the `GeneratorExit` exception is propagated.
-    assert len(asyncio.all_tasks()) > 1
-    await asyncio.sleep(0)
 
-    # We still need to wait for the process to asynchrously exit...
+    # We still need to wait for the process to asynchronously exit...
     await asyncio.sleep(0.1)
 
 
