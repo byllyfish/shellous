@@ -42,7 +42,7 @@
     <li><a href="#pipelines">Pipelines</a></li>
     <li><a href="#process-substitution-unix-only">Process Substitution (Unix Only)</a></li>
     <li><a href="#async-with-for">Async With &amp; For</a></li>
-    <li><a href="#incomplete-results">Incomplete Results</a></li>
+    <li><a href="#cancellation">Cancellation</a></li>
     <li><a href="#pseudo-terminal-support-unix-only">Pseudo-Terminal Support (Unix Only)</a></li>
     <li><a href="#context-objects">Context Objects</a></li>
   </ul></li>
@@ -305,9 +305,9 @@ are responsible for correctly reading and writing multiple streams at the same t
 b'README.md\n'
 </code></pre>
 
-<h2 id="incomplete-results">Incomplete Results</h2>
+<h2 id="cancellation">Cancellation</h2>
 
-<p>When a command is cancelled, shellous normally cleans up after itself and re-raises a <code>CancelledError</code>.</p>
+<p>When a command is cancelled, shellous terminates the process and raises a <code>CancelledError</code>.</p>
 
 <p>You can retrieve the partial result by setting <code>incomplete_result</code> to True. Shellous will return a
 <code>ResultError</code> when the specified command is cancelled.</p>
