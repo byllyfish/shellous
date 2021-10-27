@@ -1090,7 +1090,7 @@ async def test_command_timeout_incomplete_result_exit_code(echo_cmd):
 
     assert exc_info.value.result == Result(
         output_bytes=b"abc",
-        exit_code=-15,
+        exit_code=CANCELLED_EXIT_CODE,
         cancelled=True,
         encoding="utf-8",
         extra=None,
