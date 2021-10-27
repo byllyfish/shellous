@@ -139,6 +139,7 @@ CHILD_WATCHER = _CHILD_WATCHER_MAP.get(_CW_TYPE, "ThreadedChildWatcher")
 XFAIL_CHILDWATCHER = CHILD_WATCHER in (
     "SafeChildWatcher",
     "FastChildWatcher",
+    "MultiLoopChildWatcher",
 )
 
 

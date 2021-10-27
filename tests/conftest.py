@@ -184,16 +184,18 @@ def _serialize(func):
     return _decorator
 
 
-class PatchedMultiLoopChildWatcher(asyncio.MultiLoopChildWatcher):
-    def add_child_handler(self, pid, callback, *args):
-        loop = asyncio.get_running_loop()
-        self._callbacks[pid] = (loop, callback, args)
+if sys.platform != "win32":
 
-        # Prevent a race condition in case signal was delivered before
-        # callback added.
-        signal.raise_signal(signal.SIGCHLD)
+    class PatchedMultiLoopChildWatcher(asyncio.MultiLoopChildWatcher):
+        def add_child_handler(self, pid, callback, *args):
+            loop = asyncio.get_running_loop()
+            self._callbacks[pid] = (loop, callback, args)
 
-    @_log_func
-    @_serialize
-    def _sig_chld(self, signum, frame):
-        super()._sig_chld(signum, frame)
+            # Prevent a race condition in case signal was delivered before
+            # callback added.
+            signal.raise_signal(signal.SIGCHLD)
+
+        @_log_func
+        @_serialize
+        def _sig_chld(self, signum, frame):
+            super()._sig_chld(signum, frame)
