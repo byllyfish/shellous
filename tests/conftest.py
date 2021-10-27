@@ -6,6 +6,7 @@ import functools
 import gc
 import os
 import re
+import signal
 import sys
 import threading
 
@@ -54,9 +55,8 @@ def _init_child_watcher():
     elif childwatcher_type == "pidfd":
         asyncio.set_child_watcher(asyncio.PidfdChildWatcher())
     elif childwatcher_type == "multi":
-        cw = asyncio.MultiLoopChildWatcher()
-        cw._sig_chld = _log_func(_serialize(cw._sig_chld))
-        asyncio.set_child_watcher(cw)
+        # Use patched child watcher...
+        asyncio.set_child_watcher(PatchedMultiLoopChildWatcher())
 
 
 @pytest.fixture(autouse=True)
@@ -155,7 +155,11 @@ def _log_func(func):
 
 
 def _serialize(func):
-    """Debugging decorator to serialize a non-reentrant signal function."""
+    """Decorator to serialize a non-reentrant signal function.
+    If one client is already in the critical section, set a flag to run the
+    section one more time. Needs work... There is a small chance a retry will
+    be missed. Testing purposes only.
+    """
 
     lock = threading.Lock()  # Used as atomic test-and-set.
     retry = False
@@ -178,3 +182,20 @@ def _serialize(func):
             break
 
     return _decorator
+
+
+if sys.platform != "win32":
+
+    class PatchedMultiLoopChildWatcher(asyncio.MultiLoopChildWatcher):
+        def add_child_handler(self, pid, callback, *args):
+            loop = asyncio.get_running_loop()
+            self._callbacks[pid] = (loop, callback, args)
+
+            # Prevent a race condition in case signal was delivered before
+            # callback added.
+            signal.raise_signal(signal.SIGCHLD)
+
+        @_log_func
+        @_serialize
+        def _sig_chld(self, signum, frame):
+            super()._sig_chld(signum, frame)
