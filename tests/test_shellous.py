@@ -1074,15 +1074,30 @@ async def test_command_timeout_incomplete_result(echo_cmd):
     )
 
 
-@pytest.mark.xfail(True, reason="FIXME: does not work yet...")
 async def test_command_timeout_incomplete_result_exit_code(echo_cmd):
     "Test timeout, incomplete_result, and exit_codes option."
 
-    cmd = (
-        echo_cmd("abc")
-        .env(SHELLOUS_EXIT_SLEEP=2)
-        .set(incomplete_result=True, timeout=0.4, exit_codes={CANCELLED_EXIT_CODE})
+    # Test timeout alone.
+    cmd = echo_cmd("abc").env(SHELLOUS_EXIT_SLEEP=2).set(timeout=0.4)
+    with pytest.raises(asyncio.TimeoutError):
+        await cmd
+
+    # Test timeout and incomplete_result. Setting `incomplete_result` gives
+    # us a ResultError with the partial result.
+    cmd = cmd.set(incomplete_result=True)
+    with pytest.raises(ResultError) as exc_info:
+        await cmd
+
+    assert exc_info.value.result == Result(
+        output_bytes=b"abc",
+        exit_code=-15,
+        cancelled=True,
+        encoding="utf-8",
+        extra=None,
     )
 
+    # Test timeout, incomplete_result, and exit_codes. You can't do this with
+    # asyncio.wait_for; you have to use the timeout option.
+    cmd = cmd.set(exit_codes={CANCELLED_EXIT_CODE})
     result = await cmd
     assert result == "abc"

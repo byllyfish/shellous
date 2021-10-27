@@ -368,7 +368,7 @@ class Runner:
             self._options.encoding,
         )
 
-        return make_result(self.command, result, self._cancelled)
+        return make_result(self.command, result, self._cancelled, self._timed_out)
 
     def add_task(self, coro, tag=""):
         "Add a background task."

@@ -49,7 +49,7 @@ class PipeResult:
         return PipeResult(result.exit_code, result.cancelled)
 
 
-def make_result(command, result, cancelled):
+def make_result(command, result, cancelled, timed_out=False):
     """Convert list of results into a single pipe result.
 
     `result` can be a list of Result, ResultError or another Exception.
@@ -85,7 +85,7 @@ def make_result(command, result, cancelled):
         raise asyncio.CancelledError()
 
     exit_codes = command.options.exit_codes or {0}
-    if cancelled or result.exit_code not in exit_codes:
+    if (cancelled and not timed_out) or result.exit_code not in exit_codes:
         raise ResultError(result)
 
     if command.options.return_result:
