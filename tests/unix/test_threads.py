@@ -10,7 +10,9 @@ import time
 import pytest
 import shellous
 from shellous.log import log_method
-from tests.conftest import PatchedMultiLoopChildWatcher
+
+if sys.platform != "win32":
+    from tests.conftest import PatchedMultiLoopChildWatcher
 
 unix_only = pytest.mark.skipif(sys.platform == "win32", reason="Unix")
 pytestmark = [pytest.mark.asyncio, unix_only]
