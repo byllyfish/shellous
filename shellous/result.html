@@ -141,7 +141,7 @@
         <span class="k">return</span> <span class="n">PipeResult</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">exit_code</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">cancelled</span><span class="p">)</span>
 
 
-<span class="k">def</span> <span class="nf">make_result</span><span class="p">(</span><span class="n">command</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">cancelled</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">make_result</span><span class="p">(</span><span class="n">command</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">cancelled</span><span class="p">,</span> <span class="n">timed_out</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Convert list of results into a single pipe result.</span>
 
 <span class="sd">    `result` can be a list of Result, ResultError or another Exception.</span>
@@ -177,7 +177,7 @@
         <span class="k">raise</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">CancelledError</span><span class="p">()</span>
 
     <span class="n">exit_codes</span> <span class="o">=</span> <span class="n">command</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">exit_codes</span> <span class="ow">or</span> <span class="p">{</span><span class="mi">0</span><span class="p">}</span>
-    <span class="k">if</span> <span class="n">cancelled</span> <span class="ow">or</span> <span class="n">result</span><span class="o">.</span><span class="n">exit_code</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">exit_codes</span><span class="p">:</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">cancelled</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">timed_out</span><span class="p">)</span> <span class="ow">or</span> <span class="n">result</span><span class="o">.</span><span class="n">exit_code</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">exit_codes</span><span class="p">:</span>
         <span class="k">raise</span> <span class="n">ResultError</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">command</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">return_result</span><span class="p">:</span>
@@ -423,12 +423,12 @@
 
         
             <span class="def">def</span>
-            <span class="name">make_result</span><span class="signature">(command, result, cancelled)</span>:
+            <span class="name">make_result</span><span class="signature">(command, result, cancelled, timed_out=False)</span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">make_result</span><span class="p">(</span><span class="n">command</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">cancelled</span><span class="p">):</span>
+            <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">make_result</span><span class="p">(</span><span class="n">command</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">cancelled</span><span class="p">,</span> <span class="n">timed_out</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Convert list of results into a single pipe result.</span>
 
 <span class="sd">    `result` can be a list of Result, ResultError or another Exception.</span>
@@ -464,7 +464,7 @@
         <span class="k">raise</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">CancelledError</span><span class="p">()</span>
 
     <span class="n">exit_codes</span> <span class="o">=</span> <span class="n">command</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">exit_codes</span> <span class="ow">or</span> <span class="p">{</span><span class="mi">0</span><span class="p">}</span>
-    <span class="k">if</span> <span class="n">cancelled</span> <span class="ow">or</span> <span class="n">result</span><span class="o">.</span><span class="n">exit_code</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">exit_codes</span><span class="p">:</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">cancelled</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">timed_out</span><span class="p">)</span> <span class="ow">or</span> <span class="n">result</span><span class="o">.</span><span class="n">exit_code</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">exit_codes</span><span class="p">:</span>
         <span class="k">raise</span> <span class="n">ResultError</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">command</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">return_result</span><span class="p">:</span>

@@ -82,6 +82,9 @@
                                 <a class="variable" href="#Options.exit_codes">exit_codes</a>
                         </li>
                         <li>
+                                <a class="variable" href="#Options.timeout">timeout</a>
+                        </li>
+                        <li>
                                 <a class="variable" href="#Options.cancel_timeout">cancel_timeout</a>
                         </li>
                         <li>
@@ -309,6 +312,9 @@ function to create these, rather than creating them directly.</p></li>
     <span class="n">exit_codes</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">set</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="s2">&quot;Set of exit codes that do not raise a `ResultError`. None means </span><span class="si">{0}</span><span class="s2">.&quot;</span>
 
+    <span class="n">timeout</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="s2">&quot;Timeout in seconds that we wait before cancelling the process.&quot;</span>
+
     <span class="n">cancel_timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">3.0</span>
     <span class="s2">&quot;Timeout in seconds that we wait for a cancelled process to terminate.&quot;</span>
 
@@ -444,6 +450,7 @@ function to create these, rather than creating them directly.</p></li>
         <span class="n">return_result</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">incomplete_result</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">exit_codes</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">timeout</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">cancel_timeout</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">cancel_signal</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">alt_name</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
@@ -585,6 +592,7 @@ function to create these, rather than creating them directly.</p></li>
         <span class="n">return_result</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">incomplete_result</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">exit_codes</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">set</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">timeout</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">cancel_timeout</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">cancel_signal</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="n">signal</span><span class="o">.</span><span class="n">Signals</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">alt_name</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
@@ -628,6 +636,12 @@ function to create these, rather than creating them directly.</p></li>
 <span class="sd">        status. Any other exit status will raise a `ResultError`. In addition to</span>
 <span class="sd">        sets of integers, you can use a `range` object, e.g. `range(256)` for</span>
 <span class="sd">        any positive exit status.</span>
+
+<span class="sd">        **timeout** (float | None) default=None&lt;br&gt;</span>
+<span class="sd">        Timeout in seconds to wait before we cancel the process. The timer</span>
+<span class="sd">        begins immediately after the process is launched. This differs from</span>
+<span class="sd">        using `asyncio.wait_for` which includes the process launch time also.</span>
+<span class="sd">        If timeout is None (the default), there is no timeout.</span>
 
 <span class="sd">        **cancel_timeout** (float) default=3.0 seconds&lt;br&gt;</span>
 <span class="sd">        Timeout in seconds to wait for a process to exit after sending it a</span>
@@ -862,6 +876,9 @@ function to create these, rather than creating them directly.</p></li>
     <span class="n">exit_codes</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">set</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="s2">&quot;Set of exit codes that do not raise a `ResultError`. None means </span><span class="si">{0}</span><span class="s2">.&quot;</span>
 
+    <span class="n">timeout</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="s2">&quot;Timeout in seconds that we wait before cancelling the process.&quot;</span>
+
     <span class="n">cancel_timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">3.0</span>
     <span class="s2">&quot;Timeout in seconds that we wait for a cancelled process to terminate.&quot;</span>
 
@@ -983,6 +1000,7 @@ function to create these, rather than creating them directly.</p></li>
     return_result: bool = False,
     incomplete_result: bool = False,
     exit_codes: Optional[set] = None,
+    timeout: Optional[float] = None,
     cancel_timeout: float = 3.0,
     cancel_signal: Optional[signal.Signals] = &lt;Signals.SIGTERM: 15&gt;,
     alt_name: Optional[str] = None,
@@ -1162,6 +1180,17 @@ function to create these, rather than creating them directly.</p></li>
     </div>
 
             <div class="docstring"><p>Set of exit codes that do not raise a <code>ResultError</code>. None means {0}.</p>
+</div>
+
+
+                            </div>
+                            <div id="Options.timeout" class="classattr">
+                                            <div class="attr variable"><a class="headerlink" href="#Options.timeout">#&nbsp;&nbsp</a>
+
+        <span class="name">timeout</span><span class="annotation">: Optional[float]</span><span class="default_value"> = None</span>
+    </div>
+
+            <div class="docstring"><p>Timeout in seconds that we wait before cancelling the process.</p>
 </div>
 
 
@@ -1489,6 +1518,7 @@ function to create these, rather than creating them directly.</p></li>
         <span class="n">return_result</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">incomplete_result</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">exit_codes</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">timeout</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">cancel_timeout</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">cancel_signal</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">alt_name</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
@@ -1700,6 +1730,7 @@ function to create these, rather than creating them directly.</p></li>
     return_result=&lt;UNSET.UNSET: 1&gt;,
     incomplete_result=&lt;UNSET.UNSET: 1&gt;,
     exit_codes=&lt;UNSET.UNSET: 1&gt;,
+    timeout=&lt;UNSET.UNSET: 1&gt;,
     cancel_timeout=&lt;UNSET.UNSET: 1&gt;,
     cancel_signal=&lt;UNSET.UNSET: 1&gt;,
     alt_name=&lt;UNSET.UNSET: 1&gt;,
@@ -1724,6 +1755,7 @@ function to create these, rather than creating them directly.</p></li>
         <span class="n">return_result</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">incomplete_result</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">exit_codes</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">timeout</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">cancel_timeout</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">cancel_signal</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">alt_name</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
@@ -1842,6 +1874,7 @@ function to create these, rather than creating them directly.</p></li>
         <span class="n">return_result</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">incomplete_result</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">exit_codes</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">set</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">timeout</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">cancel_timeout</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">cancel_signal</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="n">signal</span><span class="o">.</span><span class="n">Signals</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">alt_name</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
@@ -1885,6 +1918,12 @@ function to create these, rather than creating them directly.</p></li>
 <span class="sd">        status. Any other exit status will raise a `ResultError`. In addition to</span>
 <span class="sd">        sets of integers, you can use a `range` object, e.g. `range(256)` for</span>
 <span class="sd">        any positive exit status.</span>
+
+<span class="sd">        **timeout** (float | None) default=None&lt;br&gt;</span>
+<span class="sd">        Timeout in seconds to wait before we cancel the process. The timer</span>
+<span class="sd">        begins immediately after the process is launched. This differs from</span>
+<span class="sd">        using `asyncio.wait_for` which includes the process launch time also.</span>
+<span class="sd">        If timeout is None (the default), there is no timeout.</span>
 
 <span class="sd">        **cancel_timeout** (float) default=3.0 seconds&lt;br&gt;</span>
 <span class="sd">        Timeout in seconds to wait for a process to exit after sending it a</span>
@@ -2236,6 +2275,7 @@ is set, return that instead.</p>
     return_result: Union[bool, <a href="#UNSET">shellous.command.UNSET</a>] = &lt;UNSET.UNSET: 1&gt;,
     incomplete_result: Union[bool, <a href="#UNSET">shellous.command.UNSET</a>] = &lt;UNSET.UNSET: 1&gt;,
     exit_codes: Union[set, NoneType, <a href="#UNSET">shellous.command.UNSET</a>] = &lt;UNSET.UNSET: 1&gt;,
+    timeout: Union[float, NoneType, <a href="#UNSET">shellous.command.UNSET</a>] = &lt;UNSET.UNSET: 1&gt;,
     cancel_timeout: Union[float, <a href="#UNSET">shellous.command.UNSET</a>] = &lt;UNSET.UNSET: 1&gt;,
     cancel_signal: Union[signal.Signals, NoneType, <a href="#UNSET">shellous.command.UNSET</a>] = &lt;UNSET.UNSET: 1&gt;,
     alt_name: Union[str, NoneType, <a href="#UNSET">shellous.command.UNSET</a>] = &lt;UNSET.UNSET: 1&gt;,
@@ -2260,6 +2300,7 @@ is set, return that instead.</p>
         <span class="n">return_result</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">incomplete_result</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">exit_codes</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">set</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">timeout</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">cancel_timeout</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">cancel_signal</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="n">signal</span><span class="o">.</span><span class="n">Signals</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">alt_name</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
@@ -2303,6 +2344,12 @@ is set, return that instead.</p>
 <span class="sd">        status. Any other exit status will raise a `ResultError`. In addition to</span>
 <span class="sd">        sets of integers, you can use a `range` object, e.g. `range(256)` for</span>
 <span class="sd">        any positive exit status.</span>
+
+<span class="sd">        **timeout** (float | None) default=None&lt;br&gt;</span>
+<span class="sd">        Timeout in seconds to wait before we cancel the process. The timer</span>
+<span class="sd">        begins immediately after the process is launched. This differs from</span>
+<span class="sd">        using `asyncio.wait_for` which includes the process launch time also.</span>
+<span class="sd">        If timeout is None (the default), there is no timeout.</span>
 
 <span class="sd">        **cancel_timeout** (float) default=3.0 seconds&lt;br&gt;</span>
 <span class="sd">        Timeout in seconds to wait for a process to exit after sending it a</span>
@@ -2417,6 +2464,12 @@ Set of allowed exit codes that will not raise a <code>ResultError</code>. By def
 status. Any other exit status will raise a <code>ResultError</code>. In addition to
 sets of integers, you can use a <code>range</code> object, e.g. <code>range(256)</code> for
 any positive exit status.</p>
+
+<p><strong>timeout</strong> (float | None) default=None<br>
+Timeout in seconds to wait before we cancel the process. The timer
+begins immediately after the process is launched. This differs from
+using <code>asyncio.wait_for</code> which includes the process launch time also.
+If timeout is None (the default), there is no timeout.</p>
 
 <p><strong>cancel_timeout</strong> (float) default=3.0 seconds<br>
 Timeout in seconds to wait for a process to exit after sending it a
