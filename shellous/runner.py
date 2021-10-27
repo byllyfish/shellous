@@ -320,6 +320,8 @@ class Runner:
         self._cancelled = False
         self._proc = None
         self._tasks = []
+        self._timer = None  # asyncio.TimerHandle
+        self._timed_out = False  # True if runner timeout expired
 
     @property
     def name(self):
@@ -392,7 +394,7 @@ class Runner:
 
         except asyncio.CancelledError:
             LOGGER.info("Runner.wait cancelled %r", self)
-            self._cancelled = True
+            self._set_cancelled()
             self._tasks.clear()  # all tasks were cancelled
             await self._kill()
 
@@ -437,7 +439,7 @@ class Runner:
         except (asyncio.CancelledError, asyncio.TimeoutError) as ex:
             LOGGER.warning("Runner.kill %r (ex)=%r", self, ex)
             if _is_cancelled(ex):
-                self._cancelled = True
+                self._set_cancelled()
             await self._kill_wait()
 
         except Exception as ex:
@@ -479,6 +481,7 @@ class Runner:
         try:
             return await self._start()
         except BaseException as ex:
+            self._stop_timer()  # failsafe just in case
             self._audit_callback("stop", failure=type(ex).__name__)
             raise
         finally:
@@ -522,7 +525,7 @@ class Runner:
         except (Exception, asyncio.CancelledError) as ex:
             LOGGER.info("Runner._start %r ex=%r", self, ex)
             if _is_cancelled(ex):
-                self._cancelled = True
+                self._set_cancelled()
             if self._proc:
                 await self._kill()
             raise
@@ -536,6 +539,9 @@ class Runner:
         # Add a task to monitor for when the process finishes.
         if not self._is_bsd_pty():
             self.add_task(self._waiter(), "waiter")
+
+        # Set a timer to cancel the current task after a timeout.
+        self._start_timer(self.command.options.timeout)
 
         return self
 
@@ -575,10 +581,40 @@ class Runner:
     @log_method(LOG_DETAIL)
     async def _waiter(self):
         "Run task that waits for process to exit."
-        if self._is_bsd_pty():
-            await self._wait_pid()
-        else:
-            await self._proc.wait()
+        try:
+            if self._is_bsd_pty():
+                await self._wait_pid()
+            else:
+                await self._proc.wait()
+        finally:
+            self._stop_timer()
+
+    def _set_cancelled(self):
+        "Set the cancelled flag, and cancel any inflight timers."
+        self._cancelled = True
+        self._stop_timer()
+
+    def _start_timer(self, timeout):
+        "Start an optional timer to cancel the process if `timeout` desired."
+        assert self._timer is None
+        if timeout is not None:
+            loop = asyncio.get_running_loop()
+            self._timer = loop.call_later(
+                timeout,
+                self._set_timer_expired,
+                asyncio.current_task(),
+            )
+
+    def _set_timer_expired(self, main_task):
+        "Set a flag when the timer expires and cancel the main task."
+        self._timed_out = True
+        self._timer = None
+        main_task.cancel()
+
+    def _stop_timer(self):
+        if self._timer:
+            self._timer.cancel()
+            self._timer = None
 
     def _setup_input_source(self, stream, opts):
         "Set up a task to read from custom input source."
@@ -635,9 +671,17 @@ class Runner:
             suppress = await self._finish(exc_value)
         except asyncio.CancelledError:
             LOGGER.info("Runner cancelled inside _finish %r", self)
-            self._cancelled = True
+            self._set_cancelled()
         finally:
+            self._stop_timer()  # failsafe just in case
             self._audit_callback("stop")
+        # If `timeout` expired, raise TimeoutError rather than CancelledError.
+        if (
+            self._cancelled
+            and self._timed_out
+            and not self.command.options.incomplete_result
+        ):
+            raise asyncio.TimeoutError()
         return suppress
 
     @log_method(LOG_DETAIL)
@@ -648,7 +692,7 @@ class Runner:
         try:
             if exc_value is not None:
                 if _is_cancelled(exc_value):
-                    self._cancelled = True
+                    self._set_cancelled()
                 await self._kill()
                 return self._cancelled
 

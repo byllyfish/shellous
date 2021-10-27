@@ -9,19 +9,8 @@ import signal
 import sys
 
 import pytest
-from shellous import (
-    CAPTURE,
-    DEVNULL,
-    INHERIT,
-    STDOUT,
-    PipeResult,
-    Result,
-    ResultError,
-    cbreak,
-    context,
-    cooked,
-    raw,
-)
+from shellous import (CAPTURE, DEVNULL, INHERIT, STDOUT, PipeResult, Result,
+                      ResultError, cbreak, context, cooked, raw)
 from shellous.harvest import harvest_results
 
 unix_only = pytest.mark.skipif(sys.platform == "win32", reason="Unix")
@@ -1475,3 +1464,18 @@ async def test_set_cancel_signal_invalid(sh):
         ("signal", "nohup", None, True, "Signals.SIGKILL"),
         ("stop", "nohup", -9, True, None),
     ]
+
+
+async def test_timeout_and_wait_for(sh):
+    "Test combinining `asyncio.wait_for` with timeout and cancel_timeout."
+
+    cmd = sh("nohup", "sleep", 10).set(
+        timeout=0.5,
+        cancel_signal=signal.SIGHUP,
+        cancel_timeout=3.0,
+    )
+
+    with pytest.raises(asyncio.TimeoutError):
+        # Process will be cancelled after sending SIGHUP and while waiting
+        # for `cancel_timeout` to expire.
+        await asyncio.wait_for(cmd, 1.0)
