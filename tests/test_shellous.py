@@ -973,3 +973,131 @@ async def test_multiple_pipe(echo_cmd, cat_cmd):
 
     result = await cmd
     assert result == "xyz"
+
+
+async def test_command_with_timeout_expiring(sleep_cmd):
+    "Test a command with a timeout option."
+
+    with pytest.raises(asyncio.TimeoutError):
+        await sleep_cmd(10).set(timeout=0.1)
+
+
+async def test_command_with_timeout_ignored(sleep_cmd):
+    "Test a command with a timeout option."
+
+    result = await sleep_cmd(0.1).set(timeout=1.0)
+    assert result == ""
+
+
+async def test_command_with_timeout_expiring_context(sleep_cmd):
+    "Test a command with a timeout option."
+
+    sleep = sleep_cmd(10).set(timeout=0.1)
+
+    with pytest.raises(asyncio.TimeoutError):
+        async with sleep as run:
+            result = await run.stdout.read()
+            assert False  # never reached
+
+
+async def test_command_with_timeout_expiring_generator(sleep_cmd):
+    "Test a command with a timeout option."
+
+    sleep = sleep_cmd(10).set(timeout=0.1)
+
+    with pytest.raises(asyncio.TimeoutError):
+        async for line in sleep:
+            assert False  # never reached
+
+
+async def test_wait_for_zero_seconds(sleep_cmd):
+    "Test asyncio.wait_for(0) with a timeout of zero seconds."
+
+    calls = []
+
+    def _audit(phase, info):
+        runner = info["runner"]
+        failure = info.get("failure")
+        calls.append((phase, runner.name, runner.returncode, failure))
+
+    sleep = sleep_cmd(10).set(audit_callback=_audit)
+
+    with pytest.raises(asyncio.TimeoutError):
+        await asyncio.wait_for(sleep(10), 0.0)
+
+    # There are no start/stop audit calls when the timeout expires before
+    # launching the process.
+    assert calls == []
+
+
+async def test_timeout_zero_seconds(sleep_cmd):
+    "Test command with a timeout of zero seconds."
+
+    calls = []
+
+    def _audit(phase, info):
+        runner = info["runner"]
+        failure = info.get("failure")
+        calls.append((phase, runner.name, runner.returncode))
+
+    sleep = sleep_cmd(10).set(audit_callback=_audit, timeout=0.0)
+
+    with pytest.raises(asyncio.TimeoutError):
+        await sleep(10)
+
+    # The `timeout` timer starts as soon as the process is started. Contrast
+    # this with asyncio.wait_for().
+    assert calls == [
+        ("start", "sleep", None),
+        ("signal", "sleep", None),
+        ("stop", "sleep", CANCELLED_EXIT_CODE),
+    ]
+
+
+async def test_command_timeout_incomplete_result(echo_cmd):
+    "Test timeout option in combination with incomplete_result option."
+
+    cmd = (
+        echo_cmd("abc")
+        .env(SHELLOUS_EXIT_SLEEP=2)
+        .set(incomplete_result=True, timeout=0.4)
+    )
+    with pytest.raises(ResultError) as exc_info:
+        await cmd
+
+    assert exc_info.value.result == Result(
+        output_bytes=b"abc",
+        exit_code=CANCELLED_EXIT_CODE,
+        cancelled=True,
+        encoding="utf-8",
+        extra=None,
+    )
+
+
+async def test_command_timeout_incomplete_result_exit_code(echo_cmd):
+    "Test timeout, incomplete_result, and exit_codes option."
+
+    # Test timeout alone.
+    cmd = echo_cmd("abc").env(SHELLOUS_EXIT_SLEEP=2).set(timeout=0.4)
+    with pytest.raises(asyncio.TimeoutError):
+        await cmd
+
+    # Test timeout and incomplete_result. Setting `incomplete_result` gives
+    # us a ResultError with the partial result.
+    cmd = cmd.set(incomplete_result=True)
+    with pytest.raises(ResultError) as exc_info:
+        await cmd
+
+    assert exc_info.value.result == Result(
+        output_bytes=b"abc",
+        exit_code=CANCELLED_EXIT_CODE,
+        cancelled=True,
+        encoding="utf-8",
+        extra=None,
+    )
+
+    # Test timeout, incomplete_result, and exit_codes. You can't do this with
+    # asyncio.wait_for; you have to use the timeout option.
+    cmd = cmd.set(exit_codes={CANCELLED_EXIT_CODE})
+    result = await cmd
+    assert result == "abc"

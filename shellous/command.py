@@ -85,6 +85,9 @@ class Options:  # pylint: disable=too-many-instance-attributes
     exit_codes: Optional[set] = None
     "Set of exit codes that do not raise a `ResultError`. None means {0}."
 
+    timeout: Optional[float] = None
+    "Timeout in seconds that we wait before cancelling the process."
+
     cancel_timeout: float = 3.0
     "Timeout in seconds that we wait for a cancelled process to terminate."
 
@@ -220,6 +223,7 @@ class CmdContext:
         return_result=_UNSET,
         incomplete_result=_UNSET,
         exit_codes=_UNSET,
+        timeout=_UNSET,
         cancel_timeout=_UNSET,
         cancel_signal=_UNSET,
         alt_name=_UNSET,
@@ -361,6 +365,7 @@ class Command:
         return_result: Unset[bool] = _UNSET,
         incomplete_result: Unset[bool] = _UNSET,
         exit_codes: Unset[Optional[set]] = _UNSET,
+        timeout: Unset[Optional[float]] = _UNSET,
         cancel_timeout: Unset[float] = _UNSET,
         cancel_signal: Unset[Optional[signal.Signals]] = _UNSET,
         alt_name: Unset[Optional[str]] = _UNSET,
@@ -404,6 +409,12 @@ class Command:
         status. Any other exit status will raise a `ResultError`. In addition to
         sets of integers, you can use a `range` object, e.g. `range(256)` for
         any positive exit status.
+
+        **timeout** (float | None) default=None<br>
+        Timeout in seconds to wait before we cancel the process. The timer
+        begins immediately after the process is launched. This differs from
+        using `asyncio.wait_for` which includes the process launch time also.
+        If timeout is None (the default), there is no timeout.
 
         **cancel_timeout** (float) default=3.0 seconds<br>
         Timeout in seconds to wait for a process to exit after sending it a
