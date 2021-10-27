@@ -1,6 +1,14 @@
 Shellous Change Log
 ===================
 
+0.9.1
+-----
+
+- [FEATURE] Add `timeout` option as an alterative to using `asyncio.wait_for` (#132).
+- [LATERAL] Fix bug in test: test_audit_block_pipe_specific_cmd (#122)
+- [LATERAL] Add multi-threaded tests and test improvements to MultiLoopChildWatcher.
+- [LATERAL] Run tests on FreeBSD 12.2.
+
 0.9.0
 -----
 
