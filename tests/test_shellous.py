@@ -1117,7 +1117,7 @@ async def test_command_timeout_incomplete_result_exit_code(echo_cmd):
 async def test_as_completed(echo_cmd):
     "Test shellous using asyncio's `as_completed` function."
 
-    cmds = [echo_cmd(i).env(SHELLOUS_EXIT_SLEEP=0.1 * i) for i in range(5)]
+    cmds = [echo_cmd(i).env(SHELLOUS_EXIT_SLEEP=0.75 * i) for i in range(5)]
 
     for i, cmd in enumerate(asyncio.as_completed(cmds)):
         result = await cmd
