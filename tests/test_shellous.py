@@ -1154,9 +1154,9 @@ async def test_asl_zip(count_cmd):
     calls = []
 
     def _audit(phase, info):
-        runner = info["runner"]
-        signal = info.get("signal")
-        calls.append((phase, runner.name, runner.returncode, signal))
+        if phase in ("start", "stop"):
+            runner = info["runner"]
+            calls.append((phase, runner.name))
 
     count = count_cmd.set(audit_callback=_audit)
 
@@ -1186,11 +1186,10 @@ async def test_asl_zip(count_cmd):
     assert await asl.anext(zipped, "DONE") == "DONE"
 
     assert calls == [
-        ("start", "count1", None, None),
-        ("start", "count2", None, None),
-        ("stop", "count1", 0, None),
-        ("signal", "count2", None, "Signals.SIGTERM"),
-        ("stop", "count2", 0, None),
+        ("start", "count1"),
+        ("start", "count2"),
+        ("stop", "count1"),
+        ("stop", "count2"),
     ]
 
 
