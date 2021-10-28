@@ -6,7 +6,7 @@ import time
 
 SHELLOUS_CMD = os.environ.get("SHELLOUS_CMD")
 SHELLOUS_EXIT_CODE = int(os.environ.get("SHELLOUS_EXIT_CODE") or 0)
-SHELLOUS_EXIT_SLEEP = int(os.environ.get("SHELLOUS_EXIT_SLEEP") or 0)
+SHELLOUS_EXIT_SLEEP = float(os.environ.get("SHELLOUS_EXIT_SLEEP") or 0)
 
 
 def _write(data):

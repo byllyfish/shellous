@@ -1101,3 +1101,25 @@ async def test_command_timeout_incomplete_result_exit_code(echo_cmd):
     cmd = cmd.set(exit_codes={CANCELLED_EXIT_CODE})
     result = await cmd
     assert result == "abc"
+
+
+async def test_as_completed(echo_cmd):
+    "Test shellous using asyncio's `as_completed` function."
+
+    cmds = [echo_cmd(i).env(SHELLOUS_EXIT_SLEEP=0.1 * i) for i in range(5)]
+
+    for i, cmd in enumerate(asyncio.as_completed(cmds)):
+        result = await cmd
+        assert result == str(i)
+
+
+async def test_multiple_context_manager(echo_cmd):
+    "Test use of multiple context managers at the same time."
+
+    echo1 = echo_cmd(1)
+    echo2 = echo_cmd(2)
+
+    async with echo1 as run1, echo2 as run2:
+        line1 = await run1.stdout.read()
+        line2 = await run2.stdout.read()
+        assert int(line1) + 1 == int(line2)
