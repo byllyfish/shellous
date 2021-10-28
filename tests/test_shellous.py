@@ -1207,3 +1207,13 @@ async def test_asl_takewhile_sum(count_cmd, echo_cmd):
     sum = asl.sum(asl.takewhile(_less_than_20, ints))
 
     assert await sum == 31
+
+
+async def test_asl_islice(count_cmd):
+    "Test compatibility with async itertool `islice`."
+
+    iterator = count_cmd(25)
+    oddlines = asl.islice(iterator, 0, None, 2)
+    firstfourodd = asl.islice(oddlines, 4)
+
+    assert await asl.list(firstfourodd) == ["1\n", "3\n", "5\n", "7\n"]
