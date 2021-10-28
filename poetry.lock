@@ -12,6 +12,18 @@ typing-extensions = {version = ">=3.10", markers = "python_version < \"3.10\""}
 wrapt = ">=1.11,<1.14"
 
 [[package]]
+name = "asyncstdlib"
+version = "3.10.2"
+description = "The missing async toolbox"
+category = "dev"
+optional = false
+python-versions = "~=3.6"
+
+[package.extras]
+doc = ["sphinx", "sphinxcontrib-trio"]
+test = ["pytest", "flake8", "flake8-bugbear", "black", "coverage", "pytest-cov", "flake8-2020", "mypy"]
+
+[[package]]
 name = "atomicwrites"
 version = "1.4.0"
 description = "Atomic file writes."
@@ -540,12 +552,16 @@ testing = ["pytest (>=4.6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytes
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9"
-content-hash = "6c9e875346b800850306264d7f3f6e6796b3e7b697eb4cc9dc18bbb87ffc5616"
+content-hash = "d7041eda6e0cd3fa5f354c48d7b2b3fff98d83b0684c3872a2cd35e45a12337c"
 
 [metadata.files]
 astroid = [
     {file = "astroid-2.8.3-py3-none-any.whl", hash = "sha256:f9d66e3a4a0e5b52819b2ff41ac2b179df9d180697db71c92beb33a60c661794"},
     {file = "astroid-2.8.3.tar.gz", hash = "sha256:0e361da0744d5011d4f5d57e64473ba9b7ab4da1e2d45d6631ebd67dd28c3cce"},
+]
+asyncstdlib = [
+    {file = "asyncstdlib-3.10.2-py2.py3-none-any.whl", hash = "sha256:129460e26b10c4f07f3255a2fa291b23868c9233389caaa883cca142194872d8"},
+    {file = "asyncstdlib-3.10.2.tar.gz", hash = "sha256:474a3e73db68fb5a7fd416ac08354a6f137be39f56a4bc315662f1dfd580a4fb"},
 ]
 atomicwrites = [
     {file = "atomicwrites-1.4.0-py2.py3-none-any.whl", hash = "sha256:6d1784dea7c0c8d4a5172b6c620f40b6e4cbfdf96d783691f2e1302a7b88e197"},

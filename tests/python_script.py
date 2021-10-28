@@ -51,6 +51,11 @@ elif SHELLOUS_CMD == "tr":
 elif SHELLOUS_CMD == "bulk":
     _write(b"1234" * (1024 * 1024 + 1))
 
+elif SHELLOUS_CMD == "count":
+    arg = int(sys.argv[1])
+    for i in range(arg):
+        _write(f"{i+1}\n".encode("utf-8"))
+
 else:
     raise NotImplementedError
 

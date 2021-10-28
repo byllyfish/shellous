@@ -10,6 +10,7 @@ import os
 import sys
 from pathlib import Path
 
+import asyncstdlib as asl
 import pytest
 from shellous import CAPTURE, DEVNULL, INHERIT, PipeResult, Result, ResultError, context
 from shellous.harvest import harvest_results
@@ -83,6 +84,11 @@ def bulk_cmd(python_script):
     return python_script.env(SHELLOUS_CMD="bulk").set(alt_name="bulk")
 
 
+@pytest.fixture
+def count_cmd(python_script):
+    return python_script.env(SHELLOUS_CMD="count").set(alt_name="count")
+
+
 async def test_echo(echo_cmd):
     result = await echo_cmd("abc", "def")
     assert result == "abc def"
@@ -113,6 +119,11 @@ async def test_bulk(bulk_cmd):
     assert len(result) == 4 * (1024 * 1024 + 1)
     hash = hashlib.sha256(result).hexdigest()
     assert hash == "462d6c497b393d2c9e1584a7b4636592da837ef66cf4ff871dc937f3fe309459"
+
+
+async def test_count(count_cmd):
+    result = await count_cmd(5)
+    assert result == "1\n2\n3\n4\n5\n"
 
 
 async def test_nonexistant_cmd():
@@ -1123,3 +1134,77 @@ async def test_multiple_context_manager(echo_cmd):
         line1 = await run1.stdout.read()
         line2 = await run2.stdout.read()
         assert int(line1) + 1 == int(line2)
+
+
+async def test_asl_map(count_cmd):
+    "Test compatibility with async itertools like `asyncstdlib.map`."
+
+    def _double(line):
+        return 2 * int(line.strip())
+
+    stream = asl.map(_double, count_cmd(5))
+    assert await asl.list(stream) == [2, 4, 6, 8, 10]
+
+    assert await asl.anext(stream, "DONE") == "DONE"
+
+
+async def test_asl_zip(count_cmd):
+    "Test compatibility with async itertools like `asyncstdlib.zip`."
+
+    calls = []
+
+    def _audit(phase, info):
+        runner = info["runner"]
+        signal = info.get("signal")
+        calls.append((phase, runner.name, runner.returncode, signal))
+
+    count = count_cmd.set(audit_callback=_audit)
+
+    def _single(line):
+        return int(line.strip())
+
+    def _double(line):
+        return 2 * int(line.strip())
+
+    singled = asl.map(_single, count(7).set(alt_name="count1"))
+    doubled = asl.map(_double, count(100).set(alt_name="count2"))
+    zipped = asl.zip(singled, doubled)
+
+    # The cool thing is that no subprocesses are launched until we iterate!
+    assert calls == []
+
+    assert await asl.list(zipped) == [
+        (1, 2),
+        (2, 4),
+        (3, 6),
+        (4, 8),
+        (5, 10),
+        (6, 12),
+        (7, 14),
+    ]
+
+    assert await asl.anext(zipped, "DONE") == "DONE"
+
+    assert calls == [
+        ("start", "count1", None, None),
+        ("start", "count2", None, None),
+        ("stop", "count1", 0, None),
+        ("signal", "count2", None, "Signals.SIGTERM"),
+        ("stop", "count2", 0, None),
+    ]
+
+
+async def test_asl_takewhile_sum(count_cmd, echo_cmd):
+    "Test compatibility with async itertools like `asyncstdlib.takewhile`."
+
+    def _to_int(line):
+        return int(line.strip())
+
+    def _less_than_20(num):
+        return num < 20
+
+    stuff = asl.chain(count_cmd(6), echo_cmd("10\n", "20\n", "30\n", "40\n"))
+    ints = asl.map(_to_int, stuff)
+    sum = asl.sum(asl.takewhile(_less_than_20, ints))
+
+    assert await sum == 31
