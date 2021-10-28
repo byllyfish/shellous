@@ -87,12 +87,12 @@ def open_pty(pty_func):
     )
 
 
-def set_ctty(child_fd):
+def set_ctty(ttypath):
     "Explicitly open the tty to make it become a controlling tty."
     # See https://github.com/python/cpython/blob/3.9/Lib/pty.py
 
     # Don't use ioctl TIOCSTTY; it doesn't appear to work on FreeBSD.
-    tmpfd = os.open(os.ttyname(child_fd), os.O_RDWR)
+    tmpfd = os.open(ttypath, os.O_RDWR)
     os.close(tmpfd)
 
 

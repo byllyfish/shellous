@@ -9,8 +9,19 @@ import signal
 import sys
 
 import pytest
-from shellous import (CAPTURE, DEVNULL, INHERIT, STDOUT, PipeResult, Result,
-                      ResultError, cbreak, context, cooked, raw)
+from shellous import (
+    CAPTURE,
+    DEVNULL,
+    INHERIT,
+    STDOUT,
+    PipeResult,
+    Result,
+    ResultError,
+    cbreak,
+    context,
+    cooked,
+    raw,
+)
 from shellous.harvest import harvest_results
 
 unix_only = pytest.mark.skipif(sys.platform == "win32", reason="Unix")
@@ -861,6 +872,7 @@ async def test_pty_manual_ls(sh):
     from shellous.log import log_timer
 
     parent_fd, child_fd = pty.openpty()
+    ttyname = os.ttyname(child_fd)
 
     cmd = (
         sh("ls", "README.md")
@@ -868,7 +880,7 @@ async def test_pty_manual_ls(sh):
         .stdout(child_fd, close=False)
         .set(
             _start_new_session=True,
-            _preexec_fn=shellous.pty_util.set_ctty(child_fd),
+            _preexec_fn=lambda: shellous.pty_util.set_ctty(ttyname),
         )
     )
 

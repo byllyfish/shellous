@@ -173,6 +173,8 @@ class _RunOptions:
             )
             start_session = True
 
+        assert not preexec_fn or callable(preexec_fn)
+
         self.input_bytes = input_bytes
         self.kwd_args = {
             "stdin": stdin,
@@ -293,7 +295,8 @@ class _RunOptions:
         if stderr == asyncio.subprocess.STDOUT:
             stderr = child_fd
 
-        return stdin, stdout, stderr, lambda: pty_util.set_ctty(child_fd)
+        ttyname = os.ttyname(child_fd)
+        return stdin, stdout, stderr, lambda: pty_util.set_ctty(ttyname)
 
 
 class Runner:
