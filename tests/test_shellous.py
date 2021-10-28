@@ -831,7 +831,7 @@ async def test_command_iterator_api_interrupted(echo_cmd):
     # be cleaned up when the `GeneratorExit` exception is propagated.
 
     # We still need to wait for the process to asynchronously exit...
-    await asyncio.sleep(0.1)
+    await asyncio.sleep(0.5)
 
 
 def test_command_iterator_api_interrupted_sync(echo_cmd):
