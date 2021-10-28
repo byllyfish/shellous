@@ -43,5 +43,11 @@ filterwarnings = ["default"]
 env_files = ["tests/tests.env"]
 addopts = '--timeout=10 --color=yes --log-cli-format="%(created).03f %(levelname)s %(name)s %(message)s" --log-level=INFO --log-file-format="%(created).03f %(levelname)s %(name)s %(message)s"'
 
-[tool.pylint.'TYPECHECK']
+[tool.pylint.'FORMAT']
 extension-pkg-allow-list = ["termios,fcntl"]
+
+[tool.pylint.'TYPECHECK']
+max-module-lines = 1200
+
+[tool.pylint.'DESIGN']
+max-attributes = 12

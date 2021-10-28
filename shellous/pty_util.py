@@ -19,7 +19,6 @@ except ImportError:  # pragma: no cover
 from .log import LOG_DETAIL, LOGGER, log_method
 from .util import close_fds
 
-_STDIN_FILENO = 0
 _STDOUT_FILENO = 1
 _LFLAG = 3
 _CC = 6

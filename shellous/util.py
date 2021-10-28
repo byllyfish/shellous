@@ -8,7 +8,7 @@ import shutil
 from collections import defaultdict
 from typing import Any, Iterable, Optional, Union
 
-from .log import LOG_DETAIL, LOGGER, log_method, log_timer
+from .log import LOG_DETAIL, LOGGER, log_timer
 
 # Stores current stack of context managers for immutable Command objects.
 _CTXT_STACK = contextvars.ContextVar("ctxt_stack", default=None)

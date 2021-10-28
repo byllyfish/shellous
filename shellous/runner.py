@@ -46,7 +46,7 @@ def _split(encoding):
     return encoding.split(maxsplit=1)
 
 
-class _RunOptions:  # pylint: disable=too-many-instance-attributes
+class _RunOptions:
     """_RunOptions is context manager to assist in running a command.
 
     This class sets up low-level I/O redirection and helps close open file
@@ -796,7 +796,7 @@ class Runner:
         return run.result(bytes(output_bytes))
 
 
-class PipeRunner:  # pylint: disable=too-many-instance-attributes
+class PipeRunner:
     """PipeRunner is an asynchronous context manager that runs a pipeline.
 
     ```
