@@ -220,6 +220,8 @@
     <span class="n">stack</span> <span class="o">=</span> <span class="n">ctxt_stack</span><span class="p">[</span><span class="n">scope</span><span class="p">]</span>
     <span class="n">ctxt_manager</span> <span class="o">=</span> <span class="n">stack</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">stack</span><span class="p">:</span>
+        <span class="k">del</span> <span class="n">ctxt_stack</span><span class="p">[</span><span class="n">scope</span><span class="p">]</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">ctxt_stack</span><span class="p">:</span>
         <span class="n">_CTXT_STACK</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="k">await</span> <span class="n">ctxt_manager</span><span class="o">.</span><span class="fm">__aexit__</span><span class="p">(</span><span class="n">exc_type</span><span class="p">,</span> <span class="n">exc_value</span><span class="p">,</span> <span class="n">exc_tb</span><span class="p">)</span>
@@ -507,6 +509,8 @@ parent environment.</p>
     <span class="n">stack</span> <span class="o">=</span> <span class="n">ctxt_stack</span><span class="p">[</span><span class="n">scope</span><span class="p">]</span>
     <span class="n">ctxt_manager</span> <span class="o">=</span> <span class="n">stack</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">stack</span><span class="p">:</span>
+        <span class="k">del</span> <span class="n">ctxt_stack</span><span class="p">[</span><span class="n">scope</span><span class="p">]</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">ctxt_stack</span><span class="p">:</span>
         <span class="n">_CTXT_STACK</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="k">await</span> <span class="n">ctxt_manager</span><span class="o">.</span><span class="fm">__aexit__</span><span class="p">(</span><span class="n">exc_type</span><span class="p">,</span> <span class="n">exc_value</span><span class="p">,</span> <span class="n">exc_tb</span><span class="p">)</span>

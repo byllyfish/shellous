@@ -171,7 +171,7 @@
     <span class="k">return</span> <span class="n">encoding</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">maxsplit</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 
 
-<span class="k">class</span> <span class="nc">_RunOptions</span><span class="p">:</span>  <span class="c1"># pylint: disable=too-many-instance-attributes</span>
+<span class="k">class</span> <span class="nc">_RunOptions</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;_RunOptions is context manager to assist in running a command.</span>
 
 <span class="sd">    This class sets up low-level I/O redirection and helps close open file</span>
@@ -298,6 +298,8 @@
             <span class="p">)</span>
             <span class="n">start_session</span> <span class="o">=</span> <span class="kc">True</span>
 
+        <span class="k">assert</span> <span class="ow">not</span> <span class="n">preexec_fn</span> <span class="ow">or</span> <span class="n">callable</span><span class="p">(</span><span class="n">preexec_fn</span><span class="p">)</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">input_bytes</span> <span class="o">=</span> <span class="n">input_bytes</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">kwd_args</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s2">&quot;stdin&quot;</span><span class="p">:</span> <span class="n">stdin</span><span class="p">,</span>
@@ -418,7 +420,8 @@
         <span class="k">if</span> <span class="n">stderr</span> <span class="o">==</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">subprocess</span><span class="o">.</span><span class="n">STDOUT</span><span class="p">:</span>
             <span class="n">stderr</span> <span class="o">=</span> <span class="n">child_fd</span>
 
-        <span class="k">return</span> <span class="n">stdin</span><span class="p">,</span> <span class="n">stdout</span><span class="p">,</span> <span class="n">stderr</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">pty_util</span><span class="o">.</span><span class="n">set_ctty</span><span class="p">(</span><span class="n">child_fd</span><span class="p">)</span>
+        <span class="n">ttyname</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">ttyname</span><span class="p">(</span><span class="n">child_fd</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">stdin</span><span class="p">,</span> <span class="n">stdout</span><span class="p">,</span> <span class="n">stderr</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">pty_util</span><span class="o">.</span><span class="n">set_ctty</span><span class="p">(</span><span class="n">ttyname</span><span class="p">)</span>
 
 
 <span class="k">class</span> <span class="nc">Runner</span><span class="p">:</span>
@@ -921,7 +924,7 @@
         <span class="k">return</span> <span class="n">run</span><span class="o">.</span><span class="n">result</span><span class="p">(</span><span class="nb">bytes</span><span class="p">(</span><span class="n">output_bytes</span><span class="p">))</span>
 
 
-<span class="k">class</span> <span class="nc">PipeRunner</span><span class="p">:</span>  <span class="c1"># pylint: disable=too-many-instance-attributes</span>
+<span class="k">class</span> <span class="nc">PipeRunner</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;PipeRunner is an asynchronous context manager that runs a pipeline.</span>
 
 <span class="sd">    ```</span>
@@ -1909,7 +1912,7 @@ result = run.result()
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">PipeRunner</span><span class="p">:</span>  <span class="c1"># pylint: disable=too-many-instance-attributes</span>
+            <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">PipeRunner</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;PipeRunner is an asynchronous context manager that runs a pipeline.</span>
 
 <span class="sd">    ```</span>
