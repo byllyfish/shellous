@@ -140,6 +140,8 @@ async def context_aexit(scope, exc_type, exc_value, exc_tb):
     stack = ctxt_stack[scope]
     ctxt_manager = stack.pop()
     if not stack:
+        del ctxt_stack[scope]
+    if not ctxt_stack:
         _CTXT_STACK.set(None)
 
     return await ctxt_manager.__aexit__(exc_type, exc_value, exc_tb)

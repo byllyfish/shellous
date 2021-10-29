@@ -6,7 +6,7 @@ import time
 
 SHELLOUS_CMD = os.environ.get("SHELLOUS_CMD")
 SHELLOUS_EXIT_CODE = int(os.environ.get("SHELLOUS_EXIT_CODE") or 0)
-SHELLOUS_EXIT_SLEEP = int(os.environ.get("SHELLOUS_EXIT_SLEEP") or 0)
+SHELLOUS_EXIT_SLEEP = float(os.environ.get("SHELLOUS_EXIT_SLEEP") or 0)
 
 
 def _write(data):
@@ -50,6 +50,11 @@ elif SHELLOUS_CMD == "tr":
 
 elif SHELLOUS_CMD == "bulk":
     _write(b"1234" * (1024 * 1024 + 1))
+
+elif SHELLOUS_CMD == "count":
+    arg = int(sys.argv[1])
+    for i in range(arg):
+        _write(f"{i+1}\n".encode("utf-8"))
 
 else:
     raise NotImplementedError

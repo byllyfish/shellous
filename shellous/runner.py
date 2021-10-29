@@ -46,7 +46,7 @@ def _split(encoding):
     return encoding.split(maxsplit=1)
 
 
-class _RunOptions:  # pylint: disable=too-many-instance-attributes
+class _RunOptions:
     """_RunOptions is context manager to assist in running a command.
 
     This class sets up low-level I/O redirection and helps close open file
@@ -173,6 +173,8 @@ class _RunOptions:  # pylint: disable=too-many-instance-attributes
             )
             start_session = True
 
+        assert not preexec_fn or callable(preexec_fn)
+
         self.input_bytes = input_bytes
         self.kwd_args = {
             "stdin": stdin,
@@ -293,7 +295,8 @@ class _RunOptions:  # pylint: disable=too-many-instance-attributes
         if stderr == asyncio.subprocess.STDOUT:
             stderr = child_fd
 
-        return stdin, stdout, stderr, lambda: pty_util.set_ctty(child_fd)
+        ttyname = os.ttyname(child_fd)
+        return stdin, stdout, stderr, lambda: pty_util.set_ctty(ttyname)
 
 
 class Runner:
@@ -796,7 +799,7 @@ class Runner:
         return run.result(bytes(output_bytes))
 
 
-class PipeRunner:  # pylint: disable=too-many-instance-attributes
+class PipeRunner:
     """PipeRunner is an asynchronous context manager that runs a pipeline.
 
     ```

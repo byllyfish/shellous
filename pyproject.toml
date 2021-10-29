@@ -32,6 +32,7 @@ pytest-dotenv = "^0.5.2"
 pytest-randomly = "^3.10.1"
 pytest-timeout = "^2.0.1"
 pdoc = "^8.0.0"
+asyncstdlib = "^3.10.2"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -42,5 +43,11 @@ filterwarnings = ["default"]
 env_files = ["tests/tests.env"]
 addopts = '--timeout=10 --color=yes --log-cli-format="%(created).03f %(levelname)s %(name)s %(message)s" --log-level=INFO --log-file-format="%(created).03f %(levelname)s %(name)s %(message)s"'
 
-[tool.pylint.'TYPECHECK']
+[tool.pylint.'FORMAT']
 extension-pkg-allow-list = ["termios,fcntl"]
+
+[tool.pylint.'TYPECHECK']
+max-module-lines = 1200
+
+[tool.pylint.'DESIGN']
+max-attributes = 12
