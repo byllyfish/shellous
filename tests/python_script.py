@@ -1,4 +1,4 @@
-# Python script used in `test_shellous.py`.
+"Python script used in `test_shellous.py`."
 
 import os
 import sys

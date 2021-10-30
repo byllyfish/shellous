@@ -17,7 +17,7 @@ childwatcher_type = os.environ.get("SHELLOUS_CHILDWATCHER_TYPE")
 loop_type = os.environ.get("SHELLOUS_LOOP_TYPE")
 
 if loop_type:
-    if loop_type == "uvloop":
+    if sys.platform != "win32" and loop_type == "uvloop":
         import uvloop
 
         @pytest.fixture
@@ -151,7 +151,7 @@ def _serialize(func):
         nonlocal retry
 
         while True:
-            if lock.acquire(blocking=False):
+            if lock.acquire(blocking=False):  # pylint: disable=consider-using-with
                 try:
                     retry = False
                     func(*args, **kwargs)
@@ -169,6 +169,8 @@ def _serialize(func):
 if sys.platform != "win32":
 
     class PatchedMultiLoopChildWatcher(asyncio.MultiLoopChildWatcher):
+        "Test race condition fixes in MultiLoopChildWatcher."
+
         def add_child_handler(self, pid, callback, *args):
             loop = asyncio.get_running_loop()
             self._callbacks[pid] = (loop, callback, args)

@@ -1,3 +1,5 @@
+"Unit test to check Python bpo-45074."
+
 import asyncio
 import sys
 

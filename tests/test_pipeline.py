@@ -17,7 +17,7 @@ def sh():
     return context()
 
 
-def test_empty_pipeline(sh):
+def test_empty_pipeline():
     with pytest.raises(ValueError, match="must include at least one command"):
         Pipeline.create()
 
@@ -44,7 +44,7 @@ def test_pipeline(sh):
 
 def test_pipeline_unsupported_rhs(sh):
     with pytest.raises(TypeError, match=r"unsupported operand type\(s\) for \|"):
-        Pipeline.create(sh("echo")) | (1 + 2j)
+        _ = Pipeline.create(sh("echo")) | (1 + 2j)
 
 
 def test_pipeline_unsupported_lhs(sh):
@@ -88,9 +88,9 @@ def test_pipeline_full(sh):
 
 
 def test_pipeline_pieces(sh):
-    input = "/tmp/input" | Pipeline.create(sh("cmd1"))
+    input_ = "/tmp/input" | Pipeline.create(sh("cmd1"))
     output = Pipeline.create(sh("cmd2")) >> "/tmp/output"
-    pipe = input | output
+    pipe = input_ | output
     assert pipe.commands == (
         sh("cmd1").stdin("/tmp/input"),
         sh("cmd2").stdout("/tmp/output", append=True),
