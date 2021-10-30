@@ -26,7 +26,6 @@ jobs:
 
     env:
       POETRY_RUN: python -m poetry run
-      LOG_LEVEL: WARNING
       SHELLOUS_DEBUG: 1
 
     steps:
@@ -53,8 +52,10 @@ jobs:
         $POETRY_RUN pylint -v -r y -f colorized --fail-under 9.5 shellous
     - name: Run Tests
       run: |
-        # Run pytest.
-        $POETRY_RUN python -m pytest -vv -s --durations=20 --log-cli-level=DEBUG
+        if ! $POETRY_RUN python -m pytest -vv -s --durations=20 --log-cli-level=DEBUG; then
+          echo "::warning title=Run Tests Failed::Re-running failed tests once."
+          $POETRY_RUN python -m pytest -vv -s --durations=20 --log-cli-level=DEBUG --last-failed
+        fi
     - name: Run Code Coverage (Linux and MacOS)
       if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11'
       run: |
@@ -72,7 +73,7 @@ jobs:
     - name: Run Tests with PidfdWatcher (Linux)
       if: matrix.os == 'ubuntu-latest'
       run: |
-        $POETRY_RUN python -m pytest -vv -s --log-cli-level=$LOG_LEVEL
+        $POETRY_RUN python -m pytest -vv -s --log-cli-level=DEBUG
       env:
         SHELLOUS_CHILDWATCHER_TYPE: "pidfd"
     - name: Run Tests with SafeChildWatcher (Linux and MacOS)
@@ -84,7 +85,10 @@ jobs:
     - name: Run Tests with MultiLoopChildWatcher (Linux and MacOS)
       if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11'
       run: |
-        $POETRY_RUN python -m pytest -vv -s --log-cli-level=DEBUG
+        if ! $POETRY_RUN python -m pytest -vv -s --log-cli-level=DEBUG; then
+          echo "::warning title=MultiLoopChildWatcher Failed::Re-running failed tests once."
+          $POETRY_RUN python -m pytest -vv -s --log-cli-level=DEBUG --last-failed
+        fi
       env:
         SHELLOUS_CHILDWATCHER_TYPE: "multi"
       continue-on-error: true  # not confident yet
