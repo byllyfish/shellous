@@ -17,7 +17,7 @@ childwatcher_type = os.environ.get("SHELLOUS_CHILDWATCHER_TYPE")
 loop_type = os.environ.get("SHELLOUS_LOOP_TYPE")
 
 if loop_type:
-    if loop_type == "uvloop":
+    if sys.platform != "win32" and loop_type == "uvloop":
         import uvloop
 
         @pytest.fixture
