@@ -117,8 +117,8 @@ async def test_tr(tr_cmd):
 async def test_bulk(bulk_cmd):
     result = await bulk_cmd().set(encoding=None)
     assert len(result) == 4 * (1024 * 1024 + 1)
-    hash = hashlib.sha256(result).hexdigest()
-    assert hash == "462d6c497b393d2c9e1584a7b4636592da837ef66cf4ff871dc937f3fe309459"
+    value = hashlib.sha256(result).hexdigest()
+    assert value == "462d6c497b393d2c9e1584a7b4636592da837ef66cf4ff871dc937f3fe309459"
 
 
 async def test_count(count_cmd):
@@ -583,7 +583,7 @@ async def test_many_short_programs_sequential(echo_cmd):
     COUNT = 10
 
     failure_count = 0
-    for i in range(COUNT):
+    for _ in range(COUNT):
         result = await echo_cmd("abc")
         if result != "abc":
             failure_count += 1
@@ -602,14 +602,14 @@ async def test_many_short_programs_parallel(echo_cmd):
     assert results == ["abcd"] * COUNT
 
 
-async def test_redirect_stdin_capture_iter(cat_cmd, tr_cmd):
+async def test_redirect_stdin_capture_iter(cat_cmd):
     "Test setting stdin to CAPTURE when using `async for`."
     with pytest.raises(
         RuntimeError,
         match="multiple capture not supported in iterator",
     ):
         async with cat_cmd.stdin(CAPTURE).run() as run:
-            async for line in run:
+            async for _ in run:
                 pass
 
 
@@ -620,7 +620,7 @@ async def test_pipe_redirect_stdin_capture_iter(cat_cmd, tr_cmd):
         RuntimeError, match="multiple capture not supported in iterator"
     ):
         async with cmd.stdin(CAPTURE).run() as run:
-            async for line in run:
+            async for _ in run:
                 pass
 
 
@@ -1017,7 +1017,7 @@ async def test_command_with_timeout_expiring_generator(sleep_cmd):
     sleep = sleep_cmd(10).set(timeout=0.1)
 
     with pytest.raises(asyncio.TimeoutError):
-        async for line in sleep:
+        async for _ in sleep:
             assert False  # never reached
 
 
@@ -1203,9 +1203,9 @@ async def test_asl_takewhile_sum(count_cmd, echo_cmd):
 
     stuff = asl.chain(count_cmd(6), echo_cmd("10\n", "20\n", "30\n", "40\n"))
     ints = asl.map(_to_int, stuff)
-    sum = asl.sum(asl.takewhile(_less_than_20, ints))
+    value = asl.sum(asl.takewhile(_less_than_20, ints))
 
-    assert await sum == 31
+    assert await value == 31
 
 
 async def test_asl_islice(count_cmd):
@@ -1222,5 +1222,5 @@ async def test_bulk_line_limit(bulk_cmd):
     "Test line iteration with bulk command."
 
     with pytest.raises(ValueError, match="Separator is not found"):
-        async for line in bulk_cmd:
+        async for _ in bulk_cmd:
             assert False  # never reached

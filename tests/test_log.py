@@ -8,7 +8,7 @@ from shellous.log import _LOG_IGNORE_STEPIN, _LOG_IGNORE_STEPOUT, log_method, lo
 pytestmark = pytest.mark.asyncio
 
 
-class _Tester:
+class _Tester:  # pylint: disable=no-self-use
     @log_method(True)
     async def demo1(self):
         pass
@@ -47,7 +47,7 @@ async def test_log_method(caplog):
     await tester.demo2()
     with pytest.raises(ValueError):
         await tester.demo3()
-    async for i in tester.demo4():
+    async for _ in tester.demo4():
         pass
     await tester.demo5()
     await tester.demo6()

@@ -151,7 +151,7 @@ def _serialize(func):
         nonlocal retry
 
         while True:
-            if lock.acquire(blocking=False):
+            if lock.acquire(blocking=False):  # pylint: disable=consider-using-with
                 try:
                     retry = False
                     func(*args, **kwargs)

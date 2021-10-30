@@ -56,7 +56,7 @@ def test_close_fds(tmp_path):
     "Test the close_fds() function."
     out = tmp_path / "test_close_fds"
 
-    with open(out, "w") as fp:
+    with open(out, "wb") as fp:
         fd = fp.fileno()
         open_files = [fp, fd]
 
