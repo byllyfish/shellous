@@ -51,12 +51,12 @@ jobs:
         echo "flake8 syntax check:" `$POETRY_RUN flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics`
         $POETRY_RUN pylint -v -r y -f colorized --fail-under 9.5 shellous
         if ! $POETRY_RUN mypy shellous tests; then
-          echo "::warning title=Lint Warning::mypy found issues."
+          echo "::warning title=Lint Warning::mypy found issues in $GITHUB_JOB (${{ matrix.os }},${{ matrix.python-version }})"
         fi
     - name: Run Tests
       run: |
         if ! $POETRY_RUN python -m pytest -vv -s --durations=20 --log-cli-level=DEBUG; then
-          echo "::warning title=Run Tests Failed::Re-running failed tests once."
+          echo "::warning title=Run Tests Warning::Re-running failed tests in $GITHUB_JOB (${{ matrix.os }},${{ matrix.python-version }})"
           $POETRY_RUN python -m pytest -vv -s --durations=20 --log-cli-level=DEBUG --last-failed
         fi
     - name: Run Code Coverage (Linux and MacOS)
@@ -89,7 +89,7 @@ jobs:
       if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11'
       run: |
         if ! $POETRY_RUN python -m pytest -vv -s --log-cli-level=DEBUG; then
-          echo "::warning title=MultiLoopChildWatcher Failed::Re-running failed tests once."
+          echo "::warning title=MultiLoopChildWatcher Warning::Re-running failed tests in $GITHUB_JOB (${{ matrix.os }},${{ matrix.python-version }})"
           $POETRY_RUN python -m pytest -vv -s --log-cli-level=DEBUG --last-failed
         fi
       env:
