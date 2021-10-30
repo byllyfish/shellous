@@ -386,7 +386,7 @@ async def test_redirect_stdin_inherit(echo_cmd):
     try:
         result = await echo_cmd("abc").stdin(INHERIT)
         assert result == "abc"
-    except io.UnsupportedOperation as ex:
+    except io.UnsupportedOperation:
         # Raises UnsupportedOperation under code coverage.
         pass
 
@@ -1007,7 +1007,7 @@ async def test_command_with_timeout_expiring_context(sleep_cmd):
 
     with pytest.raises(asyncio.TimeoutError):
         async with sleep as run:
-            result = await run.stdout.read()
+            await run.stdout.read()
             assert False  # never reached
 
 
@@ -1048,7 +1048,6 @@ async def test_timeout_zero_seconds(sleep_cmd):
 
     def _audit(phase, info):
         runner = info["runner"]
-        failure = info.get("failure")
         calls.append((phase, runner.name, runner.returncode))
 
     sleep = sleep_cmd(10).set(audit_callback=_audit, timeout=0.0)
