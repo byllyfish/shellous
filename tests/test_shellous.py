@@ -1217,3 +1217,11 @@ async def test_asl_islice(count_cmd):
     firstfourodd = asl.islice(oddlines, 4)
 
     assert await asl.list(firstfourodd) == ["1\n", "3\n", "5\n", "7\n"]
+
+
+async def test_bulk_line_limit(bulk_cmd):
+    "Test line iteration with bulk command."
+
+    with pytest.raises(ValueError, match="Separator is not found"):
+        async for line in bulk_cmd:
+            assert False  # never reached

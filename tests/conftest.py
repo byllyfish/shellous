@@ -136,24 +136,6 @@ async def _get_children():
     return children
 
 
-def _log_func(func):
-    "Debugging decorator that logs entry and exit from regular methods."
-
-    import logging
-
-    logger = logging.getLogger(__name__)
-
-    @functools.wraps(func)
-    def _log(*args, **kwargs):
-        try:
-            logger.debug("enter %r %r", func.__name__, args[0])
-            return func(*args, **kwargs)
-        finally:
-            logger.debug("exit %r %r", func.__name__, args[0])
-
-    return _log
-
-
 def _serialize(func):
     """Decorator to serialize a non-reentrant signal function.
     If one client is already in the critical section, set a flag to run the
@@ -195,7 +177,6 @@ if sys.platform != "win32":
             # callback added.
             signal.raise_signal(signal.SIGCHLD)
 
-        @_log_func
         @_serialize
         def _sig_chld(self, signum, frame):
             super()._sig_chld(signum, frame)
