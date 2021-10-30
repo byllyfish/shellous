@@ -1,3 +1,5 @@
+"Unit tests for PEP 578 audit hooks."
+
 import os
 import shutil
 import sys
@@ -5,6 +7,8 @@ import sys
 import pytest
 import shellous
 from shellous import AUDIT_EVENT_SUBPROCESS_SPAWN
+
+# pylint: disable=global-statement
 
 pytestmark = pytest.mark.asyncio
 
@@ -14,7 +18,7 @@ _IGNORE = {"object.__getattr__", "sys._getframe", "code.__new__", "builtins.id"}
 
 def _audit_hook(event, args):
     if _HOOK and event not in _IGNORE:
-        _HOOK(event, args)
+        _HOOK(event, args)  # pylint: disable=not-callable
 
 
 sys.addaudithook(_audit_hook)
@@ -109,7 +113,7 @@ async def test_audit_block_popen():
 
     global _HOOK
 
-    def _hook(event, args):
+    def _hook(event, _args):
         if event == "subprocess.Popen":
             raise RuntimeError("Popen blocked")
 

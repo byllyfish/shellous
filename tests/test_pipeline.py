@@ -17,7 +17,7 @@ def sh():
     return context()
 
 
-def test_empty_pipeline(sh):
+def test_empty_pipeline():
     with pytest.raises(ValueError, match="must include at least one command"):
         Pipeline.create()
 

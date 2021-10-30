@@ -169,6 +169,8 @@ def _serialize(func):
 if sys.platform != "win32":
 
     class PatchedMultiLoopChildWatcher(asyncio.MultiLoopChildWatcher):
+        "Test race condition fixes in MultiLoopChildWatcher."
+
         def add_child_handler(self, pid, callback, *args):
             loop = asyncio.get_running_loop()
             self._callbacks[pid] = (loop, callback, args)

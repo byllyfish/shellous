@@ -1,3 +1,5 @@
+"Unit tests for functions in util module."
+
 import asyncio
 import os
 import sys
