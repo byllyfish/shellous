@@ -135,7 +135,7 @@ _CHILD_WATCHER_MAP = {
     "multi": "MultiLoopChildWatcher",
 }
 
-_CW_TYPE = os.environ.get("SHELLOUS_CHILDWATCHER_TYPE")
+_CW_TYPE = os.environ.get("SHELLOUS_CHILDWATCHER_TYPE", "<unset>")
 
 CHILD_WATCHER = _CHILD_WATCHER_MAP.get(_CW_TYPE, "ThreadedChildWatcher")
 XFAIL_CHILDWATCHER = CHILD_WATCHER in (

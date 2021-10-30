@@ -50,6 +50,9 @@ jobs:
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
         echo "flake8 syntax check:" `$POETRY_RUN flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics`
         $POETRY_RUN pylint -v -r y -f colorized --fail-under 9.5 shellous
+        if ! $POETRY_RUN mypy shellous tests; then
+          echo "::warning title=Lint Warning::mypy found issues."
+        fi
     - name: Run Tests
       run: |
         if ! $POETRY_RUN python -m pytest -vv -s --durations=20 --log-cli-level=DEBUG; then
