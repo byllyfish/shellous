@@ -180,7 +180,7 @@ async def _cancel_waiter(tasks, trustee, timeout):
     )
 
     if pending:
-        LOGGER.error(
+        LOGGER.warning(
             "harvest._cancel_waiter pending=%r trustee=%r",
             pending,
             trustee,
