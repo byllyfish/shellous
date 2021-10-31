@@ -57,7 +57,7 @@ jobs:
         fi
     - name: Run Tests
       run: |
-        if ! $POETRY_RUN python -m pytest -vv -s --durations=20 --log-cli-level=DEBUG; then
+        if ! $POETRY_RUN python -m pytest -vv -s --durations=20 --log-cli-level=DEBUG | ./ci/annotate.awk; then
           echo "::warning title=Run Tests Warning::Re-running failed tests in $GITHUB_JOB (${{ matrix.os }},${{ matrix.python-version }})"
           $POETRY_RUN python -m pytest -vv -s --durations=20 --log-cli-level=DEBUG --last-failed
         fi
