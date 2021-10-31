@@ -27,6 +27,7 @@ jobs:
     env:
       POETRY_RUN: python -m poetry run
       SHELLOUS_DEBUG: 1
+      BUILD_JOB: $GITHUB_JOB (${{ matrix.os }},${{ matrix.python-version }})
 
     steps:
     - uses: actions/checkout@v2

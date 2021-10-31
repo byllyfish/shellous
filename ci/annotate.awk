@@ -12,7 +12,7 @@
 END { 
     print ""
     if (critical_count > 0) {
-        printf "::error title=annotate.awk::%d critical messages\n", critical_count
+        printf "::error title=annotate.awk::%d critical messages in %s\n", critical_count, ENVIRON["BUILD_JOB"]
         for (i in critical_msg) {
             print critical_msg[i]
         }
@@ -20,7 +20,7 @@ END {
 
     print ""
     if (error_count > 0) {
-        printf "::warning title=annotate.awk::%d error messages\n", error_count
+        printf "::warning title=annotate.awk::%d error messages in %s\n", error_count, ENVIRON["BUILD_JOB"]
         for (i in error_msg) {
             print error_msg[i]
         }
