@@ -1212,10 +1212,12 @@ async def test_asl_islice(count_cmd):
     "Test compatibility with async itertool `islice`."
 
     iterator = count_cmd(25)
-    oddlines = asl.islice(iterator, 0, None, 2)
-    firstfourodd = asl.islice(oddlines, 4)
 
-    assert await asl.list(firstfourodd) == ["1\n", "3\n", "5\n", "7\n"]
+    async with asl.scoped_iter(iterator) as iter1:
+        oddlines = asl.islice(iter1, 0, None, 2)
+        firstfourodd = asl.islice(oddlines, 4)
+
+        assert await asl.list(firstfourodd) == ["1\n", "3\n", "5\n", "7\n"]
 
 
 async def test_bulk_line_limit(bulk_cmd):
