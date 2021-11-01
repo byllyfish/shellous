@@ -31,7 +31,7 @@ flake8 = "^4.0.0"
 pytest-dotenv = "^0.5.2"
 pytest-randomly = "^3.10.1"
 pytest-timeout = "^2.0.1"
-pdoc = "^8.0.0"
+pdoc = "^8.0.1"
 asyncstdlib = "^3.10.2"
 
 [build-system]
