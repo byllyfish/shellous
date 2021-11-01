@@ -130,13 +130,14 @@ async def harvest_wait(
                 task.exception() for task in done if not task.cancelled()
             )
 
-    except asyncio.CancelledError:
+    except (asyncio.CancelledError, GeneratorExit) as ex:
         # Cancel all tasks and wait for them to finish.
         if LOG_DETAIL:
             LOGGER.info(
-                "harvest_wait cancelled trustee=%r cancel_finish=%r",
+                "harvest_wait cancelled trustee=%r cancel_finish=%r ex=%r",
                 trustee,
                 cancel_finish,
+                ex,
             )
         await _cancel_wait(tasks, trustee, cancel_timeout, cancel_finish)
         _consume_exceptions(tasks)
@@ -180,7 +181,7 @@ async def _cancel_waiter(tasks, trustee, timeout):
     )
 
     if pending:
-        LOGGER.error(
+        LOGGER.warning(
             "harvest._cancel_waiter pending=%r trustee=%r",
             pending,
             trustee,
@@ -210,4 +211,6 @@ def _consume_exceptions(tasks):
     for task in tasks:
         assert task.done()
         if not task.cancelled():
-            task.exception()
+            ex = task.exception()
+            if ex and LOG_DETAIL:
+                LOGGER.debug("%r exception consumed %r", task.get_name(), ex)
