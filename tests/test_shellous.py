@@ -885,7 +885,32 @@ async def test_pipe_iterator_api_interrupted(echo_cmd, cat_cmd):
 def test_pipe_iterator_api_interrupted_sync(echo_cmd, cat_cmd):
     "Test running a command's async iterator directly."
 
+    # Due to bpo-?, asyncio.run may log an ERROR message for a task even
+    # though the task's exception has been explicitly consumed:
+    #
+    #  "ERROR asyncio unhandled exception during asyncio.run() shutdown"
+    #
+    # To temporarily prevent this, set a custom exception handler on the loop
+    # to change it to a WARNING message.
+
+    IGNORED_MSG = "unhandled exception during asyncio.run() shutdown"
+
+    def _custom_exception_handler(loop, context):
+        task = context.get("task")
+        message = context.get("message")
+        if task and "echo|cat#" in task.get_name() and IGNORED_MSG in message:
+            logging.getLogger(__name__).warning(
+                "Ignore %r from %r",
+                message,
+                task,
+            )
+        else:
+            loop.default_exception_handler(context)
+
     async def _test():
+        loop = asyncio.get_running_loop()
+        loop.set_exception_handler(_custom_exception_handler)
+
         cmd = echo_cmd("hello\n", "cruel\n", "world\n") | cat_cmd()
         async for line in cmd:
             if "hello" in line:
