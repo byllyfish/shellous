@@ -40,7 +40,7 @@ jobs:
         # Install poetry and use it to install dependencies.
         python -m pip install poetry
         python -m poetry install --no-root --no-interaction
-        if [ "${{ matrix.os }}" != "windows-latest" ]; then
+        if [ "${{ matrix.os }}" != "windows-latest" -a "${{ matrix.python-version }}" != "pypy-3.8" ]; then
             python -m poetry add uvloop
         fi
     - name: Lint
@@ -73,7 +73,7 @@ jobs:
       env:
         SHELLOUS_CODE_COVERAGE: 1
     - name: Run Tests with uvloop (Linux and MacOS)
-      if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11'
+      if: (matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11') && matrix.python-version != 'pypy-3.8'
       run: |
         $POETRY_RUN python -m pytest -vv -s --log-cli-level=DEBUG
       env:
