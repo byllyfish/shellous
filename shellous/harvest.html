@@ -192,13 +192,14 @@
                 <span class="n">task</span><span class="o">.</span><span class="n">exception</span><span class="p">()</span> <span class="k">for</span> <span class="n">task</span> <span class="ow">in</span> <span class="n">done</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">task</span><span class="o">.</span><span class="n">cancelled</span><span class="p">()</span>
             <span class="p">)</span>
 
-    <span class="k">except</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">CancelledError</span><span class="p">:</span>
+    <span class="k">except</span> <span class="p">(</span><span class="n">asyncio</span><span class="o">.</span><span class="n">CancelledError</span><span class="p">,</span> <span class="ne">GeneratorExit</span><span class="p">)</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>
         <span class="c1"># Cancel all tasks and wait for them to finish.</span>
         <span class="k">if</span> <span class="n">LOG_DETAIL</span><span class="p">:</span>
             <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-                <span class="s2">&quot;harvest_wait cancelled trustee=</span><span class="si">%r</span><span class="s2"> cancel_finish=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;harvest_wait cancelled trustee=</span><span class="si">%r</span><span class="s2"> cancel_finish=</span><span class="si">%r</span><span class="s2"> ex=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span>
                 <span class="n">trustee</span><span class="p">,</span>
                 <span class="n">cancel_finish</span><span class="p">,</span>
+                <span class="n">ex</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="k">await</span> <span class="n">_cancel_wait</span><span class="p">(</span><span class="n">tasks</span><span class="p">,</span> <span class="n">trustee</span><span class="p">,</span> <span class="n">cancel_timeout</span><span class="p">,</span> <span class="n">cancel_finish</span><span class="p">)</span>
         <span class="n">_consume_exceptions</span><span class="p">(</span><span class="n">tasks</span><span class="p">)</span>
@@ -242,7 +243,7 @@
     <span class="p">)</span>
 
     <span class="k">if</span> <span class="n">pending</span><span class="p">:</span>
-        <span class="n">LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
             <span class="s2">&quot;harvest._cancel_waiter pending=</span><span class="si">%r</span><span class="s2"> trustee=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span>
             <span class="n">pending</span><span class="p">,</span>
             <span class="n">trustee</span><span class="p">,</span>
@@ -272,7 +273,9 @@
     <span class="k">for</span> <span class="n">task</span> <span class="ow">in</span> <span class="n">tasks</span><span class="p">:</span>
         <span class="k">assert</span> <span class="n">task</span><span class="o">.</span><span class="n">done</span><span class="p">()</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">task</span><span class="o">.</span><span class="n">cancelled</span><span class="p">():</span>
-            <span class="n">task</span><span class="o">.</span><span class="n">exception</span><span class="p">()</span>
+            <span class="n">ex</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">exception</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">ex</span> <span class="ow">and</span> <span class="n">LOG_DETAIL</span><span class="p">:</span>
+                <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%r</span><span class="s2"> exception consumed </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">task</span><span class="o">.</span><span class="n">get_name</span><span class="p">(),</span> <span class="n">ex</span><span class="p">)</span>
 </pre></div>
 
         </details>
@@ -492,13 +495,14 @@ all awaitables are cancelled and consumed before raising a
                 <span class="n">task</span><span class="o">.</span><span class="n">exception</span><span class="p">()</span> <span class="k">for</span> <span class="n">task</span> <span class="ow">in</span> <span class="n">done</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">task</span><span class="o">.</span><span class="n">cancelled</span><span class="p">()</span>
             <span class="p">)</span>
 
-    <span class="k">except</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">CancelledError</span><span class="p">:</span>
+    <span class="k">except</span> <span class="p">(</span><span class="n">asyncio</span><span class="o">.</span><span class="n">CancelledError</span><span class="p">,</span> <span class="ne">GeneratorExit</span><span class="p">)</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>
         <span class="c1"># Cancel all tasks and wait for them to finish.</span>
         <span class="k">if</span> <span class="n">LOG_DETAIL</span><span class="p">:</span>
             <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-                <span class="s2">&quot;harvest_wait cancelled trustee=</span><span class="si">%r</span><span class="s2"> cancel_finish=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;harvest_wait cancelled trustee=</span><span class="si">%r</span><span class="s2"> cancel_finish=</span><span class="si">%r</span><span class="s2"> ex=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span>
                 <span class="n">trustee</span><span class="p">,</span>
                 <span class="n">cancel_finish</span><span class="p">,</span>
+                <span class="n">ex</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="k">await</span> <span class="n">_cancel_wait</span><span class="p">(</span><span class="n">tasks</span><span class="p">,</span> <span class="n">trustee</span><span class="p">,</span> <span class="n">cancel_timeout</span><span class="p">,</span> <span class="n">cancel_finish</span><span class="p">)</span>
         <span class="n">_consume_exceptions</span><span class="p">(</span><span class="n">tasks</span><span class="p">)</span>
