@@ -210,4 +210,6 @@ def _consume_exceptions(tasks):
     for task in tasks:
         assert task.done()
         if not task.cancelled():
-            task.exception()
+            ex = task.exception()
+            if ex and LOG_DETAIL:
+                LOGGER.debug("%r exception consumed %r", task.get_name(), ex)

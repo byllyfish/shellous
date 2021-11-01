@@ -851,7 +851,6 @@ class PipeRunner:
     async def _wait(self, *, kill=False):
         "Wait for pipeline to finish."
         assert self._results is None
-        assert self._tasks is not None
 
         if kill:
             LOGGER.info("PipeRunner.wait killing pipe %r", self)
@@ -861,6 +860,7 @@ class PipeRunner:
         cancelled, self._results = await harvest_results(*self._tasks, trustee=self)
         if cancelled:
             self._cancelled = True
+        self._tasks.clear()  # clear all tasks when done
 
     @log_method(LOG_ENTER)
     async def __aenter__(self):
@@ -958,10 +958,11 @@ class PipeRunner:
         last_coro = cmds[-1].coro(_run_future=last_fut)
         middle_coros = [cmd.coro() for cmd in cmds[1:-1]]
 
-        self.add_task(first_coro)
-        for coro in middle_coros:
-            self.add_task(coro)
-        self.add_task(last_coro)
+        # Tag each task name with the index of the command in the pipe.
+        self.add_task(first_coro, "0")
+        for i, coro in enumerate(middle_coros):
+            self.add_task(coro, str(i + 1))
+        self.add_task(last_coro, str(len(cmds) - 1))
 
         # When capturing, we need the first and last commands in the
         # pipe to signal when they are ready.
