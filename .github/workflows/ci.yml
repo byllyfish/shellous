@@ -44,6 +44,7 @@ jobs:
             python -m poetry add uvloop
         fi
     - name: Lint
+      if: matrix.python-version != 'pypy-3.8'
       run: |
         # Run flake8 and pylint.
         # stop the build if there are Python syntax errors or undefined names
