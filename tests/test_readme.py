@@ -207,8 +207,8 @@ def _parse_readme(filename):
     with open(filename, encoding="utf-8") as afile:
         data = afile.read()
 
-    # Make a list of all the python-repl code blocks in the file.
-    _PYTHON_REPL = re.compile(r"\n```python-repl\n(.+?)```\n", re.DOTALL)
+    # Make a list of all the pycon code blocks in the file.
+    _PYTHON_REPL = re.compile(r"\n```pycon\n(.+?)```\n", re.DOTALL)
     blocks = [m.group(1) for m in _PYTHON_REPL.finditer(data)]
 
     # Break each block into lines.
