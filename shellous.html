@@ -127,30 +127,30 @@ similar to and inspired by <a href="https://pypi.org/project/sh/">sh</a>.</p>
 
 <p>Start the asyncio REPL by typing <code>python3 -m asyncio</code>, and import the <strong>shellous</strong> module:</p>
 
-<pre><code>&gt;&gt;&gt; import shellous
-</code></pre>
+<div class="codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">shellous</span>
+</code></pre></div>
 
 <p>Before we can do anything else, we need to create a <strong>context</strong>. Store the context in a 
 short variable name like <code>sh</code> because we'll be typing it a lot.</p>
 
-<pre><code>&gt;&gt;&gt; sh = <a href="#context">shellous.context()</a>
-</code></pre>
+<div class="codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">sh</span> <span class="o">=</span> <span class="n">shellous</span><span class="o">.</span><span class="n">context</span><span class="p">()</span>
+</code></pre></div>
 
 <p>Now, we're ready to run our first command. Here's one that runs <code>echo "hello, world"</code>.</p>
 
-<pre><code>&gt;&gt;&gt; await sh("echo", "hello, world")
-'hello, world\n'
-</code></pre>
+<div class="codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;echo&quot;</span><span class="p">,</span> <span class="s2">&quot;hello, world&quot;</span><span class="p">)</span>
+<span class="go">&#39;hello, world\n&#39;</span>
+</code></pre></div>
 
 <p>The first argument is the program name. It is followed by zero or more separate arguments.</p>
 
 <p>A command does not run until you <code>await</code> it. Here, we create our own echo command with "-n"
 to omit the newline. Note, <code>echo("abc")</code> is the same as <code>echo -n "abc"</code>.</p>
 
-<pre><code>&gt;&gt;&gt; echo = sh("echo", "-n")
-&gt;&gt;&gt; await echo("abc")
-'abc'
-</code></pre>
+<div class="codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">echo</span> <span class="o">=</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;echo&quot;</span><span class="p">,</span> <span class="s2">&quot;-n&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">echo</span><span class="p">(</span><span class="s2">&quot;abc&quot;</span><span class="p">)</span>
+<span class="go">&#39;abc&#39;</span>
+</code></pre></div>
 
 <p><a href="docs/commands.md">More on commands...</a> <!-- __REL_LINK__ --></p>
 
@@ -160,20 +160,20 @@ to omit the newline. Note, <code>echo("abc")</code> is the same as <code>echo -n
 command return a <code>Result</code> object. The <code>Result</code> object will contain more information about the command 
 execution including the <code>exit_code</code>. To return a result object, set <code>return_result</code> option to <code>True</code>.</p>
 
-<pre><code>&gt;&gt;&gt; await echo("abc").set(return_result=True)
-Result(output_bytes=b'abc', exit_code=0, cancelled=False, encoding='utf-8', extra=None)
-</code></pre>
+<div class="codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">echo</span><span class="p">(</span><span class="s2">&quot;abc&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">return_result</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="go">Result(output_bytes=b&#39;abc&#39;, exit_code=0, cancelled=False, encoding=&#39;utf-8&#39;, extra=None)</span>
+</code></pre></div>
 
 <p>The above command had an exit_code of 0.</p>
 
 <p>If a command exits with a non-zero exit code, it raises a <code>ResultError</code> exception that contains
 the <code>Result</code> object.</p>
 
-<pre><code>&gt;&gt;&gt; await sh("cat", "does_not_exist")
-Traceback (most recent call last):
-  ...
-<a href="shellous/result.html#ResultError">shellous.result.ResultError</a>: Result(output_bytes=b'', exit_code=1, cancelled=False, encoding='utf-8', extra=None)
-</code></pre>
+<div class="codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;cat&quot;</span><span class="p">,</span> <span class="s2">&quot;does_not_exist&quot;</span><span class="p">)</span>
+<span class="gt">Traceback (most recent call last):</span>
+  <span class="c">...</span>
+<span class="gr"><a href="shellous/result.html#ResultError">shellous.result.ResultError</a></span>: <span class="n">Result(output_bytes=b&#39;&#39;, exit_code=1, cancelled=False, encoding=&#39;utf-8&#39;, extra=None)</span>
+</code></pre></div>
 
 <p><a href="docs/results.md">More on results...</a> <!-- __REL_LINK__ --></p>
 
@@ -181,18 +181,18 @@ Traceback (most recent call last):
 
 <p>You can change the standard input of a command by using the <code>|</code> operator.</p>
 
-<pre><code>&gt;&gt;&gt; cmd = "abc" | sh("wc", "-c")
-&gt;&gt;&gt; await cmd
-'       3\n'
-</code></pre>
+<div class="codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">cmd</span> <span class="o">=</span> <span class="s2">&quot;abc&quot;</span> <span class="o">|</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;wc&quot;</span><span class="p">,</span> <span class="s2">&quot;-c&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">cmd</span>
+<span class="go">&#39;       3\n&#39;</span>
+</code></pre></div>
 
 <p>To redirect stdin using a file's contents, use a <code>Path</code> object from <code>pathlib</code>.</p>
 
-<pre><code>&gt;&gt;&gt; from pathlib import Path
-&gt;&gt;&gt; cmd = Path("LICENSE") | sh("wc", "-l")
-&gt;&gt;&gt; await cmd
-'     201\n'
-</code></pre>
+<div class="codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">cmd</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">&quot;LICENSE&quot;</span><span class="p">)</span> <span class="o">|</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;wc&quot;</span><span class="p">,</span> <span class="s2">&quot;-l&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">cmd</span>
+<span class="go">&#39;     201\n&#39;</span>
+</code></pre></div>
 
 <p><a href="docs/redirection.md">More on redirection...</a> <!-- __REL_LINK__ --></p>
 
@@ -200,22 +200,22 @@ Traceback (most recent call last):
 
 <p>To redirect standard output, use the <code>|</code> operator.</p>
 
-<pre><code>&gt;&gt;&gt; output_file = Path("/tmp/output_file")
-&gt;&gt;&gt; cmd = sh("echo", "abc") | output_file
-&gt;&gt;&gt; await cmd
-''
-&gt;&gt;&gt; output_file.read_bytes()
-b'abc\n'
-</code></pre>
+<div class="codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">output_file</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">&quot;/tmp/output_file&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">cmd</span> <span class="o">=</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;echo&quot;</span><span class="p">,</span> <span class="s2">&quot;abc&quot;</span><span class="p">)</span> <span class="o">|</span> <span class="n">output_file</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">cmd</span>
+<span class="go">&#39;&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">output_file</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">()</span>
+<span class="go">b&#39;abc\n&#39;</span>
+</code></pre></div>
 
 <p>To redirect standard output with append, use the <code>&gt;&gt;</code> operator.</p>
 
-<pre><code>&gt;&gt;&gt; cmd = sh("echo", "def") &gt;&gt; output_file
-&gt;&gt;&gt; await cmd
-''
-&gt;&gt;&gt; output_file.read_bytes()
-b'abc\ndef\n'
-</code></pre>
+<div class="codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">cmd</span> <span class="o">=</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;echo&quot;</span><span class="p">,</span> <span class="s2">&quot;def&quot;</span><span class="p">)</span> <span class="o">&gt;&gt;</span> <span class="n">output_file</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">cmd</span>
+<span class="go">&#39;&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">output_file</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">()</span>
+<span class="go">b&#39;abc\ndef\n&#39;</span>
+</code></pre></div>
 
 <p><a href="docs/redirection.md">More on redirection...</a> <!-- __REL_LINK__ --></p>
 
@@ -224,23 +224,23 @@ b'abc\ndef\n'
 <p>By default, standard error is not captured. To redirect standard error, use the <code>stderr</code>
 method.</p>
 
-<pre><code>&gt;&gt;&gt; cmd = sh("cat", "does_not_exist").stderr(<a href="#STDOUT">shellous.STDOUT</a>)
-&gt;&gt;&gt; await cmd.set(exit_codes={0,1})
-'cat: does_not_exist: No such file or directory\n'
-</code></pre>
+<div class="codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">cmd</span> <span class="o">=</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;cat&quot;</span><span class="p">,</span> <span class="s2">&quot;does_not_exist&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">stderr</span><span class="p">(</span><span class="n">shellous</span><span class="o">.</span><span class="n">STDOUT</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">cmd</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">exit_codes</span><span class="o">=</span><span class="p">{</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">})</span>
+<span class="go">&#39;cat: does_not_exist: No such file or directory\n&#39;</span>
+</code></pre></div>
 
 <p>You can redirect standard error to a file or path. </p>
 
 <p>To redirect standard error to the hosting program's <code>sys.stderr</code>, use the INHERIT redirect
 option.</p>
 
-<pre><code>&gt;&gt;&gt; cmd = sh("cat", "does_not_exist").stderr(<a href="#INHERIT">shellous.INHERIT</a>)
-&gt;&gt;&gt; await cmd
-cat: does_not_exist: No such file or directory
-Traceback (most recent call last):
-  ...
-<a href="shellous/result.html#ResultError">shellous.result.ResultError</a>: Result(output_bytes=b'', exit_code=1, cancelled=False, encoding='utf-8', extra=None)
-</code></pre>
+<div class="codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">cmd</span> <span class="o">=</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;cat&quot;</span><span class="p">,</span> <span class="s2">&quot;does_not_exist&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">stderr</span><span class="p">(</span><span class="n">shellous</span><span class="o">.</span><span class="n">INHERIT</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">cmd</span>
+<span class="go">cat: does_not_exist: No such file or directory</span>
+<span class="gt">Traceback (most recent call last):</span>
+  <span class="c">...</span>
+<span class="gr"><a href="shellous/result.html#ResultError">shellous.result.ResultError</a></span>: <span class="n">Result(output_bytes=b&#39;&#39;, exit_code=1, cancelled=False, encoding=&#39;utf-8&#39;, extra=None)</span>
+</code></pre></div>
 
 <p><a href="docs/redirection.md">More on redirection...</a> <!-- __REL_LINK__ --></p>
 
@@ -248,40 +248,40 @@ Traceback (most recent call last):
 
 <p>You can create a pipeline by combining commands using the <code>|</code> operator.</p>
 
-<pre><code>&gt;&gt;&gt; pipe = sh("ls") | sh("grep", "README")
-&gt;&gt;&gt; await pipe
-'README.md\n'
-</code></pre>
+<div class="codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">pipe</span> <span class="o">=</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;ls&quot;</span><span class="p">)</span> <span class="o">|</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;grep&quot;</span><span class="p">,</span> <span class="s2">&quot;README&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">pipe</span>
+<span class="go">&#39;README.md\n&#39;</span>
+</code></pre></div>
 
 <h2 id="process-substitution-unix-only">Process Substitution (Unix Only)</h2>
 
 <p>You can pass a shell command as an argument to another.</p>
 
-<pre><code>&gt;&gt;&gt; cmd = sh("grep", "README", sh("ls"))
-&gt;&gt;&gt; await cmd
-'README.md\n'
-</code></pre>
+<div class="codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">cmd</span> <span class="o">=</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;grep&quot;</span><span class="p">,</span> <span class="s2">&quot;README&quot;</span><span class="p">,</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;ls&quot;</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">cmd</span>
+<span class="go">&#39;README.md\n&#39;</span>
+</code></pre></div>
 
 <p>Use ~ to write to a command instead.</p>
 
-<pre><code>&gt;&gt;&gt; buf = bytearray()
-&gt;&gt;&gt; cmd = sh("ls") | sh("tee", ~sh("grep", "README") | buf) | <a href="#DEVNULL">shellous.DEVNULL</a>
-&gt;&gt;&gt; await cmd
-''
-&gt;&gt;&gt; buf
-bytearray(b'README.md\n')
-</code></pre>
+<div class="codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">buf</span> <span class="o">=</span> <span class="nb">bytearray</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">cmd</span> <span class="o">=</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;ls&quot;</span><span class="p">)</span> <span class="o">|</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;tee&quot;</span><span class="p">,</span> <span class="o">~</span><span class="n">sh</span><span class="p">(</span><span class="s2">&quot;grep&quot;</span><span class="p">,</span> <span class="s2">&quot;README&quot;</span><span class="p">)</span> <span class="o">|</span> <span class="n">buf</span><span class="p">)</span> <span class="o">|</span> <span class="n">shellous</span><span class="o">.</span><span class="n">DEVNULL</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">cmd</span>
+<span class="go">&#39;&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">buf</span>
+<span class="go">bytearray(b&#39;README.md\n&#39;)</span>
+</code></pre></div>
 
 <h2 id="async-with-for">Async With &amp; For</h2>
 
 <p>You can loop over a command's output by using the context manager as an iterator.</p>
 
-<pre><code>&gt;&gt;&gt; async with pipe as run:
-...   async for line in run:
-...     print(line.rstrip())
-... 
-README.md
-</code></pre>
+<div class="codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="k">async</span> <span class="k">with</span> <span class="n">pipe</span> <span class="k">as</span> <span class="n">run</span><span class="p">:</span>
+<span class="gp">... </span>  <span class="k">async</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">run</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="nb">print</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">rstrip</span><span class="p">())</span>
+<span class="gp">... </span>
+<span class="go">README.md</span>
+</code></pre></div>
 
 <blockquote>
   <p><span style="font-size:1.5em;">⚠️ </span> You can also acquire an async iterator directly from
@@ -289,21 +289,21 @@ README.md
   clean up of the command invocation than with a context manager.</p>
 </blockquote>
 
-<pre><code>&gt;&gt;&gt; async for line in pipe:   # Use caution!
-...   print(line.rstrip())
-... 
-README.md
-</code></pre>
+<div class="codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="k">async</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">pipe</span><span class="p">:</span>   <span class="c1"># Use caution!</span>
+<span class="gp">... </span>  <span class="nb">print</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">rstrip</span><span class="p">())</span>
+<span class="gp">... </span>
+<span class="go">README.md</span>
+</code></pre></div>
 
 <p>You can use <code>async with</code> to interact with the process streams directly. You have to be careful; you
 are responsible for correctly reading and writing multiple streams at the same time.</p>
 
-<pre><code>&gt;&gt;&gt; async with pipe as run:
-...   data = await run.stdout.readline()
-...   print(data)
-... 
-b'README.md\n'
-</code></pre>
+<div class="codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="k">async</span> <span class="k">with</span> <span class="n">pipe</span> <span class="k">as</span> <span class="n">run</span><span class="p">:</span>
+<span class="gp">... </span>  <span class="n">data</span> <span class="o">=</span> <span class="k">await</span> <span class="n">run</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
+<span class="gp">... </span>  <span class="nb">print</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+<span class="gp">... </span>
+<span class="go">b&#39;README.md\n&#39;</span>
+</code></pre></div>
 
 <h2 id="cancellation">Cancellation</h2>
 
@@ -312,15 +312,15 @@ b'README.md\n'
 <p>You can retrieve the partial result by setting <code>incomplete_result</code> to True. Shellous will return a
 <code>ResultError</code> when the specified command is cancelled.</p>
 
-<pre><code>&gt;&gt;&gt; sleep = sh("sleep", 60).set(incomplete_result=True)
-&gt;&gt;&gt; t = asyncio.create_task(sleep.coro())
-&gt;&gt;&gt; t.cancel()
-True
-&gt;&gt;&gt; await t
-Traceback (most recent call last):
-  ...
-<a href="shellous/result.html#ResultError">shellous.result.ResultError</a>: Result(output_bytes=b'', exit_code=-15, cancelled=True, encoding='utf-8', extra=None)
-</code></pre>
+<div class="codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">sleep</span> <span class="o">=</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;sleep&quot;</span><span class="p">,</span> <span class="mi">60</span><span class="p">)</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">incomplete_result</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">t</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="n">sleep</span><span class="o">.</span><span class="n">coro</span><span class="p">())</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">t</span><span class="o">.</span><span class="n">cancel</span><span class="p">()</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">t</span>
+<span class="gt">Traceback (most recent call last):</span>
+  <span class="c">...</span>
+<span class="gr"><a href="shellous/result.html#ResultError">shellous.result.ResultError</a></span>: <span class="n">Result(output_bytes=b&#39;&#39;, exit_code=-15, cancelled=True, encoding=&#39;utf-8&#39;, extra=None)</span>
+</code></pre></div>
 
 <p>When you use <code>incomplete_result</code>, your code should respect the <code>cancelled</code> attribute in the Result object. 
 Otherwise, your code may swallow the CancelledError.</p>
@@ -330,27 +330,27 @@ Otherwise, your code may swallow the CancelledError.</p>
 <p>To run a command through a pseudo-terminal, set the <code>pty</code> option to True. Alternatively, you can pass
 a function to configure the tty mode and size.</p>
 
-<pre><code>&gt;&gt;&gt; ls = sh("ls").set(pty=<a href="#cooked">shellous.cooked</a>(cols=40, rows=10, echo=False))
-&gt;&gt;&gt; await ls("README.md", "CHANGELOG.md")
-'CHANGELOG.md\tREADME.md\r\n'
-</code></pre>
+<div class="codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">ls</span> <span class="o">=</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;ls&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">pty</span><span class="o">=</span><span class="n">shellous</span><span class="o">.</span><span class="n">cooked</span><span class="p">(</span><span class="n">cols</span><span class="o">=</span><span class="mi">40</span><span class="p">,</span> <span class="n">rows</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">echo</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">ls</span><span class="p">(</span><span class="s2">&quot;README.md&quot;</span><span class="p">,</span> <span class="s2">&quot;CHANGELOG.md&quot;</span><span class="p">)</span>
+<span class="go">&#39;CHANGELOG.md\tREADME.md\r\n&#39;</span>
+</code></pre></div>
 
 <h2 id="context-objects">Context Objects</h2>
 
 <p>You can specify shared command settings in a context object. Context objects are immutable,
 so you must store the result of your changes in a new variable.</p>
 
-<pre><code>&gt;&gt;&gt; auditor = lambda phase, info: print(phase, info["runner"].name)
-&gt;&gt;&gt; sh1 = sh.set(audit_callback=auditor)
-</code></pre>
+<div class="codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">auditor</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">phase</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="n">phase</span><span class="p">,</span> <span class="n">info</span><span class="p">[</span><span class="s2">&quot;runner&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">sh1</span> <span class="o">=</span> <span class="n">sh</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">audit_callback</span><span class="o">=</span><span class="n">auditor</span><span class="p">)</span>
+</code></pre></div>
 
 <p>Now all commands run with <code>sh1</code> will log their progress using the audit callback.</p>
 
-<pre><code>&gt;&gt;&gt; await sh1("echo", "goodbye")
-start echo
-stop echo
-'goodbye\n'
-</code></pre>
+<div class="codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">sh1</span><span class="p">(</span><span class="s2">&quot;echo&quot;</span><span class="p">,</span> <span class="s2">&quot;goodbye&quot;</span><span class="p">)</span>
+<span class="go">start echo</span>
+<span class="go">stop echo</span>
+<span class="go">&#39;goodbye\n&#39;</span>
+</code></pre></div>
 </div>
 
                         <details>
