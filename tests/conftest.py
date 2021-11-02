@@ -314,4 +314,4 @@ async def _cancel_and_wait(fut, loop):
 
 
 # MONKEY PATCH here...
-asyncio.wait_for = wait_for
+asyncio.wait_for = wait_for  # type: ignore

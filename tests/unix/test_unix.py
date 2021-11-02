@@ -385,6 +385,7 @@ sys.stdout.write("hi ")
 sys.stdout.write("stdout\n")
 sys.stdout.flush()
 sys.stderr.write("hi stderr\n")
+sys.stderr.flush()
 sys.stdout.write("goodbye!")
 """
     sh = context()

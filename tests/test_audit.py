@@ -1,6 +1,7 @@
 "Unit tests for PEP 578 audit hooks."
 
 import os
+import platform
 import shutil
 import subprocess
 import sys
@@ -35,6 +36,7 @@ def _has_posix_spawn():
         not _is_uvloop()
         and sys.platform in ("darwin", "linux")
         and subprocess._USE_POSIX_SPAWN
+        and platform.python_implementation() != "PyPy"
     )
 
 

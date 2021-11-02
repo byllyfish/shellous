@@ -459,11 +459,14 @@ class Runner:
         LOGGER.info("Runner.signal %r signal=%r", self, sig)
         self._audit_callback("signal", signal=sig)
 
-        if sig is None:
-            self._proc.kill()
-        else:
-            self._proc.send_signal(sig)
-            self._last_signal = sig
+        try:
+            if sig is None:
+                self._proc.kill()
+            else:
+                self._proc.send_signal(sig)
+                self._last_signal = sig
+        except ProcessLookupError:
+            LOGGER.critical("Runner._send_signal ProcessLookupError for %r", self._proc)
 
     @log_method(LOG_DETAIL)
     async def _kill_wait(self):
