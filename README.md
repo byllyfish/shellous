@@ -43,20 +43,20 @@ Basic Usage
 
 Start the asyncio REPL by typing `python3 -m asyncio`, and import the **shellous** module:
 
-```python-repl
+```pycon
 >>> import shellous
 ```
 
 Before we can do anything else, we need to create a **context**. Store the context in a 
 short variable name like `sh` because we'll be typing it a lot.
 
-```python-repl
+```pycon
 >>> sh = shellous.context()
 ```
 
 Now, we're ready to run our first command. Here's one that runs `echo "hello, world"`.
 
-```python-repl
+```pycon
 >>> await sh("echo", "hello, world")
 'hello, world\n'
 ```
@@ -66,7 +66,7 @@ The first argument is the program name. It is followed by zero or more separate 
 A command does not run until you `await` it. Here, we create our own echo command with "-n"
 to omit the newline. Note, `echo("abc")` is the same as `echo -n "abc"`.
 
-```python-repl
+```pycon
 >>> echo = sh("echo", "-n")
 >>> await echo("abc")
 'abc'
@@ -81,7 +81,7 @@ When you `await` a command, it captures the standard output and returns it. You 
 command return a `Result` object. The `Result` object will contain more information about the command 
 execution including the `exit_code`. To return a result object, set `return_result` option to `True`.
 
-```python-repl
+```pycon
 >>> await echo("abc").set(return_result=True)
 Result(output_bytes=b'abc', exit_code=0, cancelled=False, encoding='utf-8', extra=None)
 ```
@@ -91,7 +91,7 @@ The above command had an exit_code of 0.
 If a command exits with a non-zero exit code, it raises a `ResultError` exception that contains
 the `Result` object.
 
-```python-repl
+```pycon
 >>> await sh("cat", "does_not_exist")
 Traceback (most recent call last):
   ...
@@ -105,7 +105,7 @@ Redirecting Standard Input
 
 You can change the standard input of a command by using the `|` operator.
 
-```python-repl
+```pycon
 >>> cmd = "abc" | sh("wc", "-c")
 >>> await cmd
 '       3\n'
@@ -113,7 +113,7 @@ You can change the standard input of a command by using the `|` operator.
 
 To redirect stdin using a file's contents, use a `Path` object from `pathlib`.
 
-```python-repl
+```pycon
 >>> from pathlib import Path
 >>> cmd = Path("LICENSE") | sh("wc", "-l")
 >>> await cmd
@@ -127,7 +127,7 @@ Redirecting Standard Output
 
 To redirect standard output, use the `|` operator.
 
-```python-repl
+```pycon
 >>> output_file = Path("/tmp/output_file")
 >>> cmd = sh("echo", "abc") | output_file
 >>> await cmd
@@ -138,7 +138,7 @@ b'abc\n'
 
 To redirect standard output with append, use the `>>` operator.
 
-```python-repl
+```pycon
 >>> cmd = sh("echo", "def") >> output_file
 >>> await cmd
 ''
@@ -154,7 +154,7 @@ Redirecting Standard Error
 By default, standard error is not captured. To redirect standard error, use the `stderr`
 method.
 
-```python-repl
+```pycon
 >>> cmd = sh("cat", "does_not_exist").stderr(shellous.STDOUT)
 >>> await cmd.set(exit_codes={0,1})
 'cat: does_not_exist: No such file or directory\n'
@@ -165,7 +165,7 @@ You can redirect standard error to a file or path.
 To redirect standard error to the hosting program's `sys.stderr`, use the INHERIT redirect
 option.
 
-```python-repl
+```pycon
 >>> cmd = sh("cat", "does_not_exist").stderr(shellous.INHERIT)
 >>> await cmd
 cat: does_not_exist: No such file or directory
@@ -181,7 +181,7 @@ Pipelines
 
 You can create a pipeline by combining commands using the `|` operator.
 
-```python-repl
+```pycon
 >>> pipe = sh("ls") | sh("grep", "README")
 >>> await pipe
 'README.md\n'
@@ -192,7 +192,7 @@ Process Substitution (Unix Only)
 
 You can pass a shell command as an argument to another.
 
-```python-repl
+```pycon
 >>> cmd = sh("grep", "README", sh("ls"))
 >>> await cmd
 'README.md\n'
@@ -200,7 +200,7 @@ You can pass a shell command as an argument to another.
 
 Use ~ to write to a command instead.
 
-```python-repl
+```pycon
 >>> buf = bytearray()
 >>> cmd = sh("ls") | sh("tee", ~sh("grep", "README") | buf) | shellous.DEVNULL
 >>> await cmd
@@ -214,7 +214,7 @@ Async With & For
 
 You can loop over a command's output by using the context manager as an iterator.
 
-```python-repl
+```pycon
 >>> async with pipe as run:
 ...   async for line in run:
 ...     print(line.rstrip())
@@ -226,7 +226,7 @@ README.md
 > the command or pipeline object. This is discouraged because you will have less control over the final
 > clean up of the command invocation than with a context manager.
 
-```python-repl
+```pycon
 >>> async for line in pipe:   # Use caution!
 ...   print(line.rstrip())
 ... 
@@ -236,7 +236,7 @@ README.md
 You can use `async with` to interact with the process streams directly. You have to be careful; you
 are responsible for correctly reading and writing multiple streams at the same time.
 
-```python-repl
+```pycon
 >>> async with pipe as run:
 ...   data = await run.stdout.readline()
 ...   print(data)
@@ -252,7 +252,7 @@ When a command is cancelled, shellous terminates the process and raises a `Cance
 You can retrieve the partial result by setting `incomplete_result` to True. Shellous will return a
 `ResultError` when the specified command is cancelled.
 
-```python-repl
+```pycon
 >>> sleep = sh("sleep", 60).set(incomplete_result=True)
 >>> t = asyncio.create_task(sleep.coro())
 >>> t.cancel()
@@ -272,7 +272,7 @@ Pseudo-Terminal Support (Unix Only)
 To run a command through a pseudo-terminal, set the `pty` option to True. Alternatively, you can pass
 a function to configure the tty mode and size.
 
-```python-repl
+```pycon
 >>> ls = sh("ls").set(pty=shellous.cooked(cols=40, rows=10, echo=False))
 >>> await ls("README.md", "CHANGELOG.md")
 'CHANGELOG.md\tREADME.md\r\n'
@@ -284,14 +284,14 @@ Context Objects
 You can specify shared command settings in a context object. Context objects are immutable,
 so you must store the result of your changes in a new variable.
 
-```python-repl
+```pycon
 >>> auditor = lambda phase, info: print(phase, info["runner"].name)
 >>> sh1 = sh.set(audit_callback=auditor)
 ```
 
 Now all commands run with `sh1` will log their progress using the audit callback.
 
-```python-repl
+```pycon
 >>> await sh1("echo", "goodbye")
 start echo
 stop echo
