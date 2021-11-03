@@ -3,11 +3,18 @@
 import asyncio
 import queue
 import select
+import signal
 import socket
+import sys
 import threading
 
 from shellous.log import LOGGER
 from shellous.util import wait_pid
+
+if sys.platform == "darwin":
+    _KQ_EV_RECEIPT = 0x0040
+else:
+    _KQ_EV_RECEIPT = 0
 
 
 class DefaultChildWatcher(asyncio.AbstractChildWatcher):
@@ -20,11 +27,17 @@ class DefaultChildWatcher(asyncio.AbstractChildWatcher):
       2. Zero-cost until used.
 
     Cost: 3 file descriptors and 1 thread.
+
+    A DefaultChildWatcher must be created on the main thread if it installs
+    a signal handler.
     """
 
     def __init__(self):
         self._lock = threading.Lock()  # guard `self`
         self._worker = None
+
+        # FIXME: Install SIGCHLD signal handler to make EV_FILTER_SIGNAL work.
+        signal.signal(signal.SIGCHLD, lambda *args: None)
 
     def add_child_handler(self, pid, callback, *args):
         """Register a new child handler.
@@ -96,6 +109,7 @@ class KQueueWorker(threading.Thread):
         self._work_queue = queue.Queue()
         self._client_sock, self._server_sock = self._make_self_pipe()
         self._server_pids = {}
+        self._fallback_pids = set()
         self._kqueue = None
         self._running = True
         self.start()
@@ -129,10 +143,12 @@ class KQueueWorker(threading.Thread):
     def _event_loop(self):
         "Event loop that handles kqueue events."
         self._add_read_event(self._server_sock.fileno())
+        self._add_signal_event(signal.SIGCHLD)
 
         event_handlers = {
             select.KQ_FILTER_PROC: self._handle_proc,
             select.KQ_FILTER_READ: self._handle_read,
+            select.KQ_FILTER_SIGNAL: self._handle_signal,
         }
 
         while self._running:
@@ -153,9 +169,16 @@ class KQueueWorker(threading.Thread):
         self._drain_server_sock()
         self._check_queue()
 
+    def _handle_signal(self, event):
+        "Handle KQ_FILTER_SIGNAL event."
+        LOGGER.warning("_handle_signal: %r %r", event, self._fallback_pids)
+        for pid in list(self._fallback_pids):
+            if self._check_pid(pid):
+                self._fallback_pids.remove(pid)
+
     def _check_pid(self, pid):
         """Called when a process exits."""
-        info = self._server_pids.pop(pid, None)
+        info = self._server_pids.get(pid, None)
         if info:
             callback, args = info
             status = wait_pid(pid)
@@ -165,8 +188,12 @@ class KQueueWorker(threading.Thread):
             else:
                 # Invoke callback function here.
                 callback(pid, status, *args)
+                self._server_pids.pop(pid)
+                return True
         else:
             LOGGER.debug("unregistered pid: %r", pid)
+
+        return False
 
     def _drain_server_sock(self):
         "Ref: asyncio/selector_events.py#L117."
@@ -188,10 +215,7 @@ class KQueueWorker(threading.Thread):
                     self._running = False
                     break
 
-                for _ in range(3):
-                    if self._monitor_pid(pid, callback, args):
-                        break
-                    LOGGER.critical("Failed to monitor_pid %r", pid)
+                self._monitor_pid(pid, callback, args)
 
         except queue.Empty:
             pass
@@ -204,11 +228,19 @@ class KQueueWorker(threading.Thread):
         if pid in self._server_pids:
             LOGGER.warning("_monitor_pid: already monitored? pid=%r", pid)
 
-        result = self._add_proc_event(pid)
-        if result:
-            self._server_pids[pid] = (callback, args)
+        self._server_pids[pid] = (callback, args)
+        if self._add_proc_event(pid):
+            return True
 
-        return result
+        return self._monitor_pid_fallback(pid)
+
+    def _monitor_pid_fallback(self, pid):
+        "Called when _monitor_pid fails to add a kevent."
+        if self._check_pid(pid):
+            return True
+
+        self._fallback_pids.add(pid)
+        return False
 
     def _add_proc_event(self, pid):
         """Add kevent that monitors for process exit.
@@ -222,7 +254,10 @@ class KQueueWorker(threading.Thread):
             event = select.kevent(
                 ident=pid,
                 filter=select.KQ_FILTER_PROC,
-                flags=select.KQ_EV_ADD | select.KQ_EV_ONESHOT,
+                flags=select.KQ_EV_ADD
+                | select.KQ_EV_ONESHOT
+                | _KQ_EV_RECEIPT
+                | select.KQ_EV_CLEAR,
                 fflags=select.KQ_NOTE_EXIT,
             )
             ready = self._kqueue.control([event], 0)
@@ -251,6 +286,20 @@ class KQueueWorker(threading.Thread):
 
         except Exception as ex:
             LOGGER.error("_add_read_event: ex=%r", ex)
+
+    def _add_signal_event(self, signo):
+        "Add kevent that monitors for signals."
+        try:
+            event = select.kevent(
+                ident=int(signo),
+                filter=select.KQ_FILTER_SIGNAL,
+                flags=select.KQ_EV_ADD,
+            )
+            result = self._kqueue.control([event], 0)
+            assert result == []
+
+        except Exception as ex:
+            LOGGER.error("_add_signal_event: ex=%r", ex)
 
     @staticmethod
     def _make_self_pipe():
