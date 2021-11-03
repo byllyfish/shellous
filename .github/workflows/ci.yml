@@ -97,3 +97,9 @@ jobs:
         fi
       env:
         SHELLOUS_CHILDWATCHER_TYPE: "multi"
+    - name: Run Tests with DefaultChildWatcher (MacOS)
+      if: matrix.os == 'macos-11'
+      run: |
+        $POETRY_RUN python -m pytest -vv -s --log-cli-level=DEBUG
+      env:
+        SHELLOUS_CHILDWATCHER_TYPE: "default"
