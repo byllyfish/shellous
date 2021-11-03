@@ -38,6 +38,14 @@ class DefaultChildWatcher(asyncio.AbstractChildWatcher):
         assert self._worker, "Must use context manager API"
         self._worker.watch_pid(pid, callback, args)
 
+    def remove_child_handler(self, pid):
+        """Removes the handler for process 'pid'.
+
+        The function returns True if the handler was successfully removed,
+        False if there was nothing to remove.
+        """
+        return False  # not supported
+
     def attach_loop(self, loop):
         """Attach the watcher to an event loop.
 
@@ -46,7 +54,6 @@ class DefaultChildWatcher(asyncio.AbstractChildWatcher):
 
         Note: loop may be None.
         """
-        pass  # noop
 
     def close(self):
         """Close the watcher.
@@ -78,7 +85,6 @@ class DefaultChildWatcher(asyncio.AbstractChildWatcher):
 
     def __exit__(self, a, b, c):
         """Exit the watcher's context"""
-        pass
 
 
 class KQueueWorker(threading.Thread):
@@ -111,7 +117,7 @@ class KQueueWorker(threading.Thread):
         self._kqueue = select.kqueue()
         try:
             self._event_loop()
-        except BaseException as ex:
+        except BaseException as ex:  # pylint: disable=broad-except
             LOGGER.critical("KQWorker failed %s ex=%r", self, ex, exc_info=True)
             raise
         finally:
@@ -142,7 +148,7 @@ class KQueueWorker(threading.Thread):
         "Handle KQ_FILTER_PROC event."
         self._check_pid(event.ident)
 
-    def _handle_read(self, event):
+    def _handle_read(self, _event):
         "Handle KQ_FILTER_READ event."
         self._drain_server_sock()
         self._check_queue()
@@ -222,7 +228,7 @@ class KQueueWorker(threading.Thread):
             LOGGER.debug("ProcessLookupError in KQWorker for pid %r", pid)
             self._check_pid(pid, lookup_error=True)
 
-        except Exception as ex:
+        except Exception as ex:  # pylint: disable=broad-except
             LOGGER.error("_add_proc_event: ex=%r", ex)
 
     def _add_read_event(self, fdesc):
@@ -239,7 +245,8 @@ class KQueueWorker(threading.Thread):
         except Exception as ex:
             LOGGER.error("_add_read_event: ex=%r", ex)
 
-    def _make_self_pipe(self):
+    @staticmethod
+    def _make_self_pipe():
         "Return (client, server) socket pair."
         client, server = socket.socketpair()
         client.setblocking(False)
