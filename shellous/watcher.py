@@ -36,7 +36,7 @@ class DefaultChildWatcher(asyncio.AbstractChildWatcher):
         self._lock = threading.Lock()  # guard `self`
         self._worker = None
 
-        # FIXME: Install SIGCHLD signal handler to make EV_FILTER_SIGNAL work.
+        # Install dummy SIGCHLD signal handler to make EV_FILTER_SIGNAL work.
         signal.signal(signal.SIGCHLD, lambda *args: None)
 
     def add_child_handler(self, pid, callback, *args):
@@ -102,6 +102,8 @@ class DefaultChildWatcher(asyncio.AbstractChildWatcher):
 
 class KQueueWorker(threading.Thread):
     "A Thread that uses kqueue to monitor for child processes exiting."
+
+    # pylint: disable=no-member
 
     def __init__(self):
         "Initialize worker variables and start thread."
@@ -284,7 +286,7 @@ class KQueueWorker(threading.Thread):
             result = self._kqueue.control([event], 0)
             assert result == []
 
-        except Exception as ex:
+        except Exception as ex:  # pylint: disable=broad-except
             LOGGER.error("_add_read_event: ex=%r", ex)
 
     def _add_signal_event(self, signo):
@@ -298,7 +300,7 @@ class KQueueWorker(threading.Thread):
             result = self._kqueue.control([event], 0)
             assert result == []
 
-        except Exception as ex:
+        except Exception as ex:  # pylint: disable=broad-except
             LOGGER.error("_add_signal_event: ex=%r", ex)
 
     @staticmethod
