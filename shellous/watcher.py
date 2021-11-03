@@ -153,25 +153,15 @@ class KQueueWorker(threading.Thread):
         self._drain_server_sock()
         self._check_queue()
 
-    def _check_pid(self, pid, *, lookup_error=False):
-        """Called when a process exits.
-
-        If lookup_error is True, we are being called because we tried to
-        register a kqueue event, but it failed with a ProcessLookupError. If
-        wait_pid tells us that the process is running, we try to register the
-        kqueue event again.
-        """
+    def _check_pid(self, pid):
+        """Called when a process exits."""
         info = self._server_pids.pop(pid, None)
         if info:
             callback, args = info
             status = wait_pid(pid)
             if status is None:
-                # Process is actually running. If `lookup_error` is True, try
-                # to monitor the process again.
-                if lookup_error:
-                    self._monitor_pid(pid, callback, args)
-                else:
-                    LOGGER.error("_check_pid: process is still running?")
+                # Process is still running.
+                LOGGER.error("_check_pid: process is still running?")
             else:
                 # Invoke callback function here.
                 callback(pid, status, *args)
@@ -198,21 +188,36 @@ class KQueueWorker(threading.Thread):
                     self._running = False
                     break
 
-                self._monitor_pid(pid, callback, args)
+                for _ in range(3):
+                    if self._monitor_pid(pid, callback, args):
+                        break
+                    LOGGER.critical("Failed to monitor_pid %r", pid)
 
         except queue.Empty:
             pass
 
     def _monitor_pid(self, pid, callback, args):
-        "Add pid and info to our list of pid's to be monitored."
+        """Add pid and info to our list of pid's to be monitored.
+
+        Return true if we successfully added the pid to kqueue.
+        """
         if pid in self._server_pids:
             LOGGER.warning("_monitor_pid: already monitored? pid=%r", pid)
 
-        self._server_pids[pid] = (callback, args)
-        self._add_proc_event(pid)
+        result = self._add_proc_event(pid)
+        if result:
+            self._server_pids[pid] = (callback, args)
+
+        return result
 
     def _add_proc_event(self, pid):
-        "Add kevent that monitors for process exit."
+        """Add kevent that monitors for process exit.
+
+        Return true if successful.
+
+        kevent can return ESRCH (ProcessLookupError) if it doesn't find the
+        process ID. If this happens, return false.
+        """
         try:
             event = select.kevent(
                 ident=pid,
@@ -220,16 +225,18 @@ class KQueueWorker(threading.Thread):
                 flags=select.KQ_EV_ADD | select.KQ_EV_ONESHOT,
                 fflags=select.KQ_NOTE_EXIT,
             )
-            result = self._kqueue.control([event], 0)
-            assert result == []
+            ready = self._kqueue.control([event], 0)
+            LOGGER.info("_add_proc_event ready=%r", ready)
+            return True
 
-        except ProcessLookupError:
-            # The process may have exited already. Report the status of the pid.
-            LOGGER.debug("ProcessLookupError in KQWorker for pid %r", pid)
-            self._check_pid(pid, lookup_error=True)
+        except ProcessLookupError as ex:
+            # Process ID not found.
+            LOGGER.error("_add_proc_event: ex=%r", ex)
+            return False
 
         except Exception as ex:  # pylint: disable=broad-except
             LOGGER.error("_add_proc_event: ex=%r", ex)
+            raise
 
     def _add_read_event(self, fdesc):
         "Add kevent that monitors for file descriptor wakeup."
