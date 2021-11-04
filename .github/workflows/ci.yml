@@ -104,3 +104,14 @@ jobs:
         $POETRY_RUN python -m pytest -vv -s --log-cli-level=DEBUG --maxfail=5 | ./ci/annotate.awk -v step=DefaultChildWatcher
       env:
         SHELLOUS_CHILDWATCHER_TYPE: "default"
+
+    - name: Run Code Coverage (MacOS/DefaultChildWatcher)
+      if: matrix.os == 'macos-11'
+      run: |
+        # Run coverage (again for DefaultChildWatcher) and upload report to codecov.
+        $POETRY_RUN coverage erase
+        $POETRY_RUN coverage run --source shellous -m pytest
+        $POETRY_RUN codecov
+      env:
+        SHELLOUS_CODE_COVERAGE: 1
+        SHELLOUS_CHILDWATCHER_TYPE: "default"
