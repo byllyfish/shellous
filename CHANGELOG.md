@@ -1,6 +1,14 @@
 Shellous Change Log
 ===================
 
+0.9.2
+-----
+
+- [BUGFIX] Fix bug in `context_aexit` utility function.
+- [LATERAL] Fix mypy/pylint issues.
+- [LATERAL] More async iterator tests.
+- [LATERAL] Add tests for experimental kqueue child watcher.
+
 0.9.1
 -----
 
