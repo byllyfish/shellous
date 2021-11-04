@@ -11,6 +11,8 @@ import threading
 from shellous.log import LOGGER
 from shellous.util import wait_pid
 
+assert sys.platform != "win32"
+
 if sys.platform == "darwin":
     _KQ_EV_RECEIPT = 0x0040
 else:
@@ -28,8 +30,7 @@ class DefaultChildWatcher(asyncio.AbstractChildWatcher):
 
     Cost: 3 file descriptors and 1 thread.
 
-    A DefaultChildWatcher must be created on the main thread if it installs
-    a signal handler.
+    A DefaultChildWatcher must be created on the main thread.
     """
 
     def __init__(self):
@@ -101,7 +102,19 @@ class DefaultChildWatcher(asyncio.AbstractChildWatcher):
 
 
 class KQueueWorker(threading.Thread):
-    "A Thread that uses kqueue to monitor for child processes exiting."
+    """A Thread that uses kqueue to monitor for child processes exiting.
+
+    We use a fallback mechanism on macOS because sometimes, for unknown reasons,
+    macOS refuses to register a KQ_FILTER_PROC/KQ_NOTE_EXIT event for a known
+    child pid even though the child process is *still running*.
+
+    Our fallback strategy relies on polling the "fallback_pids" in a handler
+    that catches SIGCHLD.
+
+    References:
+      - https://developer.apple.com/library/archive/technotes/tn2050/_index.html
+
+    """
 
     # pylint: disable=no-member
 
@@ -173,7 +186,6 @@ class KQueueWorker(threading.Thread):
 
     def _handle_signal(self, event):
         "Handle KQ_FILTER_SIGNAL event."
-        LOGGER.warning("_handle_signal: %r %r", event, self._fallback_pids)
         for pid in list(self._fallback_pids):
             if self._check_pid(pid):
                 self._fallback_pids.remove(pid)
@@ -193,7 +205,7 @@ class KQueueWorker(threading.Thread):
                 self._server_pids.pop(pid)
                 return True
         else:
-            LOGGER.debug("unregistered pid: %r", pid)
+            LOGGER.error("unregistered pid: %r", pid)
 
         return False
 
@@ -241,6 +253,7 @@ class KQueueWorker(threading.Thread):
         if self._check_pid(pid):
             return True
 
+        LOGGER.warning("Adding fallback pid=%r", pid)
         self._fallback_pids.add(pid)
         return False
 
@@ -262,13 +275,12 @@ class KQueueWorker(threading.Thread):
                 | select.KQ_EV_CLEAR,
                 fflags=select.KQ_NOTE_EXIT,
             )
-            ready = self._kqueue.control([event], 0)
-            LOGGER.info("_add_proc_event ready=%r", ready)
+            result = self._kqueue.control([event], 0)
+            assert result == []
             return True
 
         except ProcessLookupError as ex:
-            # Process ID not found.
-            LOGGER.error("_add_proc_event: ex=%r", ex)
+            # Process already exited, or kqueue random failure.
             return False
 
         except Exception as ex:  # pylint: disable=broad-except

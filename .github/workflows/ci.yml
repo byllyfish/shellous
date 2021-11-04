@@ -101,6 +101,6 @@ jobs:
       if: matrix.os == 'macos-11'
       run: |
         # Limit to 5 failures for now because GH actions is auto-cancelling...
-        $POETRY_RUN python -m pytest -vv -s --log-cli-level=DEBUG --maxfail=5
+        $POETRY_RUN python -m pytest -vv -s --log-cli-level=DEBUG --maxfail=5 | ./ci/annotate.awk
       env:
         SHELLOUS_CHILDWATCHER_TYPE: "default"
