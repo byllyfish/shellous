@@ -31,4 +31,4 @@ freebsd_task:
 
   defaultcw_script:
     # Test DefaultChildWatcher.
-    - . .venv/bin/activate && SHELLOUS_CHILDWATCHER_TYPE=default pytest -vv -s --durations=20 --log-cli-level=DEBUG | ./ci/annotate.awk
+    - . .venv/bin/activate && SHELLOUS_CHILDWATCHER_TYPE=default pytest -vv -s --durations=20 --log-cli-level=DEBUG | ./ci/annotate.awk -v step=DefaultChildWatcher
