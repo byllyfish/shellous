@@ -81,7 +81,7 @@ class _RunOptions:
             return self
         except Exception as ex:
             if LOG_DETAIL:
-                LOGGER.warning("_RunOptions.enter %r ex=%r", self.command.name, ex)
+                LOGGER.debug("_RunOptions.enter %r ex=%r", self.command.name, ex)
             _cleanup(self.command)
             raise
 
@@ -90,7 +90,7 @@ class _RunOptions:
         self.close_fds()
         if exc_value:
             if LOG_DETAIL:
-                LOGGER.warning(
+                LOGGER.debug(
                     "_RunOptions.exit %r exc_value=%r",
                     self.command.name,
                     exc_value,
