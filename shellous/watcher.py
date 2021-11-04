@@ -22,8 +22,6 @@ else:
 class DefaultChildWatcher(asyncio.AbstractChildWatcher):
     """Uses kqueue to monitor for exiting child processes.
 
-    TODO: Falls back to ThreadedChildWatcher on older systems.
-
     Design Goals:
       1. Independent of any running event loop.
       2. Zero-cost until used.
@@ -108,8 +106,8 @@ class KQueueWorker(threading.Thread):
     macOS refuses to register a KQ_FILTER_PROC/KQ_NOTE_EXIT event for a known
     child pid even though the child process is *still running*.
 
-    Our fallback strategy relies on polling the "fallback_pids" in a handler
-    that catches SIGCHLD.
+    Our fallback strategy relies on polling the "fallback_pids" in a kqueue
+    handler that catches SIGCHLD.
 
     References:
       - https://developer.apple.com/library/archive/technotes/tn2050/_index.html
@@ -147,7 +145,7 @@ class KQueueWorker(threading.Thread):
         try:
             self._event_loop()
         except BaseException as ex:  # pylint: disable=broad-except
-            LOGGER.critical("KQWorker failed %s ex=%r", self, ex, exc_info=True)
+            LOGGER.error("KQWorker failed %s ex=%r", self, ex, exc_info=True)
             raise
         finally:
             self._kqueue.close()
@@ -173,7 +171,7 @@ class KQueueWorker(threading.Thread):
                 if handler:
                     handler(event)
                 else:
-                    LOGGER.debug("Unknown kevent: %r", event)
+                    LOGGER.debug("_event_loop: unknown kevent: %r", event)
 
     def _handle_proc(self, event):
         "Handle KQ_FILTER_PROC event."
@@ -198,14 +196,14 @@ class KQueueWorker(threading.Thread):
             status = wait_pid(pid)
             if status is None:
                 # Process is still running.
-                LOGGER.error("_check_pid: process is still running?")
+                LOGGER.debug("_check_pid: process still running pid=%r", pid)
             else:
                 # Invoke callback function here.
                 callback(pid, status, *args)
                 self._server_pids.pop(pid)
                 return True
         else:
-            LOGGER.error("unregistered pid: %r", pid)
+            LOGGER.error("_check_pid: unregistered pid: %r", pid)
 
         return False
 
@@ -253,7 +251,7 @@ class KQueueWorker(threading.Thread):
         if self._check_pid(pid):
             return True
 
-        LOGGER.warning("Adding fallback pid=%r", pid)
+        LOGGER.warning("_monitor_pid_fallback: adding fallback pid=%r", pid)
         self._fallback_pids.add(pid)
         return False
 
