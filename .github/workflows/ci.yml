@@ -13,7 +13,7 @@ on:
 jobs:
   build:
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 10  # stop runaway job after 10 minutes
+    timeout-minutes: 20  # stop runaway job after 20 minutes
     defaults:
       run:
         shell: bash
@@ -58,7 +58,7 @@ jobs:
         fi
     - name: Run Tests
       run: |
-        if ! $POETRY_RUN python -m pytest -vv -s --durations=20 --log-cli-level=DEBUG | ./ci/annotate.awk; then
+        if ! $POETRY_RUN python -m pytest -vv -s --durations=20 --log-cli-level=DEBUG | ./ci/annotate.awk -v step=Run_Tests; then
           echo "::warning title=Run Tests Warning::Re-running failed tests in $BUILD_NAME"
           $POETRY_RUN python -m pytest -vv -s --durations=20 --log-cli-level=DEBUG --last-failed
         fi
@@ -97,3 +97,10 @@ jobs:
         fi
       env:
         SHELLOUS_CHILDWATCHER_TYPE: "multi"
+    - name: Run Tests with DefaultChildWatcher (MacOS)
+      if: matrix.os == 'macos-11'
+      run: |
+        # Limit to 5 failures for now because GH actions is auto-cancelling...
+        $POETRY_RUN python -m pytest -vv -s --log-cli-level=DEBUG --maxfail=5 | ./ci/annotate.awk -v step=DefaultChildWatcher
+      env:
+        SHELLOUS_CHILDWATCHER_TYPE: "default"
