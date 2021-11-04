@@ -13,7 +13,7 @@ on:
 jobs:
   build:
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 10  # stop runaway job after 10 minutes
+    timeout-minutes: 20  # stop runaway job after 20 minutes
     defaults:
       run:
         shell: bash
