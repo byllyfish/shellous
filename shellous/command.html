@@ -100,7 +100,7 @@
                                 <a class="variable" href="#Options.pass_fds_close">pass_fds_close</a>
                         </li>
                         <li>
-                                <a class="variable" href="#Options.write_mode">write_mode</a>
+                                <a class="variable" href="#Options.writable">writable</a>
                         </li>
                         <li>
                                 <a class="variable" href="#Options.pty">pty</a>
@@ -194,6 +194,9 @@
                         </li>
                         <li>
                                 <a class="function" href="#Command.run">run</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Command.writable">writable</a>
                         </li>
                 </ul>
 
@@ -330,7 +333,7 @@ function to create these, rather than creating them directly.</p></li>
     <span class="n">pass_fds_close</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="s2">&quot;True if pass_fds should be closed after subprocess launch.&quot;</span>
 
-    <span class="n">write_mode</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">writable</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="s2">&quot;True if using process substitution in write mode.&quot;</span>
 
     <span class="n">_start_new_session</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
@@ -456,7 +459,7 @@ function to create these, rather than creating them directly.</p></li>
         <span class="n">alt_name</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">pass_fds</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">pass_fds_closed</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
-        <span class="n">write_mode</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">writable</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">_start_new_session</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">_preexec_fn</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">pty</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
@@ -598,7 +601,7 @@ function to create these, rather than creating them directly.</p></li>
         <span class="n">alt_name</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">pass_fds</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Iterable</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">pass_fds_close</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
-        <span class="n">write_mode</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">writable</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">_start_new_session</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">_preexec_fn</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">_Preexec_Fn_T</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">pty</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
@@ -664,7 +667,7 @@ function to create these, rather than creating them directly.</p></li>
 <span class="sd">        Close the file descriptors in `pass_fds` immediately in the current</span>
 <span class="sd">        process immediately after launching the subprocess.</span>
 
-<span class="sd">        **write_mode** (bool) default=False&lt;br&gt;</span>
+<span class="sd">        **writable** (bool) default=False&lt;br&gt;</span>
 <span class="sd">        Used to indicate process substitution is writing.</span>
 
 <span class="sd">        **_start_new_session** (bool) default=False&lt;br&gt;</span>
@@ -802,9 +805,10 @@ function to create these, rather than creating them directly.</p></li>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">stdout</span><span class="p">(</span><span class="n">rhs</span><span class="p">,</span> <span class="n">append</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">NotImplemented</span>
 
-    <span class="k">def</span> <span class="fm">__invert__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="s2">&quot;Unary ~ operator sets write_mode to True.&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">write_mode</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">writable</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;Set `writable` to True.&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">writable</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
 
 <span class="k">def</span> <span class="nf">_check_args</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="n">append</span><span class="p">):</span>
@@ -894,7 +898,7 @@ function to create these, rather than creating them directly.</p></li>
     <span class="n">pass_fds_close</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="s2">&quot;True if pass_fds should be closed after subprocess launch.&quot;</span>
 
-    <span class="n">write_mode</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">writable</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="s2">&quot;True if using process substitution in write mode.&quot;</span>
 
     <span class="n">_start_new_session</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
@@ -1006,7 +1010,7 @@ function to create these, rather than creating them directly.</p></li>
     alt_name: Optional[str] = None,
     pass_fds: collections.abc.Iterable = (),
     pass_fds_close: bool = False,
-    write_mode: bool = False,
+    writable: bool = False,
     _start_new_session: bool = False,
     _preexec_fn: Optional[Callable[[], NoneType]] = None,
     pty: bool = False,
@@ -1250,10 +1254,10 @@ function to create these, rather than creating them directly.</p></li>
 
 
                             </div>
-                            <div id="Options.write_mode" class="classattr">
-                                            <div class="attr variable"><a class="headerlink" href="#Options.write_mode">#&nbsp;&nbsp</a>
+                            <div id="Options.writable" class="classattr">
+                                            <div class="attr variable"><a class="headerlink" href="#Options.writable">#&nbsp;&nbsp</a>
 
-        <span class="name">write_mode</span><span class="annotation">: bool</span><span class="default_value"> = False</span>
+        <span class="name">writable</span><span class="annotation">: bool</span><span class="default_value"> = False</span>
     </div>
 
             <div class="docstring"><p>True if using process substitution in write mode.</p>
@@ -1524,7 +1528,7 @@ function to create these, rather than creating them directly.</p></li>
         <span class="n">alt_name</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">pass_fds</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">pass_fds_closed</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
-        <span class="n">write_mode</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">writable</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">_start_new_session</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">_preexec_fn</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">pty</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
@@ -1736,7 +1740,7 @@ function to create these, rather than creating them directly.</p></li>
     alt_name=&lt;UNSET.UNSET: 1&gt;,
     pass_fds=&lt;UNSET.UNSET: 1&gt;,
     pass_fds_closed=&lt;UNSET.UNSET: 1&gt;,
-    write_mode=&lt;UNSET.UNSET: 1&gt;,
+    writable=&lt;UNSET.UNSET: 1&gt;,
     _start_new_session=&lt;UNSET.UNSET: 1&gt;,
     _preexec_fn=&lt;UNSET.UNSET: 1&gt;,
     pty=&lt;UNSET.UNSET: 1&gt;,
@@ -1761,7 +1765,7 @@ function to create these, rather than creating them directly.</p></li>
         <span class="n">alt_name</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">pass_fds</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">pass_fds_closed</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
-        <span class="n">write_mode</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">writable</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">_start_new_session</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">_preexec_fn</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">pty</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
@@ -1880,7 +1884,7 @@ function to create these, rather than creating them directly.</p></li>
         <span class="n">alt_name</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">pass_fds</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Iterable</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">pass_fds_close</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
-        <span class="n">write_mode</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">writable</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">_start_new_session</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">_preexec_fn</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">_Preexec_Fn_T</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">pty</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
@@ -1946,7 +1950,7 @@ function to create these, rather than creating them directly.</p></li>
 <span class="sd">        Close the file descriptors in `pass_fds` immediately in the current</span>
 <span class="sd">        process immediately after launching the subprocess.</span>
 
-<span class="sd">        **write_mode** (bool) default=False&lt;br&gt;</span>
+<span class="sd">        **writable** (bool) default=False&lt;br&gt;</span>
 <span class="sd">        Used to indicate process substitution is writing.</span>
 
 <span class="sd">        **_start_new_session** (bool) default=False&lt;br&gt;</span>
@@ -2084,9 +2088,10 @@ function to create these, rather than creating them directly.</p></li>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">stdout</span><span class="p">(</span><span class="n">rhs</span><span class="p">,</span> <span class="n">append</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">NotImplemented</span>
 
-    <span class="k">def</span> <span class="fm">__invert__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="s2">&quot;Unary ~ operator sets write_mode to True.&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">write_mode</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">writable</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;Set `writable` to True.&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">writable</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 
         </details>
@@ -2281,7 +2286,7 @@ is set, return that instead.</p>
     alt_name: Union[str, NoneType, <a href="#UNSET">shellous.command.UNSET</a>] = &lt;UNSET.UNSET: 1&gt;,
     pass_fds: Union[collections.abc.Iterable[int], <a href="#UNSET">shellous.command.UNSET</a>] = &lt;UNSET.UNSET: 1&gt;,
     pass_fds_close: Union[bool, <a href="#UNSET">shellous.command.UNSET</a>] = &lt;UNSET.UNSET: 1&gt;,
-    write_mode: Union[bool, <a href="#UNSET">shellous.command.UNSET</a>] = &lt;UNSET.UNSET: 1&gt;,
+    writable: Union[bool, <a href="#UNSET">shellous.command.UNSET</a>] = &lt;UNSET.UNSET: 1&gt;,
     _start_new_session: Union[bool, <a href="#UNSET">shellous.command.UNSET</a>] = &lt;UNSET.UNSET: 1&gt;,
     _preexec_fn: Union[Callable[[], NoneType], NoneType, <a href="#UNSET">shellous.command.UNSET</a>] = &lt;UNSET.UNSET: 1&gt;,
     pty: Union[bool, <a href="#UNSET">shellous.command.UNSET</a>] = &lt;UNSET.UNSET: 1&gt;,
@@ -2306,7 +2311,7 @@ is set, return that instead.</p>
         <span class="n">alt_name</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">pass_fds</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Iterable</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">pass_fds_close</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
-        <span class="n">write_mode</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">writable</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">_start_new_session</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">_preexec_fn</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">_Preexec_Fn_T</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">pty</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
@@ -2372,7 +2377,7 @@ is set, return that instead.</p>
 <span class="sd">        Close the file descriptors in `pass_fds` immediately in the current</span>
 <span class="sd">        process immediately after launching the subprocess.</span>
 
-<span class="sd">        **write_mode** (bool) default=False&lt;br&gt;</span>
+<span class="sd">        **writable** (bool) default=False&lt;br&gt;</span>
 <span class="sd">        Used to indicate process substitution is writing.</span>
 
 <span class="sd">        **_start_new_session** (bool) default=False&lt;br&gt;</span>
@@ -2492,7 +2497,7 @@ Specify open file descriptors to pass to the subprocess.</p>
 Close the file descriptors in <code>pass_fds</code> immediately in the current
 process immediately after launching the subprocess.</p>
 
-<p><strong>write_mode</strong> (bool) default=False<br>
+<p><strong>writable</strong> (bool) default=False<br>
 Used to indicate process substitution is writing.</p>
 
 <p><strong>_start_new_session</strong> (bool) default=False<br>
@@ -2604,6 +2609,17 @@ framework like Prometheus.</p>
     # close run.stdin to signal we're done...
 result = run.result()
 </code></pre>
+</div>
+
+
+                            </div>
+                            <div id="Command.writable" class="classattr">
+                                            <div class="attr variable"><a class="headerlink" href="#Command.writable">#&nbsp;&nbsp</a>
+
+        <span class="name">writable</span>
+    </div>
+
+            <div class="docstring"><p>Set <code><a href="#Command.writable">writable</a></code> to True.</p>
 </div>
 
 

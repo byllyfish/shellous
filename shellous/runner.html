@@ -157,12 +157,12 @@
     <span class="k">return</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="p">(</span><span class="n">shellous</span><span class="o">.</span><span class="n">Command</span><span class="p">,</span> <span class="n">shellous</span><span class="o">.</span><span class="n">Pipeline</span><span class="p">))</span>
 
 
-<span class="k">def</span> <span class="nf">_is_write_mode</span><span class="p">(</span><span class="n">cmd</span><span class="p">):</span>
-    <span class="s2">&quot;Return true if command/pipeline has write_mode set.&quot;</span>
+<span class="k">def</span> <span class="nf">_is_writable</span><span class="p">(</span><span class="n">cmd</span><span class="p">):</span>
+    <span class="s2">&quot;Return true if command/pipeline has `writable` set.&quot;</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">shellous</span><span class="o">.</span><span class="n">Pipeline</span><span class="p">):</span>
         <span class="c1"># Pipelines need to check both the last/first commands.</span>
-        <span class="k">return</span> <span class="n">cmd</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">write_mode</span> <span class="ow">or</span> <span class="n">cmd</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">write_mode</span>
-    <span class="k">return</span> <span class="n">cmd</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">write_mode</span>
+        <span class="k">return</span> <span class="n">cmd</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">writable</span> <span class="ow">or</span> <span class="n">cmd</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">writable</span>
+    <span class="k">return</span> <span class="n">cmd</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">writable</span>
 
 
 <span class="k">def</span> <span class="nf">_split</span><span class="p">(</span><span class="n">encoding</span><span class="p">):</span>
@@ -240,7 +240,7 @@
                 <span class="k">continue</span>
 
             <span class="p">(</span><span class="n">read_fd</span><span class="p">,</span> <span class="n">write_fd</span><span class="p">)</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">pipe</span><span class="p">()</span>
-            <span class="k">if</span> <span class="n">_is_write_mode</span><span class="p">(</span><span class="n">arg</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">_is_writable</span><span class="p">(</span><span class="n">arg</span><span class="p">):</span>
                 <span class="n">new_args</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;/dev/fd/</span><span class="si">{</span><span class="n">write_fd</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
                 <span class="n">pass_fds</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">write_fd</span><span class="p">)</span>
                 <span class="n">subcmd</span> <span class="o">=</span> <span class="n">arg</span><span class="o">.</span><span class="n">stdin</span><span class="p">(</span><span class="n">read_fd</span><span class="p">,</span> <span class="n">close</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
