@@ -32,12 +32,12 @@ def _is_cmd(cmd):
     return isinstance(cmd, (shellous.Command, shellous.Pipeline))
 
 
-def _is_write_mode(cmd):
-    "Return true if command/pipeline has write_mode set."
+def _is_writable(cmd):
+    "Return true if command/pipeline has `writable` set."
     if isinstance(cmd, shellous.Pipeline):
         # Pipelines need to check both the last/first commands.
-        return cmd.options.write_mode or cmd[0].options.write_mode
-    return cmd.options.write_mode
+        return cmd.options.writable or cmd[0].options.writable
+    return cmd.options.writable
 
 
 def _split(encoding):
@@ -115,7 +115,7 @@ class _RunOptions:
                 continue
 
             (read_fd, write_fd) = os.pipe()
-            if _is_write_mode(arg):
+            if _is_writable(arg):
                 new_args.append(f"/dev/fd/{write_fd}")
                 pass_fds.append(write_fd)
                 subcmd = arg.stdin(read_fd, close=True)

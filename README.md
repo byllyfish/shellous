@@ -202,7 +202,7 @@ Use ~ to write to a command instead.
 
 ```pycon
 >>> buf = bytearray()
->>> cmd = sh("ls") | sh("tee", ~sh("grep", "README") | buf) | shellous.DEVNULL
+>>> cmd = sh("ls") | sh("tee", sh("grep", "README").writable | buf) | shellous.DEVNULL
 >>> await cmd
 ''
 >>> buf

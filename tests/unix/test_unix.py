@@ -750,7 +750,7 @@ async def test_process_substitution_write(sh, tmp_path):
 
     out = tmp_path / "test_process_sub_write"
     cat = sh("cat") | out
-    pipe = sh("echo", "a") | sh("tee", ~cat())
+    pipe = sh("echo", "a") | sh("tee", cat().writable)
 
     result = await pipe
     assert result == "a\n"
@@ -767,7 +767,7 @@ async def test_process_substitution_write_pipe(sh, tmp_path):
 
     out = tmp_path / "test_process_sub_write"
     cat = sh("cat") | sh("cat") | out
-    pipe = sh("echo", "b") | sh("tee", ~cat())
+    pipe = sh("echo", "b") | sh("tee", cat().writable)
 
     result = await pipe
     assert result == "b\n"
@@ -777,7 +777,7 @@ async def test_process_substitution_write_pipe(sh, tmp_path):
 async def test_process_substitution_write_pipe_alt(sh, tmp_path):
     """Test process substitution with write_mode.
 
-    Change where the ~ appears; put it on the first command of the pipe.
+    Change where the .writable appears; put it on the first command of the pipe.
 
     ```
     echo b | tee >(cat | cat > tmpfile)
@@ -785,7 +785,7 @@ async def test_process_substitution_write_pipe_alt(sh, tmp_path):
     """
 
     out = tmp_path / "test_process_sub_write"
-    cat = ~sh("cat") | sh("cat") | out
+    cat = sh("cat").writable | sh("cat") | out
     pipe = sh("echo", "b") | sh("tee", cat()).stderr(INHERIT)
 
     result = await pipe
