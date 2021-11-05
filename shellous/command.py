@@ -103,7 +103,7 @@ class Options:  # pylint: disable=too-many-instance-attributes
     pass_fds_close: bool = False
     "True if pass_fds should be closed after subprocess launch."
 
-    write_mode: bool = False
+    writable: bool = False
     "True if using process substitution in write mode."
 
     _start_new_session: bool = False
@@ -229,7 +229,7 @@ class CmdContext:
         alt_name=_UNSET,
         pass_fds=_UNSET,
         pass_fds_closed=_UNSET,
-        write_mode=_UNSET,
+        writable=_UNSET,
         _start_new_session=_UNSET,
         _preexec_fn=_UNSET,
         pty=_UNSET,
@@ -371,7 +371,7 @@ class Command:
         alt_name: Unset[Optional[str]] = _UNSET,
         pass_fds: Unset[Iterable[int]] = _UNSET,
         pass_fds_close: Unset[bool] = _UNSET,
-        write_mode: Unset[bool] = _UNSET,
+        writable: Unset[bool] = _UNSET,
         _start_new_session: Unset[bool] = _UNSET,
         _preexec_fn: Unset[_Preexec_Fn_T] = _UNSET,
         pty: Unset[bool] = _UNSET,
@@ -437,7 +437,7 @@ class Command:
         Close the file descriptors in `pass_fds` immediately in the current
         process immediately after launching the subprocess.
 
-        **write_mode** (bool) default=False<br>
+        **writable** (bool) default=False<br>
         Used to indicate process substitution is writing.
 
         **_start_new_session** (bool) default=False<br>
@@ -575,9 +575,10 @@ class Command:
             return self.stdout(rhs, append=True)
         return NotImplemented
 
-    def __invert__(self):
-        "Unary ~ operator sets write_mode to True."
-        return self.set(write_mode=True)
+    @property
+    def writable(self):
+        "Set `writable` to True."
+        return self.set(writable=True)
 
 
 def _check_args(out, append):

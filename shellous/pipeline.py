@@ -53,9 +53,9 @@ class Pipeline:
         new_commands = self.commands[0:-1] + (new_last,)
         return dataclasses.replace(self, commands=new_commands)
 
-    def _set_write_mode(self):
+    def _set_writable(self):
         "Set write_mode=True on last command of the pipeline."
-        new_last = self.commands[-1].set(write_mode=True)
+        new_last = self.commands[-1].set(writable=True)
         new_commands = self.commands[0:-1] + (new_last,)
         return dataclasses.replace(self, commands=new_commands)
 
@@ -117,9 +117,10 @@ class Pipeline:
             return self.stdout(rhs, append=True)
         return NotImplemented
 
-    def __invert__(self):
-        "Set write_mode=True option on last command of pipeline."
-        return self._set_write_mode()
+    @property
+    def writable(self):
+        "Set writable=True option on last command of pipeline."
+        return self._set_writable()
 
     def __await__(self):
         return self.coro().__await__()

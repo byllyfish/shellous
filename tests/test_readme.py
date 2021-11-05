@@ -155,7 +155,7 @@ def test_parse_readme():
         'cmd = sh("grep", "README", sh("ls"))',
         "await cmd",
         "buf = bytearray()",
-        'cmd = sh("ls") | sh("tee", ~sh("grep", "README") | buf) | shellous.DEVNULL',
+        'cmd = sh("ls") | sh("tee", sh("grep", "README").writable | buf) | shellous.DEVNULL',
         "await cmd",
         "buf",
         "async with pipe as run:\n"
