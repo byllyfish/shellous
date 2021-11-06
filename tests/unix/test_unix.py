@@ -35,9 +35,9 @@ def _is_uvloop():
     return os.environ.get("SHELLOUS_LOOP_TYPE") == "uvloop"
 
 
-def _is_codecov_linux():
-    "Return true if we're running code coverage under Linux."
-    return sys.platform == "linux" and os.environ.get("SHELLOUS_CODE_COVERAGE")
+def _is_codecov():
+    "Return true if we're running code coverage."
+    return os.environ.get("SHELLOUS_CODE_COVERAGE")
 
 
 @pytest.fixture
@@ -1205,7 +1205,7 @@ async def test_pty_canonical_ls(sh):
     assert result == "CHANGELOG.md\r\nREADME.md\r\n"
 
 
-@pytest.mark.xfail(_is_uvloop() or _is_codecov_linux(), reason="uvloop,codecov")
+@pytest.mark.xfail(_is_uvloop() or _is_codecov(), reason="uvloop,codecov")
 @pytest.mark.timeout(90)
 async def test_pty_compare_large_ls_output(sh):
     "Compare pty output to non-pty output."
@@ -1501,6 +1501,7 @@ $4 ~ /^[0-9]+/ { sub(/[0-9]+/, "N", $9); print $4, $5, $9 }
 """
 
 
+@pytest.mark.skip(_is_codecov(), reason="codecov")
 async def test_open_file_descriptors(sh):
     "Test what file descriptors are open in the subprocess."
 
@@ -1519,8 +1520,9 @@ async def test_open_file_descriptors(sh):
         assert result == "0u unix \n1 PIPE \n2u CHR /dev/null\n"
 
 
+@pytest.mark.skip(_is_codecov(), reason="codecov")
 async def test_open_file_descriptors_unclosed_fds(sh):
-    "Test what file descriptors are open in the subprocess."
+    "Test what file descriptors are open in the subprocess (close_fds=False)."
 
     cmd = sh(sys.executable, "-c", 'input("a")').stdin(())
 
@@ -1537,6 +1539,7 @@ async def test_open_file_descriptors_unclosed_fds(sh):
         assert result == "0u unix \n1 PIPE \n2u CHR /dev/null\n"
 
 
+@pytest.mark.skip(_is_codecov(), reason="codecov")
 async def test_open_file_descriptors_pty(sh):
     "Test what file descriptors are open in the pty subprocess."
 
@@ -1555,8 +1558,9 @@ async def test_open_file_descriptors_pty(sh):
         assert result == "0u CHR /dev/ttysN\n1u CHR /dev/ttysN\n2u CHR /dev/ttysN\n"
 
 
+@pytest.mark.skip(_is_codecov(), reason="codecov")
 async def test_open_file_descriptors_pty_unclosed_fds(sh):
-    "Test what file descriptors are open in the pty subprocess."
+    "Test what file descriptors are open in the pty (close_fds=False)."
 
     cmd = sh(sys.executable, "-c", 'input("a")').stdin(())
 
