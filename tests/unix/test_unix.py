@@ -1493,14 +1493,21 @@ async def test_timeout_and_wait_for(sh):
         await asyncio.wait_for(cmd, 1.0)
 
 
+# On macOS and FreeBSD build systems, ignore the file descriptor for
+# `_virtualenv.pth` if it's open.
+_AWK_SCRIPT = """
+/_virtualenv\\.pth$/ { next }
+$4 ~ /^[0-9]+/ { sub(/[0-9]+/, "N", $9); print $4, $5, $9 }
+"""
+
+
 async def test_open_file_descriptors(sh):
     "Test what file descriptors are open in the subprocess."
 
     cmd = sh(sys.executable, "-c", 'input("a")').stdin(())
 
     lsof = sh("lsof", "-n", "-P", "-p").stderr(1)
-    awk_script = '$4 ~ /^[0-9]+/ { sub(/[0-9]+/, "N", $9); print $4, $5, $9 }'
-    awk = sh("awk", awk_script).stderr(1)
+    awk = sh("awk", _AWK_SCRIPT).stderr(1)
 
     async with cmd.set(close_fds=True) as run:
         result = await (lsof(run.pid) | awk)
@@ -1518,8 +1525,7 @@ async def test_open_file_descriptors_unclosed_fds(sh):
     cmd = sh(sys.executable, "-c", 'input("a")').stdin(())
 
     lsof = sh("lsof", "-n", "-P", "-p").stderr(1)
-    awk_script = '$4 ~ /^[0-9]+/ { sub(/[0-9]+/, "N", $9); print $4, $5, $9 }'
-    awk = sh("awk", awk_script).stderr(1)
+    awk = sh("awk", _AWK_SCRIPT).stderr(1)
 
     async with cmd.set(close_fds=False) as run:
         result = await (lsof(run.pid) | awk)
@@ -1537,15 +1543,14 @@ async def test_open_file_descriptors_pty(sh):
     cmd = sh(sys.executable, "-c", 'input("a")').stdin(())
 
     lsof = sh("lsof", "-n", "-P", "-p").stderr(1)
-    awk_script = '$4 ~ /^[0-9]+/ { sub(/[0-9]+/, "N", $9); print $4, $5, $9 }'
-    awk = sh("awk", awk_script).stderr(1)
+    awk = sh("awk", _AWK_SCRIPT).stderr(1)
 
     async with cmd.set(close_fds=True, pty=True) as run:
         result = await (lsof(run.pid) | awk)
         run.stdin.write(b"b\n")
 
     if sys.platform == "linux":
-        assert result == "0u CHR /dev/ptsN\n1u CHR /dev/ptsN\n2u CHR /dev/ptsN\n"
+        assert result == "0u CHR /dev/pts/N\n1u CHR /dev/pts/N\n2u CHR /dev/pts/N\n"
     else:
         assert result == "0u CHR /dev/ttysN\n1u CHR /dev/ttysN\n2u CHR /dev/ttysN\n"
 
@@ -1556,14 +1561,13 @@ async def test_open_file_descriptors_pty_unclosed_fds(sh):
     cmd = sh(sys.executable, "-c", 'input("a")').stdin(())
 
     lsof = sh("lsof", "-n", "-P", "-p").stderr(1)
-    awk_script = '$4 ~ /^[0-9]+/ { sub(/[0-9]+/, "N", $9); print $4, $5, $9 }'
-    awk = sh("awk", awk_script).stderr(1)
+    awk = sh("awk", _AWK_SCRIPT).stderr(1)
 
     async with cmd.set(close_fds=False, pty=True) as run:
         result = await (lsof(run.pid) | awk)
         run.stdin.write(b"b\n")
 
     if sys.platform == "linux":
-        assert result == "0u CHR /dev/ptsN\n1u CHR /dev/ptsN\n2u CHR /dev/ptsN\n"
+        assert result == "0u CHR /dev/pts/N\n1u CHR /dev/pts/N\n2u CHR /dev/pts/N\n"
     else:
         assert result == "0u CHR /dev/ttysN\n1u CHR /dev/ttysN\n2u CHR /dev/ttysN\n"
