@@ -12,7 +12,7 @@ freebsd_task:
         image_family: freebsd-12-2
 
   install_script:
-    - pkg install -y python39
+    - pkg install -y python39 lsof
     - python3.9 -m venv .venv
     - . .venv/bin/activate && pip install wheel poetry && poetry install --no-root --no-interaction
     # We need to enable the /dev/fd file system on FreeBSD.

@@ -1497,22 +1497,29 @@ async def test_open_file_descriptors(sh):
     "Test what file descriptors are open in the subprocess."
 
     cmd = sh(sys.executable, "-c", 'input("a")').stdin(())
+
     lsof = sh("lsof", "-n", "-P", "-p").stderr(1)
-    awk = sh("awk", "$4 ~ /^[0-9]+/ { print $4, $5, $9 }")
+    awk_script = '$4 ~ /^[0-9]+/ { sub(/[0-9]+/, "N", $9); print $4, $5, $9 }'
+    awk = sh("awk", awk_script).stderr(1)
 
     async with cmd.set(close_fds=True) as run:
         result = await (lsof(run.pid) | awk)
         run.stdin.write(b"b\n")
 
-    assert result == "0u unix \n1 PIPE \n2u CHR /dev/null\n"
+    if sys.platform == "linux":
+        assert result == "0u unix type=STREAM\n1w FIFO pipe \n2u CHR /dev/null\n"
+    else:
+        assert result == "0u unix \n1 PIPE \n2u CHR /dev/null\n"
 
 
 async def test_open_file_descriptors_unclosed_fds(sh):
     "Test what file descriptors are open in the subprocess."
 
     cmd = sh(sys.executable, "-c", 'input("a")').stdin(())
+
     lsof = sh("lsof", "-n", "-P", "-p").stderr(1)
-    awk = sh("awk", "$4 ~ /^[0-9]+/ { print $4, $5, $9 }")
+    awk_script = '$4 ~ /^[0-9]+/ { sub(/[0-9]+/, "N", $9); print $4, $5, $9 }'
+    awk = sh("awk", awk_script).stderr(1)
 
     async with cmd.set(close_fds=False) as run:
         result = await (lsof(run.pid) | awk)
@@ -1525,25 +1532,29 @@ async def test_open_file_descriptors_pty(sh):
     "Test what file descriptors are open in the pty subprocess."
 
     cmd = sh(sys.executable, "-c", 'input("a")').stdin(())
+
     lsof = sh("lsof", "-n", "-P", "-p").stderr(1)
-    awk = sh("awk", "$4 ~ /^[0-9]+/ { print $4, $5, $9 }")
+    awk_script = '$4 ~ /^[0-9]+/ { sub(/[0-9]+/, "N", $9); print $4, $5, $9 }'
+    awk = sh("awk", awk_script).stderr(1)
 
     async with cmd.set(close_fds=True, pty=True) as run:
         result = await (lsof(run.pid) | awk)
         run.stdin.write(b"b\n")
 
-    assert result == "0u CHR /dev/ttys002\n1u CHR /dev/ttys002\n2u CHR /dev/ttys002\n"
+    assert result == "0u CHR /dev/ttysN\n1u CHR /dev/ttysN\n2u CHR /dev/ttysN\n"
 
 
 async def test_open_file_descriptors_pty_unclosed_fds(sh):
     "Test what file descriptors are open in the pty subprocess."
 
     cmd = sh(sys.executable, "-c", 'input("a")').stdin(())
+
     lsof = sh("lsof", "-n", "-P", "-p").stderr(1)
-    awk = sh("awk", "$4 ~ /^[0-9]+/ { print $4, $5, $9 }")
+    awk_script = '$4 ~ /^[0-9]+/ { sub(/[0-9]+/, "N", $9); print $4, $5, $9 }'
+    awk = sh("awk", awk_script).stderr(1)
 
     async with cmd.set(close_fds=False, pty=True) as run:
         result = await (lsof(run.pid) | awk)
         run.stdin.write(b"b\n")
 
-    assert result == "0u CHR /dev/ttys002\n1u CHR /dev/ttys002\n2u CHR /dev/ttys002\n"
+    assert result == "0u CHR /dev/ttysN\n1u CHR /dev/ttysN\n2u CHR /dev/ttysN\n"

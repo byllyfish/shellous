@@ -16,6 +16,13 @@ import shellous
 if sys.platform != "win32":
     from shellous.watcher import DefaultChildWatcher
 
+# Close any file descriptors >= 3. The tests will log file descriptors passed
+# to subprocesses. If pytest inherits file descriptors from the process that
+# launches it, this perturbs the testing environment. I have seen this with
+# processes launched using the VSCode Terminal.
+
+os.closerange(3, 600)
+
 childwatcher_type = os.environ.get("SHELLOUS_CHILDWATCHER_TYPE")
 loop_type = os.environ.get("SHELLOUS_LOOP_TYPE")
 
