@@ -1491,3 +1491,59 @@ async def test_timeout_and_wait_for(sh):
         # Process will be cancelled after sending SIGHUP and while waiting
         # for `cancel_timeout` to expire.
         await asyncio.wait_for(cmd, 1.0)
+
+
+async def test_open_file_descriptors(sh):
+    "Test what file descriptors are open in the subprocess."
+
+    cmd = sh(sys.executable, "-c", 'input("a")').stdin(())
+    lsof = sh("lsof", "-n", "-P", "-p").stderr(1)
+    awk = sh("awk", "$4 ~ /^[0-9]+/ { print $4, $5, $9 }")
+
+    async with cmd.set(close_fds=True) as run:
+        result = await (lsof(run.pid) | awk)
+        run.stdin.write(b"b\n")
+
+    assert result == "0u unix \n1 PIPE \n2u CHR /dev/null\n"
+
+
+async def test_open_file_descriptors_unclosed_fds(sh):
+    "Test what file descriptors are open in the subprocess."
+
+    cmd = sh(sys.executable, "-c", 'input("a")').stdin(())
+    lsof = sh("lsof", "-n", "-P", "-p").stderr(1)
+    awk = sh("awk", "$4 ~ /^[0-9]+/ { print $4, $5, $9 }")
+
+    async with cmd.set(close_fds=False) as run:
+        result = await (lsof(run.pid) | awk)
+        run.stdin.write(b"b\n")
+
+    assert result == "0u unix \n1 PIPE \n2u CHR /dev/null\n"
+
+
+async def test_open_file_descriptors_pty(sh):
+    "Test what file descriptors are open in the pty subprocess."
+
+    cmd = sh(sys.executable, "-c", 'input("a")').stdin(())
+    lsof = sh("lsof", "-n", "-P", "-p").stderr(1)
+    awk = sh("awk", "$4 ~ /^[0-9]+/ { print $4, $5, $9 }")
+
+    async with cmd.set(close_fds=True, pty=True) as run:
+        result = await (lsof(run.pid) | awk)
+        run.stdin.write(b"b\n")
+
+    assert result == "0u CHR /dev/ttys002\n1u CHR /dev/ttys002\n2u CHR /dev/ttys002\n"
+
+
+async def test_open_file_descriptors_pty_unclosed_fds(sh):
+    "Test what file descriptors are open in the pty subprocess."
+
+    cmd = sh(sys.executable, "-c", 'input("a")').stdin(())
+    lsof = sh("lsof", "-n", "-P", "-p").stderr(1)
+    awk = sh("awk", "$4 ~ /^[0-9]+/ { print $4, $5, $9 }")
+
+    async with cmd.set(close_fds=False, pty=True) as run:
+        result = await (lsof(run.pid) | awk)
+        run.stdin.write(b"b\n")
+
+    assert result == "0u CHR /dev/ttys002\n1u CHR /dev/ttys002\n2u CHR /dev/ttys002\n"
