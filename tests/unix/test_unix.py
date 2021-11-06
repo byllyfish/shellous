@@ -1507,7 +1507,7 @@ async def test_open_file_descriptors(sh):
         run.stdin.write(b"b\n")
 
     if sys.platform == "linux":
-        assert result == "0u unix type=STREAM\n1w FIFO pipe \n2u CHR /dev/null\n"
+        assert result == "0u unix type=STREAM\n1w FIFO pipe\n2u CHR /dev/null\n"
     else:
         assert result == "0u unix \n1 PIPE \n2u CHR /dev/null\n"
 
@@ -1525,7 +1525,10 @@ async def test_open_file_descriptors_unclosed_fds(sh):
         result = await (lsof(run.pid) | awk)
         run.stdin.write(b"b\n")
 
-    assert result == "0u unix \n1 PIPE \n2u CHR /dev/null\n"
+    if sys.platform == "linux":
+        assert result == "0u unix type=STREAM\n1w FIFO pipe\n2u CHR /dev/null\n"
+    else:
+        assert result == "0u unix \n1 PIPE \n2u CHR /dev/null\n"
 
 
 async def test_open_file_descriptors_pty(sh):
@@ -1541,7 +1544,10 @@ async def test_open_file_descriptors_pty(sh):
         result = await (lsof(run.pid) | awk)
         run.stdin.write(b"b\n")
 
-    assert result == "0u CHR /dev/ttysN\n1u CHR /dev/ttysN\n2u CHR /dev/ttysN\n"
+    if sys.platform == "linux":
+        assert result == "0u CHR /dev/ptsN\n1u CHR /dev/ptsN\n2u CHR /dev/ptsN\n"
+    else:
+        assert result == "0u CHR /dev/ttysN\n1u CHR /dev/ttysN\n2u CHR /dev/ttysN\n"
 
 
 async def test_open_file_descriptors_pty_unclosed_fds(sh):
@@ -1557,4 +1563,7 @@ async def test_open_file_descriptors_pty_unclosed_fds(sh):
         result = await (lsof(run.pid) | awk)
         run.stdin.write(b"b\n")
 
-    assert result == "0u CHR /dev/ttysN\n1u CHR /dev/ttysN\n2u CHR /dev/ttysN\n"
+    if sys.platform == "linux":
+        assert result == "0u CHR /dev/ptsN\n1u CHR /dev/ptsN\n2u CHR /dev/ptsN\n"
+    else:
+        assert result == "0u CHR /dev/ttysN\n1u CHR /dev/ttysN\n2u CHR /dev/ttysN\n"
