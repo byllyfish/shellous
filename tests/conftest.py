@@ -21,7 +21,8 @@ if sys.platform != "win32":
 # launches it, this perturbs the testing environment. I have seen this with
 # processes launched using the VSCode Terminal.
 
-os.closerange(3, 600)
+if not os.environ.get("SHELLOUS_CODE_COVERAGE"):
+    os.closerange(3, 600)
 
 childwatcher_type = os.environ.get("SHELLOUS_CHILDWATCHER_TYPE")
 loop_type = os.environ.get("SHELLOUS_LOOP_TYPE")
