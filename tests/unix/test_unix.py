@@ -35,9 +35,9 @@ def _is_uvloop():
     return os.environ.get("SHELLOUS_LOOP_TYPE") == "uvloop"
 
 
-def _is_codecov_linux():
-    "Return true if we're running code coverage under Linux."
-    return sys.platform == "linux" and os.environ.get("SHELLOUS_CODE_COVERAGE")
+def _is_codecov():
+    "Return true if we're running code coverage."
+    return os.environ.get("SHELLOUS_CODE_COVERAGE")
 
 
 @pytest.fixture
@@ -1205,7 +1205,7 @@ async def test_pty_canonical_ls(sh):
     assert result == "CHANGELOG.md\r\nREADME.md\r\n"
 
 
-@pytest.mark.xfail(_is_uvloop() or _is_codecov_linux(), reason="uvloop,codecov")
+@pytest.mark.xfail(_is_uvloop() or _is_codecov(), reason="uvloop,codecov")
 @pytest.mark.timeout(90)
 async def test_pty_compare_large_ls_output(sh):
     "Compare pty output to non-pty output."
@@ -1491,3 +1491,87 @@ async def test_timeout_and_wait_for(sh):
         # Process will be cancelled after sending SIGHUP and while waiting
         # for `cancel_timeout` to expire.
         await asyncio.wait_for(cmd, 1.0)
+
+
+# On macOS and FreeBSD build systems, ignore the file descriptor for
+# `_virtualenv.pth` if it's open.
+_AWK_SCRIPT = """
+/_virtualenv\\.pth$/ { next }
+$4 ~ /^[0-9]+/ { sub(/[0-9]+/, "N", $9); print $4, $5, $9 }
+"""
+
+
+@pytest.mark.skip(_is_codecov(), reason="codecov")
+async def test_open_file_descriptors(sh):
+    "Test what file descriptors are open in the subprocess."
+
+    cmd = sh(sys.executable, "-c", 'input("a")').stdin(())
+
+    lsof = sh("lsof", "-n", "-P", "-p").stderr(1)
+    awk = sh("awk", _AWK_SCRIPT).stderr(1)
+
+    async with cmd.set(close_fds=True) as run:
+        result = await (lsof(run.pid) | awk)
+        run.stdin.write(b"b\n")
+
+    if sys.platform == "linux":
+        assert result == "0u unix type=STREAM\n1w FIFO pipe\n2u CHR /dev/null\n"
+    else:
+        assert result == "0u unix \n1 PIPE \n2u CHR /dev/null\n"
+
+
+@pytest.mark.skip(_is_codecov(), reason="codecov")
+async def test_open_file_descriptors_unclosed_fds(sh):
+    "Test what file descriptors are open in the subprocess (close_fds=False)."
+
+    cmd = sh(sys.executable, "-c", 'input("a")').stdin(())
+
+    lsof = sh("lsof", "-n", "-P", "-p").stderr(1)
+    awk = sh("awk", _AWK_SCRIPT).stderr(1)
+
+    async with cmd.set(close_fds=False) as run:
+        result = await (lsof(run.pid) | awk)
+        run.stdin.write(b"b\n")
+
+    if sys.platform == "linux":
+        assert result == "0u unix type=STREAM\n1w FIFO pipe\n2u CHR /dev/null\n"
+    else:
+        assert result == "0u unix \n1 PIPE \n2u CHR /dev/null\n"
+
+
+@pytest.mark.skip(_is_codecov(), reason="codecov")
+async def test_open_file_descriptors_pty(sh):
+    "Test what file descriptors are open in the pty subprocess."
+
+    cmd = sh(sys.executable, "-c", 'input("a")').stdin(())
+
+    lsof = sh("lsof", "-n", "-P", "-p").stderr(1)
+    awk = sh("awk", _AWK_SCRIPT).stderr(1)
+
+    async with cmd.set(close_fds=True, pty=True) as run:
+        result = await (lsof(run.pid) | awk)
+        run.stdin.write(b"b\n")
+
+    if sys.platform == "linux":
+        assert result == "0u CHR /dev/pts/N\n1u CHR /dev/pts/N\n2u CHR /dev/pts/N\n"
+    else:
+        assert result == "0u CHR /dev/ttysN\n1u CHR /dev/ttysN\n2u CHR /dev/ttysN\n"
+
+
+@pytest.mark.skip(_is_codecov(), reason="codecov")
+async def test_open_file_descriptors_pty_unclosed_fds(sh):
+    "Test what file descriptors are open in the pty (close_fds=False)."
+
+    cmd = sh(sys.executable, "-c", 'input("a")').stdin(())
+
+    lsof = sh("lsof", "-n", "-P", "-p").stderr(1)
+    awk = sh("awk", _AWK_SCRIPT).stderr(1)
+
+    async with cmd.set(close_fds=False, pty=True) as run:
+        result = await (lsof(run.pid) | awk)
+        run.stdin.write(b"b\n")
+
+    if sys.platform == "linux":
+        assert result == "0u CHR /dev/pts/N\n1u CHR /dev/pts/N\n2u CHR /dev/pts/N\n"
+    else:
+        assert result == "0u CHR /dev/ttysN\n1u CHR /dev/ttysN\n2u CHR /dev/ttysN\n"
