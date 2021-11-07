@@ -1509,7 +1509,6 @@ async def test_timeout_and_wait_for(sh):
 # On macOS and FreeBSD build systems, ignore the file descriptor for
 # `_virtualenv.pth` if it's open.
 _AWK_SCRIPT = """
-# /_virtualenv\\.pth$/ { next }
 $4 ~ /^[0-9]+/ { sub(/[0-9]+/, "N", $9); print $4, $5, $9 }
 """
 
@@ -1528,10 +1527,14 @@ async def test_open_file_descriptors(sh):
 
     expected_result = {
         # sys.platform == "linux", _is_uvloop()
+        # uvloop keeps descriptor 18 open?
         (True, False): "0u unix type=STREAM\n1w FIFO pipe\n2u CHR /dev/null\n",
-        (True, True): "0u unix type=STREAM\n1w FIFO pipe\n2u CHR /dev/null\n",
+        (
+            True,
+            True,
+        ): "0u unix type=STREAM\n1u unix type=STREAM\n2u CHR /dev/null\n18u unix type=STREAM\n",
         (False, False): "0u unix \n1 PIPE \n2u CHR /dev/null\n",
-        (False, True): "0u unix \n1 PIPE \n2u CHR /dev/null\n",
+        (False, True): "0u unix \n1u unix \n2u CHR /dev/null\n18u unix \n",
     }
 
     assert result == expected_result[(sys.platform == "linux", _is_uvloop())]
@@ -1551,10 +1554,14 @@ async def test_open_file_descriptors_unclosed_fds(sh):
 
     expected_result = {
         # sys.platform == "linux", _is_uvloop()
+        # uvloop keeps descriptor 18 open?
         (True, False): "0u unix type=STREAM\n1w FIFO pipe\n2u CHR /dev/null\n",
-        (True, True): "0u unix type=STREAM\n1u unix type=STREAM\n2u CHR /dev/null\n",
+        (
+            True,
+            True,
+        ): "0u unix type=STREAM\n1u unix type=STREAM\n2u CHR /dev/null\n18u unix type=STREAM\n",
         (False, False): "0u unix \n1 PIPE \n2u CHR /dev/null\n",
-        (False, True): "0u unix \n1 PIPE \n2u CHR /dev/null\n",
+        (False, True): "0u unix \n1u unix \n2u CHR /dev/null\n18u unix \n",
     }
 
     assert result == expected_result[(sys.platform == "linux", _is_uvloop())]
