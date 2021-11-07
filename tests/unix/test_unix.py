@@ -40,6 +40,19 @@ def _is_codecov():
     return os.environ.get("SHELLOUS_CODE_COVERAGE")
 
 
+def _readouterr(capfd):
+    "Clean capfd output (see issue #151)."
+    out, err = capfd.readouterr()
+    out = re.sub(
+        "^\\d+\\.\\d+ \x1b\\[35mDEBUG\x1b\\[0m.*\n",
+        "",
+        out,
+        0,
+        re.MULTILINE,
+    )
+    return (out, err)
+
+
 @pytest.fixture
 def sh():
     return context()
@@ -337,7 +350,7 @@ async def test_redirect_output_inherit(sh, capfd):
     "Test redirecting command output to None (same as DEVNULL)."
     result = await sh("echo", "789").stdout(INHERIT)
     assert result == ""
-    assert capfd.readouterr() == ("789\n", "")
+    assert _readouterr(capfd) == ("789\n", "")
 
 
 async def test_redirect_input_path(sh, tmp_path):
@@ -368,49 +381,49 @@ async def test_redirection(python_script, capfd):
     result = await python_script().stderr(err)
     assert result == "hi stdout\ngoodbye!"
     assert err.getvalue() == "hi stderr\n"
-    assert capfd.readouterr() == ("", "")
+    assert _readouterr(capfd) == ("", "")
 
 
 async def test_redirect_output_to_devnull(python_script, capfd):
     "Test redirection options with both stdout and stderr output."
     result = await python_script.stdout(DEVNULL)
     assert result == ""
-    assert capfd.readouterr() == ("", "")
+    assert _readouterr(capfd) == ("", "")
 
 
 async def test_redirect_output_to_inherit(python_script, capfd):
     "Test redirection options with both stdout and stderr output."
     result = await python_script.stdout(INHERIT)
     assert result == ""
-    assert capfd.readouterr() == ("hi stdout\ngoodbye!", "")
+    assert _readouterr(capfd) == ("hi stdout\ngoodbye!", "")
 
 
 async def test_redirect_error_to_stdout(python_script, capfd):
     "Test redirection options with both stdout and stderr output."
     result = await python_script.stderr(STDOUT)
     assert result == "hi stdout\nhi stderr\ngoodbye!"
-    assert capfd.readouterr() == ("", "")
+    assert _readouterr(capfd) == ("", "")
 
 
 async def test_capture_error_only(python_script, capfd):
     "Test redirection options with stderr output."
     result = await python_script.stderr(CAPTURE).stdout(DEVNULL)
     assert result == "hi stderr\n"
-    assert capfd.readouterr() == ("", "")
+    assert _readouterr(capfd) == ("", "")
 
 
 async def test_redirect_error_to_inherit(python_script, capfd):
     "Test redirection options with both stdout and stderr output."
     result = await python_script.stderr(INHERIT)
     assert result == "hi stdout\ngoodbye!"
-    assert capfd.readouterr() == ("", "hi stderr\n")
+    assert _readouterr(capfd) == ("", "hi stderr\n")
 
 
 async def test_redirect_error_to_devnull(python_script, capfd):
     "Test redirection options with both stdout and stderr output."
     result = await python_script.stderr(DEVNULL)
     assert result == "hi stdout\ngoodbye!"
-    assert capfd.readouterr() == ("", "")
+    assert _readouterr(capfd) == ("", "")
 
 
 async def test_redirect_error_to_capture(python_script):
@@ -424,7 +437,7 @@ async def test_redirect_error_to_logger(python_script, capfd, caplog):
     test_logger = logging.getLogger("test_logger")
     result = await python_script.stderr(test_logger)
     assert result == "hi stdout\ngoodbye!"
-    assert capfd.readouterr() == ("", "")
+    assert _readouterr(capfd) == ("", "")
 
     logs = [tup for tup in caplog.record_tuples if tup[0] == "test_logger"]
     assert logs == [
