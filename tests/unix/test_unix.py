@@ -1527,10 +1527,15 @@ async def test_open_file_descriptors(sh):
         result = await (lsof(run.pid) | awk)
         run.stdin.write(b"b\n")
 
-    if sys.platform == "linux":
-        assert result == "0u unix type=STREAM\n1w FIFO pipe\n2u CHR /dev/null\n"
-    else:
-        assert result == "0u unix \n1 PIPE \n2u CHR /dev/null\n"
+    expected_result = {
+        # sys.platform == "linux", _is_uvloop()
+        (True, False): "0u unix type=STREAM\n1w FIFO pipe\n2u CHR /dev/null\n",
+        (True, True): "0u unix type=STREAM\n1w FIFO pipe\n2u CHR /dev/null\n",
+        (False, False): "0u unix \n1 PIPE \n2u CHR /dev/null\n",
+        (False, True): "0u unix \n1 PIPE \n2u CHR /dev/null\n",
+    }
+
+    assert result == expected_result[(sys.platform == "linux", _is_uvloop())]
 
 
 @pytest.mark.skipif(_is_codecov(), reason="codecov")
@@ -1546,13 +1551,18 @@ async def test_open_file_descriptors_unclosed_fds(sh):
         result = await (lsof(run.pid) | awk)
         run.stdin.write(b"b\n")
 
-    if sys.platform == "linux":
-        assert result == "0u unix type=STREAM\n1w FIFO pipe\n2u CHR /dev/null\n"
-    else:
-        assert result == "0u unix \n1 PIPE \n2u CHR /dev/null\n"
+    expected_result = {
+        # sys.platform == "linux", _is_uvloop()
+        (True, False): "0u unix type=STREAM\n1w FIFO pipe\n2u CHR /dev/null\n",
+        (True, True): "0u unix type=STREAM\n1u unix type=STREAM\n2u CHR /dev/null\n",
+        (False, False): "0u unix \n1 PIPE \n2u CHR /dev/null\n",
+        (False, True): "0u unix \n1 PIPE \n2u CHR /dev/null\n",
+    }
+
+    assert result == expected_result[(sys.platform == "linux", _is_uvloop())]
 
 
-@pytest.mark.skipif(_is_codecov(), reason="codecov")
+@pytest.mark.skipif(_is_uvloop() or _is_codecov(), reason="uvloop,codecov")
 async def test_open_file_descriptors_pty(sh):
     "Test what file descriptors are open in the pty subprocess."
 
@@ -1571,7 +1581,7 @@ async def test_open_file_descriptors_pty(sh):
         assert result == "0u CHR /dev/ttysN\n1u CHR /dev/ttysN\n2u CHR /dev/ttysN\n"
 
 
-@pytest.mark.skipif(_is_codecov(), reason="codecov")
+@pytest.mark.skipif(_is_uvloop() or _is_codecov(), reason="uvloop,codecov")
 async def test_open_file_descriptors_pty_unclosed_fds(sh):
     "Test what file descriptors are open in the pty (close_fds=False)."
 
