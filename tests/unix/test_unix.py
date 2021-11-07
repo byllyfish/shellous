@@ -1514,7 +1514,7 @@ $4 ~ /^[0-9]+/ { sub(/[0-9]+/, "N", $9); print $4, $5, $9 }
 """
 
 
-@pytest.mark.skip(_is_codecov(), reason="codecov")
+@pytest.mark.skipif(_is_codecov(), reason="codecov")
 async def test_open_file_descriptors(sh):
     "Test what file descriptors are open in the subprocess."
 
@@ -1533,7 +1533,7 @@ async def test_open_file_descriptors(sh):
         assert result == "0u unix \n1 PIPE \n2u CHR /dev/null\n"
 
 
-@pytest.mark.skip(_is_codecov(), reason="codecov")
+@pytest.mark.skipif(_is_codecov(), reason="codecov")
 async def test_open_file_descriptors_unclosed_fds(sh):
     "Test what file descriptors are open in the subprocess (close_fds=False)."
 
@@ -1552,7 +1552,7 @@ async def test_open_file_descriptors_unclosed_fds(sh):
         assert result == "0u unix \n1 PIPE \n2u CHR /dev/null\n"
 
 
-@pytest.mark.skip(_is_codecov(), reason="codecov")
+@pytest.mark.skipif(_is_codecov(), reason="codecov")
 async def test_open_file_descriptors_pty(sh):
     "Test what file descriptors are open in the pty subprocess."
 
@@ -1571,7 +1571,7 @@ async def test_open_file_descriptors_pty(sh):
         assert result == "0u CHR /dev/ttysN\n1u CHR /dev/ttysN\n2u CHR /dev/ttysN\n"
 
 
-@pytest.mark.skip(_is_codecov(), reason="codecov")
+@pytest.mark.skipif(_is_codecov(), reason="codecov")
 async def test_open_file_descriptors_pty_unclosed_fds(sh):
     "Test what file descriptors are open in the pty (close_fds=False)."
 
