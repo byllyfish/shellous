@@ -1513,7 +1513,7 @@ $4 ~ /^[0-9]+/ { sub(/[0-9]+/, "N", $9); print $4, $5, $9 }
 """
 
 
-@pytest.mark.skipif(_is_codecov(), reason="codecov")
+@pytest.mark.skipif(_is_uvloop() or _is_codecov(), reason="codecov")
 async def test_open_file_descriptors(sh):
     "Test what file descriptors are open in the subprocess."
 
@@ -1525,22 +1525,13 @@ async def test_open_file_descriptors(sh):
         result = await (lsof(run.pid) | awk)
         run.stdin.close()
 
-    expected_result = {
-        # sys.platform == "linux", _is_uvloop()
-        # uvloop keeps descriptor 18 open?
-        (True, False): "0u unix type=STREAM\n1w FIFO pipe\n2u CHR /dev/null\n",
-        (
-            True,
-            True,
-        ): "0u unix type=STREAM\n1u unix type=STREAM\n2u CHR /dev/null\n18u unix type=STREAM\n",
-        (False, False): "0u unix \n1 PIPE \n2u CHR /dev/null\n",
-        (False, True): "0u unix \n1u unix \n2u CHR /dev/null\n18u unix \n",
-    }
-
-    assert result == expected_result[(sys.platform == "linux", _is_uvloop())]
+    if sys.platform == "linux":
+        assert result == "0u unix type=STREAM\n1w FIFO pipe\n2u CHR /dev/null\n"
+    else:
+        assert result == "0u unix \n1 PIPE \n2u CHR /dev/null\n"
 
 
-@pytest.mark.skipif(_is_codecov(), reason="codecov")
+@pytest.mark.skipif(_is_uvloop() or _is_codecov(), reason="codecov")
 async def test_open_file_descriptors_unclosed_fds(sh):
     "Test what file descriptors are open in the subprocess (close_fds=False)."
 
@@ -1552,19 +1543,10 @@ async def test_open_file_descriptors_unclosed_fds(sh):
         result = await (lsof(run.pid) | awk)
         run.stdin.close()
 
-    expected_result = {
-        # sys.platform == "linux", _is_uvloop()
-        # uvloop keeps descriptor 18 open?
-        (True, False): "0u unix type=STREAM\n1w FIFO pipe\n2u CHR /dev/null\n",
-        (
-            True,
-            True,
-        ): "0u unix type=STREAM\n1u unix type=STREAM\n2u CHR /dev/null\n18u unix type=STREAM\n",
-        (False, False): "0u unix \n1 PIPE \n2u CHR /dev/null\n",
-        (False, True): "0u unix \n1u unix \n2u CHR /dev/null\n18u unix \n",
-    }
-
-    assert result == expected_result[(sys.platform == "linux", _is_uvloop())]
+    if sys.platform == "linux":
+        assert result == "0u unix type=STREAM\n1w FIFO pipe\n2u CHR /dev/null\n"
+    else:
+        assert result == "0u unix \n1 PIPE \n2u CHR /dev/null\n"
 
 
 @pytest.mark.skipif(_is_uvloop() or _is_codecov(), reason="uvloop,codecov")
