@@ -3,6 +3,10 @@
 freebsd_task:
   name: CI / build
 
+  env:
+    # for lsof
+    PATH: ${PATH}:/usr/local/sbin
+
   matrix:
     - name: FreeBSD 13.0
       freebsd_instance:

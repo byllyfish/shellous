@@ -1506,8 +1506,8 @@ async def test_timeout_and_wait_for(sh):
         await asyncio.wait_for(cmd, 1.0)
 
 
-# On macOS and FreeBSD build systems, ignore the file descriptor for
-# `_virtualenv.pth` if it's open.
+# Grab the FD(4), TYPE(5) and NAME(9) columns only where the FD starts with
+# an integer. Replace any integer /dev/tty numbers in NAME with `N`.
 _AWK_SCRIPT = """
 $4 ~ /^[0-9]+/ { sub(/[0-9]+/, "N", $9); print $4, $5, $9 }
 """
