@@ -1527,6 +1527,8 @@ async def test_open_file_descriptors(sh):
 
     if sys.platform == "linux":
         assert result == "0u unix type=STREAM\n1w FIFO pipe\n2u CHR /dev/null\n"
+    elif sys.platform.startswith("freebsd"):
+        assert result == "0u unix \n1u PIPE \n2u VCHR /dev/null\n"
     else:
         assert result == "0u unix \n1 PIPE \n2u CHR /dev/null\n"
 
@@ -1545,6 +1547,8 @@ async def test_open_file_descriptors_unclosed_fds(sh):
 
     if sys.platform == "linux":
         assert result == "0u unix type=STREAM\n1w FIFO pipe\n2u CHR /dev/null\n"
+    elif sys.platform.startswith("freebsd"):
+        assert result == "0u unix \n1u PIPE \n2u VCHR /dev/null\n"
     else:
         assert result == "0u unix \n1 PIPE \n2u CHR /dev/null\n"
 
@@ -1563,6 +1567,8 @@ async def test_open_file_descriptors_pty(sh):
 
     if sys.platform == "linux":
         assert result == "0u CHR /dev/pts/N\n1u CHR /dev/pts/N\n2u CHR /dev/pts/N\n"
+    elif sys.platform.startswith("freebsd"):
+        assert result == "0u VCHR /dev\n1u VCHR /dev\n2u VCHR /dev\n"
     else:
         assert result == "0u CHR /dev/ttysN\n1u CHR /dev/ttysN\n2u CHR /dev/ttysN\n"
 
@@ -1581,5 +1587,7 @@ async def test_open_file_descriptors_pty_unclosed_fds(sh):
 
     if sys.platform == "linux":
         assert result == "0u CHR /dev/pts/N\n1u CHR /dev/pts/N\n2u CHR /dev/pts/N\n"
+    elif sys.platform.startswith("freebsd"):
+        assert result == "0u VCHR /dev\n1u VCHR /dev\n2u VCHR /dev\n"
     else:
         assert result == "0u CHR /dev/ttysN\n1u CHR /dev/ttysN\n2u CHR /dev/ttysN\n"
