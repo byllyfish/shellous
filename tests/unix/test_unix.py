@@ -1506,85 +1506,94 @@ async def test_timeout_and_wait_for(sh):
         await asyncio.wait_for(cmd, 1.0)
 
 
-# On macOS and FreeBSD build systems, ignore the file descriptor for
-# `_virtualenv.pth` if it's open.
+# Grab the FD(4), TYPE(5) and NAME(9) columns only where the FD starts with
+# an integer. Replace any integer /dev/tty numbers in NAME with `N`.
 _AWK_SCRIPT = """
-/_virtualenv\\.pth$/ { next }
 $4 ~ /^[0-9]+/ { sub(/[0-9]+/, "N", $9); print $4, $5, $9 }
 """
 
 
-@pytest.mark.skip(_is_codecov(), reason="codecov")
+@pytest.mark.skipif(_is_uvloop() or _is_codecov(), reason="codecov")
 async def test_open_file_descriptors(sh):
     "Test what file descriptors are open in the subprocess."
 
-    cmd = sh(sys.executable, "-c", 'input("a")').stdin(())
-
+    cmd = sh("cat").stdin(())
     lsof = sh("lsof", "-n", "-P", "-p").stderr(1)
     awk = sh("awk", _AWK_SCRIPT).stderr(1)
 
     async with cmd.set(close_fds=True) as run:
         result = await (lsof(run.pid) | awk)
-        run.stdin.write(b"b\n")
+        run.stdin.close()
 
     if sys.platform == "linux":
         assert result == "0u unix type=STREAM\n1w FIFO pipe\n2u CHR /dev/null\n"
+    elif sys.platform.startswith("freebsd"):
+        assert result == "0u unix \n1u PIPE \n2u VCHR /dev/null\n"
     else:
         assert result == "0u unix \n1 PIPE \n2u CHR /dev/null\n"
 
 
-@pytest.mark.skip(_is_codecov(), reason="codecov")
+@pytest.mark.skipif(_is_uvloop() or _is_codecov(), reason="codecov")
 async def test_open_file_descriptors_unclosed_fds(sh):
     "Test what file descriptors are open in the subprocess (close_fds=False)."
 
-    cmd = sh(sys.executable, "-c", 'input("a")').stdin(())
-
+    cmd = sh("cat").stdin(())
     lsof = sh("lsof", "-n", "-P", "-p").stderr(1)
     awk = sh("awk", _AWK_SCRIPT).stderr(1)
 
     async with cmd.set(close_fds=False) as run:
         result = await (lsof(run.pid) | awk)
-        run.stdin.write(b"b\n")
+        run.stdin.close()
 
     if sys.platform == "linux":
         assert result == "0u unix type=STREAM\n1w FIFO pipe\n2u CHR /dev/null\n"
+    elif sys.platform.startswith("freebsd"):
+        assert result == "0u unix \n1u PIPE \n2u VCHR /dev/null\n"
     else:
         assert result == "0u unix \n1 PIPE \n2u CHR /dev/null\n"
 
 
-@pytest.mark.skip(_is_codecov(), reason="codecov")
+@pytest.mark.skipif(_is_uvloop() or _is_codecov(), reason="uvloop,codecov")
 async def test_open_file_descriptors_pty(sh):
     "Test what file descriptors are open in the pty subprocess."
 
-    cmd = sh(sys.executable, "-c", 'input("a")').stdin(())
-
+    cmd = sh("cat").stdin(())
     lsof = sh("lsof", "-n", "-P", "-p").stderr(1)
     awk = sh("awk", _AWK_SCRIPT).stderr(1)
 
     async with cmd.set(close_fds=True, pty=True) as run:
         result = await (lsof(run.pid) | awk)
-        run.stdin.write(b"b\n")
+        run.stdin.close()
 
     if sys.platform == "linux":
         assert result == "0u CHR /dev/pts/N\n1u CHR /dev/pts/N\n2u CHR /dev/pts/N\n"
+    elif sys.platform.startswith("freebsd"):
+        assert result in (
+            "0u VCHR /dev/pts/N\n1u VCHR /dev/pts/N\n2u VCHR /dev/pts/N\n",
+            "0u VCHR /dev\n1u VCHR /dev\n2u VCHR /dev\n",
+        )
     else:
         assert result == "0u CHR /dev/ttysN\n1u CHR /dev/ttysN\n2u CHR /dev/ttysN\n"
 
 
-@pytest.mark.skip(_is_codecov(), reason="codecov")
+@pytest.mark.skipif(_is_uvloop() or _is_codecov(), reason="uvloop,codecov")
 async def test_open_file_descriptors_pty_unclosed_fds(sh):
     "Test what file descriptors are open in the pty (close_fds=False)."
 
-    cmd = sh(sys.executable, "-c", 'input("a")').stdin(())
-
+    cmd = sh("cat").stdin(())
     lsof = sh("lsof", "-n", "-P", "-p").stderr(1)
     awk = sh("awk", _AWK_SCRIPT).stderr(1)
 
     async with cmd.set(close_fds=False, pty=True) as run:
         result = await (lsof(run.pid) | awk)
-        run.stdin.write(b"b\n")
+        run.stdin.close()
 
     if sys.platform == "linux":
         assert result == "0u CHR /dev/pts/N\n1u CHR /dev/pts/N\n2u CHR /dev/pts/N\n"
+    elif sys.platform.startswith("freebsd"):
+        assert result in (
+            "0u VCHR /dev/pts/N\n1u VCHR /dev/pts/N\n2u VCHR /dev/pts/N\n",
+            "0u VCHR /dev\n1u VCHR /dev\n2u VCHR /dev\n",
+        )
     else:
         assert result == "0u CHR /dev/ttysN\n1u CHR /dev/ttysN\n2u CHR /dev/ttysN\n"
