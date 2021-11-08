@@ -484,8 +484,6 @@ class Runner:
         try:
             return await self._start()
         except BaseException as ex:
-            if self._options.pty_fds:
-                self._options.pty_fds.close()
             self._stop_timer()  # failsafe just in case
             self._audit_callback("stop", failure=type(ex).__name__)
             raise
