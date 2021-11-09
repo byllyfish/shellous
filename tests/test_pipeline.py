@@ -271,3 +271,14 @@ def test_pipeline_redirect_tuple_stdout(sh):
     "Test use of empty tuple in pipeline."
     cmd = sh("echo") | ()
     assert cmd == sh("echo").stdout(shellous.CAPTURE)
+
+
+def test_pipeline_percent_op(sh):
+    "Pipeline does not support percent op for concatenating commands."
+
+    pipe = sh("echo", "abc") | sh("cat")
+    with pytest.raises(TypeError):
+        sh("nohup") % pipe
+
+    with pytest.raises(TypeError):
+        pipe % sh("nohup")
