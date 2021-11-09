@@ -439,13 +439,13 @@ class Runner:
             if self._proc.returncode is None:
                 await harvest(self._waiter(), timeout=cancel_timeout, trustee=self)
 
-        except (asyncio.CancelledError, asyncio.TimeoutError, GeneratorExit) as ex:
+        except (asyncio.CancelledError, asyncio.TimeoutError) as ex:
             LOGGER.warning("Runner.kill %r (ex)=%r", self, ex)
             if _is_cancelled(ex):
                 self._set_cancelled()
             await self._kill_wait()
 
-        except Exception as ex:
+        except (Exception, GeneratorExit) as ex:
             LOGGER.warning("Runner.kill %r ex=%r", self, ex)
             await self._kill_wait()
             raise
