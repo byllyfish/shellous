@@ -114,6 +114,15 @@ def test_pipeline_rshift_eq(sh):
     )
 
 
+def test_pipeline_stderr(sh):
+    pipe = Pipeline.create(sh("ls"), sh("grep"))
+    pipe = pipe.stderr("/tmp/output", append=True)
+
+    assert pipe == Pipeline.create(
+        sh("ls"), sh("grep").stderr("/tmp/output", append=True)
+    )
+
+
 # The following tests depend on operator overloading in Command.
 
 

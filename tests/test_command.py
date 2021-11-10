@@ -279,3 +279,11 @@ def test_percent_op_not_implemented(sh):
         assert None % echo
     with pytest.raises(TypeError):
         assert echo % None
+
+
+def test_percent_equals_op(sh):
+    "Test the %= operator."
+
+    cmd = sh("nohup")
+    cmd %= sh("echo", "abc")
+    assert cmd == sh("nohup", sh("echo", "abc").args)
