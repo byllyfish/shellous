@@ -1,6 +1,15 @@
 Shellous Change Log
 ===================
 
+0.9.3
+-----
+
+- [FEATURE] Add % operator to concatenate commands, i.e. sh("nohup") % sh("echo") == sh("nohup", "echo")
+- [API] Replace command and pipe's ~ operator with .writable property.
+- [BUGFIX] Fix bug where GeneratorExit was not being re-raised.
+- [BUGFIX] Clean capfd output in tests (#151).
+- [LATERAL] Add tests to check for open/inherited file descriptors in subprocess using lsof.
+
 0.9.2
 -----
 
