@@ -114,6 +114,15 @@ def test_pipeline_rshift_eq(sh):
     )
 
 
+def test_pipeline_stderr(sh):
+    pipe = Pipeline.create(sh("ls"), sh("grep"))
+    pipe = pipe.stderr("/tmp/output", append=True)
+
+    assert pipe == Pipeline.create(
+        sh("ls"), sh("grep").stderr("/tmp/output", append=True)
+    )
+
+
 # The following tests depend on operator overloading in Command.
 
 
@@ -271,3 +280,24 @@ def test_pipeline_redirect_tuple_stdout(sh):
     "Test use of empty tuple in pipeline."
     cmd = sh("echo") | ()
     assert cmd == sh("echo").stdout(shellous.CAPTURE)
+
+
+def test_pipeline_percent_op(sh):
+    "Pipeline does not support percent op for concatenating commands."
+
+    pipe = sh("echo", "abc") | sh("cat")
+    with pytest.raises(TypeError):
+        sh("nohup") % pipe
+
+    with pytest.raises(TypeError):
+        pipe % sh("nohup")
+
+
+def test_pipeline_percent_precedence(sh):
+    "Test operator precedence with % operator."
+
+    cmd = sh("nohup") % sh("echo") >> "/tmp/output"
+    assert cmd == sh("nohup", sh("echo").args).stdout("/tmp/output", append=True)
+
+    cmd = "xyz" | sh("nohup") % sh("echo") | sh("cat")
+    assert cmd == "xyz" | sh("nohup", sh("echo").args) | sh("cat")

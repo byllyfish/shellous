@@ -575,6 +575,12 @@ class Command:
             return self.stdout(rhs, append=True)
         return NotImplemented
 
+    def __mod__(self, rhs):
+        "Modulo operator is used to concatenate commands."
+        if isinstance(rhs, Command):
+            return self(rhs.args)
+        return NotImplemented
+
     @property
     def writable(self):
         "Set `writable` to True."

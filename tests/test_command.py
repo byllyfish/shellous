@@ -248,3 +248,42 @@ def test_replace_args_method(sh):
     cmd = cmd._replace_args(("echo", 6))
     assert cmd.args == ("echo", 6)
     assert cmd.options == echo.options
+
+
+def test_percent_op(sh):
+    "Test the percent/modulo operator for concatenation."
+
+    nohup = sh("nohup").stdin("abc")
+    echo = sh("echo", "hello").stdout(...)
+
+    # Note that the concatenated command is a new command with default
+    # redirections and settings (from the lhs context)
+    assert nohup % echo == sh("nohup", "echo", "hello").stdin("abc")
+    assert nohup % echo == nohup(echo.args)
+
+
+def test_percent_op_multiple(sh):
+    "Test the percent/modulo operator for concatenation."
+
+    nohup = sh("nohup").stdin("abc")
+    echo = sh("echo", "hello").stdout(...)
+
+    assert nohup % echo % nohup == nohup(echo(nohup.args).args)
+
+
+def test_percent_op_not_implemented(sh):
+    "Test the percent/modulo operator for concatenation."
+
+    echo = sh("echo", "hello")
+    with pytest.raises(TypeError):
+        assert None % echo
+    with pytest.raises(TypeError):
+        assert echo % None
+
+
+def test_percent_equals_op(sh):
+    "Test the %= operator."
+
+    cmd = sh("nohup")
+    cmd %= sh("echo", "abc")
+    assert cmd == sh("nohup", sh("echo", "abc").args)
