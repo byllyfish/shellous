@@ -291,3 +291,13 @@ def test_pipeline_percent_op(sh):
 
     with pytest.raises(TypeError):
         pipe % sh("nohup")
+
+
+def test_pipeline_percent_precedence(sh):
+    "Test operator precedence with % operator."
+
+    cmd = sh("nohup") % sh("echo") >> "/tmp/output"
+    assert cmd == sh("nohup", sh("echo").args).stdout("/tmp/output", append=True)
+
+    cmd = "xyz" | sh("nohup") % sh("echo") | sh("cat")
+    assert cmd == "xyz" | sh("nohup", sh("echo").args) | sh("cat")
