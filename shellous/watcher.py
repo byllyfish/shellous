@@ -120,11 +120,8 @@ class KQueueWorker(threading.Thread):
         "Initialize worker variables and start thread."
         super().__init__(daemon=True)
         self._work_queue = queue.Queue()
-        self._client_sock, self._server_sock = self._make_self_pipe()
-        self._server_pids = {}
-        self._fallback_pids = set()
-        self._kqueue = None
-        self._running = True
+        self._client_sock, server_sock = self._make_self_pipe()
+        self._agent = KQueueAgent(self._work_queue, server_sock)
         self.start()
 
     def watch_pid(self, pid, callback, args):
@@ -141,37 +138,62 @@ class KQueueWorker(threading.Thread):
     def run(self):
         "Override Thread.run()."
         LOGGER.debug("KQWorker starting %r", self)
-        self._kqueue = select.kqueue()
         try:
-            self._event_loop()
+            self._agent.event_loop()
         except BaseException as ex:  # pylint: disable=broad-except
             LOGGER.error("KQWorker failed %s ex=%r", self, ex, exc_info=True)
             raise
         finally:
-            self._kqueue.close()
-            self._server_sock.close()
             self._client_sock.close()
             LOGGER.debug("KQWorker stopping %r", self)
 
-    def _event_loop(self):
+    @staticmethod
+    def _make_self_pipe():
+        "Return (client, server) socket pair."
+        client, server = socket.socketpair()
+        client.setblocking(False)
+        server.setblocking(False)
+        return (client, server)
+
+
+class KQueueAgent:
+    "Agent that watches for child exit kqueue event."
+
+    def __init__(self, work_queue, server_sock):
+        "Initialize agent variables."
+        self._work_queue = work_queue
+        self._server_sock = server_sock
+        self._server_pids = {}
+        self._fallback_pids = set()
+        self._kqueue = None
+        self._running = True
+
+    def event_loop(self):
         "Event loop that handles kqueue events."
-        self._add_read_event(self._server_sock.fileno())
-        self._add_signal_event(signal.SIGCHLD)
+        self._kqueue = select.kqueue()
 
-        event_handlers = {
-            select.KQ_FILTER_PROC: self._handle_proc,
-            select.KQ_FILTER_READ: self._handle_read,
-            select.KQ_FILTER_SIGNAL: self._handle_signal,
-        }
+        try:
+            self._add_read_event(self._server_sock.fileno())
+            self._add_signal_event(signal.SIGCHLD)
 
-        while self._running:
-            pending = self._kqueue.control(None, 10, 10)
-            for event in pending:
-                handler = event_handlers.get(event.filter)
-                if handler:
-                    handler(event)
-                else:
-                    LOGGER.debug("_event_loop: unknown kevent: %r", event)
+            event_handlers = {
+                select.KQ_FILTER_PROC: self._handle_proc,
+                select.KQ_FILTER_READ: self._handle_read,
+                select.KQ_FILTER_SIGNAL: self._handle_signal,
+            }
+
+            while self._running:
+                pending = self._kqueue.control(None, 10, 10)
+                for event in pending:
+                    handler = event_handlers.get(event.filter)
+                    if handler:
+                        handler(event)
+                    else:
+                        LOGGER.debug("_event_loop: unknown kevent: %r", event)
+
+        finally:
+            self._kqueue.close()
+            self._server_sock.close()
 
     def _handle_proc(self, event):
         "Handle KQ_FILTER_PROC event."
@@ -179,7 +201,7 @@ class KQueueWorker(threading.Thread):
 
     def _handle_read(self, _event):
         "Handle KQ_FILTER_READ event."
-        self._drain_server_sock()
+        _drain(self._server_sock)
         self._check_queue()
 
     def _handle_signal(self, event):
@@ -206,17 +228,6 @@ class KQueueWorker(threading.Thread):
             LOGGER.error("_check_pid: unregistered pid: %r", pid)
 
         return False
-
-    def _drain_server_sock(self):
-        "Ref: asyncio/selector_events.py#L117."
-        while True:
-            try:
-                if not self._server_sock.recv(4096):
-                    break
-            except InterruptedError:
-                continue
-            except BlockingIOError:
-                break
 
     def _check_queue(self):
         "Check the work queue for new work requests."
@@ -313,10 +324,16 @@ class KQueueWorker(threading.Thread):
         except Exception as ex:  # pylint: disable=broad-except
             LOGGER.error("_add_signal_event: ex=%r", ex)
 
-    @staticmethod
-    def _make_self_pipe():
-        "Return (client, server) socket pair."
-        client, server = socket.socketpair()
-        client.setblocking(False)
-        server.setblocking(False)
-        return (client, server)
+
+def _drain(sock):
+    """Utility function to drain a socket.
+
+    Ref: asyncio/selector_events.py#L117."""
+    while True:
+        try:
+            if not sock.recv(4096):
+                break
+        except InterruptedError:
+            continue
+        except BlockingIOError:
+            break
