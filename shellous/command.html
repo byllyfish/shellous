@@ -1014,7 +1014,7 @@ function to create these, rather than creating them directly.</p></li>
     cancel_timeout: float = 3.0,
     cancel_signal: Optional[signal.Signals] = &lt;Signals.SIGTERM: 15&gt;,
     alt_name: Optional[str] = None,
-    pass_fds: collections.abc.Iterable = (),
+    pass_fds: collections.abc.Iterable[int] = (),
     pass_fds_close: bool = False,
     writable: bool = False,
     _start_new_session: bool = False,
@@ -2130,7 +2130,10 @@ result = await echo
                                         <div class="attr function"><a class="headerlink" href="#Command.__init__">#&nbsp;&nbsp</a>
 
         
-            <span class="name">Command</span><span class="signature">(args: tuple, options: <a href="#Options">shellous.command.Options</a>)</span>
+            <span class="name">Command</span><span class="signature">(
+    args: tuple[typing.Union[str, bytes, os.PathLike], ...],
+    options: <a href="#Options">shellous.command.Options</a>
+)</span>
     </div>
 
         
