@@ -114,8 +114,6 @@ class KQueueWorker(threading.Thread):
 
     """
 
-    # pylint: disable=no-member
-
     def __init__(self):
         "Initialize worker variables and start thread."
         super().__init__(daemon=True)
@@ -158,6 +156,8 @@ class KQueueWorker(threading.Thread):
 
 class KQueueAgent:
     "Agent that watches for child exit kqueue event."
+
+    # pylint: disable=no-member
 
     def __init__(self, work_queue, server_sock):
         "Initialize agent variables."
