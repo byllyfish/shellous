@@ -414,14 +414,21 @@ class EPollAgent:
 
         self._active_pids[pid] = (callback, args)
         if not exists:
-            self._add_pid_event(pid)
+            if not self._add_pid_event(pid):
+                # If pidfd_open failed, check if the process already exited.
+                self._check_pid(pid)
 
     def _add_pid_event(self, pid):
-        "Add epoll that monitors for process exit."
-        pidfd = os.pidfd_open(pid, 0)
+        "Add epoll that monitors for process exit. Return True if successful."
+        try:
+            pidfd = os.pidfd_open(pid, 0)
+        except ProcessLookupError:
+            return False
+
         self._add_read_event(pidfd)
         assert pidfd not in self._pidfds
         self._pidfds[pidfd] = pid
+        return True
 
     def _add_read_event(self, fdesc):
         "Add epoll that monitors for file descriptor wakeup."
