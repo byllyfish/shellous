@@ -422,7 +422,8 @@ class EPollAgent:
         "Add epoll that monitors for process exit. Return True if successful."
         try:
             pidfd = os.pidfd_open(pid, 0)
-        except ProcessLookupError:
+        except ProcessLookupError as ex:
+            LOGGER.error("pidfd_open(%r) failed: ex=%r", pid, ex)
             return False
 
         self._add_read_event(pidfd)
