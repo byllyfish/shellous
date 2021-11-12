@@ -159,11 +159,11 @@ class KQueueAgent:
 
     # pylint: disable=no-member
 
-    def __init__(self, work_queue, server_sock):
+    def __init__(self, work_queue, wakeup_sock):
         "Initialize agent variables."
         self._work_queue = work_queue
-        self._server_sock = server_sock
-        self._server_pids = {}
+        self._wakeup_sock = wakeup_sock
+        self._active_pids = {}
         self._fallback_pids = set()
         self._kqueue = None
         self._running = True
@@ -173,7 +173,7 @@ class KQueueAgent:
         self._kqueue = select.kqueue()
 
         try:
-            self._add_read_event(self._server_sock.fileno())
+            self._add_read_event(self._wakeup_sock.fileno())
             self._add_signal_event(signal.SIGCHLD)
 
             event_handlers = {
@@ -193,7 +193,7 @@ class KQueueAgent:
 
         finally:
             self._kqueue.close()
-            self._server_sock.close()
+            self._wakeup_sock.close()
 
     def _handle_proc(self, event):
         "Handle KQ_FILTER_PROC event."
@@ -201,7 +201,7 @@ class KQueueAgent:
 
     def _handle_read(self, _event):
         "Handle KQ_FILTER_READ event."
-        _drain(self._server_sock)
+        _drain(self._wakeup_sock)
         self._check_queue()
 
     def _handle_signal(self, event):
@@ -211,8 +211,8 @@ class KQueueAgent:
                 self._fallback_pids.remove(pid)
 
     def _check_pid(self, pid):
-        """Called when a process exits."""
-        info = self._server_pids.get(pid, None)
+        """Called when a process exits. Returns true if process exited."""
+        info = self._active_pids.get(pid, None)
         if info:
             callback, args = info
             status = wait_pid(pid)
@@ -222,7 +222,7 @@ class KQueueAgent:
             else:
                 # Invoke callback function here.
                 callback(pid, status, *args)
-                self._server_pids.pop(pid)
+                self._active_pids.pop(pid)
                 return True
         else:
             LOGGER.error("_check_pid: unregistered pid: %r", pid)
@@ -244,27 +244,19 @@ class KQueueAgent:
             pass
 
     def _monitor_pid(self, pid, callback, args):
-        """Add pid and info to our list of pid's to be monitored.
-
-        Return true if we successfully added the pid to kqueue.
-        """
-        if pid in self._server_pids:
+        """Add pid and info to our list of pid's to be monitored."""
+        if pid in self._active_pids:
             LOGGER.warning("_monitor_pid: already monitored? pid=%r", pid)
 
-        self._server_pids[pid] = (callback, args)
-        if self._add_proc_event(pid):
-            return True
-
-        return self._monitor_pid_fallback(pid)
+        self._active_pids[pid] = (callback, args)
+        if not self._add_proc_event(pid):
+            self._monitor_pid_fallback(pid)
 
     def _monitor_pid_fallback(self, pid):
         "Called when _monitor_pid fails to add a kevent."
-        if self._check_pid(pid):
-            return True
-
-        LOGGER.warning("_monitor_pid_fallback: adding fallback pid=%r", pid)
-        self._fallback_pids.add(pid)
-        return False
+        if not self._check_pid(pid):
+            LOGGER.warning("_monitor_pid_fallback: adding fallback pid=%r", pid)
+            self._fallback_pids.add(pid)
 
     def _add_proc_event(self, pid):
         """Add kevent that monitors for process exit.
