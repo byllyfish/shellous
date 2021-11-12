@@ -1,6 +1,7 @@
 "Implements DefaultChildWatcher."
 
 import asyncio
+import os
 import queue
 import select
 import signal
@@ -119,7 +120,10 @@ class KQueueWorker(threading.Thread):
         super().__init__(daemon=True)
         self._work_queue = queue.Queue()
         self._client_sock, server_sock = self._make_self_pipe()
-        self._agent = KQueueAgent(self._work_queue, server_sock)
+        if sys.platform == "linux":
+            self._agent = EPollAgent(self._work_queue, server_sock)
+        else:
+            self._agent = KQueueAgent(self._work_queue, server_sock)
         self.start()
 
     def watch_pid(self, pid, callback, args):
@@ -315,6 +319,121 @@ class KQueueAgent:
 
         except Exception as ex:  # pylint: disable=broad-except
             LOGGER.error("_add_signal_event: ex=%r", ex)
+
+
+class EPollAgent:
+    "Agent that watches for child exit epoll event."
+
+    # pylint: disable=no-member
+
+    def __init__(self, work_queue, wakeup_sock):
+        "Initialize agent variables."
+        self._work_queue = work_queue
+        self._wakeup_sock = wakeup_sock
+        self._active_pids = {}  # pid -> (callback, args)
+        self._pidfds = {}  # pidfd -> pid
+        self._epoll = None
+        self._running = True
+
+    def event_loop(self):
+        "Event loop that handles kqueue events."
+        self._epoll = select.epoll()
+
+        try:
+            self._add_read_event(self._wakeup_sock.fileno())
+
+            while self._running:
+                pending = self._epoll.poll()
+                # Each event is a 2-tuple (fd, events):
+                for fd, events in pending:
+                    assert events == select.EPOLLIN
+                    self._handle_read(fd)
+
+        finally:
+            # FIXME need to close all pidfds...
+            self._epoll.close()
+            self._wakeup_sock.close()
+
+    def _handle_read(self, fdesc):
+        "Handle epoll read event."
+
+        if fdesc == self._wakeup_sock.fileno():
+            _drain(self._wakeup_sock)
+            self._check_queue()
+        else:
+            self._handle_pidfd(fdesc)
+
+    def _handle_pidfd(self, pidfd):
+        "Handle epoll pidfd event."
+        pid = self._pidfds.get(pidfd)
+        if pid is None:
+            LOGGER.warning("Unknown pidfd %r", pidfd)
+            return
+
+        if self._check_pid(pid):
+            self._remove_pidfd_event(pidfd)
+
+    def _check_pid(self, pid):
+        """Called when a process exits. Returns true if process exited."""
+        info = self._active_pids.get(pid, None)
+        if info:
+            callback, args = info
+            status = wait_pid(pid)
+            if status is None:
+                # Process is still running.
+                LOGGER.debug("_check_pid: process still running pid=%r", pid)
+            else:
+                # Invoke callback function here.
+                callback(pid, status, *args)
+                self._active_pids.pop(pid)
+                return True
+        else:
+            LOGGER.error("_check_pid: unregistered pid: %r", pid)
+
+        return False
+
+    def _check_queue(self):
+        "Check the work queue for new work requests."
+        try:
+            while True:
+                pid, callback, args = self._work_queue.get_nowait()
+                if pid is None:
+                    self._running = False
+                    break
+
+                self._monitor_pid(pid, callback, args)
+
+        except queue.Empty:
+            pass
+
+    def _monitor_pid(self, pid, callback, args):
+        """Add pid and info to our list of pid's to be monitored."""
+        exists = pid in self._active_pids
+        if exists:
+            LOGGER.warning("_monitor_pid: already monitored? pid=%r", pid)
+
+        self._active_pids[pid] = (callback, args)
+        if not exists:
+            self._add_pid_event(pid)
+
+    def _add_pid_event(self, pid):
+        "Add epoll that monitors for process exit."
+        pidfd = os.pidfd_open(pid, 0)
+        self._add_read_event(pidfd)
+        assert pidfd not in self._pidfds
+        self._pidfds[pidfd] = pid
+
+    def _add_read_event(self, fdesc):
+        "Add epoll that monitors for file descriptor wakeup."
+        LOGGER.debug("_add_read_event %r", fdesc)
+        self._epoll.register(fdesc, select.EPOLLIN)
+
+    def _remove_pidfd_event(self, fdesc):
+        "Remove epoll that monitors for process exit."
+        LOGGER.debug("_remove_pidfd_event %r", fdesc)
+        del self._pidfds[fdesc]
+        self._epoll.unregister(fdesc)
+        os.close(fdesc)
 
 
 def _drain(sock):
