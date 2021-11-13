@@ -10,7 +10,7 @@ import sys
 import threading
 
 from shellous.log import LOGGER
-from shellous.util import wait_pid
+from shellous.util import close_fds, wait_pid
 
 assert sys.platform != "win32"
 
@@ -359,9 +359,9 @@ class EPollAgent:
                     self._handle_read(fd)
 
         finally:
-            # FIXME need to close all pidfds...
             self._epoll.close()
             self._wakeup_sock.close()
+            close_fds(list(self._pidfds.keys()))
 
     def _handle_read(self, fdesc):
         "Handle epoll read event."
