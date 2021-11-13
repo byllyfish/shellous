@@ -37,7 +37,7 @@ class DefaultChildWatcher(asyncio.AbstractChildWatcher):
         self._worker = None
 
         # Install dummy SIGCHLD signal handler to make EV_FILTER_SIGNAL work.
-        signal.signal(signal.SIGCHLD, lambda *args: None)
+        signal.signal(signal.SIGCHLD, signal.SIG_DFL)
 
     def add_child_handler(self, pid, callback, *args):
         """Register a new child handler.
@@ -96,7 +96,7 @@ class DefaultChildWatcher(asyncio.AbstractChildWatcher):
 
         return self
 
-    def __exit__(self, a, b, c):
+    def __exit__(self, *_args):
         """Exit the watcher's context"""
 
 
@@ -334,6 +334,10 @@ class EPollAgent:
         self._pidfds = {}  # pidfd -> pid
         self._epoll = None
         self._running = True
+
+        assert (
+            signal.getsignal(signal.SIGCHLD) != signal.SIG_IGN
+        ), "pidfd does not work when SIGCHLD set to SIG_IGN"
 
     def event_loop(self):
         "Event loop that handles kqueue events."

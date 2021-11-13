@@ -12,6 +12,7 @@ import shellous
 from shellous.log import log_method
 
 if sys.platform != "win32":
+    from shellous.watcher import DefaultChildWatcher
     from tests.conftest import PatchedMultiLoopChildWatcher
 
 unix_only = pytest.mark.skipif(sys.platform == "win32", reason="Unix")
@@ -91,6 +92,8 @@ def run_in_thread(child_watcher_name="ThreadedChildWatcher"):
         def _wrap(*args, **kwargs):
             if child_watcher_name == "MultiLoopChildWatcher":
                 child_watcher = PatchedMultiLoopChildWatcher()
+            elif child_watcher_name == "DefaultChildWatcher":
+                child_watcher = DefaultChildWatcher()
             else:
                 child_watcher = getattr(asyncio, child_watcher_name)()
             asyncio.set_child_watcher(child_watcher)
@@ -133,6 +136,7 @@ _CHILD_WATCHER_MAP = {
     "safe": "SafeChildWatcher",
     "pidfd": "PidfdChildWatcher",
     "multi": "MultiLoopChildWatcher",
+    "default": "DefaultChildWatcher",
 }
 
 _CW_TYPE = os.environ.get("SHELLOUS_CHILDWATCHER_TYPE", "<unset>")
