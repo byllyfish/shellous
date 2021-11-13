@@ -72,6 +72,30 @@
                 </ul>
 
             </li>
+            <li>
+                    <a class="class" href="#KQueueAgent">KQueueAgent</a>
+                            <ul class="memberlist">
+                        <li>
+                                <a class="function" href="#KQueueAgent.__init__">KQueueAgent</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#KQueueAgent.event_loop">event_loop</a>
+                        </li>
+                </ul>
+
+            </li>
+            <li>
+                    <a class="class" href="#EPollAgent">EPollAgent</a>
+                            <ul class="memberlist">
+                        <li>
+                                <a class="function" href="#EPollAgent.__init__">EPollAgent</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#EPollAgent.event_loop">event_loop</a>
+                        </li>
+                </ul>
+
+            </li>
     </ul>
 
 
@@ -96,6 +120,7 @@
             <div class="codehilite"><pre><span></span><span class="s2">&quot;Implements DefaultChildWatcher.&quot;</span>
 
 <span class="kn">import</span> <span class="nn">asyncio</span>
+<span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">import</span> <span class="nn">queue</span>
 <span class="kn">import</span> <span class="nn">select</span>
 <span class="kn">import</span> <span class="nn">signal</span>
@@ -104,7 +129,7 @@
 <span class="kn">import</span> <span class="nn">threading</span>
 
 <span class="kn">from</span> <span class="nn">shellous.log</span> <span class="kn">import</span> <span class="n">LOGGER</span>
-<span class="kn">from</span> <span class="nn">shellous.util</span> <span class="kn">import</span> <span class="n">wait_pid</span>
+<span class="kn">from</span> <span class="nn">shellous.util</span> <span class="kn">import</span> <span class="n">close_fds</span><span class="p">,</span> <span class="n">wait_pid</span>
 
 <span class="k">assert</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span> <span class="o">!=</span> <span class="s2">&quot;win32&quot;</span>
 
@@ -115,23 +140,24 @@
 
 
 <span class="k">class</span> <span class="nc">DefaultChildWatcher</span><span class="p">(</span><span class="n">asyncio</span><span class="o">.</span><span class="n">AbstractChildWatcher</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Uses kqueue to monitor for exiting child processes.</span>
+    <span class="sd">&quot;&quot;&quot;Uses kqueue/pidfd to monitor for exiting child processes.</span>
 
 <span class="sd">    Design Goals:</span>
 <span class="sd">      1. Independent of any running event loop.</span>
 <span class="sd">      2. Zero-cost until used.</span>
 
 <span class="sd">    Cost: 3 file descriptors and 1 thread.</span>
-
-<span class="sd">    A DefaultChildWatcher must be created on the main thread.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_lock</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Lock</span><span class="p">()</span>  <span class="c1"># guard `self`</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_worker</span> <span class="o">=</span> <span class="kc">None</span>
 
-        <span class="c1"># Install dummy SIGCHLD signal handler to make EV_FILTER_SIGNAL work.</span>
-        <span class="n">signal</span><span class="o">.</span><span class="n">signal</span><span class="p">(</span><span class="n">signal</span><span class="o">.</span><span class="n">SIGCHLD</span><span class="p">,</span> <span class="k">lambda</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="c1"># kqueue/pidfd do not work if SIGCHLD is set to SIG_IGN in the</span>
+        <span class="c1"># signal table. On unix systems, the default action for SIGCHLD is to</span>
+        <span class="c1"># discard the signal; SIG_DFL is compatible and does what we want.</span>
+        <span class="k">if</span> <span class="n">signal</span><span class="o">.</span><span class="n">getsignal</span><span class="p">(</span><span class="n">signal</span><span class="o">.</span><span class="n">SIGCHLD</span><span class="p">)</span> <span class="o">==</span> <span class="n">signal</span><span class="o">.</span><span class="n">SIG_IGN</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;SIGCHLD cannot be set to SIG_IGN&quot;</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">add_child_handler</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pid</span><span class="p">,</span> <span class="n">callback</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Register a new child handler.</span>
@@ -190,7 +216,7 @@
 
         <span class="k">return</span> <span class="bp">self</span>
 
-    <span class="k">def</span> <span class="fm">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">_args</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Exit the watcher&#39;s context&quot;&quot;&quot;</span>
 
 
@@ -209,17 +235,15 @@
 
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="c1"># pylint: disable=no-member</span>
-
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Initialize worker variables and start thread.&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">daemon</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_work_queue</span> <span class="o">=</span> <span class="n">queue</span><span class="o">.</span><span class="n">Queue</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_client_sock</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_server_sock</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_self_pipe</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_server_pids</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_fallback_pids</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_kqueue</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_running</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_client_sock</span><span class="p">,</span> <span class="n">server_sock</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_self_pipe</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span> <span class="o">==</span> <span class="s2">&quot;linux&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_agent</span> <span class="o">=</span> <span class="n">EPollAgent</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_work_queue</span><span class="p">,</span> <span class="n">server_sock</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_agent</span> <span class="o">=</span> <span class="n">KQueueAgent</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_work_queue</span><span class="p">,</span> <span class="n">server_sock</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">watch_pid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pid</span><span class="p">,</span> <span class="n">callback</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
@@ -236,37 +260,68 @@
     <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Override Thread.run().&quot;</span>
         <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;KQWorker starting </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_kqueue</span> <span class="o">=</span> <span class="n">select</span><span class="o">.</span><span class="n">kqueue</span><span class="p">()</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_event_loop</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_agent</span><span class="o">.</span><span class="n">event_loop</span><span class="p">()</span>
         <span class="k">except</span> <span class="ne">BaseException</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>  <span class="c1"># pylint: disable=broad-except</span>
             <span class="n">LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;KQWorker failed </span><span class="si">%s</span><span class="s2"> ex=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="n">ex</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
             <span class="k">raise</span>
         <span class="k">finally</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_kqueue</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_server_sock</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_client_sock</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
             <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;KQWorker stopping </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_event_loop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_make_self_pipe</span><span class="p">():</span>
+        <span class="s2">&quot;Return (client, server) socket pair.&quot;</span>
+        <span class="n">client</span><span class="p">,</span> <span class="n">server</span> <span class="o">=</span> <span class="n">socket</span><span class="o">.</span><span class="n">socketpair</span><span class="p">()</span>
+        <span class="n">client</span><span class="o">.</span><span class="n">setblocking</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">server</span><span class="o">.</span><span class="n">setblocking</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">client</span><span class="p">,</span> <span class="n">server</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">KQueueAgent</span><span class="p">:</span>
+    <span class="s2">&quot;Agent that watches for child exit kqueue event.&quot;</span>
+
+    <span class="c1"># pylint: disable=no-member</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">work_queue</span><span class="p">,</span> <span class="n">wakeup_sock</span><span class="p">):</span>
+        <span class="s2">&quot;Initialize agent variables.&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_work_queue</span> <span class="o">=</span> <span class="n">work_queue</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_wakeup_sock</span> <span class="o">=</span> <span class="n">wakeup_sock</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_active_pids</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_fallback_pids</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_kqueue</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_running</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="k">assert</span> <span class="p">(</span>
+            <span class="n">signal</span><span class="o">.</span><span class="n">getsignal</span><span class="p">(</span><span class="n">signal</span><span class="o">.</span><span class="n">SIGCHLD</span><span class="p">)</span> <span class="o">!=</span> <span class="n">signal</span><span class="o">.</span><span class="n">SIG_IGN</span>
+        <span class="p">),</span> <span class="s2">&quot;kqueue does not work when SIGCHLD set to SIG_IGN&quot;</span>
+
+    <span class="k">def</span> <span class="nf">event_loop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Event loop that handles kqueue events.&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_add_read_event</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_server_sock</span><span class="o">.</span><span class="n">fileno</span><span class="p">())</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_add_signal_event</span><span class="p">(</span><span class="n">signal</span><span class="o">.</span><span class="n">SIGCHLD</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_kqueue</span> <span class="o">=</span> <span class="n">select</span><span class="o">.</span><span class="n">kqueue</span><span class="p">()</span>
 
-        <span class="n">event_handlers</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="n">select</span><span class="o">.</span><span class="n">KQ_FILTER_PROC</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_handle_proc</span><span class="p">,</span>
-            <span class="n">select</span><span class="o">.</span><span class="n">KQ_FILTER_READ</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_handle_read</span><span class="p">,</span>
-            <span class="n">select</span><span class="o">.</span><span class="n">KQ_FILTER_SIGNAL</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_handle_signal</span><span class="p">,</span>
-        <span class="p">}</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_add_read_event</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_wakeup_sock</span><span class="o">.</span><span class="n">fileno</span><span class="p">())</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_add_signal_event</span><span class="p">(</span><span class="n">signal</span><span class="o">.</span><span class="n">SIGCHLD</span><span class="p">)</span>
 
-        <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">_running</span><span class="p">:</span>
-            <span class="n">pending</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kqueue</span><span class="o">.</span><span class="n">control</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
-            <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">pending</span><span class="p">:</span>
-                <span class="n">handler</span> <span class="o">=</span> <span class="n">event_handlers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">filter</span><span class="p">)</span>
-                <span class="k">if</span> <span class="n">handler</span><span class="p">:</span>
-                    <span class="n">handler</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;_event_loop: unknown kevent: </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">event</span><span class="p">)</span>
+            <span class="n">event_handlers</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="n">select</span><span class="o">.</span><span class="n">KQ_FILTER_PROC</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_handle_proc</span><span class="p">,</span>
+                <span class="n">select</span><span class="o">.</span><span class="n">KQ_FILTER_READ</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_handle_read</span><span class="p">,</span>
+                <span class="n">select</span><span class="o">.</span><span class="n">KQ_FILTER_SIGNAL</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_handle_signal</span><span class="p">,</span>
+            <span class="p">}</span>
+
+            <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">_running</span><span class="p">:</span>
+                <span class="n">pending</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kqueue</span><span class="o">.</span><span class="n">control</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">pending</span><span class="p">:</span>
+                    <span class="n">handler</span> <span class="o">=</span> <span class="n">event_handlers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">filter</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">handler</span><span class="p">:</span>
+                        <span class="n">handler</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;_event_loop: unknown kevent: </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">event</span><span class="p">)</span>
+
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_kqueue</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_wakeup_sock</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">_handle_proc</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
         <span class="s2">&quot;Handle KQ_FILTER_PROC event.&quot;</span>
@@ -274,7 +329,7 @@
 
     <span class="k">def</span> <span class="nf">_handle_read</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_event</span><span class="p">):</span>
         <span class="s2">&quot;Handle KQ_FILTER_READ event.&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_drain_server_sock</span><span class="p">()</span>
+        <span class="n">_drain</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_wakeup_sock</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_check_queue</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">_handle_signal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
@@ -284,8 +339,8 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">_fallback_pids</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">pid</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_check_pid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pid</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Called when a process exits.&quot;&quot;&quot;</span>
-        <span class="n">info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_server_pids</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">pid</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="sd">&quot;&quot;&quot;Called when a process exits. Returns true if process exited.&quot;&quot;&quot;</span>
+        <span class="n">info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_active_pids</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">pid</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">info</span><span class="p">:</span>
             <span class="n">callback</span><span class="p">,</span> <span class="n">args</span> <span class="o">=</span> <span class="n">info</span>
             <span class="n">status</span> <span class="o">=</span> <span class="n">wait_pid</span><span class="p">(</span><span class="n">pid</span><span class="p">)</span>
@@ -295,23 +350,12 @@
             <span class="k">else</span><span class="p">:</span>
                 <span class="c1"># Invoke callback function here.</span>
                 <span class="n">callback</span><span class="p">(</span><span class="n">pid</span><span class="p">,</span> <span class="n">status</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_server_pids</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">pid</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_active_pids</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">pid</span><span class="p">)</span>
                 <span class="k">return</span> <span class="kc">True</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;_check_pid: unregistered pid: </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">pid</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="kc">False</span>
-
-    <span class="k">def</span> <span class="nf">_drain_server_sock</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="s2">&quot;Ref: asyncio/selector_events.py#L117.&quot;</span>
-        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
-            <span class="k">try</span><span class="p">:</span>
-                <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_server_sock</span><span class="o">.</span><span class="n">recv</span><span class="p">(</span><span class="mi">4096</span><span class="p">):</span>
-                    <span class="k">break</span>
-            <span class="k">except</span> <span class="ne">InterruptedError</span><span class="p">:</span>
-                <span class="k">continue</span>
-            <span class="k">except</span> <span class="ne">BlockingIOError</span><span class="p">:</span>
-                <span class="k">break</span>
 
     <span class="k">def</span> <span class="nf">_check_queue</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Check the work queue for new work requests.&quot;</span>
@@ -328,27 +372,19 @@
             <span class="k">pass</span>
 
     <span class="k">def</span> <span class="nf">_monitor_pid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pid</span><span class="p">,</span> <span class="n">callback</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Add pid and info to our list of pid&#39;s to be monitored.</span>
-
-<span class="sd">        Return true if we successfully added the pid to kqueue.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="n">pid</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_server_pids</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Add pid and info to our list of pid&#39;s to be monitored.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">pid</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_active_pids</span><span class="p">:</span>
             <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;_monitor_pid: already monitored? pid=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">pid</span><span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">_server_pids</span><span class="p">[</span><span class="n">pid</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">callback</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_add_proc_event</span><span class="p">(</span><span class="n">pid</span><span class="p">):</span>
-            <span class="k">return</span> <span class="kc">True</span>
-
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_monitor_pid_fallback</span><span class="p">(</span><span class="n">pid</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_active_pids</span><span class="p">[</span><span class="n">pid</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">callback</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_add_proc_event</span><span class="p">(</span><span class="n">pid</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_monitor_pid_fallback</span><span class="p">(</span><span class="n">pid</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_monitor_pid_fallback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pid</span><span class="p">):</span>
         <span class="s2">&quot;Called when _monitor_pid fails to add a kevent.&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_pid</span><span class="p">(</span><span class="n">pid</span><span class="p">):</span>
-            <span class="k">return</span> <span class="kc">True</span>
-
-        <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;_monitor_pid_fallback: adding fallback pid=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">pid</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_fallback_pids</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">pid</span><span class="p">)</span>
-        <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_pid</span><span class="p">(</span><span class="n">pid</span><span class="p">):</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;_monitor_pid_fallback: adding fallback pid=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">pid</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_fallback_pids</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">pid</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_add_proc_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pid</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Add kevent that monitors for process exit.</span>
@@ -408,13 +444,152 @@
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>  <span class="c1"># pylint: disable=broad-except</span>
             <span class="n">LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;_add_signal_event: ex=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">ex</span><span class="p">)</span>
 
-    <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">_make_self_pipe</span><span class="p">():</span>
-        <span class="s2">&quot;Return (client, server) socket pair.&quot;</span>
-        <span class="n">client</span><span class="p">,</span> <span class="n">server</span> <span class="o">=</span> <span class="n">socket</span><span class="o">.</span><span class="n">socketpair</span><span class="p">()</span>
-        <span class="n">client</span><span class="o">.</span><span class="n">setblocking</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
-        <span class="n">server</span><span class="o">.</span><span class="n">setblocking</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
-        <span class="k">return</span> <span class="p">(</span><span class="n">client</span><span class="p">,</span> <span class="n">server</span><span class="p">)</span>
+
+<span class="k">class</span> <span class="nc">EPollAgent</span><span class="p">:</span>
+    <span class="s2">&quot;Agent that watches for child exit epoll event.&quot;</span>
+
+    <span class="c1"># pylint: disable=no-member</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">work_queue</span><span class="p">,</span> <span class="n">wakeup_sock</span><span class="p">):</span>
+        <span class="s2">&quot;Initialize agent variables.&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_work_queue</span> <span class="o">=</span> <span class="n">work_queue</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_wakeup_sock</span> <span class="o">=</span> <span class="n">wakeup_sock</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_active_pids</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># pid -&gt; (callback, args)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pidfds</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># pidfd -&gt; pid</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_epoll</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_running</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="k">assert</span> <span class="p">(</span>
+            <span class="n">signal</span><span class="o">.</span><span class="n">getsignal</span><span class="p">(</span><span class="n">signal</span><span class="o">.</span><span class="n">SIGCHLD</span><span class="p">)</span> <span class="o">!=</span> <span class="n">signal</span><span class="o">.</span><span class="n">SIG_IGN</span>
+        <span class="p">),</span> <span class="s2">&quot;pidfd does not work when SIGCHLD set to SIG_IGN&quot;</span>
+
+    <span class="k">def</span> <span class="nf">event_loop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;Event loop that handles kqueue events.&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_epoll</span> <span class="o">=</span> <span class="n">select</span><span class="o">.</span><span class="n">epoll</span><span class="p">()</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_add_read_event</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_wakeup_sock</span><span class="o">.</span><span class="n">fileno</span><span class="p">())</span>
+
+            <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">_running</span><span class="p">:</span>
+                <span class="n">pending</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_epoll</span><span class="o">.</span><span class="n">poll</span><span class="p">()</span>
+                <span class="c1"># Each event is a 2-tuple (fd, events):</span>
+                <span class="k">for</span> <span class="n">fd</span><span class="p">,</span> <span class="n">events</span> <span class="ow">in</span> <span class="n">pending</span><span class="p">:</span>
+                    <span class="k">assert</span> <span class="n">events</span> <span class="o">==</span> <span class="n">select</span><span class="o">.</span><span class="n">EPOLLIN</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_handle_read</span><span class="p">(</span><span class="n">fd</span><span class="p">)</span>
+
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_epoll</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_wakeup_sock</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="n">close_fds</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_pidfds</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
+
+    <span class="k">def</span> <span class="nf">_handle_read</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fdesc</span><span class="p">):</span>
+        <span class="s2">&quot;Handle epoll read event.&quot;</span>
+
+        <span class="k">if</span> <span class="n">fdesc</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wakeup_sock</span><span class="o">.</span><span class="n">fileno</span><span class="p">():</span>
+            <span class="n">_drain</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_wakeup_sock</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_check_queue</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_handle_pidfd</span><span class="p">(</span><span class="n">fdesc</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_handle_pidfd</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pidfd</span><span class="p">):</span>
+        <span class="s2">&quot;Handle epoll pidfd event.&quot;</span>
+        <span class="n">pid</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pidfds</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">pidfd</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">pid</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Unknown pidfd </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">pidfd</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_pid</span><span class="p">(</span><span class="n">pid</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_remove_pidfd_event</span><span class="p">(</span><span class="n">pidfd</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_check_pid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pid</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Called when a process exits. Returns true if process exited.&quot;&quot;&quot;</span>
+        <span class="n">info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_active_pids</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">pid</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">info</span><span class="p">:</span>
+            <span class="n">callback</span><span class="p">,</span> <span class="n">args</span> <span class="o">=</span> <span class="n">info</span>
+            <span class="n">status</span> <span class="o">=</span> <span class="n">wait_pid</span><span class="p">(</span><span class="n">pid</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">status</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="c1"># Process is still running.</span>
+                <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;_check_pid: process still running pid=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">pid</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># Invoke callback function here.</span>
+                <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;_check_pid: Callback for pid </span><span class="si">%r</span><span class="s2">, status </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">pid</span><span class="p">,</span> <span class="n">status</span><span class="p">)</span>
+                <span class="n">callback</span><span class="p">(</span><span class="n">pid</span><span class="p">,</span> <span class="n">status</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_active_pids</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">pid</span><span class="p">)</span>
+                <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;_check_pid: unregistered pid: </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">pid</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="k">def</span> <span class="nf">_check_queue</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;Check the work queue for new work requests.&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+                <span class="n">pid</span><span class="p">,</span> <span class="n">callback</span><span class="p">,</span> <span class="n">args</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_work_queue</span><span class="o">.</span><span class="n">get_nowait</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">pid</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_running</span> <span class="o">=</span> <span class="kc">False</span>
+                    <span class="k">break</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">_monitor_pid</span><span class="p">(</span><span class="n">pid</span><span class="p">,</span> <span class="n">callback</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span>
+
+        <span class="k">except</span> <span class="n">queue</span><span class="o">.</span><span class="n">Empty</span><span class="p">:</span>
+            <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">_monitor_pid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pid</span><span class="p">,</span> <span class="n">callback</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Add pid and info to our list of pid&#39;s to be monitored.&quot;&quot;&quot;</span>
+        <span class="n">exists</span> <span class="o">=</span> <span class="n">pid</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_active_pids</span>
+        <span class="k">if</span> <span class="n">exists</span><span class="p">:</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;_monitor_pid: already monitored? pid=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">pid</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_active_pids</span><span class="p">[</span><span class="n">pid</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">callback</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">exists</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_add_pid_event</span><span class="p">(</span><span class="n">pid</span><span class="p">):</span>
+                <span class="c1"># If pidfd_open failed, check if the process already exited.</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_check_pid</span><span class="p">(</span><span class="n">pid</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_add_pid_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pid</span><span class="p">):</span>
+        <span class="s2">&quot;Add epoll that monitors for process exit. Return True if successful.&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># FIXME: At the moment, this design has the pidfd_open done in</span>
+            <span class="c1"># another thread, after a possible delay. The call should be done</span>
+            <span class="c1"># ASAP after launching the process. If we send a SIGTERM to the</span>
+            <span class="c1"># process before calling pidfd_open, I have seen this pidfd_open</span>
+            <span class="c1"># fail with ProcessLookupError.</span>
+            <span class="n">pidfd</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">pidfd_open</span><span class="p">(</span><span class="n">pid</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">ProcessLookupError</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;pidfd_open(</span><span class="si">%r</span><span class="s2">) failed: ex=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">pid</span><span class="p">,</span> <span class="n">ex</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_add_read_event</span><span class="p">(</span><span class="n">pidfd</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">pidfd</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pidfds</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pidfds</span><span class="p">[</span><span class="n">pidfd</span><span class="p">]</span> <span class="o">=</span> <span class="n">pid</span>
+        <span class="k">return</span> <span class="kc">True</span>
+
+    <span class="k">def</span> <span class="nf">_add_read_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fdesc</span><span class="p">):</span>
+        <span class="s2">&quot;Add epoll that monitors for file descriptor wakeup.&quot;</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;_add_read_event </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">fdesc</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_epoll</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">fdesc</span><span class="p">,</span> <span class="n">select</span><span class="o">.</span><span class="n">EPOLLIN</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_remove_pidfd_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fdesc</span><span class="p">):</span>
+        <span class="s2">&quot;Remove epoll that monitors for process exit.&quot;</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;_remove_pidfd_event </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">fdesc</span><span class="p">)</span>
+        <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pidfds</span><span class="p">[</span><span class="n">fdesc</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_epoll</span><span class="o">.</span><span class="n">unregister</span><span class="p">(</span><span class="n">fdesc</span><span class="p">)</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">fdesc</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_drain</span><span class="p">(</span><span class="n">sock</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Utility function to drain a socket.</span>
+
+<span class="sd">    Ref: asyncio/selector_events.py#L117.&quot;&quot;&quot;</span>
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">sock</span><span class="o">.</span><span class="n">recv</span><span class="p">(</span><span class="mi">4096</span><span class="p">):</span>
+                <span class="k">break</span>
+        <span class="k">except</span> <span class="ne">InterruptedError</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="k">except</span> <span class="ne">BlockingIOError</span><span class="p">:</span>
+            <span class="k">break</span>
 </pre></div>
 
         </details>
@@ -432,23 +607,24 @@
                 <details>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">DefaultChildWatcher</span><span class="p">(</span><span class="n">asyncio</span><span class="o">.</span><span class="n">AbstractChildWatcher</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Uses kqueue to monitor for exiting child processes.</span>
+    <span class="sd">&quot;&quot;&quot;Uses kqueue/pidfd to monitor for exiting child processes.</span>
 
 <span class="sd">    Design Goals:</span>
 <span class="sd">      1. Independent of any running event loop.</span>
 <span class="sd">      2. Zero-cost until used.</span>
 
 <span class="sd">    Cost: 3 file descriptors and 1 thread.</span>
-
-<span class="sd">    A DefaultChildWatcher must be created on the main thread.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_lock</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Lock</span><span class="p">()</span>  <span class="c1"># guard `self`</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_worker</span> <span class="o">=</span> <span class="kc">None</span>
 
-        <span class="c1"># Install dummy SIGCHLD signal handler to make EV_FILTER_SIGNAL work.</span>
-        <span class="n">signal</span><span class="o">.</span><span class="n">signal</span><span class="p">(</span><span class="n">signal</span><span class="o">.</span><span class="n">SIGCHLD</span><span class="p">,</span> <span class="k">lambda</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="c1"># kqueue/pidfd do not work if SIGCHLD is set to SIG_IGN in the</span>
+        <span class="c1"># signal table. On unix systems, the default action for SIGCHLD is to</span>
+        <span class="c1"># discard the signal; SIG_DFL is compatible and does what we want.</span>
+        <span class="k">if</span> <span class="n">signal</span><span class="o">.</span><span class="n">getsignal</span><span class="p">(</span><span class="n">signal</span><span class="o">.</span><span class="n">SIGCHLD</span><span class="p">)</span> <span class="o">==</span> <span class="n">signal</span><span class="o">.</span><span class="n">SIG_IGN</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;SIGCHLD cannot be set to SIG_IGN&quot;</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">add_child_handler</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pid</span><span class="p">,</span> <span class="n">callback</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Register a new child handler.</span>
@@ -507,13 +683,13 @@
 
         <span class="k">return</span> <span class="bp">self</span>
 
-    <span class="k">def</span> <span class="fm">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">_args</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Exit the watcher&#39;s context&quot;&quot;&quot;</span>
 </pre></div>
 
         </details>
 
-            <div class="docstring"><p>Uses kqueue to monitor for exiting child processes.</p>
+            <div class="docstring"><p>Uses kqueue/pidfd to monitor for exiting child processes.</p>
 
 <p>Design Goals:</p>
 
@@ -523,8 +699,6 @@
 </ol>
 
 <p>Cost: 3 file descriptors and 1 thread.</p>
-
-<p>A DefaultChildWatcher must be created on the main thread.</p>
 </div>
 
 
@@ -541,8 +715,11 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_lock</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Lock</span><span class="p">()</span>  <span class="c1"># guard `self`</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_worker</span> <span class="o">=</span> <span class="kc">None</span>
 
-        <span class="c1"># Install dummy SIGCHLD signal handler to make EV_FILTER_SIGNAL work.</span>
-        <span class="n">signal</span><span class="o">.</span><span class="n">signal</span><span class="p">(</span><span class="n">signal</span><span class="o">.</span><span class="n">SIGCHLD</span><span class="p">,</span> <span class="k">lambda</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="c1"># kqueue/pidfd do not work if SIGCHLD is set to SIG_IGN in the</span>
+        <span class="c1"># signal table. On unix systems, the default action for SIGCHLD is to</span>
+        <span class="c1"># discard the signal; SIG_DFL is compatible and does what we want.</span>
+        <span class="k">if</span> <span class="n">signal</span><span class="o">.</span><span class="n">getsignal</span><span class="p">(</span><span class="n">signal</span><span class="o">.</span><span class="n">SIGCHLD</span><span class="p">)</span> <span class="o">==</span> <span class="n">signal</span><span class="o">.</span><span class="n">SIG_IGN</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;SIGCHLD cannot be set to SIG_IGN&quot;</span><span class="p">)</span>
 </pre></div>
 
         </details>
@@ -735,17 +912,15 @@ notifications.</p>
 
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="c1"># pylint: disable=no-member</span>
-
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Initialize worker variables and start thread.&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">daemon</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_work_queue</span> <span class="o">=</span> <span class="n">queue</span><span class="o">.</span><span class="n">Queue</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_client_sock</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_server_sock</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_self_pipe</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_server_pids</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_fallback_pids</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_kqueue</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_running</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_client_sock</span><span class="p">,</span> <span class="n">server_sock</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_self_pipe</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span> <span class="o">==</span> <span class="s2">&quot;linux&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_agent</span> <span class="o">=</span> <span class="n">EPollAgent</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_work_queue</span><span class="p">,</span> <span class="n">server_sock</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_agent</span> <span class="o">=</span> <span class="n">KQueueAgent</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_work_queue</span><span class="p">,</span> <span class="n">server_sock</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">watch_pid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pid</span><span class="p">,</span> <span class="n">callback</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
@@ -762,177 +937,14 @@ notifications.</p>
     <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Override Thread.run().&quot;</span>
         <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;KQWorker starting </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_kqueue</span> <span class="o">=</span> <span class="n">select</span><span class="o">.</span><span class="n">kqueue</span><span class="p">()</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_event_loop</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_agent</span><span class="o">.</span><span class="n">event_loop</span><span class="p">()</span>
         <span class="k">except</span> <span class="ne">BaseException</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>  <span class="c1"># pylint: disable=broad-except</span>
             <span class="n">LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;KQWorker failed </span><span class="si">%s</span><span class="s2"> ex=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="n">ex</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
             <span class="k">raise</span>
         <span class="k">finally</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_kqueue</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_server_sock</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_client_sock</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
             <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;KQWorker stopping </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
-
-    <span class="k">def</span> <span class="nf">_event_loop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="s2">&quot;Event loop that handles kqueue events.&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_add_read_event</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_server_sock</span><span class="o">.</span><span class="n">fileno</span><span class="p">())</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_add_signal_event</span><span class="p">(</span><span class="n">signal</span><span class="o">.</span><span class="n">SIGCHLD</span><span class="p">)</span>
-
-        <span class="n">event_handlers</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="n">select</span><span class="o">.</span><span class="n">KQ_FILTER_PROC</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_handle_proc</span><span class="p">,</span>
-            <span class="n">select</span><span class="o">.</span><span class="n">KQ_FILTER_READ</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_handle_read</span><span class="p">,</span>
-            <span class="n">select</span><span class="o">.</span><span class="n">KQ_FILTER_SIGNAL</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_handle_signal</span><span class="p">,</span>
-        <span class="p">}</span>
-
-        <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">_running</span><span class="p">:</span>
-            <span class="n">pending</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kqueue</span><span class="o">.</span><span class="n">control</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
-            <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">pending</span><span class="p">:</span>
-                <span class="n">handler</span> <span class="o">=</span> <span class="n">event_handlers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">filter</span><span class="p">)</span>
-                <span class="k">if</span> <span class="n">handler</span><span class="p">:</span>
-                    <span class="n">handler</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;_event_loop: unknown kevent: </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">event</span><span class="p">)</span>
-
-    <span class="k">def</span> <span class="nf">_handle_proc</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
-        <span class="s2">&quot;Handle KQ_FILTER_PROC event.&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_check_pid</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">ident</span><span class="p">)</span>
-
-    <span class="k">def</span> <span class="nf">_handle_read</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_event</span><span class="p">):</span>
-        <span class="s2">&quot;Handle KQ_FILTER_READ event.&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_drain_server_sock</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_check_queue</span><span class="p">()</span>
-
-    <span class="k">def</span> <span class="nf">_handle_signal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
-        <span class="s2">&quot;Handle KQ_FILTER_SIGNAL event.&quot;</span>
-        <span class="k">for</span> <span class="n">pid</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_fallback_pids</span><span class="p">):</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_pid</span><span class="p">(</span><span class="n">pid</span><span class="p">):</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_fallback_pids</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">pid</span><span class="p">)</span>
-
-    <span class="k">def</span> <span class="nf">_check_pid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pid</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Called when a process exits.&quot;&quot;&quot;</span>
-        <span class="n">info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_server_pids</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">pid</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">info</span><span class="p">:</span>
-            <span class="n">callback</span><span class="p">,</span> <span class="n">args</span> <span class="o">=</span> <span class="n">info</span>
-            <span class="n">status</span> <span class="o">=</span> <span class="n">wait_pid</span><span class="p">(</span><span class="n">pid</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">status</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="c1"># Process is still running.</span>
-                <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;_check_pid: process still running pid=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">pid</span><span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="c1"># Invoke callback function here.</span>
-                <span class="n">callback</span><span class="p">(</span><span class="n">pid</span><span class="p">,</span> <span class="n">status</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_server_pids</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">pid</span><span class="p">)</span>
-                <span class="k">return</span> <span class="kc">True</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;_check_pid: unregistered pid: </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">pid</span><span class="p">)</span>
-
-        <span class="k">return</span> <span class="kc">False</span>
-
-    <span class="k">def</span> <span class="nf">_drain_server_sock</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="s2">&quot;Ref: asyncio/selector_events.py#L117.&quot;</span>
-        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
-            <span class="k">try</span><span class="p">:</span>
-                <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_server_sock</span><span class="o">.</span><span class="n">recv</span><span class="p">(</span><span class="mi">4096</span><span class="p">):</span>
-                    <span class="k">break</span>
-            <span class="k">except</span> <span class="ne">InterruptedError</span><span class="p">:</span>
-                <span class="k">continue</span>
-            <span class="k">except</span> <span class="ne">BlockingIOError</span><span class="p">:</span>
-                <span class="k">break</span>
-
-    <span class="k">def</span> <span class="nf">_check_queue</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="s2">&quot;Check the work queue for new work requests.&quot;</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
-                <span class="n">pid</span><span class="p">,</span> <span class="n">callback</span><span class="p">,</span> <span class="n">args</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_work_queue</span><span class="o">.</span><span class="n">get_nowait</span><span class="p">()</span>
-                <span class="k">if</span> <span class="n">pid</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">_running</span> <span class="o">=</span> <span class="kc">False</span>
-                    <span class="k">break</span>
-
-                <span class="bp">self</span><span class="o">.</span><span class="n">_monitor_pid</span><span class="p">(</span><span class="n">pid</span><span class="p">,</span> <span class="n">callback</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span>
-
-        <span class="k">except</span> <span class="n">queue</span><span class="o">.</span><span class="n">Empty</span><span class="p">:</span>
-            <span class="k">pass</span>
-
-    <span class="k">def</span> <span class="nf">_monitor_pid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pid</span><span class="p">,</span> <span class="n">callback</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Add pid and info to our list of pid&#39;s to be monitored.</span>
-
-<span class="sd">        Return true if we successfully added the pid to kqueue.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="n">pid</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_server_pids</span><span class="p">:</span>
-            <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;_monitor_pid: already monitored? pid=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">pid</span><span class="p">)</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">_server_pids</span><span class="p">[</span><span class="n">pid</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">callback</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_add_proc_event</span><span class="p">(</span><span class="n">pid</span><span class="p">):</span>
-            <span class="k">return</span> <span class="kc">True</span>
-
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_monitor_pid_fallback</span><span class="p">(</span><span class="n">pid</span><span class="p">)</span>
-
-    <span class="k">def</span> <span class="nf">_monitor_pid_fallback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pid</span><span class="p">):</span>
-        <span class="s2">&quot;Called when _monitor_pid fails to add a kevent.&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_pid</span><span class="p">(</span><span class="n">pid</span><span class="p">):</span>
-            <span class="k">return</span> <span class="kc">True</span>
-
-        <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;_monitor_pid_fallback: adding fallback pid=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">pid</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_fallback_pids</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">pid</span><span class="p">)</span>
-        <span class="k">return</span> <span class="kc">False</span>
-
-    <span class="k">def</span> <span class="nf">_add_proc_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pid</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Add kevent that monitors for process exit.</span>
-
-<span class="sd">        Return true if successful.</span>
-
-<span class="sd">        kevent can return ESRCH (ProcessLookupError) if it doesn&#39;t find the</span>
-<span class="sd">        process ID. If this happens, return false.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">event</span> <span class="o">=</span> <span class="n">select</span><span class="o">.</span><span class="n">kevent</span><span class="p">(</span>
-                <span class="n">ident</span><span class="o">=</span><span class="n">pid</span><span class="p">,</span>
-                <span class="nb">filter</span><span class="o">=</span><span class="n">select</span><span class="o">.</span><span class="n">KQ_FILTER_PROC</span><span class="p">,</span>
-                <span class="n">flags</span><span class="o">=</span><span class="n">select</span><span class="o">.</span><span class="n">KQ_EV_ADD</span>
-                <span class="o">|</span> <span class="n">select</span><span class="o">.</span><span class="n">KQ_EV_ONESHOT</span>
-                <span class="o">|</span> <span class="n">_KQ_EV_RECEIPT</span>
-                <span class="o">|</span> <span class="n">select</span><span class="o">.</span><span class="n">KQ_EV_CLEAR</span><span class="p">,</span>
-                <span class="n">fflags</span><span class="o">=</span><span class="n">select</span><span class="o">.</span><span class="n">KQ_NOTE_EXIT</span><span class="p">,</span>
-            <span class="p">)</span>
-            <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kqueue</span><span class="o">.</span><span class="n">control</span><span class="p">([</span><span class="n">event</span><span class="p">],</span> <span class="mi">0</span><span class="p">)</span>
-            <span class="k">assert</span> <span class="n">result</span> <span class="o">==</span> <span class="p">[]</span>
-            <span class="k">return</span> <span class="kc">True</span>
-
-        <span class="k">except</span> <span class="ne">ProcessLookupError</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>
-            <span class="c1"># Process already exited, or kqueue random failure.</span>
-            <span class="k">return</span> <span class="kc">False</span>
-
-        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>  <span class="c1"># pylint: disable=broad-except</span>
-            <span class="n">LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;_add_proc_event: ex=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">ex</span><span class="p">)</span>
-            <span class="k">raise</span>
-
-    <span class="k">def</span> <span class="nf">_add_read_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fdesc</span><span class="p">):</span>
-        <span class="s2">&quot;Add kevent that monitors for file descriptor wakeup.&quot;</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">event</span> <span class="o">=</span> <span class="n">select</span><span class="o">.</span><span class="n">kevent</span><span class="p">(</span>
-                <span class="n">ident</span><span class="o">=</span><span class="n">fdesc</span><span class="p">,</span>
-                <span class="nb">filter</span><span class="o">=</span><span class="n">select</span><span class="o">.</span><span class="n">KQ_FILTER_READ</span><span class="p">,</span>
-                <span class="n">flags</span><span class="o">=</span><span class="n">select</span><span class="o">.</span><span class="n">KQ_EV_ADD</span><span class="p">,</span>
-            <span class="p">)</span>
-            <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kqueue</span><span class="o">.</span><span class="n">control</span><span class="p">([</span><span class="n">event</span><span class="p">],</span> <span class="mi">0</span><span class="p">)</span>
-            <span class="k">assert</span> <span class="n">result</span> <span class="o">==</span> <span class="p">[]</span>
-
-        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>  <span class="c1"># pylint: disable=broad-except</span>
-            <span class="n">LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;_add_read_event: ex=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">ex</span><span class="p">)</span>
-
-    <span class="k">def</span> <span class="nf">_add_signal_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">signo</span><span class="p">):</span>
-        <span class="s2">&quot;Add kevent that monitors for signals.&quot;</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">event</span> <span class="o">=</span> <span class="n">select</span><span class="o">.</span><span class="n">kevent</span><span class="p">(</span>
-                <span class="n">ident</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">signo</span><span class="p">),</span>
-                <span class="nb">filter</span><span class="o">=</span><span class="n">select</span><span class="o">.</span><span class="n">KQ_FILTER_SIGNAL</span><span class="p">,</span>
-                <span class="n">flags</span><span class="o">=</span><span class="n">select</span><span class="o">.</span><span class="n">KQ_EV_ADD</span><span class="p">,</span>
-            <span class="p">)</span>
-            <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kqueue</span><span class="o">.</span><span class="n">control</span><span class="p">([</span><span class="n">event</span><span class="p">],</span> <span class="mi">0</span><span class="p">)</span>
-            <span class="k">assert</span> <span class="n">result</span> <span class="o">==</span> <span class="p">[]</span>
-
-        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>  <span class="c1"># pylint: disable=broad-except</span>
-            <span class="n">LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;_add_signal_event: ex=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">ex</span><span class="p">)</span>
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">_make_self_pipe</span><span class="p">():</span>
@@ -975,11 +987,11 @@ handler that catches SIGCHLD.</p>
         <span class="s2">&quot;Initialize worker variables and start thread.&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">daemon</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_work_queue</span> <span class="o">=</span> <span class="n">queue</span><span class="o">.</span><span class="n">Queue</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_client_sock</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_server_sock</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_self_pipe</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_server_pids</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_fallback_pids</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_kqueue</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_running</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_client_sock</span><span class="p">,</span> <span class="n">server_sock</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_self_pipe</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span> <span class="o">==</span> <span class="s2">&quot;linux&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_agent</span> <span class="o">=</span> <span class="n">EPollAgent</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_work_queue</span><span class="p">,</span> <span class="n">server_sock</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_agent</span> <span class="o">=</span> <span class="n">KQueueAgent</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_work_queue</span><span class="p">,</span> <span class="n">server_sock</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
 </pre></div>
 
@@ -1050,15 +1062,12 @@ handler that catches SIGCHLD.</p>
             <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Override Thread.run().&quot;</span>
         <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;KQWorker starting </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_kqueue</span> <span class="o">=</span> <span class="n">select</span><span class="o">.</span><span class="n">kqueue</span><span class="p">()</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_event_loop</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_agent</span><span class="o">.</span><span class="n">event_loop</span><span class="p">()</span>
         <span class="k">except</span> <span class="ne">BaseException</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>  <span class="c1"># pylint: disable=broad-except</span>
             <span class="n">LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;KQWorker failed </span><span class="si">%s</span><span class="s2"> ex=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="n">ex</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
             <span class="k">raise</span>
         <span class="k">finally</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_kqueue</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_server_sock</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_client_sock</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
             <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;KQWorker stopping </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
 </pre></div>
@@ -1088,6 +1097,484 @@ handler that catches SIGCHLD.</p>
 
             </div>
                                 </dl>
+                            </div>
+                </section>
+                <section id="KQueueAgent">
+                                <div class="attr class">
+        <a class="headerlink" href="#KQueueAgent">#&nbsp;&nbsp</a>
+
+        
+        <span class="def">class</span>
+        <span class="name">KQueueAgent</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">KQueueAgent</span><span class="p">:</span>
+    <span class="s2">&quot;Agent that watches for child exit kqueue event.&quot;</span>
+
+    <span class="c1"># pylint: disable=no-member</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">work_queue</span><span class="p">,</span> <span class="n">wakeup_sock</span><span class="p">):</span>
+        <span class="s2">&quot;Initialize agent variables.&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_work_queue</span> <span class="o">=</span> <span class="n">work_queue</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_wakeup_sock</span> <span class="o">=</span> <span class="n">wakeup_sock</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_active_pids</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_fallback_pids</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_kqueue</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_running</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="k">assert</span> <span class="p">(</span>
+            <span class="n">signal</span><span class="o">.</span><span class="n">getsignal</span><span class="p">(</span><span class="n">signal</span><span class="o">.</span><span class="n">SIGCHLD</span><span class="p">)</span> <span class="o">!=</span> <span class="n">signal</span><span class="o">.</span><span class="n">SIG_IGN</span>
+        <span class="p">),</span> <span class="s2">&quot;kqueue does not work when SIGCHLD set to SIG_IGN&quot;</span>
+
+    <span class="k">def</span> <span class="nf">event_loop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;Event loop that handles kqueue events.&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_kqueue</span> <span class="o">=</span> <span class="n">select</span><span class="o">.</span><span class="n">kqueue</span><span class="p">()</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_add_read_event</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_wakeup_sock</span><span class="o">.</span><span class="n">fileno</span><span class="p">())</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_add_signal_event</span><span class="p">(</span><span class="n">signal</span><span class="o">.</span><span class="n">SIGCHLD</span><span class="p">)</span>
+
+            <span class="n">event_handlers</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="n">select</span><span class="o">.</span><span class="n">KQ_FILTER_PROC</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_handle_proc</span><span class="p">,</span>
+                <span class="n">select</span><span class="o">.</span><span class="n">KQ_FILTER_READ</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_handle_read</span><span class="p">,</span>
+                <span class="n">select</span><span class="o">.</span><span class="n">KQ_FILTER_SIGNAL</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_handle_signal</span><span class="p">,</span>
+            <span class="p">}</span>
+
+            <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">_running</span><span class="p">:</span>
+                <span class="n">pending</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kqueue</span><span class="o">.</span><span class="n">control</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">pending</span><span class="p">:</span>
+                    <span class="n">handler</span> <span class="o">=</span> <span class="n">event_handlers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">filter</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">handler</span><span class="p">:</span>
+                        <span class="n">handler</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;_event_loop: unknown kevent: </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">event</span><span class="p">)</span>
+
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_kqueue</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_wakeup_sock</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_handle_proc</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+        <span class="s2">&quot;Handle KQ_FILTER_PROC event.&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_check_pid</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">ident</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_handle_read</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_event</span><span class="p">):</span>
+        <span class="s2">&quot;Handle KQ_FILTER_READ event.&quot;</span>
+        <span class="n">_drain</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_wakeup_sock</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_check_queue</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_handle_signal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+        <span class="s2">&quot;Handle KQ_FILTER_SIGNAL event.&quot;</span>
+        <span class="k">for</span> <span class="n">pid</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_fallback_pids</span><span class="p">):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_pid</span><span class="p">(</span><span class="n">pid</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_fallback_pids</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">pid</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_check_pid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pid</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Called when a process exits. Returns true if process exited.&quot;&quot;&quot;</span>
+        <span class="n">info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_active_pids</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">pid</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">info</span><span class="p">:</span>
+            <span class="n">callback</span><span class="p">,</span> <span class="n">args</span> <span class="o">=</span> <span class="n">info</span>
+            <span class="n">status</span> <span class="o">=</span> <span class="n">wait_pid</span><span class="p">(</span><span class="n">pid</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">status</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="c1"># Process is still running.</span>
+                <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;_check_pid: process still running pid=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">pid</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># Invoke callback function here.</span>
+                <span class="n">callback</span><span class="p">(</span><span class="n">pid</span><span class="p">,</span> <span class="n">status</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_active_pids</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">pid</span><span class="p">)</span>
+                <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;_check_pid: unregistered pid: </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">pid</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="k">def</span> <span class="nf">_check_queue</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;Check the work queue for new work requests.&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+                <span class="n">pid</span><span class="p">,</span> <span class="n">callback</span><span class="p">,</span> <span class="n">args</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_work_queue</span><span class="o">.</span><span class="n">get_nowait</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">pid</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_running</span> <span class="o">=</span> <span class="kc">False</span>
+                    <span class="k">break</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">_monitor_pid</span><span class="p">(</span><span class="n">pid</span><span class="p">,</span> <span class="n">callback</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span>
+
+        <span class="k">except</span> <span class="n">queue</span><span class="o">.</span><span class="n">Empty</span><span class="p">:</span>
+            <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">_monitor_pid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pid</span><span class="p">,</span> <span class="n">callback</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Add pid and info to our list of pid&#39;s to be monitored.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">pid</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_active_pids</span><span class="p">:</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;_monitor_pid: already monitored? pid=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">pid</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_active_pids</span><span class="p">[</span><span class="n">pid</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">callback</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_add_proc_event</span><span class="p">(</span><span class="n">pid</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_monitor_pid_fallback</span><span class="p">(</span><span class="n">pid</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_monitor_pid_fallback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pid</span><span class="p">):</span>
+        <span class="s2">&quot;Called when _monitor_pid fails to add a kevent.&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_pid</span><span class="p">(</span><span class="n">pid</span><span class="p">):</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;_monitor_pid_fallback: adding fallback pid=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">pid</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_fallback_pids</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">pid</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_add_proc_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pid</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Add kevent that monitors for process exit.</span>
+
+<span class="sd">        Return true if successful.</span>
+
+<span class="sd">        kevent can return ESRCH (ProcessLookupError) if it doesn&#39;t find the</span>
+<span class="sd">        process ID. If this happens, return false.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">event</span> <span class="o">=</span> <span class="n">select</span><span class="o">.</span><span class="n">kevent</span><span class="p">(</span>
+                <span class="n">ident</span><span class="o">=</span><span class="n">pid</span><span class="p">,</span>
+                <span class="nb">filter</span><span class="o">=</span><span class="n">select</span><span class="o">.</span><span class="n">KQ_FILTER_PROC</span><span class="p">,</span>
+                <span class="n">flags</span><span class="o">=</span><span class="n">select</span><span class="o">.</span><span class="n">KQ_EV_ADD</span>
+                <span class="o">|</span> <span class="n">select</span><span class="o">.</span><span class="n">KQ_EV_ONESHOT</span>
+                <span class="o">|</span> <span class="n">_KQ_EV_RECEIPT</span>
+                <span class="o">|</span> <span class="n">select</span><span class="o">.</span><span class="n">KQ_EV_CLEAR</span><span class="p">,</span>
+                <span class="n">fflags</span><span class="o">=</span><span class="n">select</span><span class="o">.</span><span class="n">KQ_NOTE_EXIT</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kqueue</span><span class="o">.</span><span class="n">control</span><span class="p">([</span><span class="n">event</span><span class="p">],</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="k">assert</span> <span class="n">result</span> <span class="o">==</span> <span class="p">[]</span>
+            <span class="k">return</span> <span class="kc">True</span>
+
+        <span class="k">except</span> <span class="ne">ProcessLookupError</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>
+            <span class="c1"># Process already exited, or kqueue random failure.</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>  <span class="c1"># pylint: disable=broad-except</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;_add_proc_event: ex=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">ex</span><span class="p">)</span>
+            <span class="k">raise</span>
+
+    <span class="k">def</span> <span class="nf">_add_read_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fdesc</span><span class="p">):</span>
+        <span class="s2">&quot;Add kevent that monitors for file descriptor wakeup.&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">event</span> <span class="o">=</span> <span class="n">select</span><span class="o">.</span><span class="n">kevent</span><span class="p">(</span>
+                <span class="n">ident</span><span class="o">=</span><span class="n">fdesc</span><span class="p">,</span>
+                <span class="nb">filter</span><span class="o">=</span><span class="n">select</span><span class="o">.</span><span class="n">KQ_FILTER_READ</span><span class="p">,</span>
+                <span class="n">flags</span><span class="o">=</span><span class="n">select</span><span class="o">.</span><span class="n">KQ_EV_ADD</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kqueue</span><span class="o">.</span><span class="n">control</span><span class="p">([</span><span class="n">event</span><span class="p">],</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="k">assert</span> <span class="n">result</span> <span class="o">==</span> <span class="p">[]</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>  <span class="c1"># pylint: disable=broad-except</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;_add_read_event: ex=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">ex</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_add_signal_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">signo</span><span class="p">):</span>
+        <span class="s2">&quot;Add kevent that monitors for signals.&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">event</span> <span class="o">=</span> <span class="n">select</span><span class="o">.</span><span class="n">kevent</span><span class="p">(</span>
+                <span class="n">ident</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">signo</span><span class="p">),</span>
+                <span class="nb">filter</span><span class="o">=</span><span class="n">select</span><span class="o">.</span><span class="n">KQ_FILTER_SIGNAL</span><span class="p">,</span>
+                <span class="n">flags</span><span class="o">=</span><span class="n">select</span><span class="o">.</span><span class="n">KQ_EV_ADD</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kqueue</span><span class="o">.</span><span class="n">control</span><span class="p">([</span><span class="n">event</span><span class="p">],</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="k">assert</span> <span class="n">result</span> <span class="o">==</span> <span class="p">[]</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>  <span class="c1"># pylint: disable=broad-except</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;_add_signal_event: ex=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">ex</span><span class="p">)</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Agent that watches for child exit kqueue event.</p>
+</div>
+
+
+                            <div id="KQueueAgent.__init__" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#KQueueAgent.__init__">#&nbsp;&nbsp</a>
+
+        
+            <span class="name">KQueueAgent</span><span class="signature">(work_queue, wakeup_sock)</span>
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">work_queue</span><span class="p">,</span> <span class="n">wakeup_sock</span><span class="p">):</span>
+        <span class="s2">&quot;Initialize agent variables.&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_work_queue</span> <span class="o">=</span> <span class="n">work_queue</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_wakeup_sock</span> <span class="o">=</span> <span class="n">wakeup_sock</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_active_pids</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_fallback_pids</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_kqueue</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_running</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="k">assert</span> <span class="p">(</span>
+            <span class="n">signal</span><span class="o">.</span><span class="n">getsignal</span><span class="p">(</span><span class="n">signal</span><span class="o">.</span><span class="n">SIGCHLD</span><span class="p">)</span> <span class="o">!=</span> <span class="n">signal</span><span class="o">.</span><span class="n">SIG_IGN</span>
+        <span class="p">),</span> <span class="s2">&quot;kqueue does not work when SIGCHLD set to SIG_IGN&quot;</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Initialize agent variables.</p>
+</div>
+
+
+                            </div>
+                            <div id="KQueueAgent.event_loop" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#KQueueAgent.event_loop">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">event_loop</span><span class="signature">(self)</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">event_loop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;Event loop that handles kqueue events.&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_kqueue</span> <span class="o">=</span> <span class="n">select</span><span class="o">.</span><span class="n">kqueue</span><span class="p">()</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_add_read_event</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_wakeup_sock</span><span class="o">.</span><span class="n">fileno</span><span class="p">())</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_add_signal_event</span><span class="p">(</span><span class="n">signal</span><span class="o">.</span><span class="n">SIGCHLD</span><span class="p">)</span>
+
+            <span class="n">event_handlers</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="n">select</span><span class="o">.</span><span class="n">KQ_FILTER_PROC</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_handle_proc</span><span class="p">,</span>
+                <span class="n">select</span><span class="o">.</span><span class="n">KQ_FILTER_READ</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_handle_read</span><span class="p">,</span>
+                <span class="n">select</span><span class="o">.</span><span class="n">KQ_FILTER_SIGNAL</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_handle_signal</span><span class="p">,</span>
+            <span class="p">}</span>
+
+            <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">_running</span><span class="p">:</span>
+                <span class="n">pending</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kqueue</span><span class="o">.</span><span class="n">control</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">pending</span><span class="p">:</span>
+                    <span class="n">handler</span> <span class="o">=</span> <span class="n">event_handlers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">filter</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">handler</span><span class="p">:</span>
+                        <span class="n">handler</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;_event_loop: unknown kevent: </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">event</span><span class="p">)</span>
+
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_kqueue</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_wakeup_sock</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Event loop that handles kqueue events.</p>
+</div>
+
+
+                            </div>
+                </section>
+                <section id="EPollAgent">
+                                <div class="attr class">
+        <a class="headerlink" href="#EPollAgent">#&nbsp;&nbsp</a>
+
+        
+        <span class="def">class</span>
+        <span class="name">EPollAgent</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">EPollAgent</span><span class="p">:</span>
+    <span class="s2">&quot;Agent that watches for child exit epoll event.&quot;</span>
+
+    <span class="c1"># pylint: disable=no-member</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">work_queue</span><span class="p">,</span> <span class="n">wakeup_sock</span><span class="p">):</span>
+        <span class="s2">&quot;Initialize agent variables.&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_work_queue</span> <span class="o">=</span> <span class="n">work_queue</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_wakeup_sock</span> <span class="o">=</span> <span class="n">wakeup_sock</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_active_pids</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># pid -&gt; (callback, args)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pidfds</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># pidfd -&gt; pid</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_epoll</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_running</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="k">assert</span> <span class="p">(</span>
+            <span class="n">signal</span><span class="o">.</span><span class="n">getsignal</span><span class="p">(</span><span class="n">signal</span><span class="o">.</span><span class="n">SIGCHLD</span><span class="p">)</span> <span class="o">!=</span> <span class="n">signal</span><span class="o">.</span><span class="n">SIG_IGN</span>
+        <span class="p">),</span> <span class="s2">&quot;pidfd does not work when SIGCHLD set to SIG_IGN&quot;</span>
+
+    <span class="k">def</span> <span class="nf">event_loop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;Event loop that handles kqueue events.&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_epoll</span> <span class="o">=</span> <span class="n">select</span><span class="o">.</span><span class="n">epoll</span><span class="p">()</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_add_read_event</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_wakeup_sock</span><span class="o">.</span><span class="n">fileno</span><span class="p">())</span>
+
+            <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">_running</span><span class="p">:</span>
+                <span class="n">pending</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_epoll</span><span class="o">.</span><span class="n">poll</span><span class="p">()</span>
+                <span class="c1"># Each event is a 2-tuple (fd, events):</span>
+                <span class="k">for</span> <span class="n">fd</span><span class="p">,</span> <span class="n">events</span> <span class="ow">in</span> <span class="n">pending</span><span class="p">:</span>
+                    <span class="k">assert</span> <span class="n">events</span> <span class="o">==</span> <span class="n">select</span><span class="o">.</span><span class="n">EPOLLIN</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_handle_read</span><span class="p">(</span><span class="n">fd</span><span class="p">)</span>
+
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_epoll</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_wakeup_sock</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="n">close_fds</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_pidfds</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
+
+    <span class="k">def</span> <span class="nf">_handle_read</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fdesc</span><span class="p">):</span>
+        <span class="s2">&quot;Handle epoll read event.&quot;</span>
+
+        <span class="k">if</span> <span class="n">fdesc</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wakeup_sock</span><span class="o">.</span><span class="n">fileno</span><span class="p">():</span>
+            <span class="n">_drain</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_wakeup_sock</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_check_queue</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_handle_pidfd</span><span class="p">(</span><span class="n">fdesc</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_handle_pidfd</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pidfd</span><span class="p">):</span>
+        <span class="s2">&quot;Handle epoll pidfd event.&quot;</span>
+        <span class="n">pid</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pidfds</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">pidfd</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">pid</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Unknown pidfd </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">pidfd</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_pid</span><span class="p">(</span><span class="n">pid</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_remove_pidfd_event</span><span class="p">(</span><span class="n">pidfd</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_check_pid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pid</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Called when a process exits. Returns true if process exited.&quot;&quot;&quot;</span>
+        <span class="n">info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_active_pids</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">pid</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">info</span><span class="p">:</span>
+            <span class="n">callback</span><span class="p">,</span> <span class="n">args</span> <span class="o">=</span> <span class="n">info</span>
+            <span class="n">status</span> <span class="o">=</span> <span class="n">wait_pid</span><span class="p">(</span><span class="n">pid</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">status</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="c1"># Process is still running.</span>
+                <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;_check_pid: process still running pid=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">pid</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># Invoke callback function here.</span>
+                <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;_check_pid: Callback for pid </span><span class="si">%r</span><span class="s2">, status </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">pid</span><span class="p">,</span> <span class="n">status</span><span class="p">)</span>
+                <span class="n">callback</span><span class="p">(</span><span class="n">pid</span><span class="p">,</span> <span class="n">status</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_active_pids</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">pid</span><span class="p">)</span>
+                <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;_check_pid: unregistered pid: </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">pid</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="k">def</span> <span class="nf">_check_queue</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;Check the work queue for new work requests.&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+                <span class="n">pid</span><span class="p">,</span> <span class="n">callback</span><span class="p">,</span> <span class="n">args</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_work_queue</span><span class="o">.</span><span class="n">get_nowait</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">pid</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_running</span> <span class="o">=</span> <span class="kc">False</span>
+                    <span class="k">break</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">_monitor_pid</span><span class="p">(</span><span class="n">pid</span><span class="p">,</span> <span class="n">callback</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span>
+
+        <span class="k">except</span> <span class="n">queue</span><span class="o">.</span><span class="n">Empty</span><span class="p">:</span>
+            <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">_monitor_pid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pid</span><span class="p">,</span> <span class="n">callback</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Add pid and info to our list of pid&#39;s to be monitored.&quot;&quot;&quot;</span>
+        <span class="n">exists</span> <span class="o">=</span> <span class="n">pid</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_active_pids</span>
+        <span class="k">if</span> <span class="n">exists</span><span class="p">:</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;_monitor_pid: already monitored? pid=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">pid</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_active_pids</span><span class="p">[</span><span class="n">pid</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">callback</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">exists</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_add_pid_event</span><span class="p">(</span><span class="n">pid</span><span class="p">):</span>
+                <span class="c1"># If pidfd_open failed, check if the process already exited.</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_check_pid</span><span class="p">(</span><span class="n">pid</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_add_pid_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pid</span><span class="p">):</span>
+        <span class="s2">&quot;Add epoll that monitors for process exit. Return True if successful.&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># FIXME: At the moment, this design has the pidfd_open done in</span>
+            <span class="c1"># another thread, after a possible delay. The call should be done</span>
+            <span class="c1"># ASAP after launching the process. If we send a SIGTERM to the</span>
+            <span class="c1"># process before calling pidfd_open, I have seen this pidfd_open</span>
+            <span class="c1"># fail with ProcessLookupError.</span>
+            <span class="n">pidfd</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">pidfd_open</span><span class="p">(</span><span class="n">pid</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">ProcessLookupError</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;pidfd_open(</span><span class="si">%r</span><span class="s2">) failed: ex=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">pid</span><span class="p">,</span> <span class="n">ex</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_add_read_event</span><span class="p">(</span><span class="n">pidfd</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">pidfd</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pidfds</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pidfds</span><span class="p">[</span><span class="n">pidfd</span><span class="p">]</span> <span class="o">=</span> <span class="n">pid</span>
+        <span class="k">return</span> <span class="kc">True</span>
+
+    <span class="k">def</span> <span class="nf">_add_read_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fdesc</span><span class="p">):</span>
+        <span class="s2">&quot;Add epoll that monitors for file descriptor wakeup.&quot;</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;_add_read_event </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">fdesc</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_epoll</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">fdesc</span><span class="p">,</span> <span class="n">select</span><span class="o">.</span><span class="n">EPOLLIN</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_remove_pidfd_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fdesc</span><span class="p">):</span>
+        <span class="s2">&quot;Remove epoll that monitors for process exit.&quot;</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;_remove_pidfd_event </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">fdesc</span><span class="p">)</span>
+        <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pidfds</span><span class="p">[</span><span class="n">fdesc</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_epoll</span><span class="o">.</span><span class="n">unregister</span><span class="p">(</span><span class="n">fdesc</span><span class="p">)</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">fdesc</span><span class="p">)</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Agent that watches for child exit epoll event.</p>
+</div>
+
+
+                            <div id="EPollAgent.__init__" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#EPollAgent.__init__">#&nbsp;&nbsp</a>
+
+        
+            <span class="name">EPollAgent</span><span class="signature">(work_queue, wakeup_sock)</span>
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">work_queue</span><span class="p">,</span> <span class="n">wakeup_sock</span><span class="p">):</span>
+        <span class="s2">&quot;Initialize agent variables.&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_work_queue</span> <span class="o">=</span> <span class="n">work_queue</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_wakeup_sock</span> <span class="o">=</span> <span class="n">wakeup_sock</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_active_pids</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># pid -&gt; (callback, args)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pidfds</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># pidfd -&gt; pid</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_epoll</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_running</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="k">assert</span> <span class="p">(</span>
+            <span class="n">signal</span><span class="o">.</span><span class="n">getsignal</span><span class="p">(</span><span class="n">signal</span><span class="o">.</span><span class="n">SIGCHLD</span><span class="p">)</span> <span class="o">!=</span> <span class="n">signal</span><span class="o">.</span><span class="n">SIG_IGN</span>
+        <span class="p">),</span> <span class="s2">&quot;pidfd does not work when SIGCHLD set to SIG_IGN&quot;</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Initialize agent variables.</p>
+</div>
+
+
+                            </div>
+                            <div id="EPollAgent.event_loop" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#EPollAgent.event_loop">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">event_loop</span><span class="signature">(self)</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">event_loop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;Event loop that handles kqueue events.&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_epoll</span> <span class="o">=</span> <span class="n">select</span><span class="o">.</span><span class="n">epoll</span><span class="p">()</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_add_read_event</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_wakeup_sock</span><span class="o">.</span><span class="n">fileno</span><span class="p">())</span>
+
+            <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">_running</span><span class="p">:</span>
+                <span class="n">pending</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_epoll</span><span class="o">.</span><span class="n">poll</span><span class="p">()</span>
+                <span class="c1"># Each event is a 2-tuple (fd, events):</span>
+                <span class="k">for</span> <span class="n">fd</span><span class="p">,</span> <span class="n">events</span> <span class="ow">in</span> <span class="n">pending</span><span class="p">:</span>
+                    <span class="k">assert</span> <span class="n">events</span> <span class="o">==</span> <span class="n">select</span><span class="o">.</span><span class="n">EPOLLIN</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_handle_read</span><span class="p">(</span><span class="n">fd</span><span class="p">)</span>
+
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_epoll</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_wakeup_sock</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="n">close_fds</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_pidfds</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Event loop that handles kqueue events.</p>
+</div>
+
+
                             </div>
                 </section>
     </main>
