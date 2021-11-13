@@ -21,15 +21,13 @@ else:
 
 
 class DefaultChildWatcher(asyncio.AbstractChildWatcher):
-    """Uses kqueue to monitor for exiting child processes.
+    """Uses kqueue/pidfd to monitor for exiting child processes.
 
     Design Goals:
       1. Independent of any running event loop.
       2. Zero-cost until used.
 
     Cost: 3 file descriptors and 1 thread.
-
-    A DefaultChildWatcher must be created on the main thread.
     """
 
     def __init__(self):
@@ -38,9 +36,9 @@ class DefaultChildWatcher(asyncio.AbstractChildWatcher):
 
         # kqueue/pidfd do not work if SIGCHLD is set to SIG_IGN in the
         # signal table. On unix systems, the default action for SIGCHLD is to
-        # discard the signal; this is compatible and does what we want.
+        # discard the signal; SIG_DFL is compatible and does what we want.
         if signal.getsignal(signal.SIGCHLD) == signal.SIG_IGN:
-            signal.signal(signal.SIGCHLD, signal.SIG_DFL)
+            raise RuntimeError("SIGCHLD cannot be set to SIG_IGN")
 
     def add_child_handler(self, pid, callback, *args):
         """Register a new child handler.
@@ -395,6 +393,7 @@ class EPollAgent:
                 LOGGER.debug("_check_pid: process still running pid=%r", pid)
             else:
                 # Invoke callback function here.
+                LOGGER.debug("_check_pid: Callback for pid %r, status %r", pid, status)
                 callback(pid, status, *args)
                 self._active_pids.pop(pid)
                 return True
@@ -432,6 +431,11 @@ class EPollAgent:
     def _add_pid_event(self, pid):
         "Add epoll that monitors for process exit. Return True if successful."
         try:
+            # FIXME: At the moment, this design has the pidfd_open done in
+            # another thread, after a possible delay. The call should be done
+            # ASAP after launching the process. If we send a SIGTERM to the
+            # process before calling pidfd_open, I have seen this pidfd_open
+            # fail with ProcessLookupError.
             pidfd = os.pidfd_open(pid, 0)
         except ProcessLookupError as ex:
             LOGGER.error("pidfd_open(%r) failed: ex=%r", pid, ex)
