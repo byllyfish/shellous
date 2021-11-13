@@ -36,8 +36,11 @@ class DefaultChildWatcher(asyncio.AbstractChildWatcher):
         self._lock = threading.Lock()  # guard `self`
         self._worker = None
 
-        # Install dummy SIGCHLD signal handler to make EV_FILTER_SIGNAL work.
-        signal.signal(signal.SIGCHLD, signal.SIG_DFL)
+        # kqueue/pidfd do not work if SIGCHLD is set to SIG_IGN in the
+        # signal table. On unix systems, the default action for SIGCHLD is to
+        # discard the signal; this is compatible and does what we want.
+        if signal.getsignal(signal.SIGCHLD) == signal.SIG_IGN:
+            signal.signal(signal.SIGCHLD, signal.SIG_DFL)
 
     def add_child_handler(self, pid, callback, *args):
         """Register a new child handler.
@@ -171,6 +174,10 @@ class KQueueAgent:
         self._fallback_pids = set()
         self._kqueue = None
         self._running = True
+
+        assert (
+            signal.getsignal(signal.SIGCHLD) != signal.SIG_IGN
+        ), "kqueue does not work when SIGCHLD set to SIG_IGN"
 
     def event_loop(self):
         "Event loop that handles kqueue events."
