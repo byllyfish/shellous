@@ -101,8 +101,8 @@ jobs:
         fi
       env:
         SHELLOUS_CHILDWATCHER_TYPE: "multi"
-    - name: Run Tests with DefaultChildWatcher (MacOS)
-      if: matrix.os == 'macos-11'
+    - name: Run Tests with DefaultChildWatcher (Linux and MacOS)
+      if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11'
       run: |
         # Limit to 5 failures for now because GH actions is auto-cancelling...
         $POETRY_RUN python -m pytest -vv -s --log-cli-level=DEBUG --maxfail=5 | ./ci/annotate.awk -v step=DefaultChildWatcher

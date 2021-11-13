@@ -4,6 +4,7 @@ import asyncio
 import contextlib
 import functools
 import gc
+import logging
 import os
 import re
 import signal
@@ -88,14 +89,22 @@ async def report_orphan_tasks():
             if isinstance(cw, DefaultChildWatcher):
                 cw.close()
 
-    # Check if any tasks are still running.
-    tasks = asyncio.all_tasks()
-    if len(tasks) > 1:
-        extra_tasks = tasks - {asyncio.current_task()}
-        pytest.fail(f"Orphan tasks still running: {extra_tasks}")
+    # Check if any other tasks are still running. Ignore the current task.
+    extra_tasks = asyncio.all_tasks() - {asyncio.current_task()}
 
-    # We expect the only task to be the current task.
-    assert tasks.pop() is asyncio.current_task()
+    # Check if any running tasks are related to async generators. If so, yield
+    # time to get them to exit and update `extra_tasks`.
+    agen_tasks = {
+        task
+        for task in extra_tasks
+        if "<async_generator_athrow without __name__>" in repr(task)
+    }
+    if agen_tasks:
+        await asyncio.sleep(0)
+        extra_tasks = asyncio.all_tasks() - {asyncio.current_task()}
+
+    if extra_tasks:
+        pytest.fail(f"Orphan tasks still running: {extra_tasks}")
 
     # Garbage collect here to flush out warnings from __del__ methods
     # while loop is still running.
