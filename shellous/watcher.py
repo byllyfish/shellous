@@ -1,7 +1,6 @@
 "Implements DefaultChildWatcher."
 
 import asyncio
-import errno
 import os
 import select
 import signal
@@ -156,8 +155,8 @@ class KQueueAgent:
         ), "kqueue does not work when SIGCHLD set to SIG_IGN"
 
     def close(self):
-        "Close KQueueAgent."
-        self._kqueue.close()
+        "Tell our thread to exit with a dummy timer event."
+        self._add_zero_timer_event()
 
     def register_pid(self, pid, callback, args):
         "Register a PID with kqueue."
@@ -186,12 +185,14 @@ class KQueueAgent:
             while True:
                 pending = self._kqueue.control(None, 10, 10)
                 for event in pending:
+                    if event.filter == select.KQ_FILTER_TIMER:
+                        # Dummy timer event tells thread to exit.
+                        return
                     if event.filter == select.KQ_FILTER_PROC:
                         self._reap_pid(event.ident)
 
-        except OSError as ex:
-            if ex.errno != errno.EBADF:
-                raise
+        finally:
+            self._kqueue.close()
 
     def _reap_pid(self, pid):
         """Called when a process exits."""
@@ -228,6 +229,21 @@ class KQueueAgent:
         except ProcessLookupError:
             # Process already exited, or kqueue random failure.
             return False
+
+        except Exception as ex:  # pylint: disable=broad-except
+            LOGGER.error("_add_proc_event: ex=%r", ex)
+            raise
+
+    def _add_zero_timer_event(self):
+        "Add kevent that expires a timer in 0 seconds."
+        try:
+            event = select.kevent(
+                ident=1,  # Dummy timer event
+                filter=select.KQ_FILTER_TIMER,
+                flags=select.KQ_EV_ADD | select.KQ_EV_ONESHOT,
+            )
+            result = self._kqueue.control([event], 0)
+            assert result == []
 
         except Exception as ex:  # pylint: disable=broad-except
             LOGGER.error("_add_proc_event: ex=%r", ex)
@@ -275,11 +291,11 @@ class EPollAgent:
         self._epoll.close()
 
     def run(self):
-        "Event loop that handles kqueue events."
+        "Event loop that handles epoll events."
 
         try:
 
-            while self._running:
+            while True:
                 pending = self._epoll.poll()
                 # Each event is a 2-tuple (fd, events):
                 for pidfd, events in pending:
