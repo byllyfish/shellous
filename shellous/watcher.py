@@ -4,6 +4,7 @@ import asyncio
 import os
 import select
 import signal
+import socket
 import sys
 import threading
 
@@ -257,13 +258,16 @@ class EPollAgent:
 
     def __init__(self):
         "Initialize agent variables."
-        self._active_pids = {}  # pid -> (callback, args)
-        self._pidfds = {}  # pidfd -> pid
-        self._epoll = select.epoll()
-
         assert (
             signal.getsignal(signal.SIGCHLD) != signal.SIG_IGN
         ), "pidfd does not work when SIGCHLD set to SIG_IGN"
+
+        self._active_pids = {}  # pid -> (callback, args)
+        self._pidfds = {}  # pidfd -> pid
+        self._epoll = select.epoll()
+        self._selfpipe = _make_selfpipe()
+        self._epoll.register(self._selfpipe[1], select.EPOLLIN)
+
 
     def register_pid(self, pid, callback, args):
         "Register a PID with epoll."
@@ -287,23 +291,30 @@ class EPollAgent:
             asyncio.create_task(_poll_dead_pid(pid, callback, args))
 
     def close(self):
-        "Close the epoll descriptor."
-        self._epoll.close()
+        "Tell the epoll thread to exit."
+        self._selfpipe[0].send(b"\x00")
 
     def run(self):
         "Event loop that handles epoll events."
 
         try:
+            quit_fd = self._selfpipe[1].fileno()
 
             while True:
                 pending = self._epoll.poll()
                 # Each event is a 2-tuple (fd, events):
                 for pidfd, events in pending:
                     assert events == select.EPOLLIN
+                    if pidfd == quit_fd:
+                        return  # all done!
                     self._reap_pidfd(pidfd)
 
         finally:
-            close_fds(list(self._pidfds.keys()))
+            self._epoll.close()
+            with _LOCK:
+                pidfds = list(self._pidfds.keys())
+            close_fds(pidfds)
+            close_fds(self._selfpipe)
 
     def _reap_pidfd(self, pidfd):
         "Handle epoll pidfd event."
@@ -361,3 +372,11 @@ async def _poll_dead_pid(pid, callback, args):
     else:
         # Handle case where process is *still* running after 3.111 seconds.
         pass
+
+
+def _make_selfpipe():
+    "Create file descriptor to signal thread exit."
+    selfpipe = socket.socketpair()
+    for sock in selfpipe:
+        sock.setblocking(False)
+    return selfpipe
