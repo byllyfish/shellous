@@ -68,9 +68,7 @@ jobs:
         # Run coverage and upload report to codecov.
         $POETRY_RUN coverage run --source shellous -m pytest
         # Re-run with coverage for shellous/watcher.py
-        if [ "${{ matrix.os }}" = "macos-11" ]; then
-          SHELLOUS_CHILDWATCHER_TYPE=default $POETRY_RUN coverage run --source shellous -m pytest
-        fi
+        SHELLOUS_CHILDWATCHER_TYPE=default $POETRY_RUN coverage run --source shellous -m pytest
         $POETRY_RUN codecov
       env:
         SHELLOUS_CODE_COVERAGE: 1
