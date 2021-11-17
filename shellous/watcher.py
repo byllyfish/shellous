@@ -1,4 +1,10 @@
-"Implements DefaultChildWatcher."
+"""Implements DefaultChildWatcher.
+
+References:
+    - https://developer.apple.com/library/archive/technotes/tn2050/_index.html
+    - https://chromium.googlesource.com/chromium/src/base/+/refs/heads/main/process/kill_mac.cc
+
+"""
 
 import asyncio
 import os
@@ -38,8 +44,7 @@ class DefaultChildWatcher(asyncio.AbstractChildWatcher):
 
     def __init__(self):
         "Initialize child watcher."
-        _check_sigchld()
-        self._worker = None
+        self._agent = None
 
     def add_child_handler(self, pid, callback, *args):
         """Register a new child handler.
@@ -50,8 +55,8 @@ class DefaultChildWatcher(asyncio.AbstractChildWatcher):
 
         Note: callback() must be thread-safe.
         """
-        assert self._worker, "Must use context manager API"
-        self._worker.watch_pid(pid, callback, args)
+        assert self._agent, "Must use context manager API"
+        self._agent.watch_pid(pid, callback, args)
 
     def remove_child_handler(self, pid):
         """Removes the handler for process 'pid'.
@@ -77,11 +82,11 @@ class DefaultChildWatcher(asyncio.AbstractChildWatcher):
         This must be called to make sure that any underlying resource is freed.
         """
         with _LOCK:
-            worker = self._worker
-            self._worker = None
+            agent = self._agent
+            self._agent = None
 
-        if worker:
-            worker.close()
+        if agent:
+            agent.close()
 
     def is_active(self):
         """Return ``True`` if the watcher is active and is used by the event loop.
@@ -94,8 +99,8 @@ class DefaultChildWatcher(asyncio.AbstractChildWatcher):
     def __enter__(self):
         """Enter the watcher's context and allow starting new processes."""
         with _LOCK:
-            if not self._worker:
-                self._worker = WatcherThread()
+            if not self._agent:
+                self._init_agent()
 
         return self
 
@@ -103,50 +108,12 @@ class DefaultChildWatcher(asyncio.AbstractChildWatcher):
         """Exit the watcher's context"""
         # no op
 
-
-class WatcherThread(threading.Thread):
-    """A Thread that uses kqueue/epoll to monitor for child processes exiting.
-
-    We use a fallback mechanism on macOS because sometimes, for unknown reasons,
-    macOS refuses to register a KQ_FILTER_PROC/KQ_NOTE_EXIT event for a known
-    child pid even though the child process is *still running*.
-
-    Our fallback strategy relies on polling the "fallback_pids" in a kqueue
-    handler that catches SIGCHLD.
-
-    References:
-      - https://developer.apple.com/library/archive/technotes/tn2050/_index.html
-
-    """
-
-    def __init__(self):
-        "Initialize worker variables and start thread."
-        super().__init__(daemon=True)
+    def _init_agent(self):
+        "Construct child watcher agent."
         if sys.platform == "linux":
             self._agent = EPollAgent()
         else:
             self._agent = KQueueAgent()
-        self.start()
-
-    def watch_pid(self, pid, callback, args):
-        "Add pid exit callback information to queue and wake up thread."
-        self._agent.watch_pid(pid, callback, args)
-
-    def close(self):
-        "Tell worker thread to stop."
-        self._agent.close()
-        self.join()
-
-    def run(self):
-        "Override Thread.run()."
-        try:
-            LOGGER.debug("WatcherThread starting %r", self)
-            self._agent.run()
-        except BaseException as ex:  # pylint: disable=broad-except
-            LOGGER.error("WatcherThread failed %s ex=%r", self, ex, exc_info=True)
-            raise
-        finally:
-            LOGGER.debug("WatcherThread stopping %r", self)
 
 
 class KQueueAgent:
@@ -159,6 +126,7 @@ class KQueueAgent:
         _check_sigchld()
         self._pids = {}  # pid -> (callback, args)
         self._kqueue = select.kqueue()
+        self._thread = _start_thread(self._run, name="KQueueAgent")
 
     def close(self):
         "Tell our thread to exit with a dummy timer event."
@@ -167,6 +135,7 @@ class KQueueAgent:
             select.KQ_FILTER_TIMER,
             select.KQ_EV_ADD | select.KQ_EV_ONESHOT,
         )
+        self._thread.join()
 
     def watch_pid(self, pid, callback, args):
         "Register a PID with kqueue."
@@ -195,7 +164,7 @@ class KQueueAgent:
             # Process is still dying. Spawn a task to poll it.
             asyncio.create_task(_poll_dead_pid(pid, callback, args))
 
-    def run(self):
+    def _run(self):
         "Event loop that handles kqueue events."
         try:
             while True:
@@ -242,6 +211,7 @@ class EPollAgent:
         self._epoll = select.epoll()
         self._selfpipe = os.pipe()
         self._epoll.register(self._selfpipe[0], select.EPOLLIN)
+        self._thread = _start_thread(self._run, name="EPollAgent")
 
     def watch_pid(self, pid, callback, args):
         "Register a PID with epoll."
@@ -268,8 +238,9 @@ class EPollAgent:
     def close(self):
         "Tell the epoll thread to exit."
         os.write(self._selfpipe[1], b"\x00")
+        self._thread.join()
 
-    def run(self):
+    def _run(self):
         "Event loop that handles epoll events."
         try:
             pipe_fd = self._selfpipe[0]
@@ -332,3 +303,21 @@ async def _poll_dead_pid(pid, callback, args):
     else:
         # Handle case where process is *still* running after 3.111 seconds.
         pass
+
+
+def _start_thread(target, *, name):
+    "Create a new thread and start it."
+
+    def _runner():
+        try:
+            LOGGER.debug("Thread %r starting", name)
+            target()
+        except BaseException as ex:  # pylint: disable=broad-except
+            LOGGER.error("Thread %r failed ex=%r", name, ex, exc_info=True)
+            raise
+        finally:
+            LOGGER.debug("Thread %r stopping", name)
+
+    thread = threading.Thread(target=_runner, name=name, daemon=True)
+    thread.start()
+    return thread
