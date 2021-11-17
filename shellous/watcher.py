@@ -240,8 +240,8 @@ class EPollAgent:
         self._pids = {}  # pid -> (callback, args)
         self._pidfds = {}  # pidfd -> pid
         self._epoll = select.epoll()
-        self._selfpipe = _make_selfpipe()
-        self._epoll.register(self._selfpipe[1], select.EPOLLIN)
+        self._selfpipe = os.pipe()
+        self._epoll.register(self._selfpipe[0], select.EPOLLIN)
 
     def watch_pid(self, pid, callback, args):
         "Register a PID with epoll."
@@ -267,17 +267,17 @@ class EPollAgent:
 
     def close(self):
         "Tell the epoll thread to exit."
-        self._selfpipe[0].send(b"\x00")
+        os.write(self._selfpipe[1], b"\x00")
 
     def run(self):
         "Event loop that handles epoll events."
         try:
-            quit_fd = self._selfpipe[1].fileno()
+            pipe_fd = self._selfpipe[0]
 
             while True:
                 pending = self._epoll.poll()
                 for pidfd, _events in pending:
-                    if pidfd == quit_fd:
+                    if pidfd == pipe_fd:
                         return  # all done!
                     self._reap_pidfd(pidfd)
                     self._remove_pidfd(pidfd)
@@ -332,11 +332,3 @@ async def _poll_dead_pid(pid, callback, args):
     else:
         # Handle case where process is *still* running after 3.111 seconds.
         pass
-
-
-def _make_selfpipe():
-    "Create file descriptor to signal thread exit."
-    selfpipe = socket.socketpair()
-    for sock in selfpipe:
-        sock.setblocking(False)
-    return selfpipe
