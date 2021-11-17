@@ -1,5 +1,9 @@
 """Implements DefaultChildWatcher.
 
+Design Goals:
+    1. Independent of any running event loop.
+    2. Zero-cost until used.
+
 References:
     - https://developer.apple.com/library/archive/technotes/tn2050/_index.html
     - https://chromium.googlesource.com/chromium/src/base/+/refs/heads/main/process/kill_mac.cc
@@ -35,12 +39,7 @@ def _check_sigchld():
 
 
 class DefaultChildWatcher(asyncio.AbstractChildWatcher):
-    """Uses kqueue/pidfd to monitor for exiting child processes.
-
-    Design Goals:
-      1. Independent of any running event loop.
-      2. Zero-cost until used.
-    """
+    "Use platform-dependent mechanism to monitor for exiting child processes."
 
     def __init__(self):
         "Initialize child watcher."
@@ -286,14 +285,7 @@ class EPollAgent:
 
 
 async def _poll_dead_pid(pid, callback, args):
-    """Poll a pid that we expect to exit and be reap-able very soon.
-
-    This function is called in two cases:
-      1. pid is running but no longer kqueueable.
-      2. pidfd_open failed because...
-
-    See https://chromium.googlesource.com/chromium/src/base/+/refs/heads/main/process/kill_mac.cc
-    """
+    """Poll a pid that we expect to exit and be reap-able very soon."""
     for timeout in (0.001, 0.01, 0.1, 1.0, 2.0):
         await asyncio.sleep(timeout)
         status = wait_pid(pid)
@@ -302,7 +294,7 @@ async def _poll_dead_pid(pid, callback, args):
             break
     else:
         # Handle case where process is *still* running after 3.111 seconds.
-        pass
+        LOGGER.critical("Pid %r is not exiting after several seconds.", pid)
 
 
 def _start_thread(target, *, name):
