@@ -17,6 +17,17 @@ assert sys.platform != "win32"
 _LOCK = threading.RLock()
 
 
+def _check_sigchld():
+    """Check that SIGCHLD is not set to SIG_IGN.
+
+    kqueue/pidfd do not work if SIGCHLD is set to SIG_IGN in the
+    signal table. On unix systems, the default action for SIGCHLD is to
+    discard the signal so SIG_DFL is fine.
+    """
+    if signal.getsignal(signal.SIGCHLD) == signal.SIG_IGN:
+        raise RuntimeError("SIGCHLD cannot be set to SIG_IGN")
+
+
 class DefaultChildWatcher(asyncio.AbstractChildWatcher):
     """Uses kqueue/pidfd to monitor for exiting child processes.
 
@@ -26,13 +37,9 @@ class DefaultChildWatcher(asyncio.AbstractChildWatcher):
     """
 
     def __init__(self):
+        "Initialize child watcher."
+        _check_sigchld()
         self._worker = None
-
-        # kqueue/pidfd do not work if SIGCHLD is set to SIG_IGN in the
-        # signal table. On unix systems, the default action for SIGCHLD is to
-        # discard the signal; SIG_DFL is compatible and does what we want.
-        if signal.getsignal(signal.SIGCHLD) == signal.SIG_IGN:
-            raise RuntimeError("SIGCHLD cannot be set to SIG_IGN")
 
     def add_child_handler(self, pid, callback, *args):
         """Register a new child handler.
@@ -62,6 +69,7 @@ class DefaultChildWatcher(asyncio.AbstractChildWatcher):
 
         Note: loop may be None.
         """
+        # no op
 
     def close(self):
         """Close the watcher.
@@ -93,6 +101,7 @@ class DefaultChildWatcher(asyncio.AbstractChildWatcher):
 
     def __exit__(self, *_args):
         """Exit the watcher's context"""
+        # no op
 
 
 class WatcherThread(threading.Thread):
@@ -121,8 +130,7 @@ class WatcherThread(threading.Thread):
 
     def watch_pid(self, pid, callback, args):
         "Add pid exit callback information to queue and wake up thread."
-        LOGGER.debug("watch_pid %r", pid)
-        self._agent.register_pid(pid, callback, args)
+        self._agent.watch_pid(pid, callback, args)
 
     def close(self):
         "Tell worker thread to stop."
@@ -131,8 +139,8 @@ class WatcherThread(threading.Thread):
 
     def run(self):
         "Override Thread.run()."
-        LOGGER.debug("WatcherThread starting %r", self)
         try:
+            LOGGER.debug("WatcherThread starting %r", self)
             self._agent.run()
         except BaseException as ex:  # pylint: disable=broad-except
             LOGGER.error("WatcherThread failed %s ex=%r", self, ex, exc_info=True)
@@ -148,33 +156,40 @@ class KQueueAgent:
 
     def __init__(self):
         "Initialize agent variables."
-        self._active_pids = {}
+        _check_sigchld()
+        self._pids = {}  # pid -> (callback, args)
         self._kqueue = select.kqueue()
-
-        assert (
-            signal.getsignal(signal.SIGCHLD) != signal.SIG_IGN
-        ), "kqueue does not work when SIGCHLD set to SIG_IGN"
 
     def close(self):
         "Tell our thread to exit with a dummy timer event."
-        self._add_zero_timer_event()
+        self._add_kevent(
+            1,
+            select.KQ_FILTER_TIMER,
+            select.KQ_EV_ADD | select.KQ_EV_ONESHOT,
+        )
 
-    def register_pid(self, pid, callback, args):
+    def watch_pid(self, pid, callback, args):
         "Register a PID with kqueue."
         with _LOCK:
-            self._active_pids[pid] = (callback, args)
+            self._pids[pid] = (callback, args)
 
-        if not self._add_proc_event(pid):
-            self._pid_not_kqueueable(pid)
+        try:
+            self._add_kevent(
+                pid,
+                select.KQ_FILTER_PROC,
+                select.KQ_EV_ADD | select.KQ_EV_ONESHOT,
+                select.KQ_NOTE_EXIT,
+            )
+        except ProcessLookupError:
+            self._kevent_failed(pid)
 
-    def _pid_not_kqueueable(self, pid):
+    def _kevent_failed(self, pid):
         "Handle case where an exiting process is no longer kqueue-able."
         with _LOCK:
-            callback, args = self._active_pids.pop(pid)
+            callback, args = self._pids.pop(pid)
 
         status = wait_pid(pid)
         if status is not None:
-            # Process is finished; issue callback.
             callback(pid, status, *args)
         else:
             # Process is still dying. Spawn a task to poll it.
@@ -196,9 +211,9 @@ class KQueueAgent:
             self._kqueue.close()
 
     def _reap_pid(self, pid):
-        """Called when a process exits."""
+        """Called by event loop when a process exits."""
         with _LOCK:
-            callback, args = self._active_pids.pop(pid)
+            callback, args = self._pids.pop(pid)
 
         status = wait_pid(pid)
         if status is not None:
@@ -208,47 +223,10 @@ class KQueueAgent:
             # Process is still running.
             LOGGER.critical("_reap_pid: process still running pid=%r", pid)
 
-    def _add_proc_event(self, pid):
-        """Add kevent that monitors for process exit.
-
-        Return true if successful.
-
-        kevent can return ESRCH (ProcessLookupError) if it doesn't find the
-        process ID. If this happens, return false.
-        """
-        try:
-            event = select.kevent(
-                ident=pid,
-                filter=select.KQ_FILTER_PROC,
-                flags=select.KQ_EV_ADD | select.KQ_EV_ONESHOT,
-                fflags=select.KQ_NOTE_EXIT,
-            )
-            result = self._kqueue.control([event], 0)
-            assert result == []
-            return True
-
-        except ProcessLookupError:
-            # Process already exited, or kqueue random failure.
-            return False
-
-        except Exception as ex:  # pylint: disable=broad-except
-            LOGGER.error("_add_proc_event: ex=%r", ex)
-            raise
-
-    def _add_zero_timer_event(self):
-        "Add kevent that expires a timer in 0 seconds."
-        try:
-            event = select.kevent(
-                ident=1,  # Dummy timer event
-                filter=select.KQ_FILTER_TIMER,
-                flags=select.KQ_EV_ADD | select.KQ_EV_ONESHOT,
-            )
-            result = self._kqueue.control([event], 0)
-            assert result == []
-
-        except Exception as ex:  # pylint: disable=broad-except
-            LOGGER.error("_add_proc_event: ex=%r", ex)
-            raise
+    def _add_kevent(self, ident, filter, flags, fflags=0):
+        "Add specified kevent to kqueue."
+        event = select.kevent(ident, filter, flags, fflags)
+        self._kqueue.control([event], 0)
 
 
 class EPollAgent:
@@ -258,33 +236,30 @@ class EPollAgent:
 
     def __init__(self):
         "Initialize agent variables."
-        assert (
-            signal.getsignal(signal.SIGCHLD) != signal.SIG_IGN
-        ), "pidfd does not work when SIGCHLD set to SIG_IGN"
-
-        self._active_pids = {}  # pid -> (callback, args)
+        _check_sigchld()
+        self._pids = {}  # pid -> (callback, args)
         self._pidfds = {}  # pidfd -> pid
         self._epoll = select.epoll()
         self._selfpipe = _make_selfpipe()
         self._epoll.register(self._selfpipe[1], select.EPOLLIN)
 
-
-    def register_pid(self, pid, callback, args):
+    def watch_pid(self, pid, callback, args):
         "Register a PID with epoll."
         with _LOCK:
-            self._active_pids[pid] = (callback, args)
+            self._pids[pid] = (callback, args)
 
-        if not self._add_pid_event(pid):
+        try:
+            self._add_pidfd(pid)
+        except ProcessLookupError:
             self._pidfd_failed(pid)
 
     def _pidfd_failed(self, pid):
         "Handle case where pidfd_open fails."
         with _LOCK:
-            callback, args = self._active_pids.pop(pid)
+            callback, args = self._pids.pop(pid)
 
         status = wait_pid(pid)
         if status is not None:
-            # Process is finished; issue callback.
             callback(pid, status, *args)
         else:
             # Process is still dying. Spawn a task to poll it.
@@ -296,18 +271,16 @@ class EPollAgent:
 
     def run(self):
         "Event loop that handles epoll events."
-
         try:
             quit_fd = self._selfpipe[1].fileno()
 
             while True:
                 pending = self._epoll.poll()
-                # Each event is a 2-tuple (fd, events):
-                for pidfd, events in pending:
-                    assert events == select.EPOLLIN
+                for pidfd, _events in pending:
                     if pidfd == quit_fd:
                         return  # all done!
                     self._reap_pidfd(pidfd)
+                    self._remove_pidfd(pidfd)
 
         finally:
             self._epoll.close()
@@ -320,35 +293,23 @@ class EPollAgent:
         "Handle epoll pidfd event."
         with _LOCK:
             pid = self._pidfds.pop(pidfd)
-            callback, args = self._active_pids.pop(pid)
+            callback, args = self._pids.pop(pid)
 
         status = wait_pid(pid)
         if status is not None:
-            # Invoke callback function.
             callback(pid, status, *args)
         else:
-            # Process is still running.
             LOGGER.critical("_reap_pid: process still running pid=%r", pid)
 
-        self._remove_pidfd_event(pidfd)
-
-    def _add_pid_event(self, pid):
-        "Add epoll that monitors for process exit. Return True if successful."
-        try:
-            pidfd = os.pidfd_open(pid, 0)
-        except ProcessLookupError as ex:
-            # FIXME: Handle EMFILE and other failure modes.
-            LOGGER.error("pidfd_open(%r) failed: ex=%r", pid, ex)
-            return False
-
+    def _add_pidfd(self, pid):
+        "Add epoll that monitors for process exit."
+        pidfd = os.pidfd_open(pid, 0)
         with _LOCK:
             self._pidfds[pidfd] = pid
         self._epoll.register(pidfd, select.EPOLLIN)
-        return True
 
-    def _remove_pidfd_event(self, pidfd):
+    def _remove_pidfd(self, pidfd):
         "Remove epoll that monitors for process exit."
-        LOGGER.debug("_remove_pidfd_event %r", pidfd)
         self._epoll.unregister(pidfd)
         os.close(pidfd)
 
@@ -362,7 +323,6 @@ async def _poll_dead_pid(pid, callback, args):
 
     See https://chromium.googlesource.com/chromium/src/base/+/refs/heads/main/process/kill_mac.cc
     """
-
     for timeout in (0.001, 0.01, 0.1, 1.0, 2.0):
         await asyncio.sleep(timeout)
         status = wait_pid(pid)
