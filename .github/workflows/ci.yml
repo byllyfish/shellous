@@ -81,7 +81,7 @@ jobs:
     - name: Run Tests with PidfdWatcher (Linux)
       if: matrix.os == 'ubuntu-latest'
       run: |
-        $POETRY_RUN python -m pytest -vv -s --log-cli-level=DEBUG
+        $POETRY_RUN python -m pytest -vv -s --log-cli-level=DEBUG | ./ci/annotate.awk -v step=PidfdWatcher
       env:
         SHELLOUS_CHILDWATCHER_TYPE: "pidfd"
     - name: Run Tests with SafeChildWatcher (Linux and MacOS)

@@ -70,14 +70,14 @@ def wait_pid(pid: int) -> Optional[int]:
 
     Return None if process is still running.
     """
-    assert pid is not None and pid > 0
+    assert pid > 0
 
     try:
         # os.WNOHANG is not available on Windows.
         result_pid, status = os.waitpid(pid, os.WNOHANG)  # type: ignore
     except ChildProcessError as ex:
         # Set status to 255 if process not found.
-        LOGGER.warning("wait_pid(%r) status is 255 ex=%r", pid, ex)
+        LOGGER.error("wait_pid(%r) status is 255 ex=%r", pid, ex)
         return 255
 
     if LOG_DETAIL:

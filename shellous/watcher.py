@@ -148,6 +148,7 @@ class KQueueAgent:
                 select.KQ_EV_ADD | select.KQ_EV_ONESHOT,
                 select.KQ_NOTE_EXIT,
             )
+            LOGGER.debug("_add_kevent pid=%r", pid)
         except ProcessLookupError:
             self._kevent_failed(pid)
 
@@ -155,6 +156,8 @@ class KQueueAgent:
         "Handle case where an exiting process is no longer kqueue-able."
         with _LOCK:
             callback, args = self._pids.pop(pid)
+
+        LOGGER.debug("_kevent_failed pid=%r", pid)
 
         status = wait_pid(pid)
         if status is not None:
@@ -182,6 +185,8 @@ class KQueueAgent:
         """Called by event loop when a process exits."""
         with _LOCK:
             callback, args = self._pids.pop(pid)
+
+        LOGGER.debug("_reap_pid pid=%r", pid)
 
         status = wait_pid(pid)
         if status is not None:
@@ -227,6 +232,8 @@ class EPollAgent:
         with _LOCK:
             callback, args = self._pids.pop(pid)
 
+        LOGGER.debug("_pidfd_failed pid=%r", pid)
+
         status = wait_pid(pid)
         if status is not None:
             callback(pid, status, *args)
@@ -265,6 +272,8 @@ class EPollAgent:
             pid = self._pidfds.pop(pidfd)
             callback, args = self._pids.pop(pid)
 
+        LOGGER.debug("_reap_pidfd pidfd=%r pid=%r", pidfd, pid)
+
         status = wait_pid(pid)
         if status is not None:
             callback(pid, status, *args)
@@ -277,6 +286,7 @@ class EPollAgent:
         with _LOCK:
             self._pidfds[pidfd] = pid
         self._epoll.register(pidfd, select.EPOLLIN)
+        LOGGER.debug("_add_pidfd registered pidfd=%r pid=%r", pidfd, pid)
 
     def _remove_pidfd(self, pidfd):
         "Remove epoll that monitors for process exit."
