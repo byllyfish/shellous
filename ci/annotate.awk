@@ -29,7 +29,8 @@ END {
 
     if (warning_count > 0) {
         # Github "notice" message.
-        printf "\n::notice title=%s Warning Messages::%d warning messages in %s\n", step, warning_count, ENVIRON["BUILD_NAME"]
+        #printf "\n::notice title=%s Warning Messages::%d warning messages in %s\n", step, warning_count, ENVIRON["BUILD_NAME"]
+        printf "\n%d warning messages in %s\n", warning_count, ENVIRON["BUILD_NAME"]
         for (i in warning_msg) {
             print warning_msg[i]
         }
