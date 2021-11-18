@@ -148,6 +148,7 @@ class KQueueAgent:
                 select.KQ_EV_ADD | select.KQ_EV_ONESHOT,
                 select.KQ_NOTE_EXIT,
             )
+            LOGGER.debug("_add_kevent pid=%r", pid)
         except ProcessLookupError:
             self._kevent_failed(pid)
 
