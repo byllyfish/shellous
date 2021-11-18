@@ -285,6 +285,7 @@ class EPollAgent:
         with _LOCK:
             self._pidfds[pidfd] = pid
         self._epoll.register(pidfd, select.EPOLLIN)
+        LOGGER.debug("_add_pidfd registered pidfd=%r pid=%r", pidfd, pid)
 
     def _remove_pidfd(self, pidfd):
         "Remove epoll that monitors for process exit."
