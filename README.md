@@ -198,7 +198,7 @@ You can pass a shell command as an argument to another.
 'README.md\n'
 ```
 
-Use ~ to write to a command instead.
+Use `.writable` to write to a command instead.
 
 ```pycon
 >>> buf = bytearray()
