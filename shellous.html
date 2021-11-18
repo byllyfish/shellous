@@ -263,7 +263,7 @@ option.</p>
 <span class="go">&#39;README.md\n&#39;</span>
 </code></pre></div>
 
-<p>Use ~ to write to a command instead.</p>
+<p>Use <code>.writable</code> to write to a command instead.</p>
 
 <div class="codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">buf</span> <span class="o">=</span> <span class="nb">bytearray</span><span class="p">()</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">cmd</span> <span class="o">=</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;ls&quot;</span><span class="p">)</span> <span class="o">|</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;tee&quot;</span><span class="p">,</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;grep&quot;</span><span class="p">,</span> <span class="s2">&quot;README&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">writable</span> <span class="o">|</span> <span class="n">buf</span><span class="p">)</span> <span class="o">|</span> <span class="n">shellous</span><span class="o">.</span><span class="n">DEVNULL</span>

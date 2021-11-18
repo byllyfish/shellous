@@ -161,7 +161,7 @@
         <span class="k">return</span> <span class="mi">255</span>
 
     <span class="k">if</span> <span class="n">LOG_DETAIL</span><span class="p">:</span>
-        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;os.waitpid returned </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="p">(</span><span class="n">result_pid</span><span class="p">,</span> <span class="n">status</span><span class="p">))</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;os.waitpid(</span><span class="si">%r</span><span class="s2">) returned </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">pid</span><span class="p">,</span> <span class="p">(</span><span class="n">result_pid</span><span class="p">,</span> <span class="n">status</span><span class="p">))</span>
 
     <span class="k">if</span> <span class="n">result_pid</span> <span class="o">!=</span> <span class="n">pid</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">None</span>
@@ -378,7 +378,7 @@ parent environment.</p>
         <span class="k">return</span> <span class="mi">255</span>
 
     <span class="k">if</span> <span class="n">LOG_DETAIL</span><span class="p">:</span>
-        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;os.waitpid returned </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="p">(</span><span class="n">result_pid</span><span class="p">,</span> <span class="n">status</span><span class="p">))</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;os.waitpid(</span><span class="si">%r</span><span class="s2">) returned </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">pid</span><span class="p">,</span> <span class="p">(</span><span class="n">result_pid</span><span class="p">,</span> <span class="n">status</span><span class="p">))</span>
 
     <span class="k">if</span> <span class="n">result_pid</span> <span class="o">!=</span> <span class="n">pid</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">None</span>
