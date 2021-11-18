@@ -35,8 +35,7 @@ Requirements
 - Requires Python 3.9 or later.
 - Requires an asyncio event loop.
 - Process substitution requires a Unix system with /dev/fd support.
-- Pseudo-terminals require a Unix system. Pty's do not work on [uvloop](https://github.com/MagicStack/uvloop).
-- [FastChildWatcher](https://docs.python.org/3/library/asyncio-policy.html#asyncio.FastChildWatcher) is not supported.
+- Pseudo-terminals require a Unix system.
 
 Basic Usage
 -----------
