@@ -156,6 +156,8 @@ class KQueueAgent:
         with _LOCK:
             callback, args = self._pids.pop(pid)
 
+        LOGGER.debug("_kevent_failed pid=%r", pid)
+
         status = wait_pid(pid)
         if status is not None:
             callback(pid, status, *args)
@@ -182,6 +184,8 @@ class KQueueAgent:
         """Called by event loop when a process exits."""
         with _LOCK:
             callback, args = self._pids.pop(pid)
+
+        LOGGER.debug("_reap_pid pid=%r", pid)
 
         status = wait_pid(pid)
         if status is not None:
@@ -227,6 +231,8 @@ class EPollAgent:
         with _LOCK:
             callback, args = self._pids.pop(pid)
 
+        LOGGER.debug("_pidfd_failed pid=%r", pid)
+
         status = wait_pid(pid)
         if status is not None:
             callback(pid, status, *args)
@@ -264,6 +270,8 @@ class EPollAgent:
         with _LOCK:
             pid = self._pidfds.pop(pidfd)
             callback, args = self._pids.pop(pid)
+
+        LOGGER.debug("_reap_pidfd pidfd=%r pid=%r", pidfd, pid)
 
         status = wait_pid(pid)
         if status is not None:
