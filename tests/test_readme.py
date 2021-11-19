@@ -105,20 +105,13 @@ async def test_run_asyncio_repl():
             "import shellous",
             "sh = shellous.context()",
             'await sh("echo", "hello, world")',
-            'await sh("cat", "does_not_exist").stderr(shellous.STDOUT).set(exit_codes={0,1})',
         ]
     )
-
-    if sys.platform in {"linux", "win32"}:
-        cat = "/usr/bin/cat"
-    else:
-        cat = "cat"
 
     assert result == [
         "",
         "",
         "'hello, world\\n'",
-        f"'{cat}: does_not_exist: No such file or directory\\n'",
     ]
 
 
@@ -275,8 +268,8 @@ def _check_result(output, result):
         result = result.replace("/usr/bin/cat", "cat")
 
     # The format of the "No such file or directory" message is different on
-    # alpine linux.
-    ERRMSG = re.compile(r"cat: .*does_not_exist'?: No such file or directory\n")
+    # alpine linux. Note that output can be bracketed by single or double quotes.
+    ERRMSG = re.compile(r".cat: .*does_not_exist.?: No such file or directory\n.")
     if ERRMSG.fullmatch(result) and ERRMSG.fullmatch(output):
         return
 
