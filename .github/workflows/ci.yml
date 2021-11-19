@@ -115,7 +115,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - name: Install dependencies
+      - name: Run Tests
         run: |
+          apk add --update gcc musl-dev python3-dev 
           pip3 install -r ./ci/requirements-dev.txt
           pytest -v -s
