@@ -274,6 +274,12 @@ def _check_result(output, result):
     if "/usr/bin/cat:" in result:
         result = result.replace("/usr/bin/cat", "cat")
 
+    # The format of the "No such file or directory" message is different on
+    # alpine linux.
+    ERRMSG = re.compile(r"cat: .*does_not_exist'?: No such file or directory\n")
+    if ERRMSG.fullmatch(result) and ERRMSG.fullmatch(output):
+        return
+
     pattern = re.escape(output).replace(r"\.\.\.", ".*")
     if not re.fullmatch(pattern, result, re.DOTALL):
         msg = f"result does not match pattern\n\nresult={result}\n\npattern={output}\n"

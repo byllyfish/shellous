@@ -2,6 +2,7 @@
 
 import os
 import shutil
+import subprocess
 import sys
 
 import pytest
@@ -30,7 +31,11 @@ def _is_uvloop():
 
 
 def _has_posix_spawn():
-    return not _is_uvloop() and sys.platform in ("darwin", "linux")
+    return (
+        not _is_uvloop()
+        and sys.platform in ("darwin", "linux")
+        and subprocess._USE_POSIX_SPAWN
+    )
 
 
 async def test_audit():
