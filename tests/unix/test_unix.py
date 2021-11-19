@@ -58,6 +58,13 @@ def sh():
     return context()
 
 
+@pytest.fixture
+def ls(sh):
+    if sys.platform == "linux":
+        return sh("ls", "--color=never")
+    return sh("ls")
+
+
 async def test_python(sh):
     "Test running the python executable."
     result = await sh(sys.executable, "-c", "print('test1')")
@@ -876,7 +883,7 @@ async def test_pty_manual(sh):
 
 
 @pytest.mark.xfail(_is_uvloop(), reason="uvloop")
-async def test_pty_manual_ls(sh):
+async def test_pty_manual_ls(ls):
     """Test setting up a pty manually."""
 
     import pty  # import not supported on windows
@@ -888,7 +895,7 @@ async def test_pty_manual_ls(sh):
     ttyname = os.ttyname(child_fd)
 
     cmd = (
-        sh("ls", "README.md")
+        ls("README.md")
         .stdin(child_fd, close=False)
         .stdout(child_fd, close=False)
         .set(
@@ -1162,10 +1169,10 @@ async def test_pty_cbreak_size(sh):
 
 
 @pytest.mark.xfail(_is_uvloop(), reason="uvloop")
-async def test_pty_raw_ls(sh):
+async def test_pty_raw_ls(ls):
     "Test the `pty` option in raw mode."
 
-    cmd = sh("ls").set(pty=raw(rows=24, cols=40)).stderr(STDOUT)
+    cmd = ls.set(pty=raw(rows=24, cols=40)).stderr(STDOUT)
     result = await cmd
 
     assert "README.md" in result
@@ -1209,20 +1216,18 @@ async def test_pty_cat_iteration_no_echo(sh):
 
 
 @pytest.mark.xfail(_is_uvloop(), reason="uvloop")
-async def test_pty_canonical_ls(sh):
+async def test_pty_canonical_ls(ls):
     "Test canonical ls output through pty is in columns."
-    cmd = sh("ls", "README.md", "CHANGELOG.md").set(
-        pty=cooked(cols=20, rows=10, echo=False)
-    )
+    cmd = ls("README.md", "CHANGELOG.md").set(pty=cooked(cols=20, rows=10, echo=False))
     result = await cmd
     assert result == "CHANGELOG.md\r\nREADME.md\r\n"
 
 
 @pytest.mark.xfail(_is_uvloop() or _is_codecov(), reason="uvloop,codecov")
 @pytest.mark.timeout(90)
-async def test_pty_compare_large_ls_output(sh):
+async def test_pty_compare_large_ls_output(ls):
     "Compare pty output to non-pty output."
-    cmd = sh("ls", "-l", "/usr/lib")
+    cmd = ls("-l", "/usr/lib")
     regular_result = await cmd
 
     pty_result = await cmd.set(pty=True)
@@ -1232,9 +1237,9 @@ async def test_pty_compare_large_ls_output(sh):
 
 
 @pytest.mark.xfail(_is_uvloop(), reason="uvloop")
-async def test_pty_compare_small_ls_output(sh):
+async def test_pty_compare_small_ls_output(ls):
     "Compare pty output to non-pty output."
-    cmd = sh("ls", "README.md")
+    cmd = ls("README.md")
     regular_result = await cmd
 
     pty_result = await cmd.set(pty=True)
@@ -1244,10 +1249,10 @@ async def test_pty_compare_small_ls_output(sh):
 
 
 @pytest.mark.xfail(_is_uvloop(), reason="uvloop")
-async def test_stress_pty_canonical_ls_parallel(sh, report_children):
+async def test_stress_pty_canonical_ls_parallel(ls, report_children):
     "Test canonical ls output through pty is in columns (parallel stress test)."
     pty = cooked(cols=20, rows=10, echo=False)
-    cmd = sh("ls", "README.md", "CHANGELOG.md").set(pty=pty)
+    cmd = ls("README.md", "CHANGELOG.md").set(pty=pty)
 
     # Execute command 10 times in parallel.
     multi = [cmd] * 10
@@ -1258,10 +1263,10 @@ async def test_stress_pty_canonical_ls_parallel(sh, report_children):
 
 
 @pytest.mark.xfail(_is_uvloop(), reason="uvloop")
-async def test_stress_pty_canonical_ls_sequence(sh, report_children):
+async def test_stress_pty_canonical_ls_sequence(ls, report_children):
     "Test canonical ls output through pty is in columns (sequence stress test)."
     pty = cooked(cols=20, rows=10, echo=False)
-    cmd = sh("ls", "README.md", "CHANGELOG.md").set(pty=pty)
+    cmd = ls("README.md", "CHANGELOG.md").set(pty=pty)
 
     # Execute command 10 times sequentially.
     for _ in range(10):
@@ -1287,10 +1292,10 @@ async def test_pty_timeout_fail(sh):
 
 
 @pytest.mark.xfail(_is_uvloop(), reason="uvloop")
-async def test_pty_default_redirect_stderr(sh):
+async def test_pty_default_redirect_stderr(ls):
     "Test that pty redirects stderr to stdout."
 
-    cmd = sh("ls", "DOES_NOT_EXIST")
+    cmd = ls("DOES_NOT_EXIST")
 
     # Non-pty mode redirects stderr to /dev/null.
     result = await cmd.set(exit_codes={1, 2})
