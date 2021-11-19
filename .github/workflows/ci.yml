@@ -107,8 +107,6 @@ jobs:
       env:
         SHELLOUS_CHILDWATCHER_TYPE: "default"
 
-
-jobs:
   build-alpine:
     runs-on: ubuntu-latest
     timeout-minutes: 20  # stop runaway job after 20 minutes
