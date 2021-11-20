@@ -181,7 +181,13 @@ async def test_thread_procsub():
 async def test_thread_pty():
     "Test pty in another thread."
     sh = shellous.context()
-    result = await sh("ls", "README.md").set(pty=True)
+
+    if sys.platform == "linux":
+        ls = sh("ls", "--color=never")
+    else:
+        ls = sh("ls")
+
+    result = await ls("README.md").set(pty=True)
     assert result == "README.md\r\n"
 
 

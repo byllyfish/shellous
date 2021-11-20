@@ -105,20 +105,13 @@ async def test_run_asyncio_repl():
             "import shellous",
             "sh = shellous.context()",
             'await sh("echo", "hello, world")',
-            'await sh("cat", "does_not_exist").stderr(shellous.STDOUT).set(exit_codes={0,1})',
         ]
     )
-
-    if sys.platform in {"linux", "win32"}:
-        cat = "/usr/bin/cat"
-    else:
-        cat = "cat"
 
     assert result == [
         "",
         "",
         "'hello, world\\n'",
-        f"'{cat}: does_not_exist: No such file or directory\\n'",
     ]
 
 
@@ -265,14 +258,22 @@ def _check_result(output, result):
         if result_value == output_value:
             return
 
-    # The result of the pty test has platform-dependent \t vs spaces.
-    PTYOUT = re.compile(r"'CHANGELOG.md(?:\s+|\\t)README.md\\r\\n'")
+    # The result of the pty test has platform-dependent \t vs spaces. There
+    # may be ansi color directives on Alpine linux.
+    ANSI_ESC = r"(?:\\x1b[\[0-9;]+m)?"
+    PTYOUT = re.compile(
+        r"'%sCHANGELOG.md%s(?:\s+|\\t)%sREADME.md%s\\r\\n'" % ((ANSI_ESC,) * 4)
+    )
     if PTYOUT.fullmatch(result) and PTYOUT.fullmatch(output):
         return
 
     # cat's stderr is displayed with full path name on Linux/Windows:
     if "/usr/bin/cat:" in result:
         result = result.replace("/usr/bin/cat", "cat")
+    # Normalize error message on alpine linux.
+    if "can't open 'does_not_exist'" in result:
+        result = result.replace("can't open 'does_not_exist'", "does_not_exist")
+        result = result.replace('"', "'")
 
     pattern = re.escape(output).replace(r"\.\.\.", ".*")
     if not re.fullmatch(pattern, result, re.DOTALL):

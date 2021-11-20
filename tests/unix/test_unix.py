@@ -29,6 +29,9 @@ pytestmark = [pytest.mark.asyncio, unix_only]
 
 _CANCELLED_EXIT_CODE = -15
 
+# True if we're running on alpine linux.
+_IS_ALPINE = os.path.exists("/etc/alpine-release")
+
 
 def _is_uvloop():
     "Return true if we're running under uvloop."
@@ -38,6 +41,11 @@ def _is_uvloop():
 def _is_codecov():
     "Return true if we're running code coverage."
     return os.environ.get("SHELLOUS_CODE_COVERAGE")
+
+
+def _is_lsof_unsupported():
+    "Return true if lsof tests are unsupported."
+    return _IS_ALPINE or _is_uvloop() or _is_codecov()
 
 
 def _readouterr(capfd):
@@ -56,6 +64,13 @@ def _readouterr(capfd):
 @pytest.fixture
 def sh():
     return context()
+
+
+@pytest.fixture
+def ls(sh):
+    if sys.platform == "linux":
+        return sh("ls", "--color=never")
+    return sh("ls")
 
 
 async def test_python(sh):
@@ -541,7 +556,9 @@ async def test_exit_codes(sh):
     cmd = sh("cat", "/tmp/__does_not_exist__")
     result = await cmd
     # "cat" may be displayed as "/usr/bin/cat" on some systems.
-    assert result.endswith("cat: /tmp/__does_not_exist__: No such file or directory\n")
+    assert re.fullmatch(
+        r".*cat: .*__does_not_exist__'?: No such file or directory\n", result
+    )
 
 
 async def test_pipeline_async_iteration(sh):
@@ -735,7 +752,11 @@ async def test_process_substitution(sh):
 
     cmd = sh("diff", sh("echo", "a"), sh("echo", "b")).set(exit_codes={0, 1})
     result = await cmd
-    assert result == "1c1\n< a\n---\n> b\n"
+
+    if _IS_ALPINE:
+        assert result.endswith("@@ -1 +1 @@\n-a\n+b\n")
+    else:
+        assert result == "1c1\n< a\n---\n> b\n"
 
 
 async def test_process_substitution_with_pipe(sh):
@@ -750,7 +771,11 @@ async def test_process_substitution_with_pipe(sh):
     pipe2 = sh("echo", "b") | sh("cat")
     cmd = sh("diff", pipe1, pipe2).set(exit_codes={0, 1})
     result = await cmd
-    assert result == "1c1\n< a\n---\n> b\n"
+
+    if _IS_ALPINE:
+        assert result.endswith("@@ -1 +1 @@\n-a\n+b\n")
+    else:
+        assert result == "1c1\n< a\n---\n> b\n"
 
 
 async def test_process_substitution_write(sh, tmp_path):
@@ -876,7 +901,7 @@ async def test_pty_manual(sh):
 
 
 @pytest.mark.xfail(_is_uvloop(), reason="uvloop")
-async def test_pty_manual_ls(sh):
+async def test_pty_manual_ls(ls):
     """Test setting up a pty manually."""
 
     import pty  # import not supported on windows
@@ -888,7 +913,7 @@ async def test_pty_manual_ls(sh):
     ttyname = os.ttyname(child_fd)
 
     cmd = (
-        sh("ls", "README.md")
+        ls("README.md")
         .stdin(child_fd, close=False)
         .stdout(child_fd, close=False)
         .set(
@@ -1084,7 +1109,7 @@ _STTY_FREEBSD_13 = (
 )
 
 
-@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+@pytest.mark.xfail(_is_uvloop() or _IS_ALPINE, reason="uvloop,alpine")
 async def test_pty_stty_all(sh, tmp_path):
     "Test the `pty` option and print out the result of stty -a"
 
@@ -1162,10 +1187,10 @@ async def test_pty_cbreak_size(sh):
 
 
 @pytest.mark.xfail(_is_uvloop(), reason="uvloop")
-async def test_pty_raw_ls(sh):
+async def test_pty_raw_ls(ls):
     "Test the `pty` option in raw mode."
 
-    cmd = sh("ls").set(pty=raw(rows=24, cols=40)).stderr(STDOUT)
+    cmd = ls.set(pty=raw(rows=24, cols=40)).stderr(STDOUT)
     result = await cmd
 
     assert "README.md" in result
@@ -1173,7 +1198,7 @@ async def test_pty_raw_ls(sh):
         assert len(line.rstrip()) <= 40
 
 
-@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+@pytest.mark.xfail(_is_uvloop() or _IS_ALPINE, reason="uvloop,alpine")
 async def test_pty_raw_size_inherited(sh):
     "Test the `pty` option in raw mode."
 
@@ -1209,20 +1234,18 @@ async def test_pty_cat_iteration_no_echo(sh):
 
 
 @pytest.mark.xfail(_is_uvloop(), reason="uvloop")
-async def test_pty_canonical_ls(sh):
+async def test_pty_canonical_ls(ls):
     "Test canonical ls output through pty is in columns."
-    cmd = sh("ls", "README.md", "CHANGELOG.md").set(
-        pty=cooked(cols=20, rows=10, echo=False)
-    )
+    cmd = ls("README.md", "CHANGELOG.md").set(pty=cooked(cols=20, rows=10, echo=False))
     result = await cmd
     assert result == "CHANGELOG.md\r\nREADME.md\r\n"
 
 
 @pytest.mark.xfail(_is_uvloop() or _is_codecov(), reason="uvloop,codecov")
 @pytest.mark.timeout(90)
-async def test_pty_compare_large_ls_output(sh):
+async def test_pty_compare_large_ls_output(ls):
     "Compare pty output to non-pty output."
-    cmd = sh("ls", "-l", "/usr/lib")
+    cmd = ls("-l", "/usr/lib")
     regular_result = await cmd
 
     pty_result = await cmd.set(pty=True)
@@ -1232,9 +1255,9 @@ async def test_pty_compare_large_ls_output(sh):
 
 
 @pytest.mark.xfail(_is_uvloop(), reason="uvloop")
-async def test_pty_compare_small_ls_output(sh):
+async def test_pty_compare_small_ls_output(ls):
     "Compare pty output to non-pty output."
-    cmd = sh("ls", "README.md")
+    cmd = ls("README.md")
     regular_result = await cmd
 
     pty_result = await cmd.set(pty=True)
@@ -1244,10 +1267,10 @@ async def test_pty_compare_small_ls_output(sh):
 
 
 @pytest.mark.xfail(_is_uvloop(), reason="uvloop")
-async def test_stress_pty_canonical_ls_parallel(sh, report_children):
+async def test_stress_pty_canonical_ls_parallel(ls, report_children):
     "Test canonical ls output through pty is in columns (parallel stress test)."
     pty = cooked(cols=20, rows=10, echo=False)
-    cmd = sh("ls", "README.md", "CHANGELOG.md").set(pty=pty)
+    cmd = ls("README.md", "CHANGELOG.md").set(pty=pty)
 
     # Execute command 10 times in parallel.
     multi = [cmd] * 10
@@ -1258,10 +1281,10 @@ async def test_stress_pty_canonical_ls_parallel(sh, report_children):
 
 
 @pytest.mark.xfail(_is_uvloop(), reason="uvloop")
-async def test_stress_pty_canonical_ls_sequence(sh, report_children):
+async def test_stress_pty_canonical_ls_sequence(ls, report_children):
     "Test canonical ls output through pty is in columns (sequence stress test)."
     pty = cooked(cols=20, rows=10, echo=False)
-    cmd = sh("ls", "README.md", "CHANGELOG.md").set(pty=pty)
+    cmd = ls("README.md", "CHANGELOG.md").set(pty=pty)
 
     # Execute command 10 times sequentially.
     for _ in range(10):
@@ -1287,10 +1310,10 @@ async def test_pty_timeout_fail(sh):
 
 
 @pytest.mark.xfail(_is_uvloop(), reason="uvloop")
-async def test_pty_default_redirect_stderr(sh):
+async def test_pty_default_redirect_stderr(ls):
     "Test that pty redirects stderr to stdout."
 
-    cmd = sh("ls", "DOES_NOT_EXIST")
+    cmd = ls("DOES_NOT_EXIST")
 
     # Non-pty mode redirects stderr to /dev/null.
     result = await cmd.set(exit_codes={1, 2})
@@ -1513,7 +1536,7 @@ $4 ~ /^[0-9]+/ { sub(/[0-9]+/, "N", $9); print $4, $5, $9 }
 """
 
 
-@pytest.mark.skipif(_is_uvloop() or _is_codecov(), reason="codecov")
+@pytest.mark.skipif(_is_lsof_unsupported(), reason="uvloop,codecov,alpine")
 async def test_open_file_descriptors(sh):
     "Test what file descriptors are open in the subprocess."
 
@@ -1533,7 +1556,7 @@ async def test_open_file_descriptors(sh):
         assert result == "0u unix \n1 PIPE \n2u CHR /dev/null\n"
 
 
-@pytest.mark.skipif(_is_uvloop() or _is_codecov(), reason="codecov")
+@pytest.mark.skipif(_is_lsof_unsupported(), reason="uvloop,codecov,alpine")
 async def test_open_file_descriptors_unclosed_fds(sh):
     "Test what file descriptors are open in the subprocess (close_fds=False)."
 
@@ -1553,7 +1576,7 @@ async def test_open_file_descriptors_unclosed_fds(sh):
         assert result == "0u unix \n1 PIPE \n2u CHR /dev/null\n"
 
 
-@pytest.mark.skipif(_is_uvloop() or _is_codecov(), reason="uvloop,codecov")
+@pytest.mark.skipif(_is_lsof_unsupported(), reason="uvloop,codecov,alpine")
 async def test_open_file_descriptors_pty(sh):
     "Test what file descriptors are open in the pty subprocess."
 
@@ -1576,7 +1599,7 @@ async def test_open_file_descriptors_pty(sh):
         assert result == "0u CHR /dev/ttysN\n1u CHR /dev/ttysN\n2u CHR /dev/ttysN\n"
 
 
-@pytest.mark.skipif(_is_uvloop() or _is_codecov(), reason="uvloop,codecov")
+@pytest.mark.skipif(_is_lsof_unsupported(), reason="uvloop,codecov,alpine")
 async def test_open_file_descriptors_pty_unclosed_fds(sh):
     "Test what file descriptors are open in the pty (close_fds=False)."
 
