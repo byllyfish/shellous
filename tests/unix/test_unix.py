@@ -752,7 +752,11 @@ async def test_process_substitution(sh):
 
     cmd = sh("diff", sh("echo", "a"), sh("echo", "b")).set(exit_codes={0, 1})
     result = await cmd
-    assert result == "1c1\n< a\n---\n> b\n"
+
+    if _IS_ALPINE:
+        assert result.endswith("@@ -1 +1 @@\n-a\n+b\n")
+    else:
+        assert result == "1c1\n< a\n---\n> b\n"
 
 
 async def test_process_substitution_with_pipe(sh):
@@ -767,7 +771,11 @@ async def test_process_substitution_with_pipe(sh):
     pipe2 = sh("echo", "b") | sh("cat")
     cmd = sh("diff", pipe1, pipe2).set(exit_codes={0, 1})
     result = await cmd
-    assert result == "1c1\n< a\n---\n> b\n"
+
+    if _IS_ALPINE:
+        assert result.endswith("@@ -1 +1 @@\n-a\n+b\n")
+    else:
+        assert result == "1c1\n< a\n---\n> b\n"
 
 
 async def test_process_substitution_write(sh, tmp_path):
@@ -1101,7 +1109,7 @@ _STTY_FREEBSD_13 = (
 )
 
 
-@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+@pytest.mark.xfail(_is_uvloop() or _IS_ALPINE, reason="uvloop,alpine")
 async def test_pty_stty_all(sh, tmp_path):
     "Test the `pty` option and print out the result of stty -a"
 
@@ -1190,7 +1198,7 @@ async def test_pty_raw_ls(ls):
         assert len(line.rstrip()) <= 40
 
 
-@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+@pytest.mark.xfail(_is_uvloop() or _IS_ALPINE, reason="uvloop,alpine")
 async def test_pty_raw_size_inherited(sh):
     "Test the `pty` option in raw mode."
 

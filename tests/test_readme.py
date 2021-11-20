@@ -266,12 +266,10 @@ def _check_result(output, result):
     # cat's stderr is displayed with full path name on Linux/Windows:
     if "/usr/bin/cat:" in result:
         result = result.replace("/usr/bin/cat", "cat")
-
-    # The format of the "No such file or directory" message is different on
-    # alpine linux. Note that output can be bracketed by single or double quotes.
-    ERRMSG = re.compile(r".cat: .*does_not_exist.?: No such file or directory\n.")
-    if ERRMSG.fullmatch(result) and ERRMSG.fullmatch(output):
-        return
+    # Normalize error message on alpine linux.
+    if "can't open 'does_not_exist'" in result:
+        result = result.replace("can't open 'does_not_exist'", "does_not_exist")
+        result = result.replace('"', "'")
 
     pattern = re.escape(output).replace(r"\.\.\.", ".*")
     if not re.fullmatch(pattern, result, re.DOTALL):
