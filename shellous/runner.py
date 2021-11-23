@@ -12,7 +12,7 @@ from shellous import pty_util
 from shellous.harvest import harvest, harvest_results
 from shellous.log import LOG_DETAIL, LOG_ENTER, LOG_EXIT, LOGGER, log_method, log_timer
 from shellous.redirect import Redirect
-from shellous.result import Result, make_result
+from shellous.result import Result, ResultError, make_result
 from shellous.util import close_fds, uninterrupted, verify_dev_fd, wait_pid, which
 
 _KILL_TIMEOUT = 3.0
@@ -394,6 +394,12 @@ class Runner:
                 await harvest(*self._tasks, trustee=self)
             if self._is_bsd_pty():
                 await self._waiter()
+
+        except ResultError as ex:
+            LOGGER.info("Runner.wait exited with error %r ex=%r", self, ex)
+            self._tasks.clear()  # all tasks were cancelled
+            await self._kill()
+            raise  # re-raise exception
 
         except asyncio.CancelledError:
             LOGGER.info("Runner.wait cancelled %r", self)
@@ -889,6 +895,7 @@ class PipeRunner:
     async def _finish(self, exc_value):
         "Wait for pipeline to exit and handle cancellation."
         if exc_value is not None:
+            LOGGER.warning("PipeRunner._finish exc_value=%r", exc_value)
             if _is_cancelled(exc_value):
                 self._cancelled = True
             await self._wait(kill=True)
