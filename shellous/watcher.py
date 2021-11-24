@@ -243,7 +243,8 @@ class EPollAgent:
 
     def close(self):
         "Tell the epoll thread to exit."
-        os.write(self._selfpipe[1], b"\x00")
+        if self._selfpipe is not None:
+            os.write(self._selfpipe[1], b"\x00")
         self._thread.join()
 
     def _run(self):
@@ -265,6 +266,7 @@ class EPollAgent:
                 pidfds = list(self._pidfds.keys())
             close_fds(pidfds)
             close_fds(self._selfpipe)
+            self._selfpipe = None
 
     def _reap_pidfd(self, pidfd):
         "Handle epoll pidfd event."
@@ -274,7 +276,7 @@ class EPollAgent:
 
         LOGGER.debug("_reap_pidfd pidfd=%r pid=%r", pidfd, pid)
 
-        status = wait_pid(pid)
+        status = wait_pidfd(pidfd, pid)
         if status is not None:
             callback(pid, status, *args)
         else:
@@ -323,3 +325,29 @@ def _start_thread(target, *, name):
     thread = threading.Thread(target=_runner, name=name, daemon=True)
     thread.start()
     return thread
+
+
+def wait_pidfd(pidfd, pid):
+    """Call os.waitid and return exit status.
+    
+    Return None if process is still running.
+    """
+    try:
+        info = os.waitid(os.P_PIDFD, pidfd, os.WEXITED | os.WNOHANG)
+    except ChildProcessError as ex:
+        # Set status to 255 if process not found.
+        LOGGER.error("wait_pidfd(%r, %r) status is 255 ex=%r", pidfd, pid, ex)
+        return 255
+
+    LOGGER.debug("os.waitid(%r) returned %r", pidfd, info)
+
+    if info.si_pid == pid:
+        assert info.si_signo == signal.SIGCHLD
+        if info.si_code == os.CLD_EXITED:
+            return info.si_status
+        if info.si_code == os.CLD_KILLED:
+            return -info.si_status
+
+    LOGGER.error("wait_pidfd(%r, %r) unexpected response %r", pidfd, pid, info)
+
+    return None
