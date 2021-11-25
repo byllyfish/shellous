@@ -142,6 +142,7 @@
 
 <span class="n">_KILL_TIMEOUT</span> <span class="o">=</span> <span class="mf">3.0</span>
 <span class="n">_CLOSE_TIMEOUT</span> <span class="o">=</span> <span class="mf">0.25</span>
+<span class="n">_UNKNOWN_EXIT_CODE</span> <span class="o">=</span> <span class="mi">255</span>
 <span class="n">_UNLAUNCHED_EXIT_CODE</span> <span class="o">=</span> <span class="o">-</span><span class="mi">255</span>
 
 <span class="n">_BSD</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;freebsd&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span> <span class="o">==</span> <span class="s2">&quot;darwin&quot;</span>
@@ -450,6 +451,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_tasks</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_timer</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># asyncio.TimerHandle</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_timed_out</span> <span class="o">=</span> <span class="kc">False</span>  <span class="c1"># True if runner timeout expired</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_last_signal</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -472,8 +474,16 @@
     <span class="k">def</span> <span class="nf">returncode</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Process&#39;s exit code.&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cancelled</span><span class="p">:</span>
+                <span class="c1"># The process was cancelled before starting.</span>
+                <span class="k">return</span> <span class="n">_UNLAUNCHED_EXIT_CODE</span>
             <span class="k">return</span> <span class="kc">None</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">returncode</span>
+        <span class="n">code</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">returncode</span>
+        <span class="k">if</span> <span class="n">code</span> <span class="o">==</span> <span class="n">_UNKNOWN_EXIT_CODE</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_last_signal</span><span class="p">:</span>
+            <span class="c1"># Rarely after sending a SIGTERM, waitpid fails to locate the child</span>
+            <span class="c1"># process. In this case, map the status to the last signal we sent.</span>
+            <span class="k">return</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">_last_signal</span>
+        <span class="k">return</span> <span class="n">code</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">cancelled</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -482,12 +492,8 @@
 
     <span class="k">def</span> <span class="nf">result</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_bytes</span><span class="o">=</span><span class="sa">b</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
         <span class="s2">&quot;Check process exit code and raise a ResultError if necessary.&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="p">:</span>
-            <span class="n">code</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">returncode</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="c1"># The process was cancelled before starting.</span>
-            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cancelled</span>
-            <span class="n">code</span> <span class="o">=</span> <span class="n">_UNLAUNCHED_EXIT_CODE</span>
+        <span class="n">code</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">returncode</span>
+        <span class="k">assert</span> <span class="n">code</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
 
         <span class="n">result</span> <span class="o">=</span> <span class="n">Result</span><span class="p">(</span>
             <span class="n">output_bytes</span><span class="p">,</span>
@@ -591,6 +597,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">kill</span><span class="p">()</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">send_signal</span><span class="p">(</span><span class="n">sig</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_last_signal</span> <span class="o">=</span> <span class="n">sig</span>
 
     <span class="nd">@log_method</span><span class="p">(</span><span class="n">LOG_DETAIL</span><span class="p">)</span>
     <span class="k">async</span> <span class="k">def</span> <span class="nf">_kill_wait</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -887,7 +894,7 @@
         <span class="s2">&quot;Return string representation of Runner.&quot;</span>
         <span class="n">cancelled</span> <span class="o">=</span> <span class="s2">&quot; cancelled&quot;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cancelled</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="p">:</span>
-            <span class="n">procinfo</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot; pid=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">pid</span><span class="si">}</span><span class="s2"> exit_code=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">returncode</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="n">procinfo</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot; pid=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">pid</span><span class="si">}</span><span class="s2"> exit_code=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">returncode</span><span class="si">}</span><span class="s2">&quot;</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">procinfo</span> <span class="o">=</span> <span class="s2">&quot; pid=None&quot;</span>
         <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;&lt;Runner </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">!r}{</span><span class="n">cancelled</span><span class="si">}{</span><span class="n">procinfo</span><span class="si">}</span><span class="s2">&gt;&quot;</span>
@@ -1209,6 +1216,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_tasks</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_timer</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># asyncio.TimerHandle</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_timed_out</span> <span class="o">=</span> <span class="kc">False</span>  <span class="c1"># True if runner timeout expired</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_last_signal</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -1231,8 +1239,16 @@
     <span class="k">def</span> <span class="nf">returncode</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Process&#39;s exit code.&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cancelled</span><span class="p">:</span>
+                <span class="c1"># The process was cancelled before starting.</span>
+                <span class="k">return</span> <span class="n">_UNLAUNCHED_EXIT_CODE</span>
             <span class="k">return</span> <span class="kc">None</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">returncode</span>
+        <span class="n">code</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">returncode</span>
+        <span class="k">if</span> <span class="n">code</span> <span class="o">==</span> <span class="n">_UNKNOWN_EXIT_CODE</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_last_signal</span><span class="p">:</span>
+            <span class="c1"># Rarely after sending a SIGTERM, waitpid fails to locate the child</span>
+            <span class="c1"># process. In this case, map the status to the last signal we sent.</span>
+            <span class="k">return</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">_last_signal</span>
+        <span class="k">return</span> <span class="n">code</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">cancelled</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -1241,12 +1257,8 @@
 
     <span class="k">def</span> <span class="nf">result</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_bytes</span><span class="o">=</span><span class="sa">b</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
         <span class="s2">&quot;Check process exit code and raise a ResultError if necessary.&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="p">:</span>
-            <span class="n">code</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">returncode</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="c1"># The process was cancelled before starting.</span>
-            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cancelled</span>
-            <span class="n">code</span> <span class="o">=</span> <span class="n">_UNLAUNCHED_EXIT_CODE</span>
+        <span class="n">code</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">returncode</span>
+        <span class="k">assert</span> <span class="n">code</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
 
         <span class="n">result</span> <span class="o">=</span> <span class="n">Result</span><span class="p">(</span>
             <span class="n">output_bytes</span><span class="p">,</span>
@@ -1350,6 +1362,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">kill</span><span class="p">()</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">send_signal</span><span class="p">(</span><span class="n">sig</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_last_signal</span> <span class="o">=</span> <span class="n">sig</span>
 
     <span class="nd">@log_method</span><span class="p">(</span><span class="n">LOG_DETAIL</span><span class="p">)</span>
     <span class="k">async</span> <span class="k">def</span> <span class="nf">_kill_wait</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -1646,7 +1659,7 @@
         <span class="s2">&quot;Return string representation of Runner.&quot;</span>
         <span class="n">cancelled</span> <span class="o">=</span> <span class="s2">&quot; cancelled&quot;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cancelled</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="p">:</span>
-            <span class="n">procinfo</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot; pid=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">pid</span><span class="si">}</span><span class="s2"> exit_code=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">returncode</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="n">procinfo</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot; pid=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">pid</span><span class="si">}</span><span class="s2"> exit_code=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">returncode</span><span class="si">}</span><span class="s2">&quot;</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">procinfo</span> <span class="o">=</span> <span class="s2">&quot; pid=None&quot;</span>
         <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;&lt;Runner </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">!r}{</span><span class="n">cancelled</span><span class="si">}{</span><span class="n">procinfo</span><span class="si">}</span><span class="s2">&gt;&quot;</span>
@@ -1716,6 +1729,7 @@ result = run.result()
         <span class="bp">self</span><span class="o">.</span><span class="n">_tasks</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_timer</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># asyncio.TimerHandle</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_timed_out</span> <span class="o">=</span> <span class="kc">False</span>  <span class="c1"># True if runner timeout expired</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_last_signal</span> <span class="o">=</span> <span class="kc">None</span>
 </pre></div>
 
         </details>
@@ -1823,12 +1837,8 @@ result = run.result()
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">result</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_bytes</span><span class="o">=</span><span class="sa">b</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
         <span class="s2">&quot;Check process exit code and raise a ResultError if necessary.&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="p">:</span>
-            <span class="n">code</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">returncode</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="c1"># The process was cancelled before starting.</span>
-            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cancelled</span>
-            <span class="n">code</span> <span class="o">=</span> <span class="n">_UNLAUNCHED_EXIT_CODE</span>
+        <span class="n">code</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">returncode</span>
+        <span class="k">assert</span> <span class="n">code</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
 
         <span class="n">result</span> <span class="o">=</span> <span class="n">Result</span><span class="p">(</span>
             <span class="n">output_bytes</span><span class="p">,</span>
