@@ -1,6 +1,14 @@
 Shellous Change Log
 ===================
 
+0.10.0
+------
+
+- [FEATURE] Experimental child watcher now supports linux using pidfd.
+- [BUGFIX] Fix process still running error (#172).
+- [BUGFIX] Improve exit status reporting after a SIGTERM signal with experimental child watcher.
+- [LATERAL] Add continuous integration support for Alpine linux.
+
 0.9.3
 -----
 
