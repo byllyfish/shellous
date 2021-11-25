@@ -276,7 +276,7 @@ class EPollAgent:
 
         LOGGER.debug("_reap_pidfd pidfd=%r pid=%r", pidfd, pid)
 
-        status = wait_pidfd(pidfd, pid)
+        status = wait_pid(pid)
         if status is not None:
             callback(pid, status, *args)
         else:
@@ -325,29 +325,3 @@ def _start_thread(target, *, name):
     thread = threading.Thread(target=_runner, name=name, daemon=True)
     thread.start()
     return thread
-
-
-def wait_pidfd(pidfd, pid):
-    """Call os.waitid and return exit status.
-    
-    Return None if process is still running.
-    """
-    try:
-        info = os.waitid(os.P_PIDFD, pidfd, os.WEXITED | os.WNOHANG)
-    except ChildProcessError as ex:
-        # Set status to 255 if process not found.
-        LOGGER.error("wait_pidfd(%r, %r) status is 255 ex=%r", pidfd, pid, ex)
-        return 255
-
-    LOGGER.debug("os.waitid(%r) returned %r", pidfd, info)
-
-    if info.si_pid == pid:
-        assert info.si_signo == signal.SIGCHLD
-        if info.si_code == os.CLD_EXITED:
-            return info.si_status
-        if info.si_code == os.CLD_KILLED:
-            return -info.si_status
-
-    LOGGER.error("wait_pidfd(%r, %r) unexpected response %r", pidfd, pid, info)
-
-    return None
