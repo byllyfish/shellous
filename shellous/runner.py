@@ -17,6 +17,7 @@ from shellous.util import close_fds, uninterrupted, verify_dev_fd, wait_pid, whi
 
 _KILL_TIMEOUT = 3.0
 _CLOSE_TIMEOUT = 0.25
+_UNKNOWN_EXIT_CODE = 255
 _UNLAUNCHED_EXIT_CODE = -255
 
 _BSD = sys.platform.startswith("freebsd") or sys.platform == "darwin"
@@ -325,6 +326,7 @@ class Runner:
         self._tasks = []
         self._timer = None  # asyncio.TimerHandle
         self._timed_out = False  # True if runner timeout expired
+        self._last_signal = None
 
     @property
     def name(self):
@@ -347,8 +349,16 @@ class Runner:
     def returncode(self):
         "Process's exit code."
         if not self._proc:
+            if self._cancelled:
+                # The process was cancelled before starting.
+                return _UNLAUNCHED_EXIT_CODE
             return None
-        return self._proc.returncode
+        code = self._proc.returncode
+        if code == _UNKNOWN_EXIT_CODE and self._last_signal:
+            # Rarely after sending a SIGTERM, waitpid fails to locate the child
+            # process. In this case, map the status to the last signal we sent.
+            return -self._last_signal
+        return code
 
     @property
     def cancelled(self):
@@ -357,12 +367,8 @@ class Runner:
 
     def result(self, output_bytes=b""):
         "Check process exit code and raise a ResultError if necessary."
-        if self._proc:
-            code = self._proc.returncode
-        else:
-            # The process was cancelled before starting.
-            assert self._cancelled
-            code = _UNLAUNCHED_EXIT_CODE
+        code = self.returncode
+        assert code is not None
 
         result = Result(
             output_bytes,
@@ -466,6 +472,7 @@ class Runner:
             self._proc.kill()
         else:
             self._proc.send_signal(sig)
+            self._last_signal = sig
 
     @log_method(LOG_DETAIL)
     async def _kill_wait(self):
@@ -762,7 +769,7 @@ class Runner:
         "Return string representation of Runner."
         cancelled = " cancelled" if self._cancelled else ""
         if self._proc:
-            procinfo = f" pid={self._proc.pid} exit_code={self._proc.returncode}"
+            procinfo = f" pid={self._proc.pid} exit_code={self.returncode}"
         else:
             procinfo = " pid=None"
         return f"<Runner {self.name!r}{cancelled}{procinfo}>"

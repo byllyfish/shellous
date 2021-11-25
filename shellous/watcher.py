@@ -243,7 +243,8 @@ class EPollAgent:
 
     def close(self):
         "Tell the epoll thread to exit."
-        os.write(self._selfpipe[1], b"\x00")
+        if self._selfpipe is not None:
+            os.write(self._selfpipe[1], b"\x00")
         self._thread.join()
 
     def _run(self):
@@ -265,6 +266,7 @@ class EPollAgent:
                 pidfds = list(self._pidfds.keys())
             close_fds(pidfds)
             close_fds(self._selfpipe)
+            self._selfpipe = None
 
     def _reap_pidfd(self, pidfd):
         "Handle epoll pidfd event."
