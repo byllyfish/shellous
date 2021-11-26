@@ -260,9 +260,9 @@ def _check_result(output, result):
 
     # The result of the pty test has platform-dependent \t vs spaces. There
     # may be ansi color directives on Alpine linux.
-    ANSI_ESC = r"(?:\\x1b[\[0-9;]+m)?"
+    ESC = r"(?:\\x1b[\[0-9;]+m)?"
     PTYOUT = re.compile(
-        r"'%sCHANGELOG.md%s(?:\s+|\\t)%sREADME.md%s\\r\\n'" % ((ANSI_ESC,) * 4)
+        fr"'{ESC}CHANGELOG.md{ESC}(?:\s+|\\t){ESC}README.md{ESC}\\r\\n'"
     )
     if PTYOUT.fullmatch(result) and PTYOUT.fullmatch(output):
         return

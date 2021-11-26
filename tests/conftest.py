@@ -4,7 +4,6 @@ import asyncio
 import contextlib
 import functools
 import gc
-import logging
 import os
 import re
 import signal

@@ -1063,7 +1063,7 @@ async def test_wait_for_zero_seconds(sleep_cmd):
 
     # There are no start/stop audit calls when the timeout expires before
     # launching the process.
-    assert calls == []
+    assert not calls
 
 
 async def test_timeout_zero_seconds(sleep_cmd):
@@ -1195,7 +1195,7 @@ async def test_asl_zip(count_cmd):
     zipped = asl.zip(singled, doubled)
 
     # The cool thing is that no subprocesses are launched until we iterate!
-    assert calls == []
+    assert not calls
 
     assert await asl.list(zipped) == [
         (1, 2),
