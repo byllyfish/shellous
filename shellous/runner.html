@@ -479,10 +479,10 @@
                 <span class="k">return</span> <span class="n">_UNLAUNCHED_EXIT_CODE</span>
             <span class="k">return</span> <span class="kc">None</span>
         <span class="n">code</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">returncode</span>
-        <span class="k">if</span> <span class="n">code</span> <span class="o">==</span> <span class="n">_UNKNOWN_EXIT_CODE</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_last_signal</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">code</span> <span class="o">==</span> <span class="n">_UNKNOWN_EXIT_CODE</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_last_signal</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="c1"># Rarely after sending a SIGTERM, waitpid fails to locate the child</span>
             <span class="c1"># process. In this case, map the status to the last signal we sent.</span>
-            <span class="k">return</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">_last_signal</span>
+            <span class="k">return</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">_last_signal</span>  <span class="c1"># pylint: disable=invalid-unary-operand-type</span>
         <span class="k">return</span> <span class="n">code</span>
 
     <span class="nd">@property</span>
@@ -1244,10 +1244,10 @@
                 <span class="k">return</span> <span class="n">_UNLAUNCHED_EXIT_CODE</span>
             <span class="k">return</span> <span class="kc">None</span>
         <span class="n">code</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">returncode</span>
-        <span class="k">if</span> <span class="n">code</span> <span class="o">==</span> <span class="n">_UNKNOWN_EXIT_CODE</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_last_signal</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">code</span> <span class="o">==</span> <span class="n">_UNKNOWN_EXIT_CODE</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_last_signal</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="c1"># Rarely after sending a SIGTERM, waitpid fails to locate the child</span>
             <span class="c1"># process. In this case, map the status to the last signal we sent.</span>
-            <span class="k">return</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">_last_signal</span>
+            <span class="k">return</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">_last_signal</span>  <span class="c1"># pylint: disable=invalid-unary-operand-type</span>
         <span class="k">return</span> <span class="n">code</span>
 
     <span class="nd">@property</span>
