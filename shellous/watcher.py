@@ -14,7 +14,6 @@ import asyncio
 import os
 import select
 import signal
-import socket
 import sys
 import threading
 
@@ -196,9 +195,9 @@ class KQueueAgent:
             # Process is still running.
             LOGGER.critical("_reap_pid: process still running pid=%r", pid)
 
-    def _add_kevent(self, ident, filter, flags, fflags=0):
+    def _add_kevent(self, ident, kfilter, flags, fflags=0):
         "Add specified kevent to kqueue."
-        event = select.kevent(ident, filter, flags, fflags)
+        event = select.kevent(ident, kfilter, flags, fflags)
         self._kqueue.control([event], 0)
 
 

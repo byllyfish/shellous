@@ -9,11 +9,11 @@ SHELLOUS_EXIT_CODE = int(os.environ.get("SHELLOUS_EXIT_CODE") or 0)
 SHELLOUS_EXIT_SLEEP = float(os.environ.get("SHELLOUS_EXIT_SLEEP") or 0)
 
 
-def _write(data):
+def _write(value):
     "Write data to stdout as bytes."
     try:
-        if data:
-            sys.stdout.buffer.write(data)
+        if value:
+            sys.stdout.buffer.write(value)
             sys.stdout.buffer.flush()
     except BrokenPipeError:
         # https://docs.python.org/3/library/signal.html#note-on-sigpipe

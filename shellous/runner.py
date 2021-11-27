@@ -354,10 +354,10 @@ class Runner:
                 return _UNLAUNCHED_EXIT_CODE
             return None
         code = self._proc.returncode
-        if code == _UNKNOWN_EXIT_CODE and self._last_signal:
+        if code == _UNKNOWN_EXIT_CODE and self._last_signal is not None:
             # Rarely after sending a SIGTERM, waitpid fails to locate the child
             # process. In this case, map the status to the last signal we sent.
-            return -self._last_signal
+            return -self._last_signal  # pylint: disable=invalid-unary-operand-type
         return code
 
     @property

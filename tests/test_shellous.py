@@ -501,7 +501,6 @@ async def test_runner_enter(echo_cmd):
     await asyncio.sleep(0)
     task.cancel()
 
-    # FIXME: At what point, should Runner raise a ResultError?
     with pytest.raises(asyncio.CancelledError):
         await task
 
@@ -631,7 +630,6 @@ async def test_pipe_immediate_cancel(cat_cmd, tr_cmd):
     await asyncio.sleep(0)
     task.cancel()
     with pytest.raises(asyncio.CancelledError):
-        # FIXME: Should raise ResultError.
         await task
 
 
@@ -1063,7 +1061,7 @@ async def test_wait_for_zero_seconds(sleep_cmd):
 
     # There are no start/stop audit calls when the timeout expires before
     # launching the process.
-    assert calls == []
+    assert not calls
 
 
 async def test_timeout_zero_seconds(sleep_cmd):
@@ -1195,7 +1193,7 @@ async def test_asl_zip(count_cmd):
     zipped = asl.zip(singled, doubled)
 
     # The cool thing is that no subprocesses are launched until we iterate!
-    assert calls == []
+    assert not calls
 
     assert await asl.list(zipped) == [
         (1, 2),

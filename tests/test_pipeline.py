@@ -287,10 +287,10 @@ def test_pipeline_percent_op(sh):
 
     pipe = sh("echo", "abc") | sh("cat")
     with pytest.raises(TypeError):
-        sh("nohup") % pipe
+        _ = sh("nohup") % pipe
 
     with pytest.raises(TypeError):
-        pipe % sh("nohup")
+        _ = pipe % sh("nohup")
 
 
 def test_pipeline_percent_precedence(sh):

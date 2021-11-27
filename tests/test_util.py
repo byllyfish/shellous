@@ -2,17 +2,9 @@
 
 import asyncio
 import os
-import sys
 
 import pytest
-from shellous.util import (
-    close_fds,
-    coerce_env,
-    decode,
-    uninterrupted,
-    verify_dev_fd,
-    wait_pid,
-)
+from shellous.util import close_fds, coerce_env, decode, uninterrupted, verify_dev_fd
 
 pytestmark = pytest.mark.asyncio
 

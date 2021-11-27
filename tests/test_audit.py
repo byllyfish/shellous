@@ -192,15 +192,18 @@ async def test_audit_block_pipe_specific_cmd():
     finally:
         _HOOK = None
 
-    assert callbacks == [
-        "start:hello:None:None",
-        "start:grep:None:None",
-        "stop:grep:None:RuntimeError",
-        "signal:hello:None:None",
-        "stop:hello:NonZero:CancelledError",
-    ] or callbacks == [
-        "start:hello:None:None",
-        "start:grep:None:None",
-        "stop:grep:None:RuntimeError",
-        "stop:hello:NonZero:CancelledError",  # signal not sent to hello
-    ]
+    assert callbacks in (
+        [
+            "start:hello:None:None",
+            "start:grep:None:None",
+            "stop:grep:None:RuntimeError",
+            "signal:hello:None:None",
+            "stop:hello:NonZero:CancelledError",
+        ],
+        [
+            "start:hello:None:None",
+            "start:grep:None:None",
+            "stop:grep:None:RuntimeError",
+            "stop:hello:NonZero:CancelledError",  # signal not sent to hello
+        ],
+    )
