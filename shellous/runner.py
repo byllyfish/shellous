@@ -13,7 +13,7 @@ from shellous.harvest import harvest, harvest_results
 from shellous.log import LOG_DETAIL, LOG_ENTER, LOG_EXIT, LOGGER, log_method, log_timer
 from shellous.redirect import Redirect
 from shellous.result import Result, ResultError, make_result
-from shellous.util import close_fds, uninterrupted, verify_dev_fd, wait_pid, which
+from shellous.util import close_fds, poll_wait_pid, uninterrupted, verify_dev_fd, which
 
 _KILL_TIMEOUT = 3.0
 _CLOSE_TIMEOUT = 0.25
@@ -418,18 +418,8 @@ class Runner:
         "Manually poll `waitpid` until process finishes."
         assert self._is_bsd_pty()
         while True:
-            status = wait_pid(self._proc.pid)
-            if status is not None:
-                LOGGER.debug(
-                    "process %r exited with returncode %r (wait_pid)",
-                    self._proc.pid,
-                    status,
-                )
-                # pylint: disable=protected-access
-                self._proc._transport._returncode = status
-                self._proc._transport._proc.returncode = status
+            if poll_wait_pid(self._proc):
                 break
-
             await asyncio.sleep(0.025)
 
     @log_method(LOG_DETAIL)

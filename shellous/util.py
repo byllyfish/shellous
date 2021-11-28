@@ -77,7 +77,7 @@ def wait_pid(pid: int) -> Optional[int]:
         result_pid, status = os.waitpid(pid, os.WNOHANG)  # type: ignore
     except ChildProcessError as ex:
         # Set status to 255 if process not found.
-        LOGGER.error("wait_pid(%r) status is 255 ex=%r", pid, ex)
+        LOGGER.warning("wait_pid(%r) status is 255 ex=%r", pid, ex)
         return 255
 
     if LOG_DETAIL:
@@ -96,6 +96,24 @@ def wait_pid(pid: int) -> Optional[int]:
         pass
 
     return status
+
+
+def poll_wait_pid(proc: asyncio.subprocess.Process) -> bool:
+    "Poll wait_pid once and return True if process has exited."
+    status = wait_pid(proc.pid)
+    if status is None:
+        return False
+
+    LOGGER.debug(
+        "process %r exited with returncode %r (wait_pid)",
+        proc.pid,
+        status,
+    )
+
+    # pylint: disable=protected-access
+    proc._transport._returncode = status
+    proc._transport._proc.returncode = status
+    return True
 
 
 async def uninterrupted(coro):
