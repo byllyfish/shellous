@@ -5,6 +5,7 @@ import contextvars
 import io
 import os
 import shutil
+from asyncio.subprocess import Process
 from collections import defaultdict
 from typing import Any, Iterable, Optional, Union
 
@@ -98,7 +99,7 @@ def wait_pid(pid: int) -> Optional[int]:
     return status
 
 
-def poll_wait_pid(proc: asyncio.subprocess.Process) -> bool:
+def poll_wait_pid(proc: Process) -> bool:
     "Poll wait_pid once and return True if process has exited."
     if proc.returncode is not None:
         return True
