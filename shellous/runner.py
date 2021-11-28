@@ -478,8 +478,10 @@ class Runner:
             self._send_signal(None)
             await harvest(self._waiter(), timeout=_KILL_TIMEOUT, trustee=self)
         except asyncio.TimeoutError as ex:
-            # Check if the process is still running manually.
-            if not poll_wait_pid(self._proc):
+            # Manually check if the process is still running.
+            if poll_wait_pid(self._proc):
+                LOGGER.warning("%r process reaped manually %r", self, self._proc)
+            else:
                 LOGGER.error("%r failed to kill process %r", self, self._proc)
                 raise RuntimeError(f"Unable to kill process {self._proc!r}") from ex
 
