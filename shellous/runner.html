@@ -138,7 +138,7 @@
 <span class="kn">from</span> <span class="nn">shellous.log</span> <span class="kn">import</span> <span class="n">LOG_DETAIL</span><span class="p">,</span> <span class="n">LOG_ENTER</span><span class="p">,</span> <span class="n">LOG_EXIT</span><span class="p">,</span> <span class="n">LOGGER</span><span class="p">,</span> <span class="n">log_method</span><span class="p">,</span> <span class="n">log_timer</span>
 <span class="kn">from</span> <span class="nn">shellous.redirect</span> <span class="kn">import</span> <span class="n">Redirect</span>
 <span class="kn">from</span> <span class="nn">shellous.result</span> <span class="kn">import</span> <span class="n">Result</span><span class="p">,</span> <span class="n">ResultError</span><span class="p">,</span> <span class="n">make_result</span>
-<span class="kn">from</span> <span class="nn">shellous.util</span> <span class="kn">import</span> <span class="n">close_fds</span><span class="p">,</span> <span class="n">uninterrupted</span><span class="p">,</span> <span class="n">verify_dev_fd</span><span class="p">,</span> <span class="n">wait_pid</span><span class="p">,</span> <span class="n">which</span>
+<span class="kn">from</span> <span class="nn">shellous.util</span> <span class="kn">import</span> <span class="n">close_fds</span><span class="p">,</span> <span class="n">poll_wait_pid</span><span class="p">,</span> <span class="n">uninterrupted</span><span class="p">,</span> <span class="n">verify_dev_fd</span><span class="p">,</span> <span class="n">which</span>
 
 <span class="n">_KILL_TIMEOUT</span> <span class="o">=</span> <span class="mf">3.0</span>
 <span class="n">_CLOSE_TIMEOUT</span> <span class="o">=</span> <span class="mf">0.25</span>
@@ -166,7 +166,8 @@
     <span class="k">return</span> <span class="n">cmd</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">writable</span>
 
 
-<span class="k">def</span> <span class="nf">_split</span><span class="p">(</span><span class="n">encoding</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">_enc</span><span class="p">(</span><span class="n">encoding</span><span class="p">):</span>
+    <span class="s2">&quot;Helper function to split the encoding name into codec and errors.&quot;</span>
     <span class="k">if</span> <span class="n">encoding</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;when encoding is None, input must be bytes&quot;</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">encoding</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">maxsplit</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
@@ -347,7 +348,7 @@
             <span class="k">if</span> <span class="n">close</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">open_fds</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">stdin</span><span class="p">)</span>
         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">input_</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-            <span class="n">input_bytes</span> <span class="o">=</span> <span class="n">input_</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="o">*</span><span class="n">_split</span><span class="p">(</span><span class="n">encoding</span><span class="p">))</span>
+            <span class="n">input_bytes</span> <span class="o">=</span> <span class="n">input_</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="o">*</span><span class="n">_enc</span><span class="p">(</span><span class="n">encoding</span><span class="p">))</span>
         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">input_</span><span class="p">,</span> <span class="p">(</span><span class="n">asyncio</span><span class="o">.</span><span class="n">StreamReader</span><span class="p">,</span> <span class="n">io</span><span class="o">.</span><span class="n">BytesIO</span><span class="p">,</span> <span class="n">io</span><span class="o">.</span><span class="n">StringIO</span><span class="p">)):</span>
             <span class="c1"># Shellous-supported input classes.</span>
             <span class="k">assert</span> <span class="n">stdin</span> <span class="o">==</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span>
@@ -543,18 +544,8 @@
         <span class="s2">&quot;Manually poll `waitpid` until process finishes.&quot;</span>
         <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_bsd_pty</span><span class="p">()</span>
         <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
-            <span class="n">status</span> <span class="o">=</span> <span class="n">wait_pid</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">pid</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">status</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-                    <span class="s2">&quot;process </span><span class="si">%r</span><span class="s2"> exited with returncode </span><span class="si">%r</span><span class="s2"> (wait_pid)&quot;</span><span class="p">,</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">pid</span><span class="p">,</span>
-                    <span class="n">status</span><span class="p">,</span>
-                <span class="p">)</span>
-                <span class="c1"># pylint: disable=protected-access</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">_transport</span><span class="o">.</span><span class="n">_returncode</span> <span class="o">=</span> <span class="n">status</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">_transport</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">returncode</span> <span class="o">=</span> <span class="n">status</span>
+            <span class="k">if</span> <span class="n">poll_wait_pid</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="p">):</span>
                 <span class="k">break</span>
-
             <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.025</span><span class="p">)</span>
 
     <span class="nd">@log_method</span><span class="p">(</span><span class="n">LOG_DETAIL</span><span class="p">)</span>
@@ -612,8 +603,12 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">_send_signal</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
             <span class="k">await</span> <span class="n">harvest</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_waiter</span><span class="p">(),</span> <span class="n">timeout</span><span class="o">=</span><span class="n">_KILL_TIMEOUT</span><span class="p">,</span> <span class="n">trustee</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
         <span class="k">except</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">TimeoutError</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>
-            <span class="n">LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%r</span><span class="s2"> failed to kill process </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="p">)</span>
-            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unable to kill process </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">ex</span>
+            <span class="c1"># Manually check if the process is still running.</span>
+            <span class="k">if</span> <span class="n">poll_wait_pid</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="p">):</span>
+                <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%r</span><span class="s2"> process reaped manually </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%r</span><span class="s2"> failed to kill process </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unable to kill process </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">ex</span>
 
     <span class="nd">@log_method</span><span class="p">(</span><span class="n">LOG_ENTER</span><span class="p">,</span> <span class="n">_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="k">async</span> <span class="k">def</span> <span class="fm">__aenter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -777,7 +772,7 @@
             <span class="k">return</span> <span class="kc">None</span>
 
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">io</span><span class="o">.</span><span class="n">StringIO</span><span class="p">):</span>
-            <span class="n">input_bytes</span> <span class="o">=</span> <span class="n">source</span><span class="o">.</span><span class="n">getvalue</span><span class="p">()</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="o">*</span><span class="n">_split</span><span class="p">(</span><span class="n">opts</span><span class="o">.</span><span class="n">encoding</span><span class="p">))</span>
+            <span class="n">input_bytes</span> <span class="o">=</span> <span class="n">source</span><span class="o">.</span><span class="n">getvalue</span><span class="p">()</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="o">*</span><span class="n">_enc</span><span class="p">(</span><span class="n">opts</span><span class="o">.</span><span class="n">encoding</span><span class="p">))</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">add_task</span><span class="p">(</span><span class="n">redir</span><span class="o">.</span><span class="n">write_stream</span><span class="p">(</span><span class="n">input_bytes</span><span class="p">,</span> <span class="n">stream</span><span class="p">,</span> <span class="n">eof</span><span class="p">),</span> <span class="n">tag</span><span class="p">)</span>
             <span class="k">return</span> <span class="kc">None</span>
 
@@ -1308,18 +1303,8 @@
         <span class="s2">&quot;Manually poll `waitpid` until process finishes.&quot;</span>
         <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_bsd_pty</span><span class="p">()</span>
         <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
-            <span class="n">status</span> <span class="o">=</span> <span class="n">wait_pid</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">pid</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">status</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-                    <span class="s2">&quot;process </span><span class="si">%r</span><span class="s2"> exited with returncode </span><span class="si">%r</span><span class="s2"> (wait_pid)&quot;</span><span class="p">,</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">pid</span><span class="p">,</span>
-                    <span class="n">status</span><span class="p">,</span>
-                <span class="p">)</span>
-                <span class="c1"># pylint: disable=protected-access</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">_transport</span><span class="o">.</span><span class="n">_returncode</span> <span class="o">=</span> <span class="n">status</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">_transport</span><span class="o">.</span><span class="n">_proc</span><span class="o">.</span><span class="n">returncode</span> <span class="o">=</span> <span class="n">status</span>
+            <span class="k">if</span> <span class="n">poll_wait_pid</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="p">):</span>
                 <span class="k">break</span>
-
             <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.025</span><span class="p">)</span>
 
     <span class="nd">@log_method</span><span class="p">(</span><span class="n">LOG_DETAIL</span><span class="p">)</span>
@@ -1377,8 +1362,12 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">_send_signal</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
             <span class="k">await</span> <span class="n">harvest</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_waiter</span><span class="p">(),</span> <span class="n">timeout</span><span class="o">=</span><span class="n">_KILL_TIMEOUT</span><span class="p">,</span> <span class="n">trustee</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
         <span class="k">except</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">TimeoutError</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>
-            <span class="n">LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%r</span><span class="s2"> failed to kill process </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="p">)</span>
-            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unable to kill process </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">ex</span>
+            <span class="c1"># Manually check if the process is still running.</span>
+            <span class="k">if</span> <span class="n">poll_wait_pid</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="p">):</span>
+                <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%r</span><span class="s2"> process reaped manually </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%r</span><span class="s2"> failed to kill process </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unable to kill process </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_proc</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">ex</span>
 
     <span class="nd">@log_method</span><span class="p">(</span><span class="n">LOG_ENTER</span><span class="p">,</span> <span class="n">_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="k">async</span> <span class="k">def</span> <span class="fm">__aenter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -1542,7 +1531,7 @@
             <span class="k">return</span> <span class="kc">None</span>
 
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">io</span><span class="o">.</span><span class="n">StringIO</span><span class="p">):</span>
-            <span class="n">input_bytes</span> <span class="o">=</span> <span class="n">source</span><span class="o">.</span><span class="n">getvalue</span><span class="p">()</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="o">*</span><span class="n">_split</span><span class="p">(</span><span class="n">opts</span><span class="o">.</span><span class="n">encoding</span><span class="p">))</span>
+            <span class="n">input_bytes</span> <span class="o">=</span> <span class="n">source</span><span class="o">.</span><span class="n">getvalue</span><span class="p">()</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="o">*</span><span class="n">_enc</span><span class="p">(</span><span class="n">opts</span><span class="o">.</span><span class="n">encoding</span><span class="p">))</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">add_task</span><span class="p">(</span><span class="n">redir</span><span class="o">.</span><span class="n">write_stream</span><span class="p">(</span><span class="n">input_bytes</span><span class="p">,</span> <span class="n">stream</span><span class="p">,</span> <span class="n">eof</span><span class="p">),</span> <span class="n">tag</span><span class="p">)</span>
             <span class="k">return</span> <span class="kc">None</span>
 
