@@ -13,7 +13,7 @@ from shellous.harvest import harvest, harvest_results
 from shellous.log import LOG_DETAIL, LOG_ENTER, LOG_EXIT, LOGGER, log_method, log_timer
 from shellous.redirect import Redirect
 from shellous.result import Result, ResultError, make_result
-from shellous.util import close_fds, uninterrupted, verify_dev_fd, wait_pid, which
+from shellous.util import close_fds, poll_wait_pid, uninterrupted, verify_dev_fd, which
 
 _KILL_TIMEOUT = 3.0
 _CLOSE_TIMEOUT = 0.25
@@ -41,7 +41,8 @@ def _is_writable(cmd):
     return cmd.options.writable
 
 
-def _split(encoding):
+def _enc(encoding):
+    "Helper function to split the encoding name into codec and errors."
     if encoding is None:
         raise TypeError("when encoding is None, input must be bytes")
     return encoding.split(maxsplit=1)
@@ -222,7 +223,7 @@ class _RunOptions:
             if close:
                 self.open_fds.append(stdin)
         elif isinstance(input_, str):
-            input_bytes = input_.encode(*_split(encoding))
+            input_bytes = input_.encode(*_enc(encoding))
         elif isinstance(input_, (asyncio.StreamReader, io.BytesIO, io.StringIO)):
             # Shellous-supported input classes.
             assert stdin == asyncio.subprocess.PIPE
@@ -418,18 +419,8 @@ class Runner:
         "Manually poll `waitpid` until process finishes."
         assert self._is_bsd_pty()
         while True:
-            status = wait_pid(self._proc.pid)
-            if status is not None:
-                LOGGER.debug(
-                    "process %r exited with returncode %r (wait_pid)",
-                    self._proc.pid,
-                    status,
-                )
-                # pylint: disable=protected-access
-                self._proc._transport._returncode = status
-                self._proc._transport._proc.returncode = status
+            if poll_wait_pid(self._proc):
                 break
-
             await asyncio.sleep(0.025)
 
     @log_method(LOG_DETAIL)
@@ -487,8 +478,12 @@ class Runner:
             self._send_signal(None)
             await harvest(self._waiter(), timeout=_KILL_TIMEOUT, trustee=self)
         except asyncio.TimeoutError as ex:
-            LOGGER.error("%r failed to kill process %r", self, self._proc)
-            raise RuntimeError(f"Unable to kill process {self._proc!r}") from ex
+            # Manually check if the process is still running.
+            if poll_wait_pid(self._proc):
+                LOGGER.warning("%r process reaped manually %r", self, self._proc)
+            else:
+                LOGGER.error("%r failed to kill process %r", self, self._proc)
+                raise RuntimeError(f"Unable to kill process {self._proc!r}") from ex
 
     @log_method(LOG_ENTER, _info=True)
     async def __aenter__(self):
@@ -652,7 +647,7 @@ class Runner:
             return None
 
         if isinstance(source, io.StringIO):
-            input_bytes = source.getvalue().encode(*_split(opts.encoding))
+            input_bytes = source.getvalue().encode(*_enc(opts.encoding))
             self.add_task(redir.write_stream(input_bytes, stream, eof), tag)
             return None
 
