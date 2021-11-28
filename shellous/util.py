@@ -111,8 +111,8 @@ def poll_wait_pid(proc: asyncio.subprocess.Process) -> bool:
     )
 
     # pylint: disable=protected-access
-    proc._transport._returncode = status
-    proc._transport._proc.returncode = status
+    proc._transport._returncode = status  # type: ignore
+    proc._transport._proc.returncode = status  # type: ignore
     return True
 
 
