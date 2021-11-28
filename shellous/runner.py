@@ -41,7 +41,8 @@ def _is_writable(cmd):
     return cmd.options.writable
 
 
-def _split(encoding):
+def _enc(encoding):
+    "Helper function to split the encoding name into codec and errors."
     if encoding is None:
         raise TypeError("when encoding is None, input must be bytes")
     return encoding.split(maxsplit=1)
@@ -222,7 +223,7 @@ class _RunOptions:
             if close:
                 self.open_fds.append(stdin)
         elif isinstance(input_, str):
-            input_bytes = input_.encode(*_split(encoding))
+            input_bytes = input_.encode(*_enc(encoding))
         elif isinstance(input_, (asyncio.StreamReader, io.BytesIO, io.StringIO)):
             # Shellous-supported input classes.
             assert stdin == asyncio.subprocess.PIPE
@@ -477,8 +478,10 @@ class Runner:
             self._send_signal(None)
             await harvest(self._waiter(), timeout=_KILL_TIMEOUT, trustee=self)
         except asyncio.TimeoutError as ex:
-            LOGGER.error("%r failed to kill process %r", self, self._proc)
-            raise RuntimeError(f"Unable to kill process {self._proc!r}") from ex
+            # Check if the process is still running manually.
+            if not poll_wait_pid(self._proc):
+                LOGGER.error("%r failed to kill process %r", self, self._proc)
+                raise RuntimeError(f"Unable to kill process {self._proc!r}") from ex
 
     @log_method(LOG_ENTER, _info=True)
     async def __aenter__(self):
@@ -642,7 +645,7 @@ class Runner:
             return None
 
         if isinstance(source, io.StringIO):
-            input_bytes = source.getvalue().encode(*_split(opts.encoding))
+            input_bytes = source.getvalue().encode(*_enc(opts.encoding))
             self.add_task(redir.write_stream(input_bytes, stream, eof), tag)
             return None
 

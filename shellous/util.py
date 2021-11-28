@@ -100,6 +100,9 @@ def wait_pid(pid: int) -> Optional[int]:
 
 def poll_wait_pid(proc: asyncio.subprocess.Process) -> bool:
     "Poll wait_pid once and return True if process has exited."
+    if proc.returncode is not None:
+        return True
+
     status = wait_pid(proc.pid)
     if status is None:
         return False
