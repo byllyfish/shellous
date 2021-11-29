@@ -2,6 +2,7 @@
 
 # pylint: disable=redefined-outer-name,invalid-name
 
+import pickle
 from pathlib import Path
 
 import pytest
@@ -287,3 +288,31 @@ def test_percent_equals_op(sh):
     cmd = sh("nohup")
     cmd %= sh("echo", "abc")
     assert cmd == sh("nohup", sh("echo", "abc").args)
+
+
+def test_command_pickle(sh):
+    "Test that basic commands can be pickled."
+
+    cmd = sh("echo", "hello") | Path("/tmp/test_file")
+    value = pickle.dumps(cmd)
+    result = pickle.loads(value)
+
+    # Compare commands.
+    assert result is not cmd
+    assert result == cmd
+
+    # Compare command contexts (which are not part of __eq__).
+    assert result.options.context is not cmd.options.context
+    assert result.options.context == cmd.options.context
+
+
+def test_command_pickle_callback(sh):
+    "Test that some settings can't be pickled."
+
+    def _callback(phase, info):
+        pass
+
+    cmd = sh("echo", "hello").set(audit_callback=_callback)
+
+    with pytest.raises(AttributeError, match="local object"):
+        pickle.dumps(cmd)
