@@ -184,10 +184,10 @@ def test_command_env_init(sh):
 
 def test_options_merge_env(sh):
     "Test the internal Options class `merge_env` method."
-    opts1 = Options(sh)
+    opts1 = Options()
+    assert opts1.env is None
     opts2 = opts1.set_env(dict(A=1))
     opts3 = opts2.set(dict(inherit_env=False))
-    assert opts3.context is sh
 
     env1 = opts1.merge_env()
     assert env1 is None
@@ -204,15 +204,10 @@ def test_options_merge_env(sh):
     assert sh2 is not sh
     assert sh2.options.env == ImmutableDict(B="2")
 
-    # Copying env from `Context` is done by `Command`...
-    opts4 = Options(sh2)
-    assert opts4.context is sh2
-    assert opts4.env is None
-
 
 def test_options_hash_eq(sh):
     "Test that the internal Options class is hashable."
-    opts1 = Options(sh)
+    opts1 = Options()
     opts2 = opts1.set_env(dict(A=1))
     opts3 = opts2.set(dict(inherit_env=False))
 
@@ -300,10 +295,6 @@ def test_command_pickle(sh):
     # Compare commands.
     assert result is not cmd
     assert result == cmd
-
-    # Compare command contexts (which are not part of __eq__).
-    assert result.options.context is not cmd.options.context
-    assert result.options.context == cmd.options.context
 
 
 def test_command_pickle_callback(sh):

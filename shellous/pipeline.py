@@ -94,11 +94,9 @@ class Pipeline:
         return self.commands[key]
 
     def __call__(self, *args):
-        if len(args) == 0:
-            return self
-        # Use context from first command.
-        context = self.commands[0].options.context
-        return context._pipe_apply(self, args)
+        if args:
+            raise TypeError("Calling pipeline with 1 or more arguments.")
+        return self
 
     def __or__(self, rhs):
         if isinstance(rhs, (shellous.Command, Pipeline)):
