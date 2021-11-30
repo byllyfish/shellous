@@ -37,9 +37,6 @@
                                 <a class="function" href="#Options.__init__">Options</a>
                         </li>
                         <li>
-                                <a class="variable" href="#Options.context">context</a>
-                        </li>
-                        <li>
                                 <a class="variable" href="#Options.env">env</a>
                         </li>
                         <li>
@@ -201,6 +198,9 @@
                 </ul>
 
             </li>
+            <li>
+                    <a class="function" href="#coerce">coerce</a>
+            </li>
     </ul>
 
 
@@ -269,9 +269,6 @@ function to create these, rather than creating them directly.</p></li>
 <span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">class</span> <span class="nc">Options</span><span class="p">:</span>  <span class="c1"># pylint: disable=too-many-instance-attributes</span>
     <span class="s2">&quot;Concrete class for per-command options.&quot;</span>
-
-    <span class="n">context</span><span class="p">:</span> <span class="s2">&quot;CmdContext&quot;</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">compare</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="nb">repr</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-    <span class="s2">&quot;Root context object.&quot;</span>
 
     <span class="n">env</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ImmutableDict</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="nb">repr</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
     <span class="s2">&quot;Additional environment variables for command.&quot;</span>
@@ -417,13 +414,8 @@ function to create these, rather than creating them directly.</p></li>
 <span class="k">class</span> <span class="nc">CmdContext</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Concrete class for an immutable execution context.&quot;&quot;&quot;</span>
 
-    <span class="n">options</span><span class="p">:</span> <span class="n">Options</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># type: ignore</span>
+    <span class="n">options</span><span class="p">:</span> <span class="n">Options</span> <span class="o">=</span> <span class="n">Options</span><span class="p">()</span>
     <span class="s2">&quot;Default command options.&quot;</span>
-
-    <span class="k">def</span> <span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="c1"># Initialize `context` in Options to `self`.</span>
-            <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;options&quot;</span><span class="p">,</span> <span class="n">Options</span><span class="p">(</span><span class="bp">self</span><span class="p">))</span>
 
     <span class="k">def</span> <span class="nf">stdin</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">close</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;CmdContext&quot;</span><span class="p">:</span>
         <span class="s2">&quot;Return new context with updated `input` settings.&quot;</span>
@@ -476,48 +468,7 @@ function to create these, rather than creating them directly.</p></li>
 
     <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
         <span class="s2">&quot;Construct a new command.&quot;</span>
-        <span class="k">return</span> <span class="n">Command</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_coerce</span><span class="p">(</span><span class="n">args</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="p">)</span>
-
-    <span class="k">def</span> <span class="nf">_cmd_apply</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cmd</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Apply arguments to an existing command.</span>
-
-<span class="sd">        This method is an extension point.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">Command</span><span class="p">(</span>
-            <span class="n">cmd</span><span class="o">.</span><span class="n">args</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_coerce</span><span class="p">(</span><span class="n">args</span><span class="p">),</span>
-            <span class="n">cmd</span><span class="o">.</span><span class="n">options</span><span class="p">,</span>
-        <span class="p">)</span>
-
-    <span class="k">def</span> <span class="nf">_pipe_apply</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_pipe</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>  <span class="c1"># pylint: disable=no-self-use</span>
-        <span class="sd">&quot;&quot;&quot;Apply arguments to an existing pipeline.</span>
-
-<span class="sd">        This method is an extension point.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
-        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Calling pipeline with 1 or more arguments.&quot;</span><span class="p">)</span>
-
-    <span class="k">def</span> <span class="nf">_coerce</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Flatten lists and coerce arguments to string.</span>
-
-<span class="sd">        This method is an extension point.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">args</span><span class="p">:</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span>
-                <span class="n">arg</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">,</span> <span class="nb">bytearray</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">,</span> <span class="n">Command</span><span class="p">,</span> <span class="n">shellous</span><span class="o">.</span><span class="n">Pipeline</span><span class="p">)</span>
-            <span class="p">):</span>
-                <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span>
-            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">arg</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
-                <span class="n">result</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_coerce</span><span class="p">(</span><span class="n">arg</span><span class="p">))</span>
-            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">arg</span><span class="p">,</span> <span class="p">(</span><span class="nb">dict</span><span class="p">,</span> <span class="nb">set</span><span class="p">)):</span>
-                <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;syntax is reserved&quot;</span><span class="p">)</span>
-            <span class="k">elif</span> <span class="n">arg</span> <span class="ow">is</span> <span class="bp">Ellipsis</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;syntax is reserved&quot;</span><span class="p">)</span>
-            <span class="k">elif</span> <span class="n">arg</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;None in argument list&quot;</span><span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">arg</span><span class="p">))</span>
-        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Command</span><span class="p">(</span><span class="n">coerce</span><span class="p">(</span><span class="n">args</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="p">)</span>
 
 
 <span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -777,7 +728,7 @@ function to create these, rather than creating them directly.</p></li>
         <span class="s2">&quot;Apply more arguments to the end of the command.&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">args</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">self</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">_cmd_apply</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Command</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span> <span class="o">+</span> <span class="n">coerce</span><span class="p">(</span><span class="n">args</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Return string representation for command.</span>
@@ -820,6 +771,27 @@ function to create these, rather than creating them directly.</p></li>
 <span class="k">def</span> <span class="nf">_check_args</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="n">append</span><span class="p">):</span>
     <span class="k">if</span> <span class="n">append</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="n">STDOUT_APPEND_TYPES</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="si">}</span><span class="s2"> does not support append&quot;</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">coerce</span><span class="p">(</span><span class="n">args</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Flatten lists and coerce arguments to string.&quot;&quot;&quot;</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">args</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span>
+            <span class="n">arg</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">,</span> <span class="nb">bytearray</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">,</span> <span class="n">Command</span><span class="p">,</span> <span class="n">shellous</span><span class="o">.</span><span class="n">Pipeline</span><span class="p">)</span>
+        <span class="p">):</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">arg</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">coerce</span><span class="p">(</span><span class="n">arg</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">arg</span><span class="p">,</span> <span class="p">(</span><span class="nb">dict</span><span class="p">,</span> <span class="nb">set</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;syntax is reserved&quot;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">arg</span> <span class="ow">is</span> <span class="bp">Ellipsis</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;syntax is reserved&quot;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">arg</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;None in argument list&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">arg</span><span class="p">))</span>
+    <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
 </pre></div>
 
         </details>
@@ -840,9 +812,6 @@ function to create these, rather than creating them directly.</p></li>
             <div class="codehilite"><pre><span></span><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">class</span> <span class="nc">Options</span><span class="p">:</span>  <span class="c1"># pylint: disable=too-many-instance-attributes</span>
     <span class="s2">&quot;Concrete class for per-command options.&quot;</span>
-
-    <span class="n">context</span><span class="p">:</span> <span class="s2">&quot;CmdContext&quot;</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">compare</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="nb">repr</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-    <span class="s2">&quot;Root context object.&quot;</span>
 
     <span class="n">env</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ImmutableDict</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="nb">repr</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
     <span class="s2">&quot;Additional environment variables for command.&quot;</span>
@@ -995,7 +964,6 @@ function to create these, rather than creating them directly.</p></li>
 
         
             <span class="name">Options</span><span class="signature">(
-    context: <a href="#CmdContext">shellous.command.CmdContext</a>,
     env: Optional[immutables._map.Map] = None,
     inherit_env: bool = True,
     input: Any = &lt;Redirect.DEFAULT: -20&gt;,
@@ -1027,17 +995,6 @@ function to create these, rather than creating them directly.</p></li>
 
         
     
-
-                            </div>
-                            <div id="Options.context" class="classattr">
-                                            <div class="attr variable"><a class="headerlink" href="#Options.context">#&nbsp;&nbsp</a>
-
-        <span class="name">context</span><span class="annotation">: <a href="#CmdContext">shellous.command.CmdContext</a></span>
-    </div>
-
-            <div class="docstring"><p>Root context object.</p>
-</div>
-
 
                             </div>
                             <div id="Options.env" class="classattr">
@@ -1492,13 +1449,8 @@ function to create these, rather than creating them directly.</p></li>
 <span class="k">class</span> <span class="nc">CmdContext</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Concrete class for an immutable execution context.&quot;&quot;&quot;</span>
 
-    <span class="n">options</span><span class="p">:</span> <span class="n">Options</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># type: ignore</span>
+    <span class="n">options</span><span class="p">:</span> <span class="n">Options</span> <span class="o">=</span> <span class="n">Options</span><span class="p">()</span>
     <span class="s2">&quot;Default command options.&quot;</span>
-
-    <span class="k">def</span> <span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="c1"># Initialize `context` in Options to `self`.</span>
-            <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;options&quot;</span><span class="p">,</span> <span class="n">Options</span><span class="p">(</span><span class="bp">self</span><span class="p">))</span>
 
     <span class="k">def</span> <span class="nf">stdin</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">close</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;CmdContext&quot;</span><span class="p">:</span>
         <span class="s2">&quot;Return new context with updated `input` settings.&quot;</span>
@@ -1551,48 +1503,7 @@ function to create these, rather than creating them directly.</p></li>
 
     <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
         <span class="s2">&quot;Construct a new command.&quot;</span>
-        <span class="k">return</span> <span class="n">Command</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_coerce</span><span class="p">(</span><span class="n">args</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="p">)</span>
-
-    <span class="k">def</span> <span class="nf">_cmd_apply</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cmd</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Apply arguments to an existing command.</span>
-
-<span class="sd">        This method is an extension point.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">Command</span><span class="p">(</span>
-            <span class="n">cmd</span><span class="o">.</span><span class="n">args</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_coerce</span><span class="p">(</span><span class="n">args</span><span class="p">),</span>
-            <span class="n">cmd</span><span class="o">.</span><span class="n">options</span><span class="p">,</span>
-        <span class="p">)</span>
-
-    <span class="k">def</span> <span class="nf">_pipe_apply</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_pipe</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>  <span class="c1"># pylint: disable=no-self-use</span>
-        <span class="sd">&quot;&quot;&quot;Apply arguments to an existing pipeline.</span>
-
-<span class="sd">        This method is an extension point.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
-        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Calling pipeline with 1 or more arguments.&quot;</span><span class="p">)</span>
-
-    <span class="k">def</span> <span class="nf">_coerce</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Flatten lists and coerce arguments to string.</span>
-
-<span class="sd">        This method is an extension point.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">args</span><span class="p">:</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span>
-                <span class="n">arg</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">,</span> <span class="nb">bytearray</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">,</span> <span class="n">Command</span><span class="p">,</span> <span class="n">shellous</span><span class="o">.</span><span class="n">Pipeline</span><span class="p">)</span>
-            <span class="p">):</span>
-                <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span>
-            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">arg</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
-                <span class="n">result</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_coerce</span><span class="p">(</span><span class="n">arg</span><span class="p">))</span>
-            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">arg</span><span class="p">,</span> <span class="p">(</span><span class="nb">dict</span><span class="p">,</span> <span class="nb">set</span><span class="p">)):</span>
-                <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;syntax is reserved&quot;</span><span class="p">)</span>
-            <span class="k">elif</span> <span class="n">arg</span> <span class="ow">is</span> <span class="bp">Ellipsis</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;syntax is reserved&quot;</span><span class="p">)</span>
-            <span class="k">elif</span> <span class="n">arg</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;None in argument list&quot;</span><span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">arg</span><span class="p">))</span>
-        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Command</span><span class="p">(</span><span class="n">coerce</span><span class="p">(</span><span class="n">args</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="p">)</span>
 </pre></div>
 
         </details>
@@ -1605,7 +1516,9 @@ function to create these, rather than creating them directly.</p></li>
                                         <div class="attr function"><a class="headerlink" href="#CmdContext.__init__">#&nbsp;&nbsp</a>
 
         
-            <span class="name">CmdContext</span><span class="signature">(options: <a href="#Options">shellous.command.Options</a> = None)</span>
+            <span class="name">CmdContext</span><span class="signature">(
+    options: <a href="#Options">shellous.command.Options</a> = Options(inherit_env=True, input=&lt;Redirect.DEFAULT: -20&gt;, input_close=False, output=&lt;Redirect.DEFAULT: -20&gt;, output_append=False, output_close=False, error=&lt;Redirect.DEFAULT: -20&gt;, error_append=False, error_close=False, encoding=&#39;utf-8&#39;, return_result=False, incomplete_result=False, exit_codes=None, timeout=None, cancel_timeout=3.0, cancel_signal=&lt;Signals.SIGTERM: 15&gt;, alt_name=None, pass_fds=(), pass_fds_close=False, writable=False, _start_new_session=False, _preexec_fn=None, pty=False, close_fds=False, audit_callback=None)
+)</span>
     </div>
 
         
@@ -1615,7 +1528,7 @@ function to create these, rather than creating them directly.</p></li>
                             <div id="CmdContext.options" class="classattr">
                                             <div class="attr variable"><a class="headerlink" href="#CmdContext.options">#&nbsp;&nbsp</a>
 
-        <span class="name">options</span><span class="annotation">: <a href="#Options">shellous.command.Options</a></span><span class="default_value"> = None</span>
+        <span class="name">options</span><span class="annotation">: <a href="#Options">shellous.command.Options</a></span><span class="default_value"> = Options(inherit_env=True, input=&lt;Redirect.DEFAULT: -20&gt;, input_close=False, output=&lt;Redirect.DEFAULT: -20&gt;, output_append=False, output_close=False, error=&lt;Redirect.DEFAULT: -20&gt;, error_append=False, error_close=False, encoding=&#39;utf-8&#39;, return_result=False, incomplete_result=False, exit_codes=None, timeout=None, cancel_timeout=3.0, cancel_signal=&lt;Signals.SIGTERM: 15&gt;, alt_name=None, pass_fds=(), pass_fds_close=False, writable=False, _start_new_session=False, _preexec_fn=None, pty=False, close_fds=False, audit_callback=None)</span>
     </div>
 
             <div class="docstring"><p>Default command options.</p>
@@ -2066,7 +1979,7 @@ function to create these, rather than creating them directly.</p></li>
         <span class="s2">&quot;Apply more arguments to the end of the command.&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">args</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">self</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">_cmd_apply</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Command</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span> <span class="o">+</span> <span class="n">coerce</span><span class="p">(</span><span class="n">args</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Return string representation for command.</span>
@@ -2639,6 +2552,44 @@ result = run.result()
 
 
                             </div>
+                </section>
+                <section id="coerce">
+                            <div class="attr function"><a class="headerlink" href="#coerce">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">coerce</span><span class="signature">(args)</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">coerce</span><span class="p">(</span><span class="n">args</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Flatten lists and coerce arguments to string.&quot;&quot;&quot;</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">args</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span>
+            <span class="n">arg</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">,</span> <span class="nb">bytearray</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">,</span> <span class="n">Command</span><span class="p">,</span> <span class="n">shellous</span><span class="o">.</span><span class="n">Pipeline</span><span class="p">)</span>
+        <span class="p">):</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">arg</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">coerce</span><span class="p">(</span><span class="n">arg</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">arg</span><span class="p">,</span> <span class="p">(</span><span class="nb">dict</span><span class="p">,</span> <span class="nb">set</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;syntax is reserved&quot;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">arg</span> <span class="ow">is</span> <span class="bp">Ellipsis</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;syntax is reserved&quot;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">arg</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;None in argument list&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">arg</span><span class="p">))</span>
+    <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Flatten lists and coerce arguments to string.</p>
+</div>
+
+
                 </section>
     </main>
 <script>
