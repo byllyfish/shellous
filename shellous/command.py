@@ -40,9 +40,6 @@ _Audit_Fn_T = Optional[Callable[[str, dict], None]]  # pylint: disable=invalid-n
 class Options:  # pylint: disable=too-many-instance-attributes
     "Concrete class for per-command options."
 
-    context: "CmdContext" = field(compare=False, repr=False)
-    "Root context object."
-
     env: Optional[ImmutableDict] = field(default=None, repr=False)
     "Additional environment variables for command."
 
@@ -187,13 +184,8 @@ class Options:  # pylint: disable=too-many-instance-attributes
 class CmdContext:
     """Concrete class for an immutable execution context."""
 
-    options: Options = None  # type: ignore
+    options: Options = Options()
     "Default command options."
-
-    def __post_init__(self):
-        if self.options is None:
-            # Initialize `context` in Options to `self`.
-            object.__setattr__(self, "options", Options(self))
 
     def stdin(self, input_, *, close=False) -> "CmdContext":
         "Return new context with updated `input` settings."
@@ -246,48 +238,7 @@ class CmdContext:
 
     def __call__(self, *args):
         "Construct a new command."
-        return Command(self._coerce(args), self.options)
-
-    def _cmd_apply(self, cmd, args):
-        """Apply arguments to an existing command.
-
-        This method is an extension point.
-        """
-        return Command(
-            cmd.args + self._coerce(args),
-            cmd.options,
-        )
-
-    def _pipe_apply(self, _pipe, args):  # pylint: disable=no-self-use
-        """Apply arguments to an existing pipeline.
-
-        This method is an extension point.
-        """
-        assert len(args) > 0
-        raise TypeError("Calling pipeline with 1 or more arguments.")
-
-    def _coerce(self, args):
-        """Flatten lists and coerce arguments to string.
-
-        This method is an extension point.
-        """
-        result = []
-        for arg in args:
-            if isinstance(
-                arg, (str, bytes, bytearray, os.PathLike, Command, shellous.Pipeline)
-            ):
-                result.append(arg)
-            elif isinstance(arg, (list, tuple)):
-                result.extend(self._coerce(arg))
-            elif isinstance(arg, (dict, set)):
-                raise NotImplementedError("syntax is reserved")
-            elif arg is Ellipsis:
-                raise NotImplementedError("syntax is reserved")
-            elif arg is None:
-                raise TypeError("None in argument list")
-            else:
-                result.append(str(arg))
-        return tuple(result)
+        return Command(coerce(args), self.options)
 
 
 @dataclass(frozen=True)
@@ -547,7 +498,7 @@ class Command:
         "Apply more arguments to the end of the command."
         if not args:
             return self
-        return self.options.context._cmd_apply(self, args)
+        return Command(self.args + coerce(args), self.options)
 
     def __str__(self):
         """Return string representation for command.
@@ -590,3 +541,24 @@ class Command:
 def _check_args(out, append):
     if append and not isinstance(out, STDOUT_APPEND_TYPES):
         raise TypeError(f"{type(out)} does not support append")
+
+
+def coerce(args):
+    """Flatten lists and coerce arguments to string."""
+    result = []
+    for arg in args:
+        if isinstance(
+            arg, (str, bytes, bytearray, os.PathLike, Command, shellous.Pipeline)
+        ):
+            result.append(arg)
+        elif isinstance(arg, (list, tuple)):
+            result.extend(coerce(arg))
+        elif isinstance(arg, (dict, set)):
+            raise NotImplementedError("syntax is reserved")
+        elif arg is Ellipsis:
+            raise NotImplementedError("syntax is reserved")
+        elif arg is None:
+            raise TypeError("None in argument list")
+        else:
+            result.append(str(arg))
+    return tuple(result)

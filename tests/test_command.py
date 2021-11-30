@@ -2,6 +2,7 @@
 
 # pylint: disable=redefined-outer-name,invalid-name
 
+import pickle
 from pathlib import Path
 
 import pytest
@@ -183,10 +184,10 @@ def test_command_env_init(sh):
 
 def test_options_merge_env(sh):
     "Test the internal Options class `merge_env` method."
-    opts1 = Options(sh)
+    opts1 = Options()
+    assert opts1.env is None
     opts2 = opts1.set_env(dict(A=1))
     opts3 = opts2.set(dict(inherit_env=False))
-    assert opts3.context is sh
 
     env1 = opts1.merge_env()
     assert env1 is None
@@ -203,15 +204,10 @@ def test_options_merge_env(sh):
     assert sh2 is not sh
     assert sh2.options.env == ImmutableDict(B="2")
 
-    # Copying env from `Context` is done by `Command`...
-    opts4 = Options(sh2)
-    assert opts4.context is sh2
-    assert opts4.env is None
 
-
-def test_options_hash_eq(sh):
+def test_options_hash_eq():
     "Test that the internal Options class is hashable."
-    opts1 = Options(sh)
+    opts1 = Options()
     opts2 = opts1.set_env(dict(A=1))
     opts3 = opts2.set(dict(inherit_env=False))
 
@@ -287,3 +283,27 @@ def test_percent_equals_op(sh):
     cmd = sh("nohup")
     cmd %= sh("echo", "abc")
     assert cmd == sh("nohup", sh("echo", "abc").args)
+
+
+def test_command_pickle(sh):
+    "Test that basic commands can be pickled."
+
+    cmd = sh("echo", "hello") | Path("/tmp/test_file")
+    value = pickle.dumps(cmd)
+    result = pickle.loads(value)
+
+    # Compare commands.
+    assert result is not cmd
+    assert result == cmd
+
+
+def test_command_pickle_callback(sh):
+    "Test that some settings can't be pickled."
+
+    def _callback(*_ignore):
+        pass
+
+    cmd = sh("echo", "hello").set(audit_callback=_callback)
+
+    with pytest.raises(AttributeError, match="local object"):
+        pickle.dumps(cmd)
