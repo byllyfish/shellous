@@ -1249,3 +1249,39 @@ async def test_bulk_line_limit(bulk_cmd):
     with pytest.raises(ValueError, match="Separator is not found"):
         async for _ in bulk_cmd:
             assert False  # never reached
+
+
+def _run(cmd):
+    "Run command in process pool executor."
+    return asyncio.run(cmd.coro())
+
+
+async def test_process_pool_executor(echo_cmd, report_children):
+    """Test that a command can be executed in a ProcessPoolExecutor.
+
+    This tests that a command is pickle-able. It also tests that
+    ProcessPoolExecutor and shellous can co-exist.
+    """
+
+    from concurrent.futures import ProcessPoolExecutor
+
+    echo = echo_cmd.set(return_result=True)
+
+    with ProcessPoolExecutor() as executor:
+        loop = asyncio.get_running_loop()
+        fut = loop.run_in_executor(executor, _run, echo("abc"))
+        result = await fut
+
+    assert result == Result(
+        output_bytes=b"abc",
+        exit_code=0,
+        cancelled=False,
+        encoding="utf-8",
+        extra=None,
+    )
+
+    # Close the resource_tracker and other multiprocessing stuff. Otherwise,
+    # it will trigger failures for open fd's and existing child processes.
+    import multiprocessing
+
+    multiprocessing.util._cleanup_tests()
