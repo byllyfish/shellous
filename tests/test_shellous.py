@@ -1280,8 +1280,8 @@ async def test_process_pool_executor(echo_cmd, report_children):
         extra=None,
     )
 
-    # Close the resource_tracker and other multiprocessing stuff. Otherwise,
-    # it will trigger failures for open fd's and existing child processes.
-    import multiprocessing
+    # Close the multiprocessing resource_tracker. Otherwise, it will trigger
+    # failures for open fd's and child processes.
+    from multiprocessing import resource_tracker
 
-    multiprocessing.util._cleanup_tests()
+    resource_tracker._resource_tracker._stop()
