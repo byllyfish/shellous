@@ -1270,6 +1270,8 @@ async def test_process_pool_executor(echo_cmd, report_children):
     with ProcessPoolExecutor() as executor:
         loop = asyncio.get_running_loop()
         fut = loop.run_in_executor(executor, _run, echo("abc"))
+        # Be aware this can fail if the test_shellous.py module imports
+        # a relative module like conftest.
         result = await fut
 
     assert result == Result(

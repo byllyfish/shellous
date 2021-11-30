@@ -205,7 +205,7 @@ def test_options_merge_env(sh):
     assert sh2.options.env == ImmutableDict(B="2")
 
 
-def test_options_hash_eq(sh):
+def test_options_hash_eq():
     "Test that the internal Options class is hashable."
     opts1 = Options()
     opts2 = opts1.set_env(dict(A=1))
@@ -300,7 +300,7 @@ def test_command_pickle(sh):
 def test_command_pickle_callback(sh):
     "Test that some settings can't be pickled."
 
-    def _callback(phase, info):
+    def _callback(*_ignore):
         pass
 
     cmd = sh("echo", "hello").set(audit_callback=_callback)
