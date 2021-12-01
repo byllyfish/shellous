@@ -17,7 +17,7 @@ import signal
 import sys
 import threading
 
-from shellous.log import LOGGER
+from shellous.log import LOGGER, log_thread
 from shellous.util import close_fds, wait_pid
 
 assert sys.platform != "win32"
@@ -125,7 +125,12 @@ class KQueueAgent:
         _check_sigchld()
         self._pids = {}  # pid -> (callback, args)
         self._kqueue = select.kqueue()
-        self._thread = _start_thread(self._run, name="KQueueAgent")
+        self._thread = threading.Thread(
+            target=self._run,
+            name="KQueueAgent.run",
+            daemon=True,
+        )
+        self._thread.start()
 
     def close(self):
         "Tell our thread to exit with a dummy timer event."
@@ -166,6 +171,7 @@ class KQueueAgent:
             # Process is still dying. Spawn a task to poll it.
             asyncio.create_task(_poll_dead_pid(pid, callback, args))
 
+    @log_thread(True)
     def _run(self):
         "Event loop that handles kqueue events."
         try:
@@ -215,7 +221,12 @@ class EPollAgent:
         self._epoll = select.epoll()
         self._selfpipe = os.pipe()
         self._epoll.register(self._selfpipe[0], select.EPOLLIN)
-        self._thread = _start_thread(self._run, name="EPollAgent")
+        self._thread = threading.Thread(
+            target=self._run,
+            name="EPollAgent.run",
+            daemon=True,
+        )
+        self._thread.start()
 
     def watch_pid(self, pid, callback, args):
         "Register a PID with epoll."
@@ -247,6 +258,7 @@ class EPollAgent:
             os.write(self._selfpipe[1], b"\x00")
         self._thread.join()
 
+    @log_thread(True)
     def _run(self):
         "Event loop that handles epoll events."
         try:
@@ -309,25 +321,6 @@ async def _poll_dead_pid(pid, callback, args):
         LOGGER.critical("Pid %r is not exiting after several seconds.", pid)
 
 
-def _start_thread(target, args=(), *, name, start=True):
-    "Create a new thread and start it."
-
-    def _runner():
-        try:
-            LOGGER.debug("Thread %r starting", name)
-            target(*args)
-        except BaseException as ex:  # pylint: disable=broad-except
-            LOGGER.error("Thread %r failed ex=%r", name, ex, exc_info=True)
-            raise
-        finally:
-            LOGGER.debug("Thread %r stopping", name)
-
-    thread = threading.Thread(target=_runner, name=name, daemon=True)
-    if start:
-        thread.start()
-    return thread
-
-
 class ThreadAgent:
     "Agent that uses threads to watch for child exits."
 
@@ -344,16 +337,17 @@ class ThreadAgent:
             LOGGER.warning("ThreadAgent: Child processes exist: %r", live_threads)
 
     def watch_pid(self, pid, callback, args):
-        "Register a PID."
-        thread = _start_thread(
-            self._reap_pid,
-            (pid, callback, args),
-            name=f"_reap_pid-{pid}",
-            start=False,
+        "Start a thread to watch the PID."
+        thread = threading.Thread(
+            target=self._reap_pid,
+            args=(pid, callback, args),
+            name=f"ThreadAgent.reap_pid-{pid}",
+            daemon=True,
         )
         self._pids[pid] = thread
         thread.start()
 
+    @log_thread(True)
     def _reap_pid(self, pid, callback, args):
         "Call waitpid synchronously."
         status = wait_pid(pid, block=True)

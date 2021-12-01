@@ -208,3 +208,33 @@ def log_timer(msg, warn_limit=0.1):
         if duration >= warn_limit:
             log_func = LOGGER.warning if warn_limit > 0 else LOGGER.info
             log_func("%s took %g seconds ex=%r", msg, duration, _exc())
+
+
+def log_thread(enabled):
+    """`log_thread` logs when thread function is entered and exited.
+
+    DEBUG thread <name> starting
+    DEBUG thread <name> stopping
+    """
+
+    def _decorator(func):
+        "Decorator to log thread entry and exit."
+
+        if not enabled:
+            return func
+
+        @functools.wraps(func)
+        def _function_wrapper(*args, **kwargs):
+            thread_name = threading.current_thread().name
+            LOGGER.debug("thread %r starting", thread_name)
+            try:
+                return func(*args, **kwargs)
+            except Exception as ex:
+                LOGGER.error("thread %r ex=%r", thread_name, ex)
+                raise
+            finally:
+                LOGGER.debug("thread %r stopping", thread_name)
+
+        return _function_wrapper
+
+    return _decorator
