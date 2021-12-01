@@ -108,11 +108,12 @@ class DefaultChildWatcher(asyncio.AbstractChildWatcher):
 
     def _init_agent(self):
         "Construct child watcher agent."
-        self._agent = ThreadAgent()
-        # if sys.platform == "linux":
-        #    self._agent = EPollAgent()
-        # else:
-        #    self._agent = KQueueAgent()
+        if hasattr(os, "pidfd_open"):
+            self._agent = EPollAgent()
+        elif hasattr(select, "kqueue"):
+            self._agent = KQueueAgent()
+        else:
+            self._agent = ThreadAgent()
 
 
 class KQueueAgent:
