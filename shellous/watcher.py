@@ -108,10 +108,11 @@ class DefaultChildWatcher(asyncio.AbstractChildWatcher):
 
     def _init_agent(self):
         "Construct child watcher agent."
-        if sys.platform == "linux":
-            self._agent = EPollAgent()
-        else:
-            self._agent = KQueueAgent()
+        self._agent = ThreadAgent()
+        # if sys.platform == "linux":
+        #    self._agent = EPollAgent()
+        # else:
+        #    self._agent = KQueueAgent()
 
 
 class KQueueAgent:
@@ -308,13 +309,13 @@ async def _poll_dead_pid(pid, callback, args):
         LOGGER.critical("Pid %r is not exiting after several seconds.", pid)
 
 
-def _start_thread(target, *, name):
+def _start_thread(target, args=(), *, name, start=True):
     "Create a new thread and start it."
 
     def _runner():
         try:
             LOGGER.debug("Thread %r starting", name)
-            target()
+            target(*args)
         except BaseException as ex:  # pylint: disable=broad-except
             LOGGER.error("Thread %r failed ex=%r", name, ex, exc_info=True)
             raise
@@ -322,5 +323,66 @@ def _start_thread(target, *, name):
             LOGGER.debug("Thread %r stopping", name)
 
     thread = threading.Thread(target=_runner, name=name, daemon=True)
-    thread.start()
+    if start:
+        thread.start()
     return thread
+
+
+class ThreadAgent:
+    "Agent that uses threads to watch for child exits."
+
+    def __init__(self):
+        "Initialize agent."
+        self._pids = {}  # pid -> Thread
+
+    def close(self):
+        """There is no way to force-close the threads. Log a message if there
+        are still any live threads."""
+        threads = list(self._pids.values())
+        live_threads = [thread.name for thread in threads if thread.is_alive()]
+        if live_threads:
+            LOGGER.warning("ThreadAgent: Child processes exist: %r", live_threads)
+
+    def watch_pid(self, pid, callback, args):
+        "Register a PID."
+        thread = _start_thread(
+            self._reap_pid,
+            (pid, callback, args),
+            name=f"_reap_pid-{pid}",
+            start=False,
+        )
+        self._pids[pid] = thread
+        thread.start()
+
+    def _reap_pid(self, pid, callback, args):
+        "Call waitpid synchronously."
+        status = wait_pid(pid, block=True)
+        if status is not None:
+            _invoke_callback(callback, pid, status, args)
+        else:
+            LOGGER.critical("_reap_pid: process still running pid=%r", pid)
+
+        self._pids.pop(pid)
+
+
+def _invoke_callback(callback, pid, status, args):
+    """Invoke callback function:  callback(pid, status, *args)
+
+    ```
+        # The code we are calling looks like this (where self is an event loop.)
+        # https://github.com/.../asyncio/unix_events.py#L225
+        def _child_watcher_callback(self, pid, returncode, transp):
+            self.call_soon_threadsafe(transp._process_exited, returncode)
+    ```
+
+    call_soon_threadsafe may raise a RuntimeError if the loop is already closed.
+    """
+    try:
+        callback(pid, status, *args)
+    except RuntimeError as ex:
+        LOGGER.warning(
+            "DefaultChildWatcher callback pid=%r status=%r ex=%r",
+            pid,
+            status,
+            ex,
+        )
