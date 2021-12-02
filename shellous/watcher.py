@@ -17,7 +17,7 @@ import signal
 import sys
 import threading
 
-from shellous.log import LOGGER
+from shellous.log import LOGGER, log_thread
 from shellous.util import close_fds, wait_pid
 
 assert sys.platform != "win32"
@@ -108,10 +108,12 @@ class DefaultChildWatcher(asyncio.AbstractChildWatcher):
 
     def _init_agent(self):
         "Construct child watcher agent."
-        if sys.platform == "linux":
+        if hasattr(os, "pidfd_open"):
             self._agent = EPollAgent()
-        else:
+        elif hasattr(select, "kqueue"):
             self._agent = KQueueAgent()
+        else:
+            self._agent = ThreadAgent()
 
 
 class KQueueAgent:
@@ -124,7 +126,12 @@ class KQueueAgent:
         _check_sigchld()
         self._pids = {}  # pid -> (callback, args)
         self._kqueue = select.kqueue()
-        self._thread = _start_thread(self._run, name="KQueueAgent")
+        self._thread = threading.Thread(
+            target=self._run,
+            name="KQueueAgent.run",
+            daemon=True,
+        )
+        self._thread.start()
 
     def close(self):
         "Tell our thread to exit with a dummy timer event."
@@ -165,6 +172,7 @@ class KQueueAgent:
             # Process is still dying. Spawn a task to poll it.
             asyncio.create_task(_poll_dead_pid(pid, callback, args))
 
+    @log_thread(True)
     def _run(self):
         "Event loop that handles kqueue events."
         try:
@@ -214,7 +222,12 @@ class EPollAgent:
         self._epoll = select.epoll()
         self._selfpipe = os.pipe()
         self._epoll.register(self._selfpipe[0], select.EPOLLIN)
-        self._thread = _start_thread(self._run, name="EPollAgent")
+        self._thread = threading.Thread(
+            target=self._run,
+            name="EPollAgent.run",
+            daemon=True,
+        )
+        self._thread.start()
 
     def watch_pid(self, pid, callback, args):
         "Register a PID with epoll."
@@ -246,6 +259,7 @@ class EPollAgent:
             os.write(self._selfpipe[1], b"\x00")
         self._thread.join()
 
+    @log_thread(True)
     def _run(self):
         "Event loop that handles epoll events."
         try:
@@ -308,19 +322,62 @@ async def _poll_dead_pid(pid, callback, args):
         LOGGER.critical("Pid %r is not exiting after several seconds.", pid)
 
 
-def _start_thread(target, *, name):
-    "Create a new thread and start it."
+class ThreadAgent:
+    "Agent that uses threads to watch for child exits."
 
-    def _runner():
-        try:
-            LOGGER.debug("Thread %r starting", name)
-            target()
-        except BaseException as ex:  # pylint: disable=broad-except
-            LOGGER.error("Thread %r failed ex=%r", name, ex, exc_info=True)
-            raise
-        finally:
-            LOGGER.debug("Thread %r stopping", name)
+    def __init__(self):
+        "Initialize agent."
+        self._pids = {}  # pid -> Thread
 
-    thread = threading.Thread(target=_runner, name=name, daemon=True)
-    thread.start()
-    return thread
+    def close(self):
+        """There is no way to force-close the threads. Log a message if there
+        are still any live threads."""
+        threads = list(self._pids.values())
+        live_threads = [thread.name for thread in threads if thread.is_alive()]
+        if live_threads:
+            LOGGER.warning("ThreadAgent: Child processes exist: %r", live_threads)
+
+    def watch_pid(self, pid, callback, args):
+        "Start a thread to watch the PID."
+        thread = threading.Thread(
+            target=self._reap_pid,
+            args=(pid, callback, args),
+            name=f"ThreadAgent.reap_pid-{pid}",
+            daemon=True,
+        )
+        self._pids[pid] = thread
+        thread.start()
+
+    @log_thread(True)
+    def _reap_pid(self, pid, callback, args):
+        "Call waitpid synchronously."
+        status = wait_pid(pid, block=True)
+        if status is not None:
+            _invoke_callback(callback, pid, status, args)
+        else:
+            LOGGER.critical("_reap_pid: process still running pid=%r", pid)
+
+        self._pids.pop(pid)
+
+
+def _invoke_callback(callback, pid, status, args):
+    """Invoke callback function:  callback(pid, status, *args)
+
+    ```
+        # The code we are calling looks like this (where self is an event loop.)
+        # https://github.com/.../asyncio/unix_events.py#L225
+        def _child_watcher_callback(self, pid, returncode, transp):
+            self.call_soon_threadsafe(transp._process_exited, returncode)
+    ```
+
+    call_soon_threadsafe may raise a RuntimeError if the loop is already closed.
+    """
+    try:
+        callback(pid, status, *args)
+    except RuntimeError as ex:
+        LOGGER.warning(
+            "DefaultChildWatcher callback pid=%r status=%r ex=%r",
+            pid,
+            status,
+            ex,
+        )

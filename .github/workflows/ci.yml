@@ -21,7 +21,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-latest, macos-11, windows-latest ]
+        os: [ ubuntu-latest, macos-11, windows-latest, ubuntu-18.04 ]
         python-version: [ '3.9', '3.10' ]
 
     env:
@@ -100,7 +100,7 @@ jobs:
       env:
         SHELLOUS_CHILDWATCHER_TYPE: "multi"
     - name: Run Tests with DefaultChildWatcher (Linux and MacOS)
-      if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11'
+      if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11' || matrix.os == 'ubuntu-18.04'
       run: |
         # Limit to 5 failures for now because GH actions is auto-cancelling...
         $POETRY_RUN python -m pytest -vv -s --log-cli-level=DEBUG --maxfail=5 | ./ci/annotate.awk -v step=DefaultChildWatcher
@@ -112,11 +112,20 @@ jobs:
     timeout-minutes: 20  # stop runaway job after 20 minutes
     container:
       image: python:3.10.0-alpine3.14
+    env:
+      SHELLOUS_DEBUG: 1
 
     steps:
       - uses: actions/checkout@v2
-      - name: Run Tests
+      - name: Install Dependencies
         run: |
           apk add --update gcc musl-dev python3-dev 
           pip3 install -r ./ci/requirements-dev.txt
-          pytest -v -s
+      - name: Run Tests
+        run: |
+          pytest -v -s --log-cli-level=DEBUG
+      - name: Run Tests with DefaultChildWatcher
+        run: |
+          pytest -v -s --log-cli-level=DEBUG
+        env:
+          SHELLOUS_CHILDWATCHER_TYPE: "default"

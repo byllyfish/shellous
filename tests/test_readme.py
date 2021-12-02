@@ -270,6 +270,8 @@ def _check_result(output, result):
     # cat's stderr is displayed with full path name on Linux/Windows:
     if "/usr/bin/cat:" in result:
         result = result.replace("/usr/bin/cat", "cat")
+    elif "/bin/cat:" in result:
+        result = result.replace("/bin/cat", "cat")
     # Normalize error message on alpine linux.
     if "can't open 'does_not_exist'" in result:
         result = result.replace("can't open 'does_not_exist'", "does_not_exist")
