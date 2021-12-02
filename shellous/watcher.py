@@ -167,7 +167,7 @@ class KQueueAgent:
 
         status = wait_pid(pid)
         if status is not None:
-            callback(pid, status, *args)
+            _invoke_callback(callback, pid, status, args)
         else:
             # Process is still dying. Spawn a task to poll it.
             asyncio.create_task(_poll_dead_pid(pid, callback, args))
@@ -197,10 +197,8 @@ class KQueueAgent:
 
         status = wait_pid(pid)
         if status is not None:
-            # Invoke callback function.
-            callback(pid, status, *args)
+            _invoke_callback(callback, pid, status, args)
         else:
-            # Process is still running.
             LOGGER.critical("_reap_pid: process still running pid=%r", pid)
 
     def _add_kevent(self, ident, kfilter, flags, fflags=0):
@@ -248,7 +246,7 @@ class EPollAgent:
 
         status = wait_pid(pid)
         if status is not None:
-            callback(pid, status, *args)
+            _invoke_callback(callback, pid, status, args)
         else:
             # Process is still dying. Spawn a task to poll it.
             asyncio.create_task(_poll_dead_pid(pid, callback, args))
@@ -291,7 +289,7 @@ class EPollAgent:
 
         status = wait_pid(pid)
         if status is not None:
-            callback(pid, status, *args)
+            _invoke_callback(callback, pid, status, args)
         else:
             LOGGER.critical("_reap_pid: process still running pid=%r", pid)
 
@@ -315,7 +313,7 @@ async def _poll_dead_pid(pid, callback, args):
         await asyncio.sleep(timeout)
         status = wait_pid(pid)
         if status is not None:
-            callback(pid, status, *args)
+            _invoke_callback(callback, pid, status, args)
             break
     else:
         # Handle case where process is *still* running after 3.111 seconds.
