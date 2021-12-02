@@ -112,11 +112,20 @@ jobs:
     timeout-minutes: 20  # stop runaway job after 20 minutes
     container:
       image: python:3.10.0-alpine3.14
+    env:
+      SHELLOUS_DEBUG: 1
 
     steps:
       - uses: actions/checkout@v2
-      - name: Run Tests
+      - name: Install Dependencies
         run: |
           apk add --update gcc musl-dev python3-dev 
           pip3 install -r ./ci/requirements-dev.txt
-          pytest -v -s
+      - name: Run Tests
+        run: |
+          pytest -v -s --log-cli-level=DEBUG
+      - name: Run Tests with DefaultChildWatcher
+        run: |
+          pytest -v -s --log-cli-level=DEBUG
+        env:
+          SHELLOUS_CHILDWATCHER_TYPE: "default"
