@@ -84,6 +84,21 @@
                 </ul>
 
             </li>
+            <li>
+                    <a class="class" href="#ThreadAgent">ThreadAgent</a>
+                            <ul class="memberlist">
+                        <li>
+                                <a class="function" href="#ThreadAgent.__init__">ThreadAgent</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#ThreadAgent.close">close</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#ThreadAgent.watch_pid">watch_pid</a>
+                        </li>
+                </ul>
+
+            </li>
     </ul>
 
 
@@ -132,7 +147,7 @@
 <span class="kn">import</span> <span class="nn">sys</span>
 <span class="kn">import</span> <span class="nn">threading</span>
 
-<span class="kn">from</span> <span class="nn">shellous.log</span> <span class="kn">import</span> <span class="n">LOGGER</span>
+<span class="kn">from</span> <span class="nn">shellous.log</span> <span class="kn">import</span> <span class="n">LOGGER</span><span class="p">,</span> <span class="n">log_thread</span>
 <span class="kn">from</span> <span class="nn">shellous.util</span> <span class="kn">import</span> <span class="n">close_fds</span><span class="p">,</span> <span class="n">wait_pid</span>
 
 <span class="k">assert</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span> <span class="o">!=</span> <span class="s2">&quot;win32&quot;</span>
@@ -223,10 +238,12 @@
 
     <span class="k">def</span> <span class="nf">_init_agent</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Construct child watcher agent.&quot;</span>
-        <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span> <span class="o">==</span> <span class="s2">&quot;linux&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">os</span><span class="p">,</span> <span class="s2">&quot;pidfd_open&quot;</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_agent</span> <span class="o">=</span> <span class="n">EPollAgent</span><span class="p">()</span>
-        <span class="k">else</span><span class="p">:</span>
+        <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">select</span><span class="p">,</span> <span class="s2">&quot;kqueue&quot;</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_agent</span> <span class="o">=</span> <span class="n">KQueueAgent</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_agent</span> <span class="o">=</span> <span class="n">ThreadAgent</span><span class="p">()</span>
 
 
 <span class="k">class</span> <span class="nc">KQueueAgent</span><span class="p">:</span>
@@ -239,7 +256,12 @@
         <span class="n">_check_sigchld</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_pids</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># pid -&gt; (callback, args)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_kqueue</span> <span class="o">=</span> <span class="n">select</span><span class="o">.</span><span class="n">kqueue</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_thread</span> <span class="o">=</span> <span class="n">_start_thread</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_run</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;KQueueAgent&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_thread</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">(</span>
+            <span class="n">target</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_run</span><span class="p">,</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;KQueueAgent.run&quot;</span><span class="p">,</span>
+            <span class="n">daemon</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_thread</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Tell our thread to exit with a dummy timer event.&quot;</span>
@@ -280,6 +302,7 @@
             <span class="c1"># Process is still dying. Spawn a task to poll it.</span>
             <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="n">_poll_dead_pid</span><span class="p">(</span><span class="n">pid</span><span class="p">,</span> <span class="n">callback</span><span class="p">,</span> <span class="n">args</span><span class="p">))</span>
 
+    <span class="nd">@log_thread</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">_run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Event loop that handles kqueue events.&quot;</span>
         <span class="k">try</span><span class="p">:</span>
@@ -329,7 +352,12 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_epoll</span> <span class="o">=</span> <span class="n">select</span><span class="o">.</span><span class="n">epoll</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_selfpipe</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">pipe</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_epoll</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_selfpipe</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">select</span><span class="o">.</span><span class="n">EPOLLIN</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_thread</span> <span class="o">=</span> <span class="n">_start_thread</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_run</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;EPollAgent&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_thread</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">(</span>
+            <span class="n">target</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_run</span><span class="p">,</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;EPollAgent.run&quot;</span><span class="p">,</span>
+            <span class="n">daemon</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_thread</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">watch_pid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pid</span><span class="p">,</span> <span class="n">callback</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
         <span class="s2">&quot;Register a PID with epoll.&quot;</span>
@@ -361,6 +389,7 @@
             <span class="n">os</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_selfpipe</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="sa">b</span><span class="s2">&quot;</span><span class="se">\x00</span><span class="s2">&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_thread</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
 
+    <span class="nd">@log_thread</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">_run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Event loop that handles epoll events.&quot;</span>
         <span class="k">try</span><span class="p">:</span>
@@ -423,22 +452,65 @@
         <span class="n">LOGGER</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;Pid </span><span class="si">%r</span><span class="s2"> is not exiting after several seconds.&quot;</span><span class="p">,</span> <span class="n">pid</span><span class="p">)</span>
 
 
-<span class="k">def</span> <span class="nf">_start_thread</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
-    <span class="s2">&quot;Create a new thread and start it.&quot;</span>
+<span class="k">class</span> <span class="nc">ThreadAgent</span><span class="p">:</span>
+    <span class="s2">&quot;Agent that uses threads to watch for child exits.&quot;</span>
 
-    <span class="k">def</span> <span class="nf">_runner</span><span class="p">():</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Thread </span><span class="si">%r</span><span class="s2"> starting&quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
-            <span class="n">target</span><span class="p">()</span>
-        <span class="k">except</span> <span class="ne">BaseException</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>  <span class="c1"># pylint: disable=broad-except</span>
-            <span class="n">LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Thread </span><span class="si">%r</span><span class="s2"> failed ex=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">ex</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-            <span class="k">raise</span>
-        <span class="k">finally</span><span class="p">:</span>
-            <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Thread </span><span class="si">%r</span><span class="s2"> stopping&quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;Initialize agent.&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pids</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># pid -&gt; Thread</span>
 
-    <span class="n">thread</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="n">_runner</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">daemon</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">thread</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
-    <span class="k">return</span> <span class="n">thread</span>
+    <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;There is no way to force-close the threads. Log a message if there</span>
+<span class="sd">        are still any live threads.&quot;&quot;&quot;</span>
+        <span class="n">threads</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_pids</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+        <span class="n">live_threads</span> <span class="o">=</span> <span class="p">[</span><span class="n">thread</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">thread</span> <span class="ow">in</span> <span class="n">threads</span> <span class="k">if</span> <span class="n">thread</span><span class="o">.</span><span class="n">is_alive</span><span class="p">()]</span>
+        <span class="k">if</span> <span class="n">live_threads</span><span class="p">:</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;ThreadAgent: Child processes exist: </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">live_threads</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">watch_pid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pid</span><span class="p">,</span> <span class="n">callback</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
+        <span class="s2">&quot;Start a thread to watch the PID.&quot;</span>
+        <span class="n">thread</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">(</span>
+            <span class="n">target</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_reap_pid</span><span class="p">,</span>
+            <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">pid</span><span class="p">,</span> <span class="n">callback</span><span class="p">,</span> <span class="n">args</span><span class="p">),</span>
+            <span class="n">name</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;ThreadAgent.reap_pid-</span><span class="si">{</span><span class="n">pid</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="n">daemon</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pids</span><span class="p">[</span><span class="n">pid</span><span class="p">]</span> <span class="o">=</span> <span class="n">thread</span>
+        <span class="n">thread</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+
+    <span class="nd">@log_thread</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">_reap_pid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pid</span><span class="p">,</span> <span class="n">callback</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
+        <span class="s2">&quot;Call waitpid synchronously.&quot;</span>
+        <span class="n">status</span> <span class="o">=</span> <span class="n">wait_pid</span><span class="p">(</span><span class="n">pid</span><span class="p">,</span> <span class="n">block</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">status</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">_invoke_callback</span><span class="p">(</span><span class="n">callback</span><span class="p">,</span> <span class="n">pid</span><span class="p">,</span> <span class="n">status</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;_reap_pid: process still running pid=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">pid</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pids</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">pid</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_invoke_callback</span><span class="p">(</span><span class="n">callback</span><span class="p">,</span> <span class="n">pid</span><span class="p">,</span> <span class="n">status</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Invoke callback function:  callback(pid, status, *args)</span>
+
+<span class="sd">    ```</span>
+<span class="sd">        # The code we are calling looks like this (where self is an event loop.)</span>
+<span class="sd">        # https://github.com/.../asyncio/unix_events.py#L225</span>
+<span class="sd">        def _child_watcher_callback(self, pid, returncode, transp):</span>
+<span class="sd">            self.call_soon_threadsafe(transp._process_exited, returncode)</span>
+<span class="sd">    ```</span>
+
+<span class="sd">    call_soon_threadsafe may raise a RuntimeError if the loop is already closed.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">callback</span><span class="p">(</span><span class="n">pid</span><span class="p">,</span> <span class="n">status</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">RuntimeError</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+            <span class="s2">&quot;DefaultChildWatcher callback pid=</span><span class="si">%r</span><span class="s2"> status=</span><span class="si">%r</span><span class="s2"> ex=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="n">pid</span><span class="p">,</span>
+            <span class="n">status</span><span class="p">,</span>
+            <span class="n">ex</span><span class="p">,</span>
+        <span class="p">)</span>
 </pre></div>
 
         </details>
@@ -526,10 +598,12 @@
 
     <span class="k">def</span> <span class="nf">_init_agent</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Construct child watcher agent.&quot;</span>
-        <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span> <span class="o">==</span> <span class="s2">&quot;linux&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">os</span><span class="p">,</span> <span class="s2">&quot;pidfd_open&quot;</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_agent</span> <span class="o">=</span> <span class="n">EPollAgent</span><span class="p">()</span>
-        <span class="k">else</span><span class="p">:</span>
+        <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">select</span><span class="p">,</span> <span class="s2">&quot;kqueue&quot;</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_agent</span> <span class="o">=</span> <span class="n">KQueueAgent</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_agent</span> <span class="o">=</span> <span class="n">ThreadAgent</span><span class="p">()</span>
 </pre></div>
 
         </details>
@@ -740,7 +814,12 @@ notifications.</p>
         <span class="n">_check_sigchld</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_pids</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># pid -&gt; (callback, args)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_kqueue</span> <span class="o">=</span> <span class="n">select</span><span class="o">.</span><span class="n">kqueue</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_thread</span> <span class="o">=</span> <span class="n">_start_thread</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_run</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;KQueueAgent&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_thread</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">(</span>
+            <span class="n">target</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_run</span><span class="p">,</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;KQueueAgent.run&quot;</span><span class="p">,</span>
+            <span class="n">daemon</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_thread</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Tell our thread to exit with a dummy timer event.&quot;</span>
@@ -781,6 +860,7 @@ notifications.</p>
             <span class="c1"># Process is still dying. Spawn a task to poll it.</span>
             <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="n">_poll_dead_pid</span><span class="p">(</span><span class="n">pid</span><span class="p">,</span> <span class="n">callback</span><span class="p">,</span> <span class="n">args</span><span class="p">))</span>
 
+    <span class="nd">@log_thread</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">_run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Event loop that handles kqueue events.&quot;</span>
         <span class="k">try</span><span class="p">:</span>
@@ -837,7 +917,12 @@ notifications.</p>
         <span class="n">_check_sigchld</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_pids</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># pid -&gt; (callback, args)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_kqueue</span> <span class="o">=</span> <span class="n">select</span><span class="o">.</span><span class="n">kqueue</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_thread</span> <span class="o">=</span> <span class="n">_start_thread</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_run</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;KQueueAgent&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_thread</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">(</span>
+            <span class="n">target</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_run</span><span class="p">,</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;KQueueAgent.run&quot;</span><span class="p">,</span>
+            <span class="n">daemon</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_thread</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
 </pre></div>
 
         </details>
@@ -933,7 +1018,12 @@ notifications.</p>
         <span class="bp">self</span><span class="o">.</span><span class="n">_epoll</span> <span class="o">=</span> <span class="n">select</span><span class="o">.</span><span class="n">epoll</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_selfpipe</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">pipe</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_epoll</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_selfpipe</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">select</span><span class="o">.</span><span class="n">EPOLLIN</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_thread</span> <span class="o">=</span> <span class="n">_start_thread</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_run</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;EPollAgent&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_thread</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">(</span>
+            <span class="n">target</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_run</span><span class="p">,</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;EPollAgent.run&quot;</span><span class="p">,</span>
+            <span class="n">daemon</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_thread</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">watch_pid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pid</span><span class="p">,</span> <span class="n">callback</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
         <span class="s2">&quot;Register a PID with epoll.&quot;</span>
@@ -965,6 +1055,7 @@ notifications.</p>
             <span class="n">os</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_selfpipe</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="sa">b</span><span class="s2">&quot;</span><span class="se">\x00</span><span class="s2">&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_thread</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
 
+    <span class="nd">@log_thread</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">_run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Event loop that handles epoll events.&quot;</span>
         <span class="k">try</span><span class="p">:</span>
@@ -1037,7 +1128,12 @@ notifications.</p>
         <span class="bp">self</span><span class="o">.</span><span class="n">_epoll</span> <span class="o">=</span> <span class="n">select</span><span class="o">.</span><span class="n">epoll</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_selfpipe</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">pipe</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_epoll</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_selfpipe</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">select</span><span class="o">.</span><span class="n">EPOLLIN</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_thread</span> <span class="o">=</span> <span class="n">_start_thread</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_run</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;EPollAgent&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_thread</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">(</span>
+            <span class="n">target</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_run</span><span class="p">,</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;EPollAgent.run&quot;</span><span class="p">,</span>
+            <span class="n">daemon</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_thread</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
 </pre></div>
 
         </details>
@@ -1095,6 +1191,139 @@ notifications.</p>
         </details>
 
             <div class="docstring"><p>Tell the epoll thread to exit.</p>
+</div>
+
+
+                            </div>
+                </section>
+                <section id="ThreadAgent">
+                                <div class="attr class">
+        <a class="headerlink" href="#ThreadAgent">#&nbsp;&nbsp</a>
+
+        
+        <span class="def">class</span>
+        <span class="name">ThreadAgent</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">ThreadAgent</span><span class="p">:</span>
+    <span class="s2">&quot;Agent that uses threads to watch for child exits.&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;Initialize agent.&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pids</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># pid -&gt; Thread</span>
+
+    <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;There is no way to force-close the threads. Log a message if there</span>
+<span class="sd">        are still any live threads.&quot;&quot;&quot;</span>
+        <span class="n">threads</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_pids</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+        <span class="n">live_threads</span> <span class="o">=</span> <span class="p">[</span><span class="n">thread</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">thread</span> <span class="ow">in</span> <span class="n">threads</span> <span class="k">if</span> <span class="n">thread</span><span class="o">.</span><span class="n">is_alive</span><span class="p">()]</span>
+        <span class="k">if</span> <span class="n">live_threads</span><span class="p">:</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;ThreadAgent: Child processes exist: </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">live_threads</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">watch_pid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pid</span><span class="p">,</span> <span class="n">callback</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
+        <span class="s2">&quot;Start a thread to watch the PID.&quot;</span>
+        <span class="n">thread</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">(</span>
+            <span class="n">target</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_reap_pid</span><span class="p">,</span>
+            <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">pid</span><span class="p">,</span> <span class="n">callback</span><span class="p">,</span> <span class="n">args</span><span class="p">),</span>
+            <span class="n">name</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;ThreadAgent.reap_pid-</span><span class="si">{</span><span class="n">pid</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="n">daemon</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pids</span><span class="p">[</span><span class="n">pid</span><span class="p">]</span> <span class="o">=</span> <span class="n">thread</span>
+        <span class="n">thread</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+
+    <span class="nd">@log_thread</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">_reap_pid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pid</span><span class="p">,</span> <span class="n">callback</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
+        <span class="s2">&quot;Call waitpid synchronously.&quot;</span>
+        <span class="n">status</span> <span class="o">=</span> <span class="n">wait_pid</span><span class="p">(</span><span class="n">pid</span><span class="p">,</span> <span class="n">block</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">status</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">_invoke_callback</span><span class="p">(</span><span class="n">callback</span><span class="p">,</span> <span class="n">pid</span><span class="p">,</span> <span class="n">status</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;_reap_pid: process still running pid=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">pid</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pids</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">pid</span><span class="p">)</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Agent that uses threads to watch for child exits.</p>
+</div>
+
+
+                            <div id="ThreadAgent.__init__" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#ThreadAgent.__init__">#&nbsp;&nbsp</a>
+
+        
+            <span class="name">ThreadAgent</span><span class="signature">()</span>
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;Initialize agent.&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pids</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># pid -&gt; Thread</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Initialize agent.</p>
+</div>
+
+
+                            </div>
+                            <div id="ThreadAgent.close" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#ThreadAgent.close">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">close</span><span class="signature">(self)</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;There is no way to force-close the threads. Log a message if there</span>
+<span class="sd">        are still any live threads.&quot;&quot;&quot;</span>
+        <span class="n">threads</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_pids</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+        <span class="n">live_threads</span> <span class="o">=</span> <span class="p">[</span><span class="n">thread</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">thread</span> <span class="ow">in</span> <span class="n">threads</span> <span class="k">if</span> <span class="n">thread</span><span class="o">.</span><span class="n">is_alive</span><span class="p">()]</span>
+        <span class="k">if</span> <span class="n">live_threads</span><span class="p">:</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;ThreadAgent: Child processes exist: </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">live_threads</span><span class="p">)</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>There is no way to force-close the threads. Log a message if there
+are still any live threads.</p>
+</div>
+
+
+                            </div>
+                            <div id="ThreadAgent.watch_pid" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#ThreadAgent.watch_pid">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">watch_pid</span><span class="signature">(self, pid, callback, args)</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">watch_pid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pid</span><span class="p">,</span> <span class="n">callback</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
+        <span class="s2">&quot;Start a thread to watch the PID.&quot;</span>
+        <span class="n">thread</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">(</span>
+            <span class="n">target</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_reap_pid</span><span class="p">,</span>
+            <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">pid</span><span class="p">,</span> <span class="n">callback</span><span class="p">,</span> <span class="n">args</span><span class="p">),</span>
+            <span class="n">name</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;ThreadAgent.reap_pid-</span><span class="si">{</span><span class="n">pid</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="n">daemon</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pids</span><span class="p">[</span><span class="n">pid</span><span class="p">]</span> <span class="o">=</span> <span class="n">thread</span>
+        <span class="n">thread</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Start a thread to watch the PID.</p>
 </div>
 
 

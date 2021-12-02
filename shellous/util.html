@@ -147,10 +147,8 @@
         <span class="p">)</span>
 
 
-<span class="k">def</span> <span class="nf">wait_pid</span><span class="p">(</span><span class="n">pid</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
+<span class="k">def</span> <span class="nf">wait_pid</span><span class="p">(</span><span class="n">pid</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">block</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
     <span class="sd">&quot;&quot;&quot;Call os.waitpid and return exit status.</span>
-
-<span class="sd">    Not supported on Windows; raises an AttributeError.</span>
 
 <span class="sd">    Return None if process is still running.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -158,7 +156,8 @@
 
     <span class="k">try</span><span class="p">:</span>
         <span class="c1"># os.WNOHANG is not available on Windows.</span>
-        <span class="n">result_pid</span><span class="p">,</span> <span class="n">status</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">waitpid</span><span class="p">(</span><span class="n">pid</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">WNOHANG</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+        <span class="n">options</span> <span class="o">=</span> <span class="mi">0</span> <span class="k">if</span> <span class="n">block</span> <span class="k">else</span> <span class="n">os</span><span class="o">.</span><span class="n">WNOHANG</span>  <span class="c1"># type: ignore</span>
+        <span class="n">result_pid</span><span class="p">,</span> <span class="n">status</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">waitpid</span><span class="p">(</span><span class="n">pid</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">ChildProcessError</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>
         <span class="c1"># Set status to 255 if process not found.</span>
         <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;wait_pid(</span><span class="si">%r</span><span class="s2">) status is 255 ex=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">pid</span><span class="p">,</span> <span class="n">ex</span><span class="p">)</span>
@@ -380,15 +379,13 @@ parent environment.</p>
 
         
             <span class="def">def</span>
-            <span class="name">wait_pid</span><span class="signature">(pid: int) -&gt; Optional[int]</span>:
+            <span class="name">wait_pid</span><span class="signature">(pid: int, *, block: bool = False) -&gt; Optional[int]</span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">wait_pid</span><span class="p">(</span><span class="n">pid</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
+            <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">wait_pid</span><span class="p">(</span><span class="n">pid</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">block</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
     <span class="sd">&quot;&quot;&quot;Call os.waitpid and return exit status.</span>
-
-<span class="sd">    Not supported on Windows; raises an AttributeError.</span>
 
 <span class="sd">    Return None if process is still running.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -396,7 +393,8 @@ parent environment.</p>
 
     <span class="k">try</span><span class="p">:</span>
         <span class="c1"># os.WNOHANG is not available on Windows.</span>
-        <span class="n">result_pid</span><span class="p">,</span> <span class="n">status</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">waitpid</span><span class="p">(</span><span class="n">pid</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">WNOHANG</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+        <span class="n">options</span> <span class="o">=</span> <span class="mi">0</span> <span class="k">if</span> <span class="n">block</span> <span class="k">else</span> <span class="n">os</span><span class="o">.</span><span class="n">WNOHANG</span>  <span class="c1"># type: ignore</span>
+        <span class="n">result_pid</span><span class="p">,</span> <span class="n">status</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">waitpid</span><span class="p">(</span><span class="n">pid</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">ChildProcessError</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>
         <span class="c1"># Set status to 255 if process not found.</span>
         <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;wait_pid(</span><span class="si">%r</span><span class="s2">) status is 255 ex=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">pid</span><span class="p">,</span> <span class="n">ex</span><span class="p">)</span>
@@ -423,8 +421,6 @@ parent environment.</p>
         </details>
 
             <div class="docstring"><p>Call os.waitpid and return exit status.</p>
-
-<p>Not supported on Windows; raises an AttributeError.</p>
 
 <p>Return None if process is still running.</p>
 </div>

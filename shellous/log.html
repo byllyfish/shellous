@@ -36,6 +36,9 @@
             <li>
                     <a class="function" href="#log_timer">log_timer</a>
             </li>
+            <li>
+                    <a class="function" href="#log_thread">log_thread</a>
+            </li>
     </ul>
 
 
@@ -267,6 +270,36 @@
         <span class="k">if</span> <span class="n">duration</span> <span class="o">&gt;=</span> <span class="n">warn_limit</span><span class="p">:</span>
             <span class="n">log_func</span> <span class="o">=</span> <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span> <span class="k">if</span> <span class="n">warn_limit</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span>
             <span class="n">log_func</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> took </span><span class="si">%g</span><span class="s2"> seconds ex=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="n">duration</span><span class="p">,</span> <span class="n">_exc</span><span class="p">())</span>
+
+
+<span class="k">def</span> <span class="nf">log_thread</span><span class="p">(</span><span class="n">enabled</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;`log_thread` logs when thread function is entered and exited.</span>
+
+<span class="sd">    DEBUG thread &lt;name&gt; starting</span>
+<span class="sd">    DEBUG thread &lt;name&gt; stopping</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">_decorator</span><span class="p">(</span><span class="n">func</span><span class="p">):</span>
+        <span class="s2">&quot;Decorator to log thread entry and exit.&quot;</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">enabled</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">func</span>
+
+        <span class="nd">@functools</span><span class="o">.</span><span class="n">wraps</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
+        <span class="k">def</span> <span class="nf">_function_wrapper</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="n">thread_name</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">current_thread</span><span class="p">()</span><span class="o">.</span><span class="n">name</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;thread </span><span class="si">%r</span><span class="s2"> starting&quot;</span><span class="p">,</span> <span class="n">thread_name</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>
+                <span class="n">LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;thread </span><span class="si">%r</span><span class="s2"> ex=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">thread_name</span><span class="p">,</span> <span class="n">ex</span><span class="p">)</span>
+                <span class="k">raise</span>
+            <span class="k">finally</span><span class="p">:</span>
+                <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;thread </span><span class="si">%r</span><span class="s2"> stopping&quot;</span><span class="p">,</span> <span class="n">thread_name</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">_function_wrapper</span>
+
+    <span class="k">return</span> <span class="n">_decorator</span>
 </pre></div>
 
         </details>
@@ -446,6 +479,56 @@
             <div class="docstring"><p>Warn if operation takes longer than <code>warn_limit</code> (wall clock time).</p>
 
 <p>If <code>warn_limit</code> is &lt;= 0, always log at INFO level.</p>
+</div>
+
+
+                </section>
+                <section id="log_thread">
+                            <div class="attr function"><a class="headerlink" href="#log_thread">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">log_thread</span><span class="signature">(enabled)</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">log_thread</span><span class="p">(</span><span class="n">enabled</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;`log_thread` logs when thread function is entered and exited.</span>
+
+<span class="sd">    DEBUG thread &lt;name&gt; starting</span>
+<span class="sd">    DEBUG thread &lt;name&gt; stopping</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">_decorator</span><span class="p">(</span><span class="n">func</span><span class="p">):</span>
+        <span class="s2">&quot;Decorator to log thread entry and exit.&quot;</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">enabled</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">func</span>
+
+        <span class="nd">@functools</span><span class="o">.</span><span class="n">wraps</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
+        <span class="k">def</span> <span class="nf">_function_wrapper</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="n">thread_name</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">current_thread</span><span class="p">()</span><span class="o">.</span><span class="n">name</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;thread </span><span class="si">%r</span><span class="s2"> starting&quot;</span><span class="p">,</span> <span class="n">thread_name</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>
+                <span class="n">LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;thread </span><span class="si">%r</span><span class="s2"> ex=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">thread_name</span><span class="p">,</span> <span class="n">ex</span><span class="p">)</span>
+                <span class="k">raise</span>
+            <span class="k">finally</span><span class="p">:</span>
+                <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;thread </span><span class="si">%r</span><span class="s2"> stopping&quot;</span><span class="p">,</span> <span class="n">thread_name</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">_function_wrapper</span>
+
+    <span class="k">return</span> <span class="n">_decorator</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p><code><a href="#log_thread">log_thread</a></code> logs when thread function is entered and exited.</p>
+
+<p>DEBUG thread <name> starting
+DEBUG thread <name> stopping</p>
 </div>
 
 
