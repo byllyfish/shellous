@@ -82,9 +82,11 @@ class DefaultChildWatcher(asyncio.AbstractChildWatcher):
         This must be called to make sure that any underlying resource is freed.
         """
         with _LOCK:
-            if self._agent:
-                self._agent.close()
-                self._agent = None
+            agent = self._agent
+            self._agent = None
+
+        if agent:
+            agent.close()
 
     def is_active(self):
         """Return ``True`` if the watcher is active and is used by the event loop.
@@ -107,15 +109,16 @@ class DefaultChildWatcher(asyncio.AbstractChildWatcher):
 
     def _init_agent(self):
         "Construct child watcher agent."
+        if hasattr(os, "pidfd_open"):
+            agent_class = EPollAgent
+        elif hasattr(select, "kqueue"):
+            agent_class = KQueueAgent
+        else:
+            agent_class = ThreadAgent
+
         with _LOCK:
-            # Initialize agent exactly once.
             if not self._agent:
-                if hasattr(os, "pidfd_open"):
-                    self._agent = EPollAgent()
-                elif hasattr(select, "kqueue"):
-                    self._agent = KQueueAgent()
-                else:
-                    self._agent = ThreadAgent()
+                self._agent = agent_class()
 
 
 class KQueueAgent:
