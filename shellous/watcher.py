@@ -22,8 +22,10 @@ from shellous.util import close_fds, wait_pid
 
 assert sys.platform != "win32"
 
-# Use a single module level lock for multi-threading.
-_LOCK = threading.RLock()
+# Use a single module level lock for multi-threading. ChildWatcher's are
+# process-wide singletons. Single-line Python instructions that are assumed to
+# be atomic are marked with the command "ATOMIC: ..."
+_LOCK = threading.Lock()
 
 
 def _check_sigchld():
@@ -80,11 +82,9 @@ class DefaultChildWatcher(asyncio.AbstractChildWatcher):
         This must be called to make sure that any underlying resource is freed.
         """
         with _LOCK:
-            agent = self._agent
-            self._agent = None
-
-        if agent:
-            agent.close()
+            if self._agent:
+                self._agent.close()
+                self._agent = None
 
     def is_active(self):
         """Return ``True`` if the watcher is active and is used by the event loop.
@@ -96,9 +96,8 @@ class DefaultChildWatcher(asyncio.AbstractChildWatcher):
 
     def __enter__(self):
         """Enter the watcher's context and allow starting new processes."""
-        with _LOCK:
-            if not self._agent:
-                self._init_agent()
+        if not self._agent:
+            self._init_agent()
 
         return self
 
@@ -108,12 +107,15 @@ class DefaultChildWatcher(asyncio.AbstractChildWatcher):
 
     def _init_agent(self):
         "Construct child watcher agent."
-        if hasattr(os, "pidfd_open"):
-            self._agent = EPollAgent()
-        elif hasattr(select, "kqueue"):
-            self._agent = KQueueAgent()
-        else:
-            self._agent = ThreadAgent()
+        with _LOCK:
+            # Initialize agent exactly once.
+            if not self._agent:
+                if hasattr(os, "pidfd_open"):
+                    self._agent = EPollAgent()
+                elif hasattr(select, "kqueue"):
+                    self._agent = KQueueAgent()
+                else:
+                    self._agent = ThreadAgent()
 
 
 class KQueueAgent:
@@ -227,6 +229,12 @@ class EPollAgent:
         )
         self._thread.start()
 
+    def close(self):
+        "Tell the epoll thread to exit."
+        if self._selfpipe is not None:
+            os.write(self._selfpipe[1], b"\x00")
+        self._thread.join()
+
     def watch_pid(self, pid, callback, args):
         "Register a PID with epoll."
         with _LOCK:
@@ -250,12 +258,6 @@ class EPollAgent:
         else:
             # Process is still dying. Spawn a task to poll it.
             asyncio.create_task(_poll_dead_pid(pid, callback, args))
-
-    def close(self):
-        "Tell the epoll thread to exit."
-        if self._selfpipe is not None:
-            os.write(self._selfpipe[1], b"\x00")
-        self._thread.join()
 
     @log_thread(True)
     def _run(self):
@@ -307,19 +309,6 @@ class EPollAgent:
         os.close(pidfd)
 
 
-async def _poll_dead_pid(pid, callback, args):
-    """Poll a pid that we expect to exit and be reap-able very soon."""
-    for timeout in (0.001, 0.01, 0.1, 1.0, 2.0):
-        await asyncio.sleep(timeout)
-        status = wait_pid(pid)
-        if status is not None:
-            _invoke_callback(callback, pid, status, args)
-            break
-    else:
-        # Handle case where process is *still* running after 3.111 seconds.
-        LOGGER.critical("Pid %r is not exiting after several seconds.", pid)
-
-
 class ThreadAgent:
     "Agent that uses threads to watch for child exits."
 
@@ -358,17 +347,30 @@ class ThreadAgent:
         self._pids.pop(pid)
 
 
+async def _poll_dead_pid(pid, callback, args):
+    """Poll a pid that we expect to exit and be reap-able very soon."""
+    for timeout in (0.001, 0.01, 0.1, 1.0, 2.0):
+        await asyncio.sleep(timeout)
+        status = wait_pid(pid)
+        if status is not None:
+            _invoke_callback(callback, pid, status, args)
+            break
+    else:
+        # Handle case where process is *still* running after 3.111 seconds.
+        LOGGER.critical("Pid %r is not exiting after several seconds.", pid)
+
+
 def _invoke_callback(callback, pid, status, args):
     """Invoke callback function:  callback(pid, status, *args)
 
     ```
-        # The code we are calling looks like this (where self is an event loop.)
+        # The code we are calling looks like this (self is the event loop.)
         # https://github.com/.../asyncio/unix_events.py#L225
         def _child_watcher_callback(self, pid, returncode, transp):
             self.call_soon_threadsafe(transp._process_exited, returncode)
     ```
 
-    call_soon_threadsafe may raise a RuntimeError if the loop is already closed.
+    call_soon_threadsafe raises a RuntimeError if the loop is already closed.
     """
     try:
         callback(pid, status, *args)
