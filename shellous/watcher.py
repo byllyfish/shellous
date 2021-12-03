@@ -55,8 +55,9 @@ class DefaultChildWatcher(asyncio.AbstractChildWatcher):
 
         Note: callback() must be thread-safe.
         """
-        assert self._agent, "Must use context manager API"
-        self._agent.watch_pid(pid, callback, args)
+        if not self._agent:  # ATOMIC: self._agent
+            self._init_agent()  # THREADSAFE: _init_agent re-checks self._agent
+        self._agent.watch_pid(pid, callback, args)  # ATOMIC: self._agent
 
     def remove_child_handler(self, pid):
         """Removes the handler for process 'pid'.
@@ -98,14 +99,11 @@ class DefaultChildWatcher(asyncio.AbstractChildWatcher):
 
     def __enter__(self):
         """Enter the watcher's context and allow starting new processes."""
-        if not self._agent:
-            self._init_agent()
-
         return self
 
     def __exit__(self, *_args):
         """Exit the watcher's context"""
-        # no op
+        return None
 
     def _init_agent(self):
         "Construct child watcher agent."
@@ -149,8 +147,7 @@ class KQueueAgent:
 
     def watch_pid(self, pid, callback, args):
         "Register a PID with kqueue."
-        with _LOCK:
-            self._pids[pid] = (callback, args)
+        self._pids[pid] = (callback, args)  # ATOMIC: self._pids[] = ...
 
         try:
             self._add_kevent(
@@ -165,8 +162,7 @@ class KQueueAgent:
 
     def _kevent_failed(self, pid):
         "Handle case where an exiting process is no longer kqueue-able."
-        with _LOCK:
-            callback, args = self._pids.pop(pid)
+        callback, args = self._pids.pop(pid)  # ATOMIC: self._pids.pop()
 
         LOGGER.debug("_kevent_failed pid=%r", pid)
 
@@ -195,8 +191,7 @@ class KQueueAgent:
 
     def _reap_pid(self, pid):
         """Called by event loop when a process exits."""
-        with _LOCK:
-            callback, args = self._pids.pop(pid)
+        callback, args = self._pids.pop(pid)  # ATOMIC: self._pids.pop()
 
         LOGGER.debug("_reap_pid pid=%r", pid)
 
@@ -280,8 +275,7 @@ class EPollAgent:
             self._epoll.close()
             with _LOCK:
                 pidfds = list(self._pidfds.keys())
-            close_fds(pidfds)
-            close_fds(self._selfpipe)
+            close_fds(pidfds + list(self._selfpipe))
             self._selfpipe = None
 
     def _reap_pidfd(self, pidfd):
