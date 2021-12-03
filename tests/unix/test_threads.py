@@ -12,7 +12,7 @@ import shellous
 from shellous.log import log_method
 
 if sys.platform != "win32":
-    from shellous.watcher import DefaultChildWatcher
+    from shellous import DefaultChildWatcher
     from tests.conftest import PatchedMultiLoopChildWatcher
 
 unix_only = pytest.mark.skipif(sys.platform == "win32", reason="Unix")
