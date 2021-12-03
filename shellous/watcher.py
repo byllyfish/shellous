@@ -22,11 +22,6 @@ from shellous.util import close_fds, wait_pid
 
 assert sys.platform != "win32"
 
-# Use a single module level lock for multi-threading. ChildWatcher's are
-# process-wide singletons. Single-line Python instructions that are assumed to
-# be atomic are marked with the command "ATOMIC: ..."
-_LOCK = threading.Lock()
-
 
 def _check_sigchld():
     """Check that SIGCHLD is not set to SIG_IGN.
@@ -45,6 +40,7 @@ class DefaultChildWatcher(asyncio.AbstractChildWatcher):
     def __init__(self):
         "Initialize child watcher."
         self._agent = None
+        self._lock = threading.Lock()
 
     def add_child_handler(self, pid, callback, *args):
         """Register a new child handler.
@@ -56,7 +52,9 @@ class DefaultChildWatcher(asyncio.AbstractChildWatcher):
         Note: callback() must be thread-safe.
         """
         if not self._agent:  # ATOMIC: self._agent
-            self._init_agent()  # THREADSAFE: _init_agent re-checks self._agent
+            with self._lock:
+                self._init_agent()
+
         self._agent.watch_pid(pid, callback, args)  # ATOMIC: self._agent
 
     def remove_child_handler(self, pid):
@@ -82,7 +80,7 @@ class DefaultChildWatcher(asyncio.AbstractChildWatcher):
 
         This must be called to make sure that any underlying resource is freed.
         """
-        with _LOCK:
+        with self._lock:
             agent = self._agent
             self._agent = None
 
@@ -107,6 +105,9 @@ class DefaultChildWatcher(asyncio.AbstractChildWatcher):
 
     def _init_agent(self):
         "Construct child watcher agent."
+        if self._agent:
+            return
+
         if hasattr(os, "pidfd_open"):
             agent_class = EPollAgent
         elif hasattr(select, "kqueue"):
@@ -114,9 +115,7 @@ class DefaultChildWatcher(asyncio.AbstractChildWatcher):
         else:
             agent_class = ThreadAgent
 
-        with _LOCK:
-            if not self._agent:
-                self._agent = agent_class()
+        self._agent = agent_class()
 
 
 class KQueueAgent:
