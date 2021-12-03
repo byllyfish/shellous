@@ -1,6 +1,14 @@
 Shellous Change Log
 ===================
 
+0.11.0
+------
+
+- [FEATURE] Custom child watcher class, DefaultChildWatcher, automatically picks between pidfd, kqueue and thread implementation.
+- [BUGFIX] Manually reap process when childwatcher fails to detect child exit. (#178)
+- [LATERAL] Add tests to make sure that Command, Pipeline and Result objects can be pickled.
+- [LATERAL] Remove context reference from command Options class.
+
 0.10.0
 ------
 

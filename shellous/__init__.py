@@ -2,7 +2,7 @@
 .. include:: ../README.md
 """
 __docformat__ = "restructuredtext"
-__version__ = "0.10.0"
+__version__ = "0.11.0"
 
 import sys
 
