@@ -266,15 +266,13 @@ class EPollAgent:
 
         finally:
             self._epoll.close()
-            with _LOCK:
-                pidfds = list(self._pidfds.keys())
+            pidfds = list(self._pidfds.keys())  # ATOMIC: self._pidfds.keys()
             close_fds(pidfds + list(self._selfpipe))
             self._selfpipe = None
 
     def _reap_pidfd(self, pidfd):
         "Handle epoll pidfd event."
-        with _LOCK:
-            pid, callback, args = self._pidfds.pop(pidfd)
+        pid, callback, args = self._pidfds.pop(pidfd)  # ATOMIC: self._pidfds.pop()
 
         LOGGER.debug("_reap_pidfd pidfd=%r pid=%r", pidfd, pid)
 
@@ -287,8 +285,8 @@ class EPollAgent:
     def _add_pidfd(self, pid, callback, args):
         "Add epoll that monitors for process exit."
         pidfd = os.pidfd_open(pid, 0)
-        with _LOCK:
-            self._pidfds[pidfd] = (pid, callback, args)
+        self._pidfds[pidfd] = (pid, callback, args)  # ATOMIC: self._pidfds[]
+
         self._epoll.register(pidfd, select.EPOLLIN)
         LOGGER.debug("_add_pidfd registered pidfd=%r pid=%r", pidfd, pid)
 
