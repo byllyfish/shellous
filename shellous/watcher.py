@@ -215,8 +215,7 @@ class EPollAgent:
     def __init__(self):
         "Initialize agent variables."
         _check_sigchld()
-        self._pids = {}  # pid -> (callback, args)
-        self._pidfds = {}  # pidfd -> pid
+        self._pidfds = {}  # pidfd -> (pid, callback, args)
         self._epoll = select.epoll()
         self._selfpipe = os.pipe()
         self._epoll.register(self._selfpipe[0], select.EPOLLIN)
@@ -235,19 +234,13 @@ class EPollAgent:
 
     def watch_pid(self, pid, callback, args):
         "Register a PID with epoll."
-        with _LOCK:
-            self._pids[pid] = (callback, args)
-
         try:
-            self._add_pidfd(pid)
+            self._add_pidfd(pid, callback, args)
         except ProcessLookupError:
-            self._pidfd_failed(pid)
+            self._pidfd_failed(pid, callback, args)
 
-    def _pidfd_failed(self, pid):
+    def _pidfd_failed(self, pid, callback, args):
         "Handle case where pidfd_open fails."
-        with _LOCK:
-            callback, args = self._pids.pop(pid)
-
         LOGGER.debug("_pidfd_failed pid=%r", pid)
 
         status = wait_pid(pid)
@@ -281,8 +274,7 @@ class EPollAgent:
     def _reap_pidfd(self, pidfd):
         "Handle epoll pidfd event."
         with _LOCK:
-            pid = self._pidfds.pop(pidfd)
-            callback, args = self._pids.pop(pid)
+            pid, callback, args = self._pidfds.pop(pidfd)
 
         LOGGER.debug("_reap_pidfd pidfd=%r pid=%r", pidfd, pid)
 
@@ -292,11 +284,11 @@ class EPollAgent:
         else:
             LOGGER.critical("_reap_pid: process still running pid=%r", pid)
 
-    def _add_pidfd(self, pid):
+    def _add_pidfd(self, pid, callback, args):
         "Add epoll that monitors for process exit."
         pidfd = os.pidfd_open(pid, 0)
         with _LOCK:
-            self._pidfds[pidfd] = pid
+            self._pidfds[pidfd] = (pid, callback, args)
         self._epoll.register(pidfd, select.EPOLLIN)
         LOGGER.debug("_add_pidfd registered pidfd=%r pid=%r", pidfd, pid)
 
