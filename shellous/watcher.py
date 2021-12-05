@@ -11,6 +11,7 @@ References:
 """
 
 import asyncio
+import errno
 import os
 import select
 import signal
@@ -236,11 +237,15 @@ class EPollAgent:
         try:
             self._add_pidfd(pid, callback, args)
         except ProcessLookupError:
-            self._pidfd_failed(pid, callback, args)
+            self._pidfd_process_missing(pid, callback, args)
+        except Exception as ex:
+            LOGGER.error("EPollAgent.watch_pid failed pid=%r ex=%r", pid, ex)
+            self._pidfd_error(pid, callback, args)
+            raise
 
-    def _pidfd_failed(self, pid, callback, args):
-        "Handle case where pidfd_open fails."
-        LOGGER.debug("_pidfd_failed pid=%r", pid)
+    def _pidfd_process_missing(self, pid, callback, args):
+        "Handle case where pidfd_open fails with a ProcessLookupError (ESRCH)."
+        LOGGER.debug("_pidfd_process_missing pid=%r", pid)
 
         status = wait_pid(pid)
         if status is not None:
@@ -248,6 +253,14 @@ class EPollAgent:
         else:
             # Process is still dying. Spawn a task to poll it.
             asyncio.create_task(_poll_dead_pid(pid, callback, args))
+
+    def _pidfd_error(self, pid, callback, args):
+        """Handle case where pidfd_open fails with any error.
+        
+        This can happen if the process runs out of file descriptors (EMFILE).
+        """
+        os.kill(pid, signal.SIGKILL)
+        asyncio.create_task(_poll_dead_pid(pid, callback, args))
 
     @log_thread(True)
     def _run(self):
@@ -367,3 +380,9 @@ def _invoke_callback(callback, pid, status, args):
             status,
             ex,
         )
+
+
+@log_thread(True)
+def _blocking_reap_pid(pid, callback, args):
+    status = wait_pid(pid, block=True)
+    _invoke_callback(callback, pid, status, args)

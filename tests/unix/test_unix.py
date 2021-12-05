@@ -1,10 +1,12 @@
 "Unit tests for shellous module (Linux and MacOS)."
 
 import asyncio
+import contextlib
 import io
 import logging
 import os
 import re
+import resource
 import signal
 import sys
 
@@ -22,7 +24,7 @@ from shellous import (
     cooked,
     raw,
 )
-from shellous.harvest import harvest_results
+from shellous.harvest import harvest, harvest_results
 
 unix_only = pytest.mark.skipif(sys.platform == "win32", reason="Unix")
 pytestmark = [pytest.mark.asyncio, unix_only]
@@ -1620,3 +1622,24 @@ async def test_open_file_descriptors_pty_unclosed_fds(sh):
         )
     else:
         assert result == "0u CHR /dev/ttysN\n1u CHR /dev/ttysN\n2u CHR /dev/ttysN\n"
+
+
+@contextlib.contextmanager
+def _limited_descriptors(limit):
+    "Context manager to limit file descriptors in this process."
+    soft, hard = resource.getrlimit(resource.RLIMIT_NOFILE)
+    resource.setrlimit(resource.RLIMIT_NOFILE, (limit, hard))
+    try:
+        yield
+    finally:
+        resource.setrlimit(resource.RLIMIT_NOFILE, (soft, hard))
+
+
+async def test_limited_file_descriptors(sh, report_children):
+    "Test running out of file descriptors."
+
+    cmds = [sh("sleep", "1").set(alt_name=f"sleep{i}") for i in range(2)]
+
+    with _limited_descriptors(13):
+        with pytest.raises(OSError, match="Too many open files"):
+            await harvest(*cmds)
