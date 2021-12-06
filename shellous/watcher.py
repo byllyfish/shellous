@@ -383,9 +383,3 @@ def _invoke_callback(callback, pid, status, args):
             status,
             ex,
         )
-
-
-@log_thread(True)
-def _blocking_reap_pid(pid, callback, args):
-    status = wait_pid(pid, block=True)
-    _invoke_callback(callback, pid, status, args)
