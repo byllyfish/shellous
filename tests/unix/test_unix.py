@@ -6,7 +6,6 @@ import io
 import logging
 import os
 import re
-import resource
 import signal
 import sys
 
@@ -1627,6 +1626,8 @@ async def test_open_file_descriptors_pty_unclosed_fds(sh):
 @contextlib.contextmanager
 def _limited_descriptors(limit):
     "Context manager to limit file descriptors in this process."
+    import resource
+
     soft, hard = resource.getrlimit(resource.RLIMIT_NOFILE)
     resource.setrlimit(resource.RLIMIT_NOFILE, (limit, hard))
     try:
@@ -1635,11 +1636,15 @@ def _limited_descriptors(limit):
         resource.setrlimit(resource.RLIMIT_NOFILE, (soft, hard))
 
 
+@pytest.mark.skipif(_is_uvloop(), reason="uvloop")
 async def test_limited_file_descriptors(sh, report_children):
     "Test running out of file descriptors."
 
     cmds = [sh("sleep", "1").set(alt_name=f"sleep{i}") for i in range(2)]
 
     with _limited_descriptors(13):
-        with pytest.raises(OSError, match="Too many open files"):
+        with pytest.raises(OSError, match="Too many open files|No file descriptors available"):
             await harvest(*cmds)
+
+    # Yield time for any killed processes to be reaped.
+    await asyncio.sleep(0.025)

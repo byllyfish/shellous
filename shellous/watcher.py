@@ -259,7 +259,10 @@ class EPollAgent:
         
         This can happen if the process runs out of file descriptors (EMFILE).
         """
-        os.kill(pid, signal.SIGKILL)
+        try:
+            os.kill(pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
         asyncio.create_task(_poll_dead_pid(pid, callback, args))
 
     @log_thread(True)
