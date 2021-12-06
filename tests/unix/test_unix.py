@@ -1640,11 +1640,9 @@ def _limited_descriptors(limit):
 async def test_limited_file_descriptors(sh, report_children):
     "Test running out of file descriptors."
 
-    cmds = [sh("sleep", "1").set(alt_name=f"sleep{i}") for i in range(2)]
-
     with _limited_descriptors(13):
         with pytest.raises(OSError, match="Too many open files|No file descriptors available"):
-            await harvest(*cmds)
+            await sh("sleep", "1")
 
     # Yield time for any killed processes to be reaped.
     await asyncio.sleep(0.025)
