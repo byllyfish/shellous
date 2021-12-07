@@ -22,7 +22,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ ubuntu-latest, macos-11, windows-latest, ubuntu-18.04 ]
-        python-version: [ '3.8', '3.9', '3.10', 'pypy-3.8' ]
+        python-version: [ '3.8', '3.9', '3.10', 'pypy-3.8-nightly' ]
 
     env:
       POETRY_RUN: python -m poetry run
@@ -40,11 +40,11 @@ jobs:
         # Install poetry and use it to install dependencies.
         python -m pip install poetry
         python -m poetry install --no-root --no-interaction
-        if [ "${{ matrix.os }}" != "windows-latest" -a "${{ matrix.python-version }}" != "pypy-3.8" ]; then
+        if [ "${{ matrix.os }}" != "windows-latest" -a "${{ matrix.python-version }}" != "pypy-3.8-nightly" ]; then
             python -m poetry add uvloop
         fi
     - name: Lint
-      if: matrix.python-version != 'pypy-3.8'
+      if: matrix.python-version != 'pypy-3.8-nightly'
       run: |
         # Run flake8 and pylint.
         # stop the build if there are Python syntax errors or undefined names
@@ -64,7 +64,7 @@ jobs:
           $POETRY_RUN python -m pytest -vv -s --durations=20 --log-cli-level=DEBUG --last-failed
         fi
     - name: Run Code Coverage (Linux and MacOS)
-      if: (matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11') && matrix.python-version != 'pypy-3.8'
+      if: (matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11') && matrix.python-version != 'pypy-3.8-nightly'
       run: |
         # Run coverage and upload report to codecov.
         $POETRY_RUN coverage run --source shellous -m pytest
@@ -74,13 +74,13 @@ jobs:
       env:
         SHELLOUS_CODE_COVERAGE: 1
     - name: Run Tests with uvloop (Linux and MacOS)
-      if: (matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11') && matrix.python-version != 'pypy-3.8'
+      if: (matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11') && matrix.python-version != 'pypy-3.8-nightly'
       run: |
         $POETRY_RUN python -m pytest -vv -s --log-cli-level=DEBUG
       env:
         SHELLOUS_LOOP_TYPE: "uvloop"
     - name: Run Tests with PidfdWatcher (Linux)
-      if: matrix.os == 'ubuntu-latest' && matrix.python-version != '3.8' && matrix.python-version != 'pypy-3.8'
+      if: matrix.os == 'ubuntu-latest' && matrix.python-version != '3.8' && matrix.python-version != 'pypy-3.8-nightly'
       run: |
         $POETRY_RUN python -m pytest -vv -s --log-cli-level=DEBUG | ./ci/annotate.awk -v step=PidfdWatcher
       env:
