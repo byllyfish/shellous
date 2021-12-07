@@ -149,11 +149,13 @@ class KQueueAgent:
         self._pids[pid] = (callback, args)  # ATOMIC: self._pids[] = ...
 
         try:
+            # FIXME: Pypy-3.8 missing KQ_NOTE_EXIT.
+            KQ_NOTE_EXIT = getattr(select, "KQ_NOTE_EXIT", 0x80000000)
             self._add_kevent(
                 pid,
                 select.KQ_FILTER_PROC,
                 select.KQ_EV_ADD | select.KQ_EV_ONESHOT,
-                select.KQ_NOTE_EXIT,
+                KQ_NOTE_EXIT,
             )
             LOGGER.debug("_add_kevent pid=%r", pid)
         except ProcessLookupError:
