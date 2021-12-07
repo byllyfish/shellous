@@ -11,7 +11,6 @@ References:
 """
 
 import asyncio
-import errno
 import os
 import select
 import signal
@@ -243,7 +242,8 @@ class EPollAgent:
             self._pidfd_error(pid, callback, args)
             raise
 
-    def _pidfd_process_missing(self, pid, callback, args):
+    @staticmethod
+    def _pidfd_process_missing(pid, callback, args):
         "Handle case where pidfd_open fails with a ProcessLookupError (ESRCH)."
         LOGGER.debug("_pidfd_process_missing pid=%r", pid)
 
@@ -254,9 +254,10 @@ class EPollAgent:
             # Process is still dying. Spawn a task to poll it.
             asyncio.create_task(_poll_dead_pid(pid, callback, args))
 
-    def _pidfd_error(self, pid, callback, args):
+    @staticmethod
+    def _pidfd_error(pid, callback, args):
         """Handle case where pidfd_open fails with any error.
-        
+
         This can happen if the process runs out of file descriptors (EMFILE).
         """
         try:

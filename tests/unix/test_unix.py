@@ -1642,7 +1642,9 @@ async def test_limited_file_descriptors(sh, report_children):
     cmds = [sh("sleep", "1")] * 2
 
     with _limited_descriptors(13):
-        with pytest.raises(OSError, match="Too many open files|No file descriptors available"):
+        with pytest.raises(
+            OSError, match="Too many open files|No file descriptors available"
+        ):
             await harvest(*cmds)
 
     # Yield time for any killed processes to be reaped.
