@@ -238,7 +238,7 @@ class EPollAgent:
         except ProcessLookupError:
             self._pidfd_process_missing(pid, callback, args)
         except Exception as ex:
-            LOGGER.error("EPollAgent.watch_pid failed pid=%r ex=%r", pid, ex)
+            LOGGER.warning("EPollAgent.watch_pid failed pid=%r ex=%r", pid, ex)
             self._pidfd_error(pid, callback, args)
             raise
 
