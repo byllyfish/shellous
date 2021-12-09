@@ -402,17 +402,17 @@ class Runner:
             if self._is_bsd_pty():
                 await self._waiter()
 
-        except ResultError as ex:
-            LOGGER.info("Runner.wait exited with error %r ex=%r", self, ex)
-            self._tasks.clear()  # all tasks were cancelled
-            await self._kill()
-            raise  # re-raise exception
-
         except asyncio.CancelledError:
             LOGGER.info("Runner.wait cancelled %r", self)
             self._set_cancelled()
             self._tasks.clear()  # all tasks were cancelled
             await self._kill()
+
+        except Exception as ex:
+            LOGGER.info("Runner.wait exited with error %r ex=%r", self, ex)
+            self._tasks.clear()  # all tasks were cancelled
+            await self._kill()
+            raise  # re-raise exception
 
     @log_method(LOG_DETAIL)
     async def _wait_pid(self):
