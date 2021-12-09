@@ -12,7 +12,7 @@ from shellous import pty_util
 from shellous.harvest import harvest, harvest_results
 from shellous.log import LOG_DETAIL, LOG_ENTER, LOG_EXIT, LOGGER, log_method, log_timer
 from shellous.redirect import Redirect
-from shellous.result import Result, ResultError, make_result
+from shellous.result import Result, make_result
 from shellous.util import close_fds, poll_wait_pid, uninterrupted, verify_dev_fd, which
 
 _KILL_TIMEOUT = 3.0
