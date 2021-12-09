@@ -12,7 +12,7 @@ from shellous import pty_util
 from shellous.harvest import harvest, harvest_results
 from shellous.log import LOG_DETAIL, LOG_ENTER, LOG_EXIT, LOGGER, log_method, log_timer
 from shellous.redirect import Redirect
-from shellous.result import Result, ResultError, make_result
+from shellous.result import Result, make_result
 from shellous.util import close_fds, poll_wait_pid, uninterrupted, verify_dev_fd, which
 
 _KILL_TIMEOUT = 3.0
@@ -402,17 +402,17 @@ class Runner:
             if self._is_bsd_pty():
                 await self._waiter()
 
-        except ResultError as ex:
-            LOGGER.info("Runner.wait exited with error %r ex=%r", self, ex)
-            self._tasks.clear()  # all tasks were cancelled
-            await self._kill()
-            raise  # re-raise exception
-
         except asyncio.CancelledError:
             LOGGER.info("Runner.wait cancelled %r", self)
             self._set_cancelled()
             self._tasks.clear()  # all tasks were cancelled
             await self._kill()
+
+        except Exception as ex:
+            LOGGER.info("Runner.wait exited with error %r ex=%r", self, ex)
+            self._tasks.clear()  # all tasks were cancelled
+            await self._kill()
+            raise  # re-raise exception
 
     @log_method(LOG_DETAIL)
     async def _wait_pid(self):
