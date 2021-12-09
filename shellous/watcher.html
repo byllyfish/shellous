@@ -368,7 +368,7 @@
         <span class="k">except</span> <span class="ne">ProcessLookupError</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_pidfd_process_missing</span><span class="p">(</span><span class="n">pid</span><span class="p">,</span> <span class="n">callback</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>
-            <span class="n">LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;EPollAgent.watch_pid failed pid=</span><span class="si">%r</span><span class="s2"> ex=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">pid</span><span class="p">,</span> <span class="n">ex</span><span class="p">)</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;EPollAgent.watch_pid failed pid=</span><span class="si">%r</span><span class="s2"> ex=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">pid</span><span class="p">,</span> <span class="n">ex</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_pidfd_error</span><span class="p">(</span><span class="n">pid</span><span class="p">,</span> <span class="n">callback</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span>
             <span class="k">raise</span>
 
@@ -1043,7 +1043,7 @@ notifications.</p>
         <span class="k">except</span> <span class="ne">ProcessLookupError</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_pidfd_process_missing</span><span class="p">(</span><span class="n">pid</span><span class="p">,</span> <span class="n">callback</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>
-            <span class="n">LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;EPollAgent.watch_pid failed pid=</span><span class="si">%r</span><span class="s2"> ex=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">pid</span><span class="p">,</span> <span class="n">ex</span><span class="p">)</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;EPollAgent.watch_pid failed pid=</span><span class="si">%r</span><span class="s2"> ex=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">pid</span><span class="p">,</span> <span class="n">ex</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_pidfd_error</span><span class="p">(</span><span class="n">pid</span><span class="p">,</span> <span class="n">callback</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span>
             <span class="k">raise</span>
 
@@ -1195,7 +1195,7 @@ notifications.</p>
         <span class="k">except</span> <span class="ne">ProcessLookupError</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_pidfd_process_missing</span><span class="p">(</span><span class="n">pid</span><span class="p">,</span> <span class="n">callback</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>
-            <span class="n">LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;EPollAgent.watch_pid failed pid=</span><span class="si">%r</span><span class="s2"> ex=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">pid</span><span class="p">,</span> <span class="n">ex</span><span class="p">)</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;EPollAgent.watch_pid failed pid=</span><span class="si">%r</span><span class="s2"> ex=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">pid</span><span class="p">,</span> <span class="n">ex</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_pidfd_error</span><span class="p">(</span><span class="n">pid</span><span class="p">,</span> <span class="n">callback</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span>
             <span class="k">raise</span>
 </pre></div>
