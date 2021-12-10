@@ -1,6 +1,12 @@
 Shellous Change Log
 ===================
 
+0.12.0
+------
+
+- [BUGFIX] Fix race condition in process substitution where process is left running due to exception.
+- [BUGFIX] Handle pidfd_open case where we run out of file descriptors.
+
 0.11.0
 ------
 
