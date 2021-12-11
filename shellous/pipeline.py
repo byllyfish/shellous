@@ -53,9 +53,9 @@ class Pipeline:
         new_commands = self.commands[0:-1] + (new_last,)
         return dataclasses.replace(self, commands=new_commands)
 
-    def _set_writable(self):
-        "Set write_mode=True on last command of the pipeline."
-        new_last = self.commands[-1].set(writable=True)
+    def _set(self, **kwds):
+        "Set options on last command of the pipeline."
+        new_last = self.commands[-1].set(**kwds)
         new_commands = self.commands[0:-1] + (new_last,)
         return dataclasses.replace(self, commands=new_commands)
 
@@ -118,7 +118,12 @@ class Pipeline:
     @property
     def writable(self):
         "Set writable=True option on last command of pipeline."
-        return self._set_writable()
+        return self._set(writable=True)
+
+    @property
+    def result(self):
+        "Set `return_result` and `exit_codes`."
+        return self._set(return_result=True, exit_codes=range(-255, 256))
 
     def __await__(self):
         return self.coro().__await__()

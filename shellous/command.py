@@ -537,6 +537,11 @@ class Command:
         "Set `writable` to True."
         return self.set(writable=True)
 
+    @property
+    def result(self):
+        "Set `return_result` and `exit_codes`."
+        return self.set(return_result=True, exit_codes=range(-255, 256))
+
 
 def _check_args(out, append):
     if append and not isinstance(out, STDOUT_APPEND_TYPES):
