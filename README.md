@@ -76,25 +76,21 @@ to omit the newline. Note, `echo("abc")` is the same as `echo -n "abc"`.
 Results and Exit Codes
 ----------------------
 
-When you `await` a command, it captures the standard output and returns it. You can optionally have the
-command return a `Result` object. The `Result` object will contain more information about the command 
-execution including the `exit_code`. To return a result object, set `return_result` option to `True`.
-
-```pycon
->>> await echo("abc").set(return_result=True)
-Result(output_bytes=b'abc', exit_code=0, cancelled=False, encoding='utf-8', extra=None)
-```
-
-The above command had an exit_code of 0.
-
 If a command exits with a non-zero exit code, it raises a `ResultError` exception that contains
-the `Result` object.
+the `Result` object. The `Result` object contains the exit code for the command among other details.
 
 ```pycon
 >>> await sh("cat", "does_not_exist")
 Traceback (most recent call last):
   ...
 shellous.result.ResultError: Result(output_bytes=b'', exit_code=1, cancelled=False, encoding='utf-8', extra=None)
+```
+
+To always return a `Result` object (and not raise an error for a non-zero exit status), add the `.result` modifier.
+
+```pycon
+>>> await echo("abc").result
+Result(output_bytes=b'abc', exit_code=0, cancelled=False, encoding='utf-8', extra=None)
 ```
 
 [More on results...](docs/results.md) <!-- __REL_LINK__ -->
