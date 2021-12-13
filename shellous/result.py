@@ -27,11 +27,15 @@ class Result:
     extra: Any = None
 
     @property
-    def output(self) -> Union[str, bytes, None]:
+    def output(self) -> str:
         "Return output string, based on encoding."
         if self.encoding is None:
             raise TypeError("use output_bytes instead; encoding is None")
         return decode(self.output_bytes, self.encoding)
+
+    def __bool__(self) -> bool:
+        "Return true if exit_code is 0."
+        return self.exit_code == 0
 
 
 @dataclass

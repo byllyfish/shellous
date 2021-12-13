@@ -214,6 +214,52 @@ async def test_echo_cancel_stringio_incomplete(echo_cmd):
     )
 
 
+async def test_echo_result(echo_cmd):
+    "Test the .result modifier with a single command."
+    echo = echo_cmd.env(SHELLOUS_EXIT_CODE=17)
+
+    result = await echo("def").result
+    assert result.exit_code == 17
+    assert result.output == "def"
+    assert not result
+
+
+async def test_pipe_result_1(echo_cmd, tr_cmd):
+    "Test the .result modifier with a pipe."
+    echo = echo_cmd.env(SHELLOUS_EXIT_SLEEP=0.1, SHELLOUS_EXIT_CODE=17)
+    tr = tr_cmd
+
+    pipe = echo("abc") | tr
+    result = await pipe.result
+    assert result.exit_code == 17
+    assert result.output == "ABC"
+    assert not result
+
+
+async def test_pipe_result_2(echo_cmd, tr_cmd):
+    "Test the .result modifier with a pipe."
+    echo = echo_cmd
+    tr = tr_cmd.env(SHELLOUS_EXIT_CODE=18)
+
+    pipe = echo("abc") | tr
+    result = await pipe.result
+    assert result.exit_code == 18
+    assert result.output == "ABC"
+    assert not result
+
+
+async def test_pipe_result_3(echo_cmd, tr_cmd):
+    "Test the .result modifier with a pipe."
+    echo = echo_cmd.env(SHELLOUS_EXIT_SLEEP=0.1, SHELLOUS_EXIT_CODE=9)
+    tr = tr_cmd.env(SHELLOUS_EXIT_CODE=18)
+
+    pipe = echo("abc") | tr
+    result = await pipe.result
+    assert result.exit_code == 9
+    assert result.output == "ABC"
+    assert not result
+
+
 async def test_pipe_cancel(echo_cmd, tr_cmd):
     "When a pipe is cancelled, we should see partial output."
     echo_cmd = echo_cmd("abc")
