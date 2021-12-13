@@ -156,23 +156,19 @@ to omit the newline. Note, <code>echo("abc")</code> is the same as <code>echo -n
 
 <h2 id="results-and-exit-codes">Results and Exit Codes</h2>
 
-<p>When you <code>await</code> a command, it captures the standard output and returns it. You can optionally have the
-command return a <code>Result</code> object. The <code>Result</code> object will contain more information about the command 
-execution including the <code>exit_code</code>. To return a result object, set <code>return_result</code> option to <code>True</code>.</p>
-
-<div class="codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">echo</span><span class="p">(</span><span class="s2">&quot;abc&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">return_result</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="go">Result(output_bytes=b&#39;abc&#39;, exit_code=0, cancelled=False, encoding=&#39;utf-8&#39;, extra=None)</span>
-</code></pre></div>
-
-<p>The above command had an exit_code of 0.</p>
-
 <p>If a command exits with a non-zero exit code, it raises a <code>ResultError</code> exception that contains
-the <code>Result</code> object.</p>
+the <code>Result</code> object. The <code>Result</code> object contains the exit code for the command among other details.</p>
 
 <div class="codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;cat&quot;</span><span class="p">,</span> <span class="s2">&quot;does_not_exist&quot;</span><span class="p">)</span>
 <span class="gt">Traceback (most recent call last):</span>
   <span class="c">...</span>
 <span class="gr"><a href="shellous/result.html#ResultError">shellous.result.ResultError</a></span>: <span class="n">Result(output_bytes=b&#39;&#39;, exit_code=1, cancelled=False, encoding=&#39;utf-8&#39;, extra=None)</span>
+</code></pre></div>
+
+<p>To always return a <code>Result</code> object (and not raise an error for a non-zero exit status), add the <code>.result</code> modifier.</p>
+
+<div class="codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">echo</span><span class="p">(</span><span class="s2">&quot;abc&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">result</span>
+<span class="go">Result(output_bytes=b&#39;abc&#39;, exit_code=0, cancelled=False, encoding=&#39;utf-8&#39;, extra=None)</span>
 </code></pre></div>
 
 <p><a href="docs/results.md">More on results...</a> <!-- __REL_LINK__ --></p>

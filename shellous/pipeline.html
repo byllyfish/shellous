@@ -66,6 +66,9 @@
                         <li>
                                 <a class="variable" href="#Pipeline.writable">writable</a>
                         </li>
+                        <li>
+                                <a class="variable" href="#Pipeline.result">result</a>
+                        </li>
                 </ul>
 
             </li>
@@ -145,9 +148,9 @@
         <span class="n">new_commands</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">commands</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="p">(</span><span class="n">new_last</span><span class="p">,)</span>
         <span class="k">return</span> <span class="n">dataclasses</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">commands</span><span class="o">=</span><span class="n">new_commands</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_set_writable</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="s2">&quot;Set write_mode=True on last command of the pipeline.&quot;</span>
-        <span class="n">new_last</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">commands</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">writable</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">_set</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">):</span>
+        <span class="s2">&quot;Set options on last command of the pipeline.&quot;</span>
+        <span class="n">new_last</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">commands</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="o">**</span><span class="n">kwds</span><span class="p">)</span>
         <span class="n">new_commands</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">commands</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="p">(</span><span class="n">new_last</span><span class="p">,)</span>
         <span class="k">return</span> <span class="n">dataclasses</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">commands</span><span class="o">=</span><span class="n">new_commands</span><span class="p">)</span>
 
@@ -210,7 +213,12 @@
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">writable</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Set writable=True option on last command of pipeline.&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_set_writable</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_set</span><span class="p">(</span><span class="n">writable</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">result</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;Set `return_result` and `exit_codes`.&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_set</span><span class="p">(</span><span class="n">return_result</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exit_codes</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span><span class="o">-</span><span class="mi">255</span><span class="p">,</span> <span class="mi">256</span><span class="p">))</span>
 
     <span class="k">def</span> <span class="fm">__await__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">coro</span><span class="p">()</span><span class="o">.</span><span class="fm">__await__</span><span class="p">()</span>
@@ -293,9 +301,9 @@
         <span class="n">new_commands</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">commands</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="p">(</span><span class="n">new_last</span><span class="p">,)</span>
         <span class="k">return</span> <span class="n">dataclasses</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">commands</span><span class="o">=</span><span class="n">new_commands</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_set_writable</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="s2">&quot;Set write_mode=True on last command of the pipeline.&quot;</span>
-        <span class="n">new_last</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">commands</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">writable</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">_set</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">):</span>
+        <span class="s2">&quot;Set options on last command of the pipeline.&quot;</span>
+        <span class="n">new_last</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">commands</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="o">**</span><span class="n">kwds</span><span class="p">)</span>
         <span class="n">new_commands</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">commands</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="p">(</span><span class="n">new_last</span><span class="p">,)</span>
         <span class="k">return</span> <span class="n">dataclasses</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">commands</span><span class="o">=</span><span class="n">new_commands</span><span class="p">)</span>
 
@@ -358,7 +366,12 @@
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">writable</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="s2">&quot;Set writable=True option on last command of pipeline.&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_set_writable</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_set</span><span class="p">(</span><span class="n">writable</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">result</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;Set `return_result` and `exit_codes`.&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_set</span><span class="p">(</span><span class="n">return_result</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exit_codes</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span><span class="o">-</span><span class="mi">255</span><span class="p">,</span> <span class="mi">256</span><span class="p">))</span>
 
     <span class="k">def</span> <span class="fm">__await__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">coro</span><span class="p">()</span><span class="o">.</span><span class="fm">__await__</span><span class="p">()</span>
@@ -603,6 +616,17 @@ result = run.result()
     </div>
 
             <div class="docstring"><p>Set writable=True option on last command of pipeline.</p>
+</div>
+
+
+                            </div>
+                            <div id="Pipeline.result" class="classattr">
+                                            <div class="attr variable"><a class="headerlink" href="#Pipeline.result">#&nbsp;&nbsp</a>
+
+        <span class="name">result</span>
+    </div>
+
+            <div class="docstring"><p>Set <code>return_result</code> and <code>exit_codes</code>.</p>
 </div>
 
 
