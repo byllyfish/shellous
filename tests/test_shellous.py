@@ -524,7 +524,7 @@ async def test_stdout_deadlock_antipattern(bulk_cmd):
     "Use async-with but don't read from stdout."
 
     async def _antipattern():
-        async with bulk_cmd.run() as run:
+        async with bulk_cmd.set(timeout=3.0).run() as run:
             assert run.stdin is None
             assert run.stderr is None
             assert run.stdout
@@ -532,7 +532,7 @@ async def test_stdout_deadlock_antipattern(bulk_cmd):
 
     with pytest.raises(asyncio.TimeoutError):
         # The _antipattern function must time out.
-        await asyncio.wait_for(_antipattern(), 3.0)
+        await _antipattern()
 
 
 async def test_runner_enter(echo_cmd):
