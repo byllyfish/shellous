@@ -1,6 +1,13 @@
 Shellous Change Log
 ===================
 
+0.13.0
+------
+
+- [FEATURE] Add the `.result` modifier to Command and Pipeline.
+- [BUGFIX] Fix failing test on Python 3.10.1 due to change in behavior of `asyncio.wait_for`.
+- [LATERAL] Add more timeout-cancellation tests.
+
 0.12.0
 ------
 
