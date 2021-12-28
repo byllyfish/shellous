@@ -158,6 +158,7 @@ def test_parse_readme():
         "async with pipe as run:\n"
         "  data = await run.stdout.readline()\n"
         "  print(data)\n",
+        'await sh("sleep", 60).set(timeout=0.1)',
         'sleep = sh("sleep", 60).set(incomplete_result=True)',
         "t = asyncio.create_task(sleep.coro())",
         "t.cancel()",

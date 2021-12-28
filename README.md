@@ -25,6 +25,7 @@ Benefits
 - Run programs asychronously in a single line.
 - Easily capture output or redirect stdin, stdout and stderr to files, memory buffers or loggers.
 - Easily construct [pipelines](https://en.wikipedia.org/wiki/Pipeline_(Unix)) and use [process substitution](https://en.wikipedia.org/wiki/Process_substitution).
+- Easily set timeouts and reliably cancel running processes.
 - Run a program with a pseudo-terminal (pty).
 - Runs on Linux, MacOS, FreeBSD and Windows.
 - Monitor processes being started and stopped with `audit_callback` API.
@@ -239,13 +240,28 @@ are responsible for correctly reading and writing multiple streams at the same t
 b'README.md\n'
 ```
 
+Timeouts
+--------
+
+You can specify a timeout using the `timeout` option. If the timeout expires, shellous will raise
+an `asyncio.TimeoutError`.
+
+```pycon
+>>> await sh("sleep", 60).set(timeout=0.1)
+Traceback (most recent call last):
+  ...
+asyncio.exceptions.TimeoutError
+```
+
+Timeouts are just a special case of cancellation.
+
 Cancellation
 ------------
 
 When a command is cancelled, shellous terminates the process and raises a `CancelledError`.
 
 You can retrieve the partial result by setting `incomplete_result` to True. Shellous will return a
-`ResultError` when the specified command is cancelled.
+`ResultError` when the specified command is cancelled (or timed out).
 
 ```pycon
 >>> sleep = sh("sleep", 60).set(incomplete_result=True)

@@ -226,7 +226,7 @@ async def test_echo_result(echo_cmd):
 
 async def test_pipe_result_1(echo_cmd, tr_cmd):
     "Test the .result modifier with a pipe."
-    echo = echo_cmd.env(SHELLOUS_EXIT_SLEEP=0.1, SHELLOUS_EXIT_CODE=17)
+    echo = echo_cmd.env(SHELLOUS_EXIT_SLEEP=0.2, SHELLOUS_EXIT_CODE=17)
     tr = tr_cmd
 
     pipe = echo("abc") | tr
@@ -250,7 +250,7 @@ async def test_pipe_result_2(echo_cmd, tr_cmd):
 
 async def test_pipe_result_3(echo_cmd, tr_cmd):
     "Test the .result modifier with a pipe."
-    echo = echo_cmd.env(SHELLOUS_EXIT_SLEEP=0.1, SHELLOUS_EXIT_CODE=9)
+    echo = echo_cmd.env(SHELLOUS_EXIT_SLEEP=0.2, SHELLOUS_EXIT_CODE=9)
     tr = tr_cmd.env(SHELLOUS_EXIT_CODE=18)
 
     pipe = echo("abc") | tr
@@ -1090,6 +1090,45 @@ async def test_command_with_timeout_expiring_generator(sleep_cmd):
             assert False  # never reached
 
 
+async def test_command_with_timeout_result(sleep_cmd):
+    "Test a command with both timeout and .result modifiers."
+    sleep = sleep_cmd(10).result
+
+    with pytest.raises(asyncio.TimeoutError):
+        await sleep(10).set(timeout=0.1)
+
+
+async def test_command_with_timeout_incomplete_result(sleep_cmd):
+    "Test a command with both timeout and .result modifiers."
+    sleep = sleep_cmd(10).result.set(incomplete_result=True)
+
+    result = await sleep(10).set(timeout=0.1)
+
+    assert result == Result(
+        output_bytes=b"",
+        exit_code=CANCELLED_EXIT_CODE,
+        cancelled=True,
+        encoding="utf-8",
+        extra=None,
+    )
+
+
+async def test_command_with_timeout_incomplete_resulterror(sleep_cmd):
+    "Test a command with both timeout and incomplete_result modifiers."
+    sleep = sleep_cmd(10).set(incomplete_result=True)
+
+    with pytest.raises(ResultError) as exc_info:
+        await sleep(10).set(timeout=0.1)
+
+    assert exc_info.value.result == Result(
+        output_bytes=b"",
+        exit_code=CANCELLED_EXIT_CODE,
+        cancelled=True,
+        encoding="utf-8",
+        extra=None,
+    )
+
+
 async def test_wait_for_zero_seconds(sleep_cmd):
     "Test asyncio.wait_for(0) with a timeout of zero seconds."
 
@@ -1120,6 +1159,29 @@ async def test_timeout_zero_seconds(sleep_cmd):
         calls.append((phase, runner.name, runner.returncode))
 
     sleep = sleep_cmd(10).set(audit_callback=_audit, timeout=0.0)
+
+    with pytest.raises(asyncio.TimeoutError):
+        await sleep(10)
+
+    # The `timeout` timer starts as soon as the process is started. Contrast
+    # this with asyncio.wait_for().
+    assert calls == [
+        ("start", "sleep", None),
+        ("signal", "sleep", None),
+        ("stop", "sleep", CANCELLED_EXIT_CODE),
+    ]
+
+
+async def test_timeout_negative_seconds(sleep_cmd):
+    "Test command with a negative timeout (treated the same as 0 seconds)."
+
+    calls = []
+
+    def _audit(phase, info):
+        runner = info["runner"]
+        calls.append((phase, runner.name, runner.returncode))
+
+    sleep = sleep_cmd(10).set(audit_callback=_audit, timeout=-1.0)
 
     with pytest.raises(asyncio.TimeoutError):
         await sleep(10)
