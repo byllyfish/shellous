@@ -226,7 +226,7 @@ async def test_echo_result(echo_cmd):
 
 async def test_pipe_result_1(echo_cmd, tr_cmd):
     "Test the .result modifier with a pipe."
-    echo = echo_cmd.env(SHELLOUS_EXIT_SLEEP=0.2, SHELLOUS_EXIT_CODE=17)
+    echo = echo_cmd.env(SHELLOUS_EXIT_SLEEP=0.5, SHELLOUS_EXIT_CODE=17)
     tr = tr_cmd
 
     pipe = echo("abc") | tr
@@ -250,7 +250,7 @@ async def test_pipe_result_2(echo_cmd, tr_cmd):
 
 async def test_pipe_result_3(echo_cmd, tr_cmd):
     "Test the .result modifier with a pipe."
-    echo = echo_cmd.env(SHELLOUS_EXIT_SLEEP=0.2, SHELLOUS_EXIT_CODE=9)
+    echo = echo_cmd.env(SHELLOUS_EXIT_SLEEP=0.5, SHELLOUS_EXIT_CODE=9)
     tr = tr_cmd.env(SHELLOUS_EXIT_CODE=18)
 
     pipe = echo("abc") | tr
