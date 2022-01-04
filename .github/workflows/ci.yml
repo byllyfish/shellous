@@ -75,19 +75,28 @@ jobs:
     - name: Run Tests with uvloop (Linux and MacOS)
       if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11'
       run: |
-        $POETRY_RUN python -m pytest -vv -s --log-cli-level=DEBUG
+        if ! $POETRY_RUN python -m pytest -vv -s --log-cli-level=DEBUG; then
+          echo "::warning title=uvloop Warning::Re-running failed tests in $BUILD_NAME"
+          $POETRY_RUN python -m pytest -vv -s --log-cli-level=DEBUG --last-failed
+        fi
       env:
         SHELLOUS_LOOP_TYPE: "uvloop"
     - name: Run Tests with PidfdWatcher (Linux)
       if: matrix.os == 'ubuntu-latest'
       run: |
-        $POETRY_RUN python -m pytest -vv -s --log-cli-level=DEBUG | ./ci/annotate.awk -v step=PidfdWatcher
+        if ! $POETRY_RUN python -m pytest -vv -s --log-cli-level=DEBUG; then
+          echo "::warning title=PidfdChildWatcher Warning::Re-running failed tests in $BUILD_NAME"
+          $POETRY_RUN python -m pytest -vv -s --log-cli-level=DEBUG --last-failed
+        fi
       env:
         SHELLOUS_CHILDWATCHER_TYPE: "pidfd"
     - name: Run Tests with SafeChildWatcher (Linux and MacOS)
       if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11'
       run: |
-        $POETRY_RUN python -m pytest -vv -s --log-cli-level=DEBUG
+        if ! $POETRY_RUN python -m pytest -vv -s --log-cli-level=DEBUG; then
+          echo "::warning title=SafeChildWatcher Warning::Re-running failed tests in $BUILD_NAME"
+          $POETRY_RUN python -m pytest -vv -s --log-cli-level=DEBUG --last-failed
+        fi
       env:
         SHELLOUS_CHILDWATCHER_TYPE: "safe"
     - name: Run Tests with MultiLoopChildWatcher (Linux and MacOS)
@@ -102,8 +111,10 @@ jobs:
     - name: Run Tests with DefaultChildWatcher (Linux and MacOS)
       if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11' || matrix.os == 'ubuntu-18.04'
       run: |
-        # Limit to 5 failures for now because GH actions is auto-cancelling...
-        $POETRY_RUN python -m pytest -vv -s --log-cli-level=DEBUG --maxfail=5 | ./ci/annotate.awk -v step=DefaultChildWatcher
+        if ! $POETRY_RUN python -m pytest -vv -s --log-cli-level=DEBUG | ./ci/annotate.awk -v step=DefaultChildWatcher; then
+          echo "::warning title=DefaultChildWatcher Warning::Re-running failed tests in $BUILD_NAME"
+          $POETRY_RUN python -m pytest -vv -s --log-cli-level=DEBUG --last-failed
+        fi
       env:
         SHELLOUS_CHILDWATCHER_TYPE: "default"
 
@@ -114,6 +125,7 @@ jobs:
       image: python:3.10.0-alpine3.14
     env:
       SHELLOUS_DEBUG: 1
+      BUILD_NAME: build (alpine)
 
     steps:
       - uses: actions/checkout@v2
@@ -123,9 +135,15 @@ jobs:
           pip3 install -r ./ci/requirements-dev.txt
       - name: Run Tests
         run: |
-          pytest -v -s --log-cli-level=DEBUG
+          if ! pytest -v -s --log-cli-level=DEBUG; then
+            echo "::warning title=Run Tests Warning::Re-running failed tests in $BUILD_NAME"
+            pytest -v -s --log-cli-level=DEBUG --last-failed
+          fi
       - name: Run Tests with DefaultChildWatcher
         run: |
-          pytest -v -s --log-cli-level=DEBUG
+          if ! pytest -v -s --log-cli-level=DEBUG; then
+            echo "::warning title=DefaultChildWatcher Warning::Re-running failed tests in $BUILD_NAME"
+            pytest -v -s --log-cli-level=DEBUG --last-failed
+          fi
         env:
           SHELLOUS_CHILDWATCHER_TYPE: "default"
