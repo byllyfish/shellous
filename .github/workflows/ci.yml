@@ -22,7 +22,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ ubuntu-latest, macos-11, windows-latest, ubuntu-18.04 ]
-        python-version: [ '3.9', '3.10' ]
+        python-version: [ '3.9', '3.10', '3.11-dev' ]
 
     env:
       POETRY_RUN: python -m poetry run
