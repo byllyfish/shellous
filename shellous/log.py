@@ -195,7 +195,7 @@ def _platform_info():
 
 
 @contextmanager
-def log_timer(msg, warn_limit=0.1):
+def log_timer(msg, warn_limit=0.1, exc_info=True):
     """Warn if operation takes longer than `warn_limit` (wall clock time).
 
     If `warn_limit` is <= 0, always log at INFO level.
@@ -203,6 +203,10 @@ def log_timer(msg, warn_limit=0.1):
     start = time.perf_counter()
     try:
         yield
+    except Exception as ex:
+        if exc_info:
+            LOGGER.debug("log_timer %r ex=%r", msg, ex, exc_info=exc_info)
+        raise
     finally:
         duration = time.perf_counter() - start
         if duration >= warn_limit:
