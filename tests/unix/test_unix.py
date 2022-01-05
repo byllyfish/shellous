@@ -1482,8 +1482,8 @@ async def test_audit_cancel_nohup(sh):
 
     assert calls == [
         ("start", "nohup", None, False, None),
-        ("signal", "nohup", None, True, "Signals.SIGHUP"),
-        ("signal", "nohup", None, True, "Signals.SIGKILL"),
+        ("signal", "nohup", None, True, "SIGHUP"),
+        ("signal", "nohup", None, True, "SIGKILL"),
         ("stop", "nohup", -9, True, None),
     ]
 
@@ -1510,7 +1510,7 @@ async def test_set_cancel_signal_invalid(sh):
     assert calls == [
         ("start", "nohup", None, False, None),
         ("signal", "nohup", None, True, "INVALID"),
-        ("signal", "nohup", None, True, "Signals.SIGKILL"),
+        ("signal", "nohup", None, True, "SIGKILL"),
         ("stop", "nohup", -9, True, None),
     ]
 

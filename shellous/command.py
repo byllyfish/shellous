@@ -436,7 +436,7 @@ class Command:
             name of the exception from launching the process.
 
             "signal" (str): When phase is "signal", the signal name/number
-            sent to the process, e.g. "Signals.SIGTERM".
+            sent to the process, e.g. "SIGTERM".
 
         The primary use case for `audit_callback` is measuring how long each
         command takes to run and exporting this information to a metrics

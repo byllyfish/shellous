@@ -756,8 +756,10 @@ class Runner:
                 info["failure"] = failure
             if phase == "signal":
                 if signal is None:
-                    signal = "Signals.SIGKILL"  # SIGKILL (even on win32)
-                info["signal"] = str(signal)
+                    info["signal"] = "SIGKILL"  # SIGKILL (even on win32)
+                else:
+                    # If signal name begins with "Signal.", elide the prefix.
+                    info["signal"] = str(signal).replace("Signals.", "")
             callback(phase, info)
 
     def __repr__(self):
