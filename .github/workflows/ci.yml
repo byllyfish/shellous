@@ -36,15 +36,13 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
-        pip3 install -U pip setuptools wheel
-        pip3 -V
+        pip3 install -U setuptools wheel
         pip3 install -r ./ci/requirements-dev.txt
         if [ "${{ matrix.os }}" != "windows-latest" -a "${{ matrix.python-version }}" != "3.11-dev" ]; then
             pip3 install uvloop
         fi
-        # Work-around for python 3.11-dev...
-        pip3 install pylint
     - name: Lint
+      if: matrix.python-version != '3.11-dev'
       run: |
         # Run flake8 and pylint.
         # stop the build if there are Python syntax errors or undefined names
