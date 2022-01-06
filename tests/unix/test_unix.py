@@ -1643,9 +1643,9 @@ async def test_limited_file_descriptors(sh, report_children):
 
     desc_limit = 13
     if sys.version_info[0:2] >= (3, 11):
-        # On Python 3.11, add one to the desc limit because there's an existing
+        # On Python 3.11, fuzz the desc limit because there's an existing
         # file descriptor leak in _get_handles in Python subprocess module.
-        desc_limit += 1
+        desc_limit -= 1
 
     with _limited_descriptors(desc_limit):
         with pytest.raises(
