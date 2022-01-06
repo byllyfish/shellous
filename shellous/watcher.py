@@ -109,7 +109,11 @@ class DefaultChildWatcher(asyncio.AbstractChildWatcher):
             return
 
         if hasattr(os, "pidfd_open"):
-            agent_class = EPollAgent
+            if hasattr(select, "epoll"):
+                agent_class = EPollAgent
+            else:
+                LOGGER.error("DefaultChildWatcher: epoll not available?")
+                agent_class = ThreadAgent
         elif hasattr(select, "kqueue"):
             agent_class = KQueueAgent
         else:
