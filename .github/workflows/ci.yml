@@ -62,7 +62,7 @@ jobs:
           pytest -vv -s --durations=20 --log-cli-level=DEBUG --last-failed
         fi
     - name: Run Code Coverage (Linux and MacOS)
-      if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11'
+      if: (matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11') && matrix.python-version != '3.11-dev'
       run: |
         # Run coverage and upload report to codecov.
         coverage run --source shellous -m pytest
@@ -121,7 +121,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20  # stop runaway job after 20 minutes
     container:
-      image: python:3.10.0-alpine3.14
+      image: python:3.10.1-alpine
     env:
       SHELLOUS_DEBUG: 1
       BUILD_NAME: build (alpine)

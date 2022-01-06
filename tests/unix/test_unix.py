@@ -33,6 +33,9 @@ _CANCELLED_EXIT_CODE = -15
 # True if we're running on alpine linux.
 _IS_ALPINE = os.path.exists("/etc/alpine-release")
 
+# True if we're running on Python 3.11.
+_IS_PY3_11 = sys.version_info[0:2] == (3, 11)
+
 
 def _is_uvloop():
     "Return true if we're running under uvloop."
@@ -1636,18 +1639,12 @@ def _limited_descriptors(limit):
         resource.setrlimit(resource.RLIMIT_NOFILE, (soft, hard))
 
 
-@pytest.mark.skipif(_is_uvloop(), reason="uvloop")
+@pytest.mark.skipif(_is_uvloop() or _IS_PY3_11, reason="uvloop")
 async def test_limited_file_descriptors(sh, report_children):
     "Test running out of file descriptors."
     cmds = [sh("sleep", "1")] * 2
 
-    desc_limit = 13
-    if sys.version_info[0:2] >= (3, 11):
-        # On Python 3.11, fuzz the desc limit because there's an existing
-        # file descriptor leak in _get_handles in Python subprocess module.
-        desc_limit -= 1
-
-    with _limited_descriptors(desc_limit):
+    with _limited_descriptors(13):
         with pytest.raises(
             OSError, match="Too many open files|No file descriptors available"
         ):
