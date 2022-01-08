@@ -292,18 +292,24 @@ a function to configure the tty mode and size.
 Context Objects
 ---------------
 
+All commands are created using a Context object. To create a new context object use the `shellous.context` function.
+
+```pycon
+>>> sh = shellous.context()
+```
+
 You can specify shared command settings in a context object. Context objects are immutable,
 so you must store the result of your changes in a new variable.
 
 ```pycon
 >>> auditor = lambda phase, info: print(phase, info["runner"].name)
->>> sh1 = sh.set(audit_callback=auditor)
+>>> sh_audit = sh.set(audit_callback=auditor)
 ```
 
-Now all commands run with `sh1` will log their progress using the audit callback.
+Now all commands created with `sh_audit` will log their progress using the audit callback.
 
 ```pycon
->>> await sh1("echo", "goodbye")
+>>> await sh_audit("echo", "goodbye")
 start echo
 stop echo
 'goodbye\n'

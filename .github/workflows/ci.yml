@@ -22,10 +22,9 @@ jobs:
       fail-fast: false
       matrix:
         os: [ ubuntu-latest, macos-11, windows-latest, ubuntu-18.04 ]
-        python-version: [ '3.9', '3.10' ]
+        python-version: [ '3.9', '3.10', '3.11-dev' ]
 
     env:
-      POETRY_RUN: python -m poetry run
       SHELLOUS_DEBUG: 1
       BUILD_NAME: build (${{ matrix.os }},${{ matrix.python-version }})
 
@@ -37,73 +36,84 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
-        # Install poetry and use it to install dependencies.
-        python -m pip install poetry
-        python -m poetry install --no-root --no-interaction
-        if [ "${{ matrix.os }}" != "windows-latest" ]; then
-            python -m poetry add uvloop
+        pip3 install -U setuptools wheel
+        pip3 install -r ./ci/requirements-dev.txt
+        if [ "${{ matrix.os }}" != "windows-latest" -a "${{ matrix.python-version }}" != "3.11-dev" ]; then
+            pip3 install uvloop
         fi
     - name: Lint
+      if: matrix.python-version != '3.11-dev'
       run: |
         # Run flake8 and pylint.
         # stop the build if there are Python syntax errors or undefined names
-        echo "flake8 preflight:" `$POETRY_RUN flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics`
+        echo "flake8 preflight:" `flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics`
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-        echo "flake8 syntax check:" `$POETRY_RUN flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics`
-        $POETRY_RUN pylint -v --fail-under 9.5 shellous
+        echo "flake8 syntax check:" `flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics`
+        pylint -v --fail-under 9.5 shellous
         # Run pylint on tests directory with some checks disabled.
-        $POETRY_RUN pylint --disable=C0116,C0103,R0903,W0212,C0302,C0415 --fail-under 9.5 tests
-        if ! $POETRY_RUN mypy shellous tests; then
+        pylint --disable=C0116,C0103,R0903,W0212,C0302,C0415 --fail-under 9.5 tests
+        if ! mypy shellous tests; then
           echo "::warning title=Lint Warning::mypy found issues in $BUILD_NAME"
         fi
     - name: Run Tests
       run: |
-        if ! $POETRY_RUN python -m pytest -vv -s --durations=20 --log-cli-level=DEBUG | ./ci/annotate.awk -v step=Run_Tests; then
+        if ! pytest -vv -s --durations=20 --log-cli-level=DEBUG | ./ci/annotate.awk -v step=Run_Tests; then
           echo "::warning title=Run Tests Warning::Re-running failed tests in $BUILD_NAME"
-          $POETRY_RUN python -m pytest -vv -s --durations=20 --log-cli-level=DEBUG --last-failed
+          pytest -vv -s --durations=20 --log-cli-level=DEBUG --last-failed
         fi
     - name: Run Code Coverage (Linux and MacOS)
-      if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11'
+      if: (matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11') && matrix.python-version != '3.11-dev'
       run: |
         # Run coverage and upload report to codecov.
-        $POETRY_RUN coverage run --source shellous -m pytest
+        coverage run --source shellous -m pytest
         # Re-run with coverage for shellous/watcher.py
-        SHELLOUS_CHILDWATCHER_TYPE=default $POETRY_RUN coverage run --source shellous -m pytest
-        $POETRY_RUN codecov
+        SHELLOUS_CHILDWATCHER_TYPE=default coverage run --source shellous -m pytest
+        codecov
       env:
         SHELLOUS_CODE_COVERAGE: 1
     - name: Run Tests with uvloop (Linux and MacOS)
-      if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11'
+      if: (matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11') && matrix.python-version != '3.11-dev'
       run: |
-        $POETRY_RUN python -m pytest -vv -s --log-cli-level=DEBUG
+        if ! pytest -vv -s --log-cli-level=DEBUG; then
+          echo "::warning title=uvloop Warning::Re-running failed tests in $BUILD_NAME"
+          pytest -vv -s --log-cli-level=DEBUG --last-failed
+        fi
       env:
         SHELLOUS_LOOP_TYPE: "uvloop"
     - name: Run Tests with PidfdWatcher (Linux)
       if: matrix.os == 'ubuntu-latest'
       run: |
-        $POETRY_RUN python -m pytest -vv -s --log-cli-level=DEBUG | ./ci/annotate.awk -v step=PidfdWatcher
+        if ! pytest -vv -s --log-cli-level=DEBUG; then
+          echo "::warning title=PidfdChildWatcher Warning::Re-running failed tests in $BUILD_NAME"
+          pytest -vv -s --log-cli-level=DEBUG --last-failed
+        fi
       env:
         SHELLOUS_CHILDWATCHER_TYPE: "pidfd"
     - name: Run Tests with SafeChildWatcher (Linux and MacOS)
       if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11'
       run: |
-        $POETRY_RUN python -m pytest -vv -s --log-cli-level=DEBUG
+        if ! pytest -vv -s --log-cli-level=DEBUG; then
+          echo "::warning title=SafeChildWatcher Warning::Re-running failed tests in $BUILD_NAME"
+          pytest -vv -s --log-cli-level=DEBUG --last-failed
+        fi
       env:
         SHELLOUS_CHILDWATCHER_TYPE: "safe"
     - name: Run Tests with MultiLoopChildWatcher (Linux and MacOS)
       if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11'
       run: |
-        if ! $POETRY_RUN python -m pytest -vv -s --log-cli-level=DEBUG; then
+        if ! pytest -vv -s --log-cli-level=DEBUG; then
           echo "::warning title=MultiLoopChildWatcher Warning::Re-running failed tests in $BUILD_NAME"
-          $POETRY_RUN python -m pytest -vv -s --log-cli-level=DEBUG --last-failed
+          pytest -vv -s --log-cli-level=DEBUG --last-failed
         fi
       env:
         SHELLOUS_CHILDWATCHER_TYPE: "multi"
     - name: Run Tests with DefaultChildWatcher (Linux and MacOS)
       if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11' || matrix.os == 'ubuntu-18.04'
       run: |
-        # Limit to 5 failures for now because GH actions is auto-cancelling...
-        $POETRY_RUN python -m pytest -vv -s --log-cli-level=DEBUG --maxfail=5 | ./ci/annotate.awk -v step=DefaultChildWatcher
+        if ! pytest -vv -s --log-cli-level=DEBUG | ./ci/annotate.awk -v step=DefaultChildWatcher; then
+          echo "::warning title=DefaultChildWatcher Warning::Re-running failed tests in $BUILD_NAME"
+          pytest -vv -s --log-cli-level=DEBUG --last-failed
+        fi
       env:
         SHELLOUS_CHILDWATCHER_TYPE: "default"
 
@@ -111,9 +121,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20  # stop runaway job after 20 minutes
     container:
-      image: python:3.10.0-alpine3.14
+      image: python:3.10.1-alpine
     env:
       SHELLOUS_DEBUG: 1
+      BUILD_NAME: build (alpine)
 
     steps:
       - uses: actions/checkout@v2
@@ -123,9 +134,15 @@ jobs:
           pip3 install -r ./ci/requirements-dev.txt
       - name: Run Tests
         run: |
-          pytest -v -s --log-cli-level=DEBUG
+          if ! pytest -v -s --log-cli-level=DEBUG; then
+            echo "::warning title=Run Tests Warning::Re-running failed tests in $BUILD_NAME"
+            pytest -v -s --log-cli-level=DEBUG --last-failed
+          fi
       - name: Run Tests with DefaultChildWatcher
         run: |
-          pytest -v -s --log-cli-level=DEBUG
+          if ! pytest -v -s --log-cli-level=DEBUG; then
+            echo "::warning title=DefaultChildWatcher Warning::Re-running failed tests in $BUILD_NAME"
+            pytest -v -s --log-cli-level=DEBUG --last-failed
+          fi
         env:
           SHELLOUS_CHILDWATCHER_TYPE: "default"

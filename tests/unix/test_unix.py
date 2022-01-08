@@ -33,6 +33,9 @@ _CANCELLED_EXIT_CODE = -15
 # True if we're running on alpine linux.
 _IS_ALPINE = os.path.exists("/etc/alpine-release")
 
+# True if we're running on Python 3.11.
+_IS_PY3_11 = sys.version_info[0:2] == (3, 11)
+
 
 def _is_uvloop():
     "Return true if we're running under uvloop."
@@ -1482,8 +1485,8 @@ async def test_audit_cancel_nohup(sh):
 
     assert calls == [
         ("start", "nohup", None, False, None),
-        ("signal", "nohup", None, True, "Signals.SIGHUP"),
-        ("signal", "nohup", None, True, "Signals.SIGKILL"),
+        ("signal", "nohup", None, True, "SIGHUP"),
+        ("signal", "nohup", None, True, "SIGKILL"),
         ("stop", "nohup", -9, True, None),
     ]
 
@@ -1510,7 +1513,7 @@ async def test_set_cancel_signal_invalid(sh):
     assert calls == [
         ("start", "nohup", None, False, None),
         ("signal", "nohup", None, True, "INVALID"),
-        ("signal", "nohup", None, True, "Signals.SIGKILL"),
+        ("signal", "nohup", None, True, "SIGKILL"),
         ("stop", "nohup", -9, True, None),
     ]
 
@@ -1636,7 +1639,7 @@ def _limited_descriptors(limit):
         resource.setrlimit(resource.RLIMIT_NOFILE, (soft, hard))
 
 
-@pytest.mark.skipif(_is_uvloop(), reason="uvloop")
+@pytest.mark.skipif(_is_uvloop() or _IS_PY3_11, reason="uvloop")
 async def test_limited_file_descriptors(sh, report_children):
     "Test running out of file descriptors."
     cmds = [sh("sleep", "1")] * 2

@@ -23,17 +23,6 @@ from shellous.util import close_fds, wait_pid
 assert sys.platform != "win32"
 
 
-def _check_sigchld():
-    """Check that SIGCHLD is not set to SIG_IGN.
-
-    kqueue/pidfd do not work if SIGCHLD is set to SIG_IGN in the
-    signal table. On unix systems, the default action for SIGCHLD is to
-    discard the signal so SIG_DFL is fine.
-    """
-    if signal.getsignal(signal.SIGCHLD) == signal.SIG_IGN:
-        raise RuntimeError("SIGCHLD cannot be set to SIG_IGN")
-
-
 class DefaultChildWatcher(asyncio.AbstractChildWatcher):
     "Use platform-dependent mechanism to monitor for exiting child processes."
 
@@ -108,7 +97,7 @@ class DefaultChildWatcher(asyncio.AbstractChildWatcher):
         if self._agent:
             return
 
-        if hasattr(os, "pidfd_open"):
+        if hasattr(os, "pidfd_open") and hasattr(select, "epoll"):
             agent_class = EPollAgent
         elif hasattr(select, "kqueue"):
             agent_class = KQueueAgent
@@ -348,6 +337,17 @@ class ThreadAgent:
             LOGGER.critical("_reap_pid: process still running pid=%r", pid)
 
         self._pids.pop(pid)
+
+
+def _check_sigchld():
+    """Check that SIGCHLD is not set to SIG_IGN.
+
+    kqueue/pidfd do not work if SIGCHLD is set to SIG_IGN in the
+    signal table. On unix systems, the default action for SIGCHLD is to
+    discard the signal so SIG_DFL is fine.
+    """
+    if signal.getsignal(signal.SIGCHLD) == signal.SIG_IGN:
+        raise RuntimeError("SIGCHLD cannot be set to SIG_IGN")
 
 
 async def _poll_dead_pid(pid, callback, args):

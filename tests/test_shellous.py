@@ -487,16 +487,28 @@ async def test_broken_pipe_in_failed_pipeline(cat_cmd, echo_cmd):
         await (data | cat_cmd | echo("abc"))
 
     if exc_info.type == ResultError:
-        assert exc_info.value.result == Result(
-            output_bytes=b"abc",
-            exit_code=7,
-            cancelled=False,
-            encoding="utf-8",
-            extra=(
-                PipeResult(exit_code=1, cancelled=True),
-                PipeResult(exit_code=7, cancelled=False),
+        assert exc_info.value.result in [
+            Result(
+                output_bytes=b"abc",
+                exit_code=7,
+                cancelled=False,
+                encoding="utf-8",
+                extra=(
+                    PipeResult(exit_code=1, cancelled=True),
+                    PipeResult(exit_code=7, cancelled=False),
+                ),
             ),
-        )
+            Result(
+                output_bytes=b"abc",
+                exit_code=7,
+                cancelled=False,
+                encoding="utf-8",
+                extra=(
+                    PipeResult(exit_code=120, cancelled=True),  # Windows sometimes
+                    PipeResult(exit_code=7, cancelled=False),
+                ),
+            ),
+        ]
 
 
 async def test_broken_pipe_in_async_with_failed_pipeline(cat_cmd, echo_cmd):
@@ -1040,7 +1052,7 @@ async def test_audit_pipe_cancel(echo_cmd, tr_cmd):
         ("start", "echo", None, None),
         ("start", "tr", None, None),
         ("stop", "echo", 0, None),
-        ("signal", "tr", None, "Signals.SIGTERM"),
+        ("signal", "tr", None, "SIGTERM"),
         ("stop", "tr", CANCELLED_EXIT_CODE, None),
     ]
 
