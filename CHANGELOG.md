@@ -1,6 +1,13 @@
 Shellous Change Log
 ===================
 
+0.14.0
+------
+
+- [API] In audit_callback, signal names no longer have prefix "Signals."; just the signal name, e.g. "SIGTERM".
+- [LATERAL] Run CI tests on Python 3.11-dev.
+- [LATERAL] Update copyright year.
+
 0.13.0
 ------
 
