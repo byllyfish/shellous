@@ -306,12 +306,12 @@ are responsible for correctly reading and writing multiple streams at the same t
 <h2 id="timeouts">Timeouts</h2>
 
 <p>You can specify a timeout using the <code>timeout</code> option. If the timeout expires, shellous will raise
-an <code>asyncio.TimeoutError</code>.</p>
+a <code>TimeoutError</code>.</p>
 
 <div class="codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;sleep&quot;</span><span class="p">,</span> <span class="mi">60</span><span class="p">)</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
 <span class="gt">Traceback (most recent call last):</span>
   <span class="c">...</span>
-<span class="gr">asyncio.exceptions.TimeoutError</span>
+<span class="gr">TimeoutError</span>
 </code></pre></div>
 
 <p>Timeouts are just a special case of cancellation.</p>
