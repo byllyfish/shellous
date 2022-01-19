@@ -244,13 +244,13 @@ Timeouts
 --------
 
 You can specify a timeout using the `timeout` option. If the timeout expires, shellous will raise
-an `asyncio.TimeoutError`.
+a `TimeoutError`.
 
 ```pycon
 >>> await sh("sleep", 60).set(timeout=0.1)
 Traceback (most recent call last):
   ...
-asyncio.exceptions.TimeoutError
+TimeoutError
 ```
 
 Timeouts are just a special case of cancellation.

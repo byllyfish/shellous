@@ -278,6 +278,9 @@ def _check_result(output, result):
     if "can't open 'does_not_exist'" in result:
         result = result.replace("can't open 'does_not_exist'", "does_not_exist")
         result = result.replace('"', "'")
+    # Fix TimeoutError for Python 3.11a4.
+    if "asyncio.exceptions.TimeoutError" in result:
+        result = result.replace("asyncio.exceptions.TimeoutError", "TimeoutError")
 
     pattern = re.escape(output).replace(r"\.\.\.", ".*")
     if not re.fullmatch(pattern, result, re.DOTALL):
