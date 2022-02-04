@@ -755,11 +755,7 @@ class Runner:
             if failure:
                 info["failure"] = failure
             if phase == "signal":
-                if signal is None:
-                    info["signal"] = "SIGKILL"  # SIGKILL (even on win32)
-                else:
-                    # If signal name begins with "Signal.", elide the prefix.
-                    info["signal"] = str(signal).replace("Signals.", "")
+                info["signal"] = _signame(signal)
             callback(phase, info)
 
     def __repr__(self):
@@ -1046,3 +1042,13 @@ def _cleanup(command):
         open_fds.extend(command.options.pass_fds)
 
     close_fds(open_fds)
+
+
+def _signame(signal):
+    "Return string name of signal."
+    if signal is None:
+        return "SIGKILL"  # SIGKILL (even on win32)
+    try:
+        return signal.name
+    except AttributeError:
+        return str(signal)
