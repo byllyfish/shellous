@@ -159,6 +159,8 @@ async def _cancel_wait(tasks, trustee, cancel_timeout, cancel_finish=False):
     "Cancel tasks and wait for them to finish."
     try:
         if not cancel_finish:
+            # Give each task one last time slice just before cancelling.
+            await asyncio.sleep(0)
             # Cancel all tasks.
             for task in tasks:
                 task.cancel()
