@@ -25,13 +25,13 @@ pytest = "^6.2.5"
 pytest-asyncio = "^0.17.2"
 pylint = "^2.11.1"
 mypy = "^0.931"
-black = {version = "^21.12b0", allow-prereleases = true}
+black = "^22.1.0"
 codecov = "^2.1.12"
 flake8 = "^4.0.0"
 pytest-dotenv = "^0.5.2"
 pytest-randomly = "^3.11.0"
-pytest-timeout = "^2.0.2"
-pdoc = "^8.3.0"
+pytest-timeout = "^2.1.0"
+pdoc = "^9.0.1"
 asyncstdlib = "^3.10.2"
 
 [build-system]
@@ -42,6 +42,7 @@ build-backend = "poetry.core.masonry.api"
 filterwarnings = ["default"]
 env_files = ["tests/tests.env"]
 addopts = '--timeout=10 --color=yes --log-cli-format="%(created).03f %(levelname)s %(name)s %(message)s" --log-level=INFO --log-file-format="%(created).03f %(levelname)s %(name)s %(message)s"'
+asyncio_mode = "auto"
 
 [tool.pylint.'FORMAT']
 extension-pkg-allow-list = ["termios,fcntl"]
