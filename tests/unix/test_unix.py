@@ -1046,9 +1046,9 @@ async def test_pty_ctermid(sh):
     ctermid, stdin_tty, stdout_tty = result.split()
 
     print(ctermid, stdin_tty, stdout_tty)
-    assert re.fullmatch(br"/dev/(?:ctty|tty|pts/\d+)", ctermid), ctermid
-    assert re.fullmatch(br"/dev/(?:ttys|pts/)\d+", stdin_tty), stdin_tty
-    assert re.fullmatch(br"/dev/(?:ttys|pts/)\d+", stdout_tty), stdout_tty
+    assert re.fullmatch(rb"/dev/(?:ctty|tty|pts/\d+)", ctermid), ctermid
+    assert re.fullmatch(rb"/dev/(?:ttys|pts/)\d+", stdin_tty), stdin_tty
+    assert re.fullmatch(rb"/dev/(?:ttys|pts/)\d+", stdout_tty), stdout_tty
 
 
 _STTY_DARWIN = (
@@ -1245,11 +1245,24 @@ async def test_pty_canonical_ls(ls):
     assert result == "CHANGELOG.md\r\nREADME.md\r\n"
 
 
-@pytest.mark.xfail(_is_uvloop() or _is_codecov(), reason="uvloop,codecov")
+@pytest.mark.skipif(_is_uvloop() or _is_codecov(), reason="uvloop,codecov")
 @pytest.mark.timeout(90)
 async def test_pty_compare_large_ls_output(ls):
-    "Compare pty output to non-pty output."
+    "Compare pty output to non-pty output (with large output)."
     cmd = ls("-l", "/usr/lib")
+    regular_result = await cmd
+
+    pty_result = await cmd.set(pty=True)
+    pty_result = pty_result.replace("^D\x08\x08", "").replace("\r", "")
+
+    assert pty_result == regular_result
+
+
+@pytest.mark.skipif(_is_uvloop() or _is_codecov(), reason="uvloop,codecov")
+@pytest.mark.timeout(90)
+async def test_pty_compare_huge_ls_output(ls):
+    "Compare pty output to non-pty output (with huge recursive output)."
+    cmd = ls("-lr", "/usr/lib")
     regular_result = await cmd
 
     pty_result = await cmd.set(pty=True)
