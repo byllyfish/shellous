@@ -212,4 +212,11 @@ async def test_audit_block_pipe_specific_cmd():
             "stop:grep:None:RuntimeError",
             "stop:hello:Zero:CancelledError",  # signal not sent, zero exit
         ],
+        [
+            "start:hello:None:None",
+            "start:grep:None:None",
+            "stop:grep:None:RuntimeError",
+            "signal:hello:None:None",
+            "stop:hello:Zero:CancelledError",
+        ],
     )
