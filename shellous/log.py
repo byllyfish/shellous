@@ -17,6 +17,7 @@ LOGGER = logging.getLogger(__package__)
 PLATFORM_VERS = platform.platform(terse=True)
 PYTHON_IMPL = platform.python_implementation()
 PYTHON_VERS = platform.python_version()
+_PY311 = sys.version_info[:2] >= (3, 11)
 
 _LOG_IGNORE_STEPIN = -1
 _LOG_IGNORE_STEPOUT = -2
@@ -36,9 +37,13 @@ if SHELLOUS_DEBUG:
     LOG_DETAIL = True
 
 
-def _exc():
-    "Return the current exception value. Useful in logging."
-    return sys.exc_info()[1]
+if _PY311:
+    _exc = sys.exception
+else:
+
+    def _exc():
+        "Return the current exception value. Useful in logging."
+        return sys.exc_info()[1]
 
 
 def log_method(enabled, *, _info=False, **kwds):
