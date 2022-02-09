@@ -16,6 +16,8 @@ import select
 import signal
 import sys
 import threading
+from abc import abstractmethod
+from typing import Protocol
 
 from shellous.log import LOGGER, log_thread
 from shellous.util import close_fds, wait_pid
@@ -23,8 +25,24 @@ from shellous.util import close_fds, wait_pid
 assert sys.platform != "win32"
 
 
+class ChildStrategy(Protocol):
+    "Protocol for platform-dependent child monitoring strategy."
+
+    @abstractmethod
+    def close(self) -> None:
+        """Close the watcher and clean up all resources."""
+
+    @abstractmethod
+    def watch_pid(self, pid, callback, args) -> None:
+        """Register a child handler.
+
+        Calling this function more than once for a given process pid is not
+        supported.
+        """
+
+
 class DefaultChildWatcher(asyncio.AbstractChildWatcher):
-    "Use platform-dependent mechanism to monitor for exiting child processes."
+    "Use platform-dependent strategy to monitor for exiting child processes."
 
     def __init__(self):
         "Initialize child watcher."
@@ -107,7 +125,7 @@ class DefaultChildWatcher(asyncio.AbstractChildWatcher):
         self._agent = agent_class()
 
 
-class KQueueAgent:
+class KQueueAgent(ChildStrategy):
     "Agent that watches for child exit kqueue event."
 
     # pylint: disable=no-member
@@ -124,7 +142,7 @@ class KQueueAgent:
         )
         self._thread.start()
 
-    def close(self):
+    def close(self) -> None:
         "Tell our thread to exit with a dummy timer event."
         self._add_kevent(
             1,
@@ -133,8 +151,9 @@ class KQueueAgent:
         )
         self._thread.join()
 
-    def watch_pid(self, pid, callback, args):
+    def watch_pid(self, pid, callback, args) -> None:
         "Register a PID with kqueue."
+        assert pid not in self._pids
         self._pids[pid] = (callback, args)  # ATOMIC: self._pids[] = ...
 
         try:
@@ -195,7 +214,7 @@ class KQueueAgent:
         self._kqueue.control([event], 0)
 
 
-class EPollAgent:
+class EPollAgent(ChildStrategy):
     "Agent that watches for child exit epoll event."
 
     # pylint: disable=no-member
@@ -214,13 +233,13 @@ class EPollAgent:
         )
         self._thread.start()
 
-    def close(self):
+    def close(self) -> None:
         "Tell the epoll thread to exit."
         if self._selfpipe is not None:
             os.write(self._selfpipe[1], b"\x00")
         self._thread.join()
 
-    def watch_pid(self, pid, callback, args):
+    def watch_pid(self, pid, callback, args) -> None:
         "Register a PID with epoll."
         try:
             self._add_pidfd(pid, callback, args)
@@ -301,14 +320,14 @@ class EPollAgent:
         os.close(pidfd)
 
 
-class ThreadAgent:
+class ThreadAgent(ChildStrategy):
     "Agent that uses threads to watch for child exits."
 
     def __init__(self):
         "Initialize agent."
         self._pids = {}  # pid -> Thread
 
-    def close(self):
+    def close(self) -> None:
         """There is no way to force-close the threads. Log a message if there
         are still any live threads."""
         threads = list(self._pids.values())
@@ -316,8 +335,9 @@ class ThreadAgent:
         if live_threads:
             LOGGER.warning("ThreadAgent: Child processes exist: %r", live_threads)
 
-    def watch_pid(self, pid, callback, args):
+    def watch_pid(self, pid, callback, args) -> None:
         "Start a thread to watch the PID."
+        assert pid not in self._pids
         thread = threading.Thread(
             target=self._reap_pid,
             args=(pid, callback, args),
