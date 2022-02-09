@@ -137,6 +137,7 @@ class KQueueStrategy(ChildStrategy):
         _check_sigchld()
         self._pids = {}  # pid -> (callback, args)
         self._kqueue = select.kqueue()
+        self._tasks = _TaskSet()
         self._thread = threading.Thread(
             target=self._run,
             name="KQueueStrategy.run",
@@ -180,7 +181,7 @@ class KQueueStrategy(ChildStrategy):
             _invoke_callback(callback, pid, status, args)
         else:
             # Process is still dying. Spawn a task to poll it.
-            asyncio.create_task(_poll_dead_pid(pid, callback, args))
+            self._tasks.create_task(_poll_dead_pid(pid, callback, args))
 
     @log_thread(True)
     def _run(self):
@@ -228,6 +229,7 @@ class EPollStrategy(ChildStrategy):
         self._epoll = select.epoll()
         self._selfpipe = os.pipe()
         self._epoll.register(self._selfpipe[0], select.EPOLLIN)
+        self._tasks = _TaskSet()
         self._thread = threading.Thread(
             target=self._run,
             name="EPollStrategy.run",
@@ -252,8 +254,7 @@ class EPollStrategy(ChildStrategy):
             self._pidfd_error(pid, callback, args)
             raise
 
-    @staticmethod
-    def _pidfd_process_missing(pid, callback, args):
+    def _pidfd_process_missing(self, pid, callback, args):
         "Handle case where pidfd_open fails with a ProcessLookupError (ESRCH)."
         LOGGER.debug("_pidfd_process_missing pid=%r", pid)
 
@@ -262,10 +263,9 @@ class EPollStrategy(ChildStrategy):
             _invoke_callback(callback, pid, status, args)
         else:
             # Process is still dying. Spawn a task to poll it.
-            asyncio.create_task(_poll_dead_pid(pid, callback, args))
+            self._tasks.create_task(_poll_dead_pid(pid, callback, args))
 
-    @staticmethod
-    def _pidfd_error(pid, callback, args):
+    def _pidfd_error(self, pid, callback, args):
         """Handle case where pidfd_open fails with any error.
 
         This can happen if the process runs out of file descriptors (EMFILE).
@@ -274,7 +274,7 @@ class EPollStrategy(ChildStrategy):
             os.kill(pid, signal.SIGKILL)
         except ProcessLookupError:
             pass
-        asyncio.create_task(_poll_dead_pid(pid, callback, args))
+        self._tasks.create_task(_poll_dead_pid(pid, callback, args))
 
     @log_thread(True)
     def _run(self):
@@ -408,3 +408,13 @@ def _invoke_callback(callback, pid, status, args):
             status,
             ex,
         )
+
+
+class _TaskSet(set):
+    "Set of owned tasks (possibly from different threads)."
+
+    def create_task(self, coro):
+        "Create a new task and maintain its ref count until it finishes."
+        task = asyncio.create_task(coro)
+        self.add(task)
+        task.add_done_callback(self.discard)
