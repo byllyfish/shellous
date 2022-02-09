@@ -17,7 +17,7 @@ import signal
 import sys
 import threading
 from abc import abstractmethod
-from typing import Protocol
+from typing import Optional, Protocol
 
 from shellous.log import LOGGER, log_thread
 from shellous.util import close_fds, wait_pid
@@ -44,9 +44,11 @@ class ChildStrategy(Protocol):
 class DefaultChildWatcher(asyncio.AbstractChildWatcher):
     "Use platform-dependent strategy to monitor for exiting child processes."
 
+    _strategy: Optional[ChildStrategy]
+
     def __init__(self):
         "Initialize child watcher."
-        self._agent = None
+        self._strategy = None
         self._lock = threading.Lock()
 
     def add_child_handler(self, pid, callback, *args):
@@ -58,11 +60,11 @@ class DefaultChildWatcher(asyncio.AbstractChildWatcher):
 
         Note: callback() must be thread-safe.
         """
-        if not self._agent:  # ATOMIC: self._agent
+        if not self._strategy:  # ATOMIC: self._strategy
             with self._lock:
-                self._init_agent()
+                self._init_strategy()
 
-        self._agent.watch_pid(pid, callback, args)  # ATOMIC: self._agent
+        self._strategy.watch_pid(pid, callback, args)  # ATOMIC: self._strategy
 
     def remove_child_handler(self, pid):
         """Removes the handler for process 'pid'.
@@ -88,11 +90,11 @@ class DefaultChildWatcher(asyncio.AbstractChildWatcher):
         This must be called to make sure that any underlying resource is freed.
         """
         with self._lock:
-            agent = self._agent
-            self._agent = None
+            strategy = self._strategy
+            self._strategy = None
 
-        if agent:
-            agent.close()
+        if strategy:
+            strategy.close()
 
     def is_active(self):
         """Return ``True`` if the watcher is active and is used by the event loop.
@@ -110,34 +112,34 @@ class DefaultChildWatcher(asyncio.AbstractChildWatcher):
         """Exit the watcher's context"""
         return None
 
-    def _init_agent(self):
-        "Construct child watcher agent."
-        if self._agent:
+    def _init_strategy(self):
+        "Construct child watcher strategy."
+        if self._strategy:
             return
 
         if hasattr(os, "pidfd_open") and hasattr(select, "epoll"):
-            agent_class = EPollAgent
+            strategy = EPollStrategy
         elif hasattr(select, "kqueue"):
-            agent_class = KQueueAgent
+            strategy = KQueueStrategy
         else:
-            agent_class = ThreadAgent
+            strategy = ThreadStrategy
 
-        self._agent = agent_class()
+        self._strategy = strategy()
 
 
-class KQueueAgent(ChildStrategy):
-    "Agent that watches for child exit kqueue event."
+class KQueueStrategy(ChildStrategy):
+    "Strategy that watches for child exit kqueue event."
 
     # pylint: disable=no-member,super-init-not-called
 
     def __init__(self):
-        "Initialize agent variables."
+        "Initialize strategy variables."
         _check_sigchld()
         self._pids = {}  # pid -> (callback, args)
         self._kqueue = select.kqueue()
         self._thread = threading.Thread(
             target=self._run,
-            name="KQueueAgent.run",
+            name="KQueueStrategy.run",
             daemon=True,
         )
         self._thread.start()
@@ -214,13 +216,13 @@ class KQueueAgent(ChildStrategy):
         self._kqueue.control([event], 0)
 
 
-class EPollAgent(ChildStrategy):
-    "Agent that watches for child exit epoll event."
+class EPollStrategy(ChildStrategy):
+    "Strategy that watches for child exit epoll event."
 
     # pylint: disable=no-member,super-init-not-called
 
     def __init__(self):
-        "Initialize agent variables."
+        "Initialize strategy variables."
         _check_sigchld()
         self._pidfds = {}  # pidfd -> (pid, callback, args)
         self._epoll = select.epoll()
@@ -228,7 +230,7 @@ class EPollAgent(ChildStrategy):
         self._epoll.register(self._selfpipe[0], select.EPOLLIN)
         self._thread = threading.Thread(
             target=self._run,
-            name="EPollAgent.run",
+            name="EPollStrategy.run",
             daemon=True,
         )
         self._thread.start()
@@ -246,7 +248,7 @@ class EPollAgent(ChildStrategy):
         except ProcessLookupError:
             self._pidfd_process_missing(pid, callback, args)
         except Exception as ex:
-            LOGGER.warning("EPollAgent.watch_pid failed pid=%r ex=%r", pid, ex)
+            LOGGER.warning("EPollStrategy.watch_pid failed pid=%r ex=%r", pid, ex)
             self._pidfd_error(pid, callback, args)
             raise
 
@@ -320,13 +322,13 @@ class EPollAgent(ChildStrategy):
         os.close(pidfd)
 
 
-class ThreadAgent(ChildStrategy):
-    "Agent that uses threads to watch for child exits."
+class ThreadStrategy(ChildStrategy):
+    "Strategy that uses threads to watch for child exits."
 
     # pylint: disable=super-init-not-called
 
     def __init__(self):
-        "Initialize agent."
+        "Initialize strategy."
         self._pids = {}  # pid -> Thread
 
     def close(self) -> None:
@@ -335,7 +337,7 @@ class ThreadAgent(ChildStrategy):
         threads = list(self._pids.values())
         live_threads = [thread.name for thread in threads if thread.is_alive()]
         if live_threads:
-            LOGGER.warning("ThreadAgent: Child processes exist: %r", live_threads)
+            LOGGER.warning("ThreadStrategy: Child processes exist: %r", live_threads)
 
     def watch_pid(self, pid, callback, args) -> None:
         "Start a thread to watch the PID."
@@ -343,7 +345,7 @@ class ThreadAgent(ChildStrategy):
         thread = threading.Thread(
             target=self._reap_pid,
             args=(pid, callback, args),
-            name=f"ThreadAgent.reap_pid-{pid}",
+            name=f"ThreadStrategy.reap_pid-{pid}",
             daemon=True,
         )
         self._pids[pid] = thread
