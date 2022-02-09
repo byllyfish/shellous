@@ -147,11 +147,7 @@ class KQueueStrategy(ChildStrategy):
 
     def close(self) -> None:
         "Tell our thread to exit with a dummy timer event."
-        self._add_kevent(
-            1,
-            select.KQ_FILTER_TIMER,
-            select.KQ_EV_ADD | select.KQ_EV_ONESHOT,
-        )
+        self._add_kevent(1, select.KQ_FILTER_TIMER)
         self._thread.join()
 
     def watch_pid(self, pid, callback, args) -> None:
@@ -160,12 +156,7 @@ class KQueueStrategy(ChildStrategy):
         self._pids[pid] = (callback, args)  # ATOMIC: self._pids[] = ...
 
         try:
-            self._add_kevent(
-                pid,
-                select.KQ_FILTER_PROC,
-                select.KQ_EV_ADD | select.KQ_EV_ONESHOT,
-                select.KQ_NOTE_EXIT,
-            )
+            self._add_kevent(pid, select.KQ_FILTER_PROC, select.KQ_NOTE_EXIT)
             LOGGER.debug("_add_kevent pid=%r", pid)
         except ProcessLookupError:
             self._kevent_failed(pid)
@@ -211,8 +202,9 @@ class KQueueStrategy(ChildStrategy):
         else:
             LOGGER.critical("_reap_pid: process still running pid=%r", pid)
 
-    def _add_kevent(self, ident, kfilter, flags, fflags=0):
+    def _add_kevent(self, ident, kfilter, fflags=0):
         "Add specified kevent to kqueue."
+        flags = select.KQ_EV_ADD | select.KQ_EV_ONESHOT
         event = select.kevent(ident, kfilter, flags, fflags)
         self._kqueue.control([event], 0)
 
