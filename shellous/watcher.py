@@ -128,7 +128,7 @@ class DefaultChildWatcher(asyncio.AbstractChildWatcher):
 class KQueueAgent(ChildStrategy):
     "Agent that watches for child exit kqueue event."
 
-    # pylint: disable=no-member
+    # pylint: disable=no-member,super-init-not-called
 
     def __init__(self):
         "Initialize agent variables."
@@ -217,7 +217,7 @@ class KQueueAgent(ChildStrategy):
 class EPollAgent(ChildStrategy):
     "Agent that watches for child exit epoll event."
 
-    # pylint: disable=no-member
+    # pylint: disable=no-member,super-init-not-called
 
     def __init__(self):
         "Initialize agent variables."
@@ -322,6 +322,8 @@ class EPollAgent(ChildStrategy):
 
 class ThreadAgent(ChildStrategy):
     "Agent that uses threads to watch for child exits."
+
+    # pylint: disable=super-init-not-called
 
     def __init__(self):
         "Initialize agent."
