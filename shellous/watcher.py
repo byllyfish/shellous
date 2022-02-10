@@ -147,7 +147,7 @@ class KQueueStrategy(ChildStrategy):
 
     def close(self) -> None:
         "Tell our thread to exit with a dummy timer event."
-        self._add_kevent(1, select.KQ_FILTER_TIMER)
+        self._add_kevent(1, select.KQ_FILTER_TIMER)  # type: ignore
         self._thread.join()
 
     def watch_pid(self, pid, callback, args) -> None:
@@ -156,7 +156,7 @@ class KQueueStrategy(ChildStrategy):
         self._pids[pid] = (callback, args)  # ATOMIC: self._pids[] = ...
 
         try:
-            self._add_kevent(pid, select.KQ_FILTER_PROC, select.KQ_NOTE_EXIT)
+            self._add_kevent(pid, select.KQ_FILTER_PROC, select.KQ_NOTE_EXIT)  # type: ignore
             LOGGER.debug("_add_kevent pid=%r", pid)
         except ProcessLookupError:
             self._kevent_failed(pid)
