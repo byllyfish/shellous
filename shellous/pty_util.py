@@ -1,6 +1,8 @@
 "Implements support for pseudo-terminals."
 
 import asyncio
+import contextlib
+import contextvars
 import errno
 import os
 import struct
@@ -255,14 +257,37 @@ def _get_eof(fdesc):
     return eof
 
 
-def patch_child_watcher():
-    "Patch the current child watcher to ignore the next `add_child_handler`."
+# This contextvar indicates that the childwatcher should ignore the next
+# call to `add_child_handler``.
+_IGNORE_CHILD_PROCESS = contextvars.ContextVar("ignore_child_process", default=False)
+
+
+def _patch_child_watcher():
+    "Patch the current child watcher for `add_child_handler`."
     watcher = asyncio.get_child_watcher()
+
+    # Check flag to see if patch already exists.
+    if getattr(watcher, "_shellous_patched_child_watcher", False):
+        return
+    setattr(watcher, "_shellous_patched_child_watcher", True)
+
     saved_add_handler = watcher.add_child_handler
 
     def _add_child_handler(*args):
-        if LOG_DETAIL:
-            LOGGER.info("add_child_handler ignored: %r", args)
-        watcher.add_child_handler = saved_add_handler
+        if not _IGNORE_CHILD_PROCESS.get():
+            saved_add_handler(*args)
 
     watcher.add_child_handler = _add_child_handler
+
+
+@contextlib.contextmanager
+def set_ignore_child_watcher(ignore):
+    "Tell the current child watcher to ignore the next `add_child_handler`."
+    if ignore:
+        _patch_child_watcher()
+
+    _IGNORE_CHILD_PROCESS.set(ignore)
+    try:
+        yield
+    finally:
+        _IGNORE_CHILD_PROCESS.set(False)
