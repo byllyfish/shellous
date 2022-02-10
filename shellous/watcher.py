@@ -16,6 +16,8 @@ import select
 import signal
 import sys
 import threading
+from abc import abstractmethod
+from typing import Optional, Protocol
 
 from shellous.log import LOGGER, log_thread
 from shellous.util import close_fds, wait_pid
@@ -23,12 +25,30 @@ from shellous.util import close_fds, wait_pid
 assert sys.platform != "win32"
 
 
+class ChildStrategy(Protocol):
+    "Protocol for platform-dependent child monitoring strategy."
+
+    @abstractmethod
+    def close(self) -> None:
+        """Close the watcher and clean up all resources."""
+
+    @abstractmethod
+    def watch_pid(self, pid, callback, args) -> None:
+        """Register a child handler.
+
+        Calling this function more than once for a given process pid is not
+        supported.
+        """
+
+
 class DefaultChildWatcher(asyncio.AbstractChildWatcher):
-    "Use platform-dependent mechanism to monitor for exiting child processes."
+    "Use platform-dependent strategy to monitor for exiting child processes."
+
+    _strategy: Optional[ChildStrategy]
 
     def __init__(self):
         "Initialize child watcher."
-        self._agent = None
+        self._strategy = None
         self._lock = threading.Lock()
 
     def add_child_handler(self, pid, callback, *args):
@@ -40,11 +60,11 @@ class DefaultChildWatcher(asyncio.AbstractChildWatcher):
 
         Note: callback() must be thread-safe.
         """
-        if not self._agent:  # ATOMIC: self._agent
+        if not self._strategy:  # ATOMIC: self._strategy
             with self._lock:
-                self._init_agent()
+                self._init_strategy()
 
-        self._agent.watch_pid(pid, callback, args)  # ATOMIC: self._agent
+        self._strategy.watch_pid(pid, callback, args)  # ATOMIC: self._strategy
 
     def remove_child_handler(self, pid):
         """Removes the handler for process 'pid'.
@@ -70,11 +90,11 @@ class DefaultChildWatcher(asyncio.AbstractChildWatcher):
         This must be called to make sure that any underlying resource is freed.
         """
         with self._lock:
-            agent = self._agent
-            self._agent = None
+            strategy = self._strategy
+            self._strategy = None
 
-        if agent:
-            agent.close()
+        if strategy:
+            strategy.close()
 
     def is_active(self):
         """Return ``True`` if the watcher is active and is used by the event loop.
@@ -92,58 +112,51 @@ class DefaultChildWatcher(asyncio.AbstractChildWatcher):
         """Exit the watcher's context"""
         return None
 
-    def _init_agent(self):
-        "Construct child watcher agent."
-        if self._agent:
+    def _init_strategy(self):
+        "Construct child watcher strategy."
+        if self._strategy:
             return
 
         if hasattr(os, "pidfd_open") and hasattr(select, "epoll"):
-            agent_class = EPollAgent
+            strategy = EPollStrategy
         elif hasattr(select, "kqueue"):
-            agent_class = KQueueAgent
+            strategy = KQueueStrategy
         else:
-            agent_class = ThreadAgent
+            strategy = ThreadStrategy
 
-        self._agent = agent_class()
+        self._strategy = strategy()
 
 
-class KQueueAgent:
-    "Agent that watches for child exit kqueue event."
+class KQueueStrategy(ChildStrategy):
+    "Strategy that watches for child exit kqueue event."
 
-    # pylint: disable=no-member
+    # pylint: disable=no-member,super-init-not-called
 
     def __init__(self):
-        "Initialize agent variables."
+        "Initialize strategy variables."
         _check_sigchld()
         self._pids = {}  # pid -> (callback, args)
         self._kqueue = select.kqueue()
+        self._tasks = _TaskSet()
         self._thread = threading.Thread(
             target=self._run,
-            name="KQueueAgent.run",
+            name="KQueueStrategy.run",
             daemon=True,
         )
         self._thread.start()
 
-    def close(self):
+    def close(self) -> None:
         "Tell our thread to exit with a dummy timer event."
-        self._add_kevent(
-            1,
-            select.KQ_FILTER_TIMER,
-            select.KQ_EV_ADD | select.KQ_EV_ONESHOT,
-        )
+        self._add_kevent(1, select.KQ_FILTER_TIMER)
         self._thread.join()
 
-    def watch_pid(self, pid, callback, args):
+    def watch_pid(self, pid, callback, args) -> None:
         "Register a PID with kqueue."
+        assert pid not in self._pids
         self._pids[pid] = (callback, args)  # ATOMIC: self._pids[] = ...
 
         try:
-            self._add_kevent(
-                pid,
-                select.KQ_FILTER_PROC,
-                select.KQ_EV_ADD | select.KQ_EV_ONESHOT,
-                select.KQ_NOTE_EXIT,
-            )
+            self._add_kevent(pid, select.KQ_FILTER_PROC, select.KQ_NOTE_EXIT)
             LOGGER.debug("_add_kevent pid=%r", pid)
         except ProcessLookupError:
             self._kevent_failed(pid)
@@ -159,7 +172,7 @@ class KQueueAgent:
             _invoke_callback(callback, pid, status, args)
         else:
             # Process is still dying. Spawn a task to poll it.
-            asyncio.create_task(_poll_dead_pid(pid, callback, args))
+            self._tasks.create_task(_poll_dead_pid(pid, callback, args))
 
     @log_thread(True)
     def _run(self):
@@ -189,50 +202,51 @@ class KQueueAgent:
         else:
             LOGGER.critical("_reap_pid: process still running pid=%r", pid)
 
-    def _add_kevent(self, ident, kfilter, flags, fflags=0):
+    def _add_kevent(self, ident, kfilter, fflags=0):
         "Add specified kevent to kqueue."
+        flags = select.KQ_EV_ADD | select.KQ_EV_ONESHOT
         event = select.kevent(ident, kfilter, flags, fflags)
         self._kqueue.control([event], 0)
 
 
-class EPollAgent:
-    "Agent that watches for child exit epoll event."
+class EPollStrategy(ChildStrategy):
+    "Strategy that watches for child exit epoll event."
 
-    # pylint: disable=no-member
+    # pylint: disable=no-member,super-init-not-called
 
     def __init__(self):
-        "Initialize agent variables."
+        "Initialize strategy variables."
         _check_sigchld()
         self._pidfds = {}  # pidfd -> (pid, callback, args)
         self._epoll = select.epoll()
         self._selfpipe = os.pipe()
         self._epoll.register(self._selfpipe[0], select.EPOLLIN)
+        self._tasks = _TaskSet()
         self._thread = threading.Thread(
             target=self._run,
-            name="EPollAgent.run",
+            name="EPollStrategy.run",
             daemon=True,
         )
         self._thread.start()
 
-    def close(self):
+    def close(self) -> None:
         "Tell the epoll thread to exit."
         if self._selfpipe is not None:
             os.write(self._selfpipe[1], b"\x00")
         self._thread.join()
 
-    def watch_pid(self, pid, callback, args):
+    def watch_pid(self, pid, callback, args) -> None:
         "Register a PID with epoll."
         try:
             self._add_pidfd(pid, callback, args)
         except ProcessLookupError:
             self._pidfd_process_missing(pid, callback, args)
         except Exception as ex:
-            LOGGER.warning("EPollAgent.watch_pid failed pid=%r ex=%r", pid, ex)
+            LOGGER.warning("EPollStrategy.watch_pid failed pid=%r ex=%r", pid, ex)
             self._pidfd_error(pid, callback, args)
             raise
 
-    @staticmethod
-    def _pidfd_process_missing(pid, callback, args):
+    def _pidfd_process_missing(self, pid, callback, args):
         "Handle case where pidfd_open fails with a ProcessLookupError (ESRCH)."
         LOGGER.debug("_pidfd_process_missing pid=%r", pid)
 
@@ -241,10 +255,9 @@ class EPollAgent:
             _invoke_callback(callback, pid, status, args)
         else:
             # Process is still dying. Spawn a task to poll it.
-            asyncio.create_task(_poll_dead_pid(pid, callback, args))
+            self._tasks.create_task(_poll_dead_pid(pid, callback, args))
 
-    @staticmethod
-    def _pidfd_error(pid, callback, args):
+    def _pidfd_error(self, pid, callback, args):
         """Handle case where pidfd_open fails with any error.
 
         This can happen if the process runs out of file descriptors (EMFILE).
@@ -253,7 +266,7 @@ class EPollAgent:
             os.kill(pid, signal.SIGKILL)
         except ProcessLookupError:
             pass
-        asyncio.create_task(_poll_dead_pid(pid, callback, args))
+        self._tasks.create_task(_poll_dead_pid(pid, callback, args))
 
     @log_thread(True)
     def _run(self):
@@ -301,27 +314,30 @@ class EPollAgent:
         os.close(pidfd)
 
 
-class ThreadAgent:
-    "Agent that uses threads to watch for child exits."
+class ThreadStrategy(ChildStrategy):
+    "Strategy that uses threads to watch for child exits."
+
+    # pylint: disable=super-init-not-called
 
     def __init__(self):
-        "Initialize agent."
+        "Initialize strategy."
         self._pids = {}  # pid -> Thread
 
-    def close(self):
+    def close(self) -> None:
         """There is no way to force-close the threads. Log a message if there
         are still any live threads."""
         threads = list(self._pids.values())
         live_threads = [thread.name for thread in threads if thread.is_alive()]
         if live_threads:
-            LOGGER.warning("ThreadAgent: Child processes exist: %r", live_threads)
+            LOGGER.warning("ThreadStrategy: Child processes exist: %r", live_threads)
 
-    def watch_pid(self, pid, callback, args):
+    def watch_pid(self, pid, callback, args) -> None:
         "Start a thread to watch the PID."
+        assert pid not in self._pids
         thread = threading.Thread(
             target=self._reap_pid,
             args=(pid, callback, args),
-            name=f"ThreadAgent.reap_pid-{pid}",
+            name=f"ThreadStrategy.reap_pid-{pid}",
             daemon=True,
         )
         self._pids[pid] = thread
@@ -384,3 +400,13 @@ def _invoke_callback(callback, pid, status, args):
             status,
             ex,
         )
+
+
+class _TaskSet(set):
+    "Set of owned tasks (possibly from different threads)."
+
+    def create_task(self, coro):
+        "Create a new task and maintain its ref count until it finishes."
+        task = asyncio.create_task(coro)
+        self.add(task)
+        task.add_done_callback(self.discard)

@@ -51,7 +51,7 @@ def python_script(sh):
     depending on environment variables.
     """
     source_file = Path("tests/python_script.py")
-    return sh(sys.executable, source_file).stderr(INHERIT)
+    return sh(sys.executable, "-u", source_file).stderr(INHERIT)
 
 
 @pytest.fixture
