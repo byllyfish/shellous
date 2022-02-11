@@ -267,9 +267,9 @@ def _patch_child_watcher():
     watcher = asyncio.get_child_watcher()
 
     # Check flag to see if patch already exists.
-    if getattr(watcher, "_shellous_patched_child_watcher", False):
+    if hasattr(watcher, "_shellous_patched"):
         return
-    setattr(watcher, "_shellous_patched_child_watcher", True)
+    setattr(watcher, "_shellous_patched", True)
 
     saved_add_handler = watcher.add_child_handler
 
