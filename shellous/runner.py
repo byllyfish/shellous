@@ -582,12 +582,11 @@ class Runner:
         "Start the subprocess and assign to `self.proc`."
         with log_timer("asyncio.create_subprocess_exec"):
             sys.audit(AUDIT_EVENT_SUBPROCESS_SPAWN, opts.args[0])
-            if opts.pty_fds and _BSD:
-                pty_util.patch_child_watcher()
-            self._proc = await asyncio.create_subprocess_exec(
-                *opts.args,
-                **opts.kwd_args,
-            )
+            with pty_util.set_ignore_child_watcher(opts.pty_fds and _BSD):
+                self._proc = await asyncio.create_subprocess_exec(
+                    *opts.args,
+                    **opts.kwd_args,
+                )
 
     @log_method(LOG_DETAIL)
     async def _waiter(self):
