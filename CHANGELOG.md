@@ -1,6 +1,13 @@
 Shellous Change Log
 ===================
 
+0.15.0
+------
+
+- [LATERAL] Clean up DefaultChildWatcher implementation. Keep references to created tasks.
+- [LATERAL] Use a contextvar to control whether to deactivate child watcher for certain processes.
+- [BUGFIX] Use `.name` to convert signal enums to strings rather than `str()`.
+
 0.14.0
 ------
 
