@@ -707,12 +707,11 @@
         <span class="s2">&quot;Start the subprocess and assign to `self.proc`.&quot;</span>
         <span class="k">with</span> <span class="n">log_timer</span><span class="p">(</span><span class="s2">&quot;asyncio.create_subprocess_exec&quot;</span><span class="p">):</span>
             <span class="n">sys</span><span class="o">.</span><span class="n">audit</span><span class="p">(</span><span class="n">AUDIT_EVENT_SUBPROCESS_SPAWN</span><span class="p">,</span> <span class="n">opts</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-            <span class="k">if</span> <span class="n">opts</span><span class="o">.</span><span class="n">pty_fds</span> <span class="ow">and</span> <span class="n">_BSD</span><span class="p">:</span>
-                <span class="n">pty_util</span><span class="o">.</span><span class="n">patch_child_watcher</span><span class="p">()</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_subprocess_exec</span><span class="p">(</span>
-                <span class="o">*</span><span class="n">opts</span><span class="o">.</span><span class="n">args</span><span class="p">,</span>
-                <span class="o">**</span><span class="n">opts</span><span class="o">.</span><span class="n">kwd_args</span><span class="p">,</span>
-            <span class="p">)</span>
+            <span class="k">with</span> <span class="n">pty_util</span><span class="o">.</span><span class="n">set_ignore_child_watcher</span><span class="p">(</span><span class="n">opts</span><span class="o">.</span><span class="n">pty_fds</span> <span class="ow">and</span> <span class="n">_BSD</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_subprocess_exec</span><span class="p">(</span>
+                    <span class="o">*</span><span class="n">opts</span><span class="o">.</span><span class="n">args</span><span class="p">,</span>
+                    <span class="o">**</span><span class="n">opts</span><span class="o">.</span><span class="n">kwd_args</span><span class="p">,</span>
+                <span class="p">)</span>
 
     <span class="nd">@log_method</span><span class="p">(</span><span class="n">LOG_DETAIL</span><span class="p">)</span>
     <span class="k">async</span> <span class="k">def</span> <span class="nf">_waiter</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -1474,12 +1473,11 @@
         <span class="s2">&quot;Start the subprocess and assign to `self.proc`.&quot;</span>
         <span class="k">with</span> <span class="n">log_timer</span><span class="p">(</span><span class="s2">&quot;asyncio.create_subprocess_exec&quot;</span><span class="p">):</span>
             <span class="n">sys</span><span class="o">.</span><span class="n">audit</span><span class="p">(</span><span class="n">AUDIT_EVENT_SUBPROCESS_SPAWN</span><span class="p">,</span> <span class="n">opts</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-            <span class="k">if</span> <span class="n">opts</span><span class="o">.</span><span class="n">pty_fds</span> <span class="ow">and</span> <span class="n">_BSD</span><span class="p">:</span>
-                <span class="n">pty_util</span><span class="o">.</span><span class="n">patch_child_watcher</span><span class="p">()</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_subprocess_exec</span><span class="p">(</span>
-                <span class="o">*</span><span class="n">opts</span><span class="o">.</span><span class="n">args</span><span class="p">,</span>
-                <span class="o">**</span><span class="n">opts</span><span class="o">.</span><span class="n">kwd_args</span><span class="p">,</span>
-            <span class="p">)</span>
+            <span class="k">with</span> <span class="n">pty_util</span><span class="o">.</span><span class="n">set_ignore_child_watcher</span><span class="p">(</span><span class="n">opts</span><span class="o">.</span><span class="n">pty_fds</span> <span class="ow">and</span> <span class="n">_BSD</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_proc</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_subprocess_exec</span><span class="p">(</span>
+                    <span class="o">*</span><span class="n">opts</span><span class="o">.</span><span class="n">args</span><span class="p">,</span>
+                    <span class="o">**</span><span class="n">opts</span><span class="o">.</span><span class="n">kwd_args</span><span class="p">,</span>
+                <span class="p">)</span>
 
     <span class="nd">@log_method</span><span class="p">(</span><span class="n">LOG_DETAIL</span><span class="p">)</span>
     <span class="k">async</span> <span class="k">def</span> <span class="nf">_waiter</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>

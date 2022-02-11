@@ -289,7 +289,7 @@
 
     <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="s2">&quot;Tell our thread to exit with a dummy timer event.&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_add_kevent</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">select</span><span class="o">.</span><span class="n">KQ_FILTER_TIMER</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_add_kevent</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">select</span><span class="o">.</span><span class="n">KQ_FILTER_TIMER</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_thread</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">watch_pid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pid</span><span class="p">,</span> <span class="n">callback</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -298,7 +298,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_pids</span><span class="p">[</span><span class="n">pid</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">callback</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span>  <span class="c1"># ATOMIC: self._pids[] = ...</span>
 
         <span class="k">try</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_add_kevent</span><span class="p">(</span><span class="n">pid</span><span class="p">,</span> <span class="n">select</span><span class="o">.</span><span class="n">KQ_FILTER_PROC</span><span class="p">,</span> <span class="n">select</span><span class="o">.</span><span class="n">KQ_NOTE_EXIT</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_add_kevent</span><span class="p">(</span><span class="n">pid</span><span class="p">,</span> <span class="n">select</span><span class="o">.</span><span class="n">KQ_FILTER_PROC</span><span class="p">,</span> <span class="n">select</span><span class="o">.</span><span class="n">KQ_NOTE_EXIT</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
             <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;_add_kevent pid=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">pid</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">ProcessLookupError</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_kevent_failed</span><span class="p">(</span><span class="n">pid</span><span class="p">)</span>
@@ -963,7 +963,7 @@ notifications.</p>
 
     <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="s2">&quot;Tell our thread to exit with a dummy timer event.&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_add_kevent</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">select</span><span class="o">.</span><span class="n">KQ_FILTER_TIMER</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_add_kevent</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">select</span><span class="o">.</span><span class="n">KQ_FILTER_TIMER</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_thread</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">watch_pid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pid</span><span class="p">,</span> <span class="n">callback</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -972,7 +972,7 @@ notifications.</p>
         <span class="bp">self</span><span class="o">.</span><span class="n">_pids</span><span class="p">[</span><span class="n">pid</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">callback</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span>  <span class="c1"># ATOMIC: self._pids[] = ...</span>
 
         <span class="k">try</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_add_kevent</span><span class="p">(</span><span class="n">pid</span><span class="p">,</span> <span class="n">select</span><span class="o">.</span><span class="n">KQ_FILTER_PROC</span><span class="p">,</span> <span class="n">select</span><span class="o">.</span><span class="n">KQ_NOTE_EXIT</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_add_kevent</span><span class="p">(</span><span class="n">pid</span><span class="p">,</span> <span class="n">select</span><span class="o">.</span><span class="n">KQ_FILTER_PROC</span><span class="p">,</span> <span class="n">select</span><span class="o">.</span><span class="n">KQ_NOTE_EXIT</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
             <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;_add_kevent pid=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">pid</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">ProcessLookupError</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_kevent_failed</span><span class="p">(</span><span class="n">pid</span><span class="p">)</span>
@@ -1073,7 +1073,7 @@ notifications.</p>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="s2">&quot;Tell our thread to exit with a dummy timer event.&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_add_kevent</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">select</span><span class="o">.</span><span class="n">KQ_FILTER_TIMER</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_add_kevent</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">select</span><span class="o">.</span><span class="n">KQ_FILTER_TIMER</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_thread</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
 </pre></div>
 
@@ -1100,7 +1100,7 @@ notifications.</p>
         <span class="bp">self</span><span class="o">.</span><span class="n">_pids</span><span class="p">[</span><span class="n">pid</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">callback</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span>  <span class="c1"># ATOMIC: self._pids[] = ...</span>
 
         <span class="k">try</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_add_kevent</span><span class="p">(</span><span class="n">pid</span><span class="p">,</span> <span class="n">select</span><span class="o">.</span><span class="n">KQ_FILTER_PROC</span><span class="p">,</span> <span class="n">select</span><span class="o">.</span><span class="n">KQ_NOTE_EXIT</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_add_kevent</span><span class="p">(</span><span class="n">pid</span><span class="p">,</span> <span class="n">select</span><span class="o">.</span><span class="n">KQ_FILTER_PROC</span><span class="p">,</span> <span class="n">select</span><span class="o">.</span><span class="n">KQ_NOTE_EXIT</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
             <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;_add_kevent pid=</span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">pid</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">ProcessLookupError</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_kevent_failed</span><span class="p">(</span><span class="n">pid</span><span class="p">)</span>

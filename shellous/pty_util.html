@@ -103,7 +103,7 @@
                     <a class="function" href="#cooked">cooked</a>
             </li>
             <li>
-                    <a class="function" href="#patch_child_watcher">patch_child_watcher</a>
+                    <a class="function" href="#set_ignore_child_watcher">set_ignore_child_watcher</a>
             </li>
     </ul>
 
@@ -129,6 +129,8 @@
             <div class="codehilite"><pre><span></span><span class="s2">&quot;Implements support for pseudo-terminals.&quot;</span>
 
 <span class="kn">import</span> <span class="nn">asyncio</span>
+<span class="kn">import</span> <span class="nn">contextlib</span>
+<span class="kn">import</span> <span class="nn">contextvars</span>
 <span class="kn">import</span> <span class="nn">errno</span>
 <span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">import</span> <span class="nn">struct</span>
@@ -383,17 +385,40 @@
     <span class="k">return</span> <span class="n">eof</span>
 
 
-<span class="k">def</span> <span class="nf">patch_child_watcher</span><span class="p">():</span>
-    <span class="s2">&quot;Patch the current child watcher to ignore the next `add_child_handler`.&quot;</span>
+<span class="c1"># This contextvar indicates that the childwatcher should ignore the next</span>
+<span class="c1"># call to `add_child_handler``.</span>
+<span class="n">_IGNORE_CHILD_PROCESS</span> <span class="o">=</span> <span class="n">contextvars</span><span class="o">.</span><span class="n">ContextVar</span><span class="p">(</span><span class="s2">&quot;ignore_child_process&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_patch_child_watcher</span><span class="p">():</span>
+    <span class="s2">&quot;Patch the current child watcher for `add_child_handler`.&quot;</span>
     <span class="n">watcher</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">get_child_watcher</span><span class="p">()</span>
+
+    <span class="c1"># Check flag to see if patch already exists.</span>
+    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">watcher</span><span class="p">,</span> <span class="s2">&quot;_shellous_patched&quot;</span><span class="p">):</span>
+        <span class="k">return</span>
+    <span class="nb">setattr</span><span class="p">(</span><span class="n">watcher</span><span class="p">,</span> <span class="s2">&quot;_shellous_patched&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+
     <span class="n">saved_add_handler</span> <span class="o">=</span> <span class="n">watcher</span><span class="o">.</span><span class="n">add_child_handler</span>
 
     <span class="k">def</span> <span class="nf">_add_child_handler</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">):</span>
-        <span class="k">if</span> <span class="n">LOG_DETAIL</span><span class="p">:</span>
-            <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;add_child_handler ignored: </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span>
-        <span class="n">watcher</span><span class="o">.</span><span class="n">add_child_handler</span> <span class="o">=</span> <span class="n">saved_add_handler</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">_IGNORE_CHILD_PROCESS</span><span class="o">.</span><span class="n">get</span><span class="p">():</span>
+            <span class="n">saved_add_handler</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
 
     <span class="n">watcher</span><span class="o">.</span><span class="n">add_child_handler</span> <span class="o">=</span> <span class="n">_add_child_handler</span>
+
+
+<span class="nd">@contextlib</span><span class="o">.</span><span class="n">contextmanager</span>
+<span class="k">def</span> <span class="nf">set_ignore_child_watcher</span><span class="p">(</span><span class="n">ignore</span><span class="p">):</span>
+    <span class="s2">&quot;Tell the current child watcher to ignore the next `add_child_handler`.&quot;</span>
+    <span class="k">if</span> <span class="n">ignore</span><span class="p">:</span>
+        <span class="n">_patch_child_watcher</span><span class="p">()</span>
+
+    <span class="n">_IGNORE_CHILD_PROCESS</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">ignore</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">yield</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="n">_IGNORE_CHILD_PROCESS</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
 </pre></div>
 
         </details>
@@ -953,32 +978,33 @@
 
 
                 </section>
-                <section id="patch_child_watcher">
-                            <div class="attr function"><a class="headerlink" href="#patch_child_watcher">#&nbsp;&nbsp</a>
+                <section id="set_ignore_child_watcher">
+                            <div class="attr function"><a class="headerlink" href="#set_ignore_child_watcher">#&nbsp;&nbsp</a>
 
-        
+                <div class="decorator">@contextlib.contextmanager</div>
+
             <span class="def">def</span>
-            <span class="name">patch_child_watcher</span><span class="signature">()</span>:
+            <span class="name">set_ignore_child_watcher</span><span class="signature">(ignore)</span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">patch_child_watcher</span><span class="p">():</span>
-    <span class="s2">&quot;Patch the current child watcher to ignore the next `add_child_handler`.&quot;</span>
-    <span class="n">watcher</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">get_child_watcher</span><span class="p">()</span>
-    <span class="n">saved_add_handler</span> <span class="o">=</span> <span class="n">watcher</span><span class="o">.</span><span class="n">add_child_handler</span>
+            <div class="codehilite"><pre><span></span><span class="nd">@contextlib</span><span class="o">.</span><span class="n">contextmanager</span>
+<span class="k">def</span> <span class="nf">set_ignore_child_watcher</span><span class="p">(</span><span class="n">ignore</span><span class="p">):</span>
+    <span class="s2">&quot;Tell the current child watcher to ignore the next `add_child_handler`.&quot;</span>
+    <span class="k">if</span> <span class="n">ignore</span><span class="p">:</span>
+        <span class="n">_patch_child_watcher</span><span class="p">()</span>
 
-    <span class="k">def</span> <span class="nf">_add_child_handler</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">):</span>
-        <span class="k">if</span> <span class="n">LOG_DETAIL</span><span class="p">:</span>
-            <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;add_child_handler ignored: </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span>
-        <span class="n">watcher</span><span class="o">.</span><span class="n">add_child_handler</span> <span class="o">=</span> <span class="n">saved_add_handler</span>
-
-    <span class="n">watcher</span><span class="o">.</span><span class="n">add_child_handler</span> <span class="o">=</span> <span class="n">_add_child_handler</span>
+    <span class="n">_IGNORE_CHILD_PROCESS</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">ignore</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">yield</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="n">_IGNORE_CHILD_PROCESS</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
 </pre></div>
 
         </details>
 
-            <div class="docstring"><p>Patch the current child watcher to ignore the next <code>add_child_handler</code>.</p>
+            <div class="docstring"><p>Tell the current child watcher to ignore the next <code>add_child_handler</code>.</p>
 </div>
 
 
