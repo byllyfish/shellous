@@ -22,7 +22,7 @@ immutables = "^0.16"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.5"
-pytest-asyncio = "^0.17.2"
+pytest-asyncio = "^0.18.1"
 pylint = "^2.11.1"
 mypy = "^0.931"
 black = "^22.1.0"
