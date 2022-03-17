@@ -25,8 +25,7 @@ from shellous import (
 )
 from shellous.harvest import harvest, harvest_results
 
-unix_only = pytest.mark.skipif(sys.platform == "win32", reason="Unix")
-pytestmark = [pytest.mark.asyncio, unix_only]
+pytestmark = pytest.mark.skipif(sys.platform == "win32", reason="Unix")
 
 _CANCELLED_EXIT_CODE = -15
 

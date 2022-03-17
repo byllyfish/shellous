@@ -5,8 +5,6 @@ import sys
 
 import pytest
 
-pytestmark = pytest.mark.asyncio
-
 PIPE_MAX_SIZE = 4 * 1024 * 1024 + 1
 
 
