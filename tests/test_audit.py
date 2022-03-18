@@ -11,8 +11,6 @@ from shellous import AUDIT_EVENT_SUBPROCESS_SPAWN
 
 # pylint: disable=global-statement
 
-pytestmark = pytest.mark.asyncio
-
 _HOOK = None
 _IGNORE = {"object.__getattr__", "sys._getframe", "code.__new__", "builtins.id"}
 

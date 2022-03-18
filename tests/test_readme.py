@@ -10,8 +10,6 @@ import shellous
 from shellous.harvest import harvest_results
 from shellous.log import LOGGER
 
-pytestmark = pytest.mark.asyncio
-
 _PROMPT = ">>> "
 _PROMPT_ELLIPSIS = "... "
 
@@ -40,7 +38,7 @@ class Prompt:
             raise asyncio.CancelledError()
 
         # If there are ellipsis bytes in the beginning of out, remove them.
-        out = re.sub(br"^(?:\.\.\. )+", b"", out)
+        out = re.sub(rb"^(?:\.\.\. )+", b"", out)
 
         # Combine stderr and stdout, then clear stderr.
         buf = self.errbuf + out
@@ -264,7 +262,7 @@ def _check_result(output, result):
     # may be ansi color directives on Alpine linux.
     ESC = r"(?:\\x1b[\[0-9;]+m)?"
     PTYOUT = re.compile(
-        fr"'{ESC}CHANGELOG.md{ESC}(?:\s+|\\t){ESC}README.md{ESC}\\r\\n'"
+        rf"'{ESC}CHANGELOG.md{ESC}(?:\s+|\\t){ESC}README.md{ESC}\\r\\n'"
     )
     if PTYOUT.fullmatch(result) and PTYOUT.fullmatch(output):
         return

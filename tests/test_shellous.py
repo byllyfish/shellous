@@ -15,8 +15,6 @@ import pytest
 from shellous import CAPTURE, DEVNULL, INHERIT, PipeResult, Result, ResultError, context
 from shellous.harvest import harvest_results
 
-pytestmark = pytest.mark.asyncio
-
 # 4MB + 1: Much larger than necessary.
 # See https://github.com/python/cpython/blob/main/Lib/test/support/__init__.py
 PIPE_MAX_SIZE = 4 * 1024 * 1024 + 1

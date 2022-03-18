@@ -6,8 +6,6 @@ import os
 import pytest
 from shellous.util import close_fds, coerce_env, decode, uninterrupted, verify_dev_fd
 
-pytestmark = pytest.mark.asyncio
-
 
 def test_decode():
     "Test the util.decode function."

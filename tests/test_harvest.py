@@ -5,8 +5,6 @@ import asyncio
 import pytest
 from shellous.harvest import harvest, harvest_results, harvest_wait
 
-pytestmark = pytest.mark.asyncio
-
 
 async def test_harvest():
     "Test the `harvest` function."
