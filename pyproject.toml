@@ -18,7 +18,7 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = "^3.9"
-immutables = "^0.16"
+immutables = ">=0.16,<0.18"
 
 [tool.poetry.dev-dependencies]
 pytest = "^7.1.1"
