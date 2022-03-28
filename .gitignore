@@ -1,6 +1,6 @@
 .venv*/
 .mypy_cache/
-.pytest_cache
+.pytest_cache/
 __pycache__/
 
 .vscode/*
@@ -8,3 +8,5 @@ __pycache__/
 
 dist/
 html/
+
+.DS_Store
