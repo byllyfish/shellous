@@ -146,3 +146,24 @@ jobs:
           fi
         env:
           SHELLOUS_CHILDWATCHER_TYPE: "default"
+
+
+  build-pypy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20  # stop runaway job after 20 minutes
+    python-version: 'pypy-3.9'
+
+    env:
+      SHELLOUS_DEBUG: 1
+      BUILD_NAME: build (pypy-3.9)
+
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-python@v2
+    - name: Install dependencies
+      run: |
+        pip3 install -U setuptools wheel
+        pip3 install -r ./ci/requirements-dev.txt
+    - name: Run Tests
+      run: |
+        pytest -vv -s --durations=20 --log-cli-level=DEBUG
