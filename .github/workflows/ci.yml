@@ -151,8 +151,6 @@ jobs:
   build-pypy:
     runs-on: ubuntu-latest
     timeout-minutes: 20  # stop runaway job after 20 minutes
-    python-version: 'pypy-3.9'
-
     env:
       SHELLOUS_DEBUG: 1
       BUILD_NAME: build (pypy-3.9)
@@ -160,6 +158,8 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - uses: actions/setup-python@v2
+      with:
+        python-version: 'pypy-3.9'
     - name: Install dependencies
       run: |
         pip3 install -U setuptools wheel
