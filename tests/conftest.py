@@ -5,6 +5,7 @@ import contextlib
 import functools
 import gc
 import os
+import platform
 import re
 import signal
 import sys
@@ -12,6 +13,8 @@ import threading
 
 import pytest
 import shellous
+
+_PYPY = platform.python_implementation() == "PyPy"
 
 # Close any file descriptors >= 3. The tests will log file descriptors passed
 # to subprocesses. If pytest inherits file descriptors from the process that
@@ -126,6 +129,8 @@ def _check_open_fds():
     "Check for growth in number of open file descriptors."
     initial_set = _get_fds()
     yield
+    if _PYPY:
+        gc.collect()  # Force gc for pypy
     extra_fds = _get_fds() - initial_set
     assert not extra_fds, f"file descriptors still open: {extra_fds}"
 
