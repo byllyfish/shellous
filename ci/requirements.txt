@@ -1,1 +1,1 @@
-immutables==0.16; python_version >= "3.6"
+immutables==0.17; python_version >= "3.6"
