@@ -305,5 +305,5 @@ def test_command_pickle_callback(sh):
 
     cmd = sh("echo", "hello").set(audit_callback=_callback)
 
-    with pytest.raises(AttributeError, match="local object"):
+    with pytest.raises((pickle.PicklingError, AttributeError)):
         pickle.dumps(cmd)
