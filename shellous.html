@@ -62,6 +62,9 @@
             <li>
                     <a class="function" href="#context">context</a>
             </li>
+            <li>
+                    <a class="variable" href="#sh">sh</a>
+            </li>
     </ul>
 
 
@@ -86,12 +89,10 @@ shellous    </h1>
 similar to and inspired by <a href="https://pypi.org/project/sh/">sh</a>.</p>
 
 <div class="pdoc-code codehilite"><pre><span></span><code><span class="kn">import</span> <span class="nn">asyncio</span>
-<span class="kn">import</span> <span class="nn">shellous</span>
-
-<span class="n">sh</span> <span class="o">=</span> <span class="n">shellous</span><span class="o">.</span><span class="n">context</span><span class="p">()</span>
+<span class="kn">from</span> <span class="nn">shellous</span> <span class="kn">import</span> <span class="n">sh</span>
 
 <span class="k">async</span> <span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="p">(</span><span class="n">sh</span><span class="p">(</span><span class="s2">&quot;ls&quot;</span><span class="p">)</span> <span class="o">|</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;grep&quot;</span><span class="p">,</span> <span class="s2">&quot;README&quot;</span><span class="p">))</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;echo&quot;</span><span class="p">,</span> <span class="s2">&quot;hello&quot;</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
 
 <span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">main</span><span class="p">())</span>
@@ -120,18 +121,12 @@ similar to and inspired by <a href="https://pypi.org/project/sh/">sh</a>.</p>
 
 <h2 id="basic-usage">Basic Usage</h2>
 
-<p>Start the asyncio REPL by typing <code>python3 -m asyncio</code>, and import the <strong>shellous</strong> module:</p>
+<p>Start the asyncio REPL by typing <code>python3 -m asyncio</code>, and import <strong>sh</strong> from the <strong>shellous</strong> module:</p>
 
-<div class="pdoc-code codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">shellous</span>
+<div class="pdoc-code codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">shellous</span> <span class="kn">import</span> <span class="n">sh</span>
 </code></pre></div>
 
-<p>Before we can do anything else, we need to create a <strong>context</strong>. Store the context in a 
-short variable name like <code>sh</code> because we'll be typing it a lot.</p>
-
-<div class="pdoc-code codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">sh</span> <span class="o">=</span> <span class="n">shellous</span><span class="o">.</span><span class="n">context</span><span class="p">()</span>
-</code></pre></div>
-
-<p>Now, we're ready to run our first command. Here's one that runs <code>echo "hello, world"</code>.</p>
+<p>Here's a command that runs <code>echo "hello, world"</code>.</p>
 
 <div class="pdoc-code codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;echo&quot;</span><span class="p">,</span> <span class="s2">&quot;hello, world&quot;</span><span class="p">)</span>
 <span class="go">&#39;hello, world\n&#39;</span>
@@ -341,13 +336,8 @@ a function to configure the tty mode and size.</p>
 
 <h2 id="context-objects">Context Objects</h2>
 
-<p>All commands are created using a Context object. To create a new context object use the <code><a href="#context">shellous.context</a></code> function.</p>
-
-<div class="pdoc-code codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">sh</span> <span class="o">=</span> <span class="n">shellous</span><span class="o">.</span><span class="n">context</span><span class="p">()</span>
-</code></pre></div>
-
-<p>You can specify shared command settings in a context object. Context objects are immutable,
-so you must store the result of your changes in a new variable.</p>
+<p>You can store shared command settings in an immutable context object. To create a new context 
+object, specify your changes to the default context <strong>sh</strong>:</p>
 
 <div class="pdoc-code codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">auditor</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">phase</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="n">phase</span><span class="p">,</span> <span class="n">info</span><span class="p">[</span><span class="s2">&quot;runner&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">sh_audit</span> <span class="o">=</span> <span class="n">sh</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">audit_callback</span><span class="o">=</span><span class="n">auditor</span><span class="p">)</span>
@@ -392,6 +382,10 @@ so you must store the result of your changes in a new variable.</p>
 <span class="k">def</span> <span class="nf">context</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">CmdContext</span><span class="p">:</span>
     <span class="s2">&quot;Construct a new execution context.&quot;</span>
     <span class="k">return</span> <span class="n">CmdContext</span><span class="p">()</span>
+
+
+<span class="n">sh</span> <span class="o">=</span> <span class="n">CmdContext</span><span class="p">()</span>
+<span class="s2">&quot;Default execution context. Immutable.&quot;</span>
 </pre></div>
 
         </details>
@@ -415,6 +409,18 @@ so you must store the result of your changes in a new variable.</p>
         </details>
 
             <div class="docstring"><p>Construct a new execution context.</p>
+</div>
+
+
+                </section>
+                <section id="sh">
+                                <div class="attr variable"><a class="headerlink" href="#sh">#&nbsp;&nbsp</a>
+
+        <span class="name">sh</span><span class="default_value"> = CmdContext(options=Options(inherit_env=True, input=&lt;Redirect.DEFAULT: -20&gt;, input_close=False, output=&lt;Redirect.DEFAULT: -20&gt;, output_append=False, output_close=False, error=&lt;Redirect.DEFAULT: -20&gt;, error_append=False, error_close=False, encoding=&#39;utf-8&#39;, return_result=False, incomplete_result=False, exit_codes=None, timeout=None, cancel_timeout=3.0, cancel_signal=&lt;Signals.SIGTERM: 15&gt;, alt_name=None, pass_fds=(), pass_fds_close=False, writable=False, _start_new_session=False, _preexec_fn=None, pty=False, close_fds=False, audit_callback=None))</span>
+    </div>
+
+    
+            <div class="docstring"><p>Default execution context. Immutable.</p>
 </div>
 
 
