@@ -26,3 +26,7 @@ INHERIT = Redirect.INHERIT
 def context() -> CmdContext:
     "Construct a new execution context."
     return CmdContext()
+
+
+sh = CmdContext()
+"Default execution context. Immutable."
