@@ -121,7 +121,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20  # stop runaway job after 20 minutes
     container:
-      image: python:3.10.1-alpine
+      image: python:3.10-alpine
     env:
       SHELLOUS_DEBUG: 1
       BUILD_NAME: build (alpine)
@@ -167,3 +167,8 @@ jobs:
     - name: Run Tests
       run: |
         pytest -vv -s --durations=20 --log-cli-level=DEBUG
+    - name: Run Tests with DefaultChildWatcher
+      run: |
+        pytest -vv -s --log-cli-level=DEBUG
+      env:
+        SHELLOUS_CHILDWATCHER_TYPE: "default"
