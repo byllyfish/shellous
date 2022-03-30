@@ -118,8 +118,7 @@ def test_parse_readme():
     cmds, _ = _parse_readme("README.md")
 
     assert cmds == [
-        "import shellous",
-        "sh = shellous.context()",
+        "from shellous import sh",
         'await sh("echo", "hello, world")',
         'echo = sh("echo", "-n")',
         'await echo("abc")',
@@ -163,7 +162,6 @@ def test_parse_readme():
         "await t",
         'ls = sh("ls").set(pty=shellous.cooked(cols=40, rows=10, echo=False))',
         'await ls("README.md", "CHANGELOG.md")',
-        "sh = shellous.context()",
         'auditor = lambda phase, info: print(phase, info["runner"].name)',
         "sh_audit = sh.set(audit_callback=auditor)",
         'await sh_audit("echo", "goodbye")',

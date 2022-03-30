@@ -8,12 +8,10 @@ similar to and inspired by [sh](https://pypi.org/project/sh/).
 
 ```python
 import asyncio
-import shellous
-
-sh = shellous.context()
+from shellous import sh
 
 async def main():
-    result = await (sh("ls") | sh("grep", "README"))
+    result = await sh("echo", "hello")
     print(result)
 
 asyncio.run(main())
@@ -41,20 +39,13 @@ Requirements
 Basic Usage
 -----------
 
-Start the asyncio REPL by typing `python3 -m asyncio`, and import the **shellous** module:
+Start the asyncio REPL by typing `python3 -m asyncio`, and import **sh** from the **shellous** module:
 
 ```pycon
->>> import shellous
+>>> from shellous import sh
 ```
 
-Before we can do anything else, we need to create a **context**. Store the context in a 
-short variable name like `sh` because we'll be typing it a lot.
-
-```pycon
->>> sh = shellous.context()
-```
-
-Now, we're ready to run our first command. Here's one that runs `echo "hello, world"`.
+Here's a command that runs `echo "hello, world"`.
 
 ```pycon
 >>> await sh("echo", "hello, world")
@@ -292,14 +283,8 @@ a function to configure the tty mode and size.
 Context Objects
 ---------------
 
-All commands are created using a Context object. To create a new context object use the `shellous.context` function.
-
-```pycon
->>> sh = shellous.context()
-```
-
-You can specify shared command settings in a context object. Context objects are immutable,
-so you must store the result of your changes in a new variable.
+You can store shared command settings in an immutable context object. To create a new context 
+object, specify your changes to the default context **sh**:
 
 ```pycon
 >>> auditor = lambda phase, info: print(phase, info["runner"].name)
