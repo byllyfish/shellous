@@ -674,6 +674,7 @@ async def test_cancelled_antipattern_fix(sh):
     assert task.cancelled
 
 
+@pytest.mark.timeout(10, method="signal")
 async def test_multiple_capture(sh):
     "Test the multiple capture example from the documentation."
     cmd = sh("cat").stdin(CAPTURE)
