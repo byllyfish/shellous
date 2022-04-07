@@ -134,6 +134,7 @@ jobs:
           pip3 install -r ./ci/requirements-dev.txt
       - name: Run Tests
         run: |
+          cat /etc/alpine-release; uname -a
           if ! pytest -v -s --log-cli-level=DEBUG; then
             echo "::warning title=Run Tests Warning::Re-running failed tests in $BUILD_NAME"
             pytest -v -s --log-cli-level=DEBUG --last-failed
