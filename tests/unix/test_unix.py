@@ -674,16 +674,13 @@ async def test_cancelled_antipattern_fix(sh):
     assert task.cancelled
 
 
-@pytest.mark.timeout(10, method="signal")
 async def test_multiple_capture(sh):
     "Test the multiple capture example from the documentation."
     cmd = sh("cat").stdin(CAPTURE)
 
     async with cmd.run() as run:
         run.stdin.write(b"abc\n")
-        output, _ = await asyncio.wait_for(
-            asyncio.gather(run.stdout.readline(), run.stdin.drain()), timeout=30.0
-        )
+        _, (output, _) = await harvest_results(run.stdout.readline(), run.stdin.drain())
         run.stdin.close()
 
     result = run.result(output)
