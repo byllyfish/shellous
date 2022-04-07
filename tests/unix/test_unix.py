@@ -680,7 +680,9 @@ async def test_multiple_capture(sh):
 
     async with cmd.run() as run:
         run.stdin.write(b"abc\n")
-        output, _ = await asyncio.gather(run.stdout.readline(), run.stdin.drain())
+        output, _ = await asyncio.wait_for(
+            asyncio.gather(run.stdout.readline(), run.stdin.drain()), timeout=30.0
+        )
         run.stdin.close()
 
     result = run.result(output)
