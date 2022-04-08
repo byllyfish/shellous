@@ -674,6 +674,7 @@ async def test_cancelled_antipattern_fix(sh):
     assert task.cancelled
 
 
+@pytest.mark.skipif(_IS_ALPINE, reason="test hangs on alpine")
 async def test_multiple_capture(sh):
     "Test the multiple capture example from the documentation."
     cmd = sh("cat").stdin(CAPTURE)
@@ -684,6 +685,12 @@ async def test_multiple_capture(sh):
         run.stdin.close()
 
     result = run.result(output)
+    assert result == "abc\n"
+
+
+async def test_multiple_capture_alpine(sh):
+    "Test alternate implementation of test_multiple_capture to see if it hangs."
+    result = await sh("cat").stdin(b"abc\n")
     assert result == "abc\n"
 
 
