@@ -688,6 +688,12 @@ async def test_multiple_capture(sh):
     assert result == "abc\n"
 
 
+async def test_multiple_capture_alpine(sh):
+    "Test alternate implementation of test_multiple_capture to see if it hangs."
+    result = await sh("cat").stdin(b"abc\n")
+    assert result == "abc\n"
+
+
 async def test_cancel_timeout(sh):
     "Test the `cancel_timeout` setting."
     sleep = sh("nohup", "sleep").set(
