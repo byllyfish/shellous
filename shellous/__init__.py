@@ -25,6 +25,9 @@ INHERIT = Redirect.INHERIT
 
 def context() -> CmdContext:
     "Construct a new execution context."
+    import warnings
+
+    warnings.warn("context() is deprecated; use sh.", DeprecationWarning)
     return CmdContext()
 
 

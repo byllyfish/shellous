@@ -12,7 +12,15 @@ from pathlib import Path
 
 import asyncstdlib as asl
 import pytest
-from shellous import CAPTURE, DEVNULL, INHERIT, PipeResult, Result, ResultError, context
+from shellous import (
+    CAPTURE,
+    DEVNULL,
+    INHERIT,
+    CmdContext,
+    PipeResult,
+    Result,
+    ResultError,
+)
 from shellous.harvest import harvest_results
 
 # 4MB + 1: Much larger than necessary.
@@ -38,7 +46,7 @@ def test_debug_mode(event_loop):
 @pytest.fixture
 def sh():
     "Create a default shellous context."
-    return context()
+    return CmdContext()
 
 
 @pytest.fixture
@@ -124,14 +132,12 @@ async def test_count(count_cmd):
     assert result == "1\n2\n3\n4\n5\n"
 
 
-async def test_nonexistant_cmd():
-    sh = context()
+async def test_nonexistant_cmd(sh):
     with pytest.raises(FileNotFoundError):
         await sh("non_existant_command").set(return_result=True)
 
 
-async def test_nonexecutable_cmd():
-    sh = context()
+async def test_nonexecutable_cmd(sh):
     if sys.platform == "win32":
         with pytest.raises(OSError, match="not a valid Win32 application"):
             await sh("./README.md").set(return_result=True)

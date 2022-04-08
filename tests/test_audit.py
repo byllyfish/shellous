@@ -6,8 +6,7 @@ import subprocess
 import sys
 
 import pytest
-import shellous
-from shellous import AUDIT_EVENT_SUBPROCESS_SPAWN
+from shellous import AUDIT_EVENT_SUBPROCESS_SPAWN, sh
 
 # pylint: disable=global-statement
 
@@ -48,7 +47,6 @@ async def test_audit():
     try:
         _HOOK = _hook
 
-        sh = shellous.context()
         result = await sh(sys.executable, "-c", "print('hello')")
 
     finally:
@@ -88,7 +86,6 @@ async def test_audit_posix_spawn():
 
         # This command does not include a directory path, so it is resolved
         # through PATH.
-        sh = shellous.context()
         result = await sh("ls", "README.md")
 
     finally:
@@ -123,7 +120,6 @@ async def test_audit_block_popen():
     try:
         _HOOK = _hook
 
-        sh = shellous.context()
         with pytest.raises(RuntimeError, match="Popen blocked"):
             await sh(sys.executable, "-c", "print('hello')")
 
@@ -143,7 +139,6 @@ async def test_audit_block_subprocess_spawn():
     try:
         _HOOK = _hook
 
-        sh = shellous.context()
         cmd = sh(sys.executable, "-c", "print('hello')")
         with pytest.raises(RuntimeError, match="subprocess_spawn"):
 
@@ -181,9 +176,9 @@ async def test_audit_block_pipe_specific_cmd():
     try:
         _HOOK = _hook
 
-        sh = shellous.context().set(audit_callback=_callback)
-        hello = sh(sys.executable, "-c", "print('hello')").set(alt_name="hello")
-        cmd = hello | sh("grep")
+        ash = sh.set(audit_callback=_callback)
+        hello = ash(sys.executable, "-c", "print('hello')").set(alt_name="hello")
+        cmd = hello | ash("grep")
         with pytest.raises(RuntimeError, match="grep blocked"):
             await cmd
 

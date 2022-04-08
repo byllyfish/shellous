@@ -8,13 +8,13 @@ from pathlib import Path
 
 import pytest
 import shellous
-from shellous import Pipeline, context
+from shellous import CmdContext, Pipeline
 from shellous.command import Command
 
 
 @pytest.fixture
 def sh():
-    return context()
+    return CmdContext()
 
 
 def test_empty_pipeline():

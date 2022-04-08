@@ -6,7 +6,7 @@ import re
 import sys
 
 import pytest
-import shellous
+from shellous import CAPTURE, sh
 from shellous.harvest import harvest_results
 from shellous.log import LOGGER
 
@@ -55,12 +55,10 @@ class Prompt:
 
 async def run_asyncio_repl(cmds, logfile=None):
     "Helper function to run the asyncio REPL and feed it commands."
-    sh = shellous.context()
-
     errbuf = bytearray()
     repl = (
         sh(sys.executable, "-m", "asyncio")
-        .stdin(shellous.CAPTURE)
+        .stdin(CAPTURE)
         .stderr(errbuf)
         .set(return_result=True, inherit_env=False)
         .env(**_current_env())
@@ -100,14 +98,12 @@ async def test_run_asyncio_repl():
     "Test asyncio REPL with a short list of commands."
     result = await run_asyncio_repl(
         [
-            "import shellous",
-            "sh = shellous.context()",
+            "from shellous import sh",
             'await sh("echo", "hello, world")',
         ]
     )
 
     assert result == [
-        "",
         "",
         "'hello, world\\n'",
     ]

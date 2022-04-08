@@ -3,14 +3,14 @@
 import sys
 
 import pytest
-from shellous import context
+from shellous import CmdContext
 
 pytestmark = pytest.mark.skipif(sys.platform != "win32", reason="Windows")
 
 
 @pytest.fixture
 def sh():
-    return context()
+    return CmdContext()
 
 
 @pytest.fixture

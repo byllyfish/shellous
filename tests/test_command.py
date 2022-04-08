@@ -7,13 +7,13 @@ from pathlib import Path
 
 import pytest
 from immutables import Map as ImmutableDict
-from shellous import DEVNULL, context
+from shellous import DEVNULL, CmdContext
 from shellous.command import Options
 
 
 @pytest.fixture
 def sh():
-    return context()
+    return CmdContext()
 
 
 def test_invalid(sh):

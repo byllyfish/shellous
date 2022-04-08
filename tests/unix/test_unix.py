@@ -15,11 +15,11 @@ from shellous import (
     DEVNULL,
     INHERIT,
     STDOUT,
+    CmdContext,
     PipeResult,
     Result,
     ResultError,
     cbreak,
-    context,
     cooked,
     raw,
 )
@@ -66,7 +66,7 @@ def _readouterr(capfd):
 
 @pytest.fixture
 def sh():
-    return context()
+    return CmdContext()
 
 
 @pytest.fixture
@@ -380,7 +380,7 @@ async def test_redirect_input_path(sh, tmp_path):
 
 
 @pytest.fixture
-def python_script():
+def python_script(sh):
     script = r"""
 import sys
 sys.stdout.write("hi ")
@@ -390,7 +390,6 @@ sys.stderr.write("hi stderr\n")
 sys.stderr.flush()
 sys.stdout.write("goodbye!")
 """
-    sh = context()
     return sh(sys.executable, "-").stdin(script)
 
 
