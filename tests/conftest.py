@@ -12,7 +12,8 @@ import sys
 import threading
 
 import pytest
-from shellous import DefaultChildWatcher, sh
+import shellous
+from shellous import sh
 
 _PYPY = platform.python_implementation() == "PyPy"
 
@@ -69,7 +70,7 @@ def _init_child_watcher():
         # Use patched child watcher...
         asyncio.set_child_watcher(PatchedMultiLoopChildWatcher())
     elif childwatcher_type == "default":
-        asyncio.set_child_watcher(DefaultChildWatcher())
+        asyncio.set_child_watcher(shellous.DefaultChildWatcher())
 
 
 @pytest.fixture(autouse=True)
@@ -85,7 +86,7 @@ async def report_orphan_tasks():
         # Close the childwatcher *before* checking for open fd's.
         if sys.platform != "win32":
             cw = asyncio.get_child_watcher()
-            if isinstance(cw, DefaultChildWatcher):
+            if isinstance(cw, shellous.DefaultChildWatcher):
                 cw.close()
 
     # Check if any other tasks are still running. Ignore the current task.
