@@ -251,7 +251,7 @@ class Command:
 
     ```
     # Create a context.
-    sh = shellous.context()
+    from shellous import sh
 
     # Create a new command from the context.
     echo = sh("echo", "hello, world")

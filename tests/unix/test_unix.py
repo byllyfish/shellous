@@ -19,9 +19,9 @@ from shellous import (
     Result,
     ResultError,
     cbreak,
-    context,
     cooked,
     raw,
+    sh,
 )
 from shellous.harvest import harvest, harvest_results
 
@@ -65,36 +65,31 @@ def _readouterr(capfd):
 
 
 @pytest.fixture
-def sh():
-    return context()
-
-
-@pytest.fixture
-def ls(sh):
+def ls():
     if sys.platform == "linux":
         return sh("ls", "--color=never")
     return sh("ls")
 
 
-async def test_python(sh):
+async def test_python():
     "Test running the python executable."
     result = await sh(sys.executable, "-c", "print('test1')")
     assert result == "test1\n"
 
 
-async def test_echo(sh):
+async def test_echo():
     "Test running the echo command."
     result = await sh("echo", "-n", "foo")
     assert result == "foo"
 
 
-async def test_echo_bytes(sh):
+async def test_echo_bytes():
     "Test running the echo command with bytes output."
     result = await sh("echo", "-n", "foo").set(encoding=None)
     assert result == b"foo"
 
 
-async def test_echo_with_result(sh):
+async def test_echo_with_result():
     "Test running the echo command using the Result object."
     result = await sh("echo", "-n", "foo").set(return_result=True)
     assert result == Result(
@@ -107,35 +102,35 @@ async def test_echo_with_result(sh):
     assert result.output == "foo"
 
 
-async def test_which(sh):
+async def test_which():
     "Test running the `which` command."
     result = await sh("which", "cat")
     assert result in {"/usr/bin/cat\n", "/bin/cat\n"}
 
 
-async def test_context_env(sh):
+async def test_context_env():
     "Test running the env command with a custom environment context."
     env = {
         "PATH": "/bin:/usr/bin",
     }
-    sh = sh.env(**env).set(inherit_env=False)
-    result = await sh("env")
+    xsh = sh.env(**env).set(inherit_env=False)
+    result = await xsh("env")
     assert result == "PATH=/bin:/usr/bin\n"
 
 
-async def test_default_env(sh):
+async def test_default_env():
     "Test running the env command with an augmented default environment."
     result = await sh("env").env(MORE="less")
     assert "MORE=less" in result.split("\n")
 
 
-async def test_augmented_env(sh):
+async def test_augmented_env():
     "Test running the env command with an augmented custom environment."
     env = {
         "PATH": "/bin:/usr/bin",
     }
-    sh = sh.env(**env).set(inherit_env=False)
-    result = await sh("env").env(MORE="less")
+    xsh = sh.env(**env).set(inherit_env=False)
+    result = await xsh("env").env(MORE="less")
     assert sorted(result.rstrip().split("\n")) == [
         "MORE=less",
         "PATH=/bin:/usr/bin",
@@ -143,13 +138,13 @@ async def test_augmented_env(sh):
 
 
 @pytest.mark.xfail(_is_uvloop(), reason="uvloop")
-async def test_empty_env(sh):
+async def test_empty_env():
     "Test running the env command with an empty environment."
     result = await sh("/usr/bin/env").set(inherit_env=False)
     assert result == ""
 
 
-async def test_custom_echo_func(sh):
+async def test_custom_echo_func():
     "Test defining a custom echo function."
 
     def excited(*args):
@@ -159,27 +154,27 @@ async def test_custom_echo_func(sh):
     assert result == "x z !!"
 
 
-async def test_custom_echo_shorthand(sh):
+async def test_custom_echo_shorthand():
     "Test defining an echo function that always passes -n (shorthand)."
     echo = sh("echo", "-n")
     result = await echo("x", "y")
     assert result == "x y"
 
 
-async def test_missing_executable(sh):
+async def test_missing_executable():
     "Test invoking a non-existant command raises a FileNotFoundError."
     with pytest.raises(FileNotFoundError):
         await sh("/bin/does_not_exist")
 
 
-async def test_task(sh):
+async def test_task():
     "Test converting an awaitable command into an asyncio Task object."
     task = asyncio.create_task(sh("echo", "***").coro())
     result = await task
     assert result == "***\n"
 
 
-async def test_task_cancel(sh):
+async def test_task_cancel():
     "Test that we can cancel a running command task."
     task = asyncio.create_task(sh("sleep", "5").coro())
     await asyncio.sleep(0.1)
@@ -190,7 +185,7 @@ async def test_task_cancel(sh):
         await task
 
 
-async def test_task_cancel_incomplete_result(sh):
+async def test_task_cancel_incomplete_result():
     "Test that we can cancel a running command task."
     task = asyncio.create_task(sh("sleep", "5").set(incomplete_result=True).coro())
     await asyncio.sleep(0.1)
@@ -201,7 +196,7 @@ async def test_task_cancel_incomplete_result(sh):
         await task
 
 
-async def test_task_immediate_cancel(sh):
+async def test_task_immediate_cancel():
     "Test that we can cancel a running command task."
     task = asyncio.create_task(sh("sleep", "5").coro())
     task.cancel()
@@ -210,7 +205,7 @@ async def test_task_immediate_cancel(sh):
         await task
 
 
-async def test_timeout_fail(sh):
+async def test_timeout_fail():
     "Test that an awaitable command can be called with a timeout."
     cmd = sh("sleep", "5").set(incomplete_result=True)
     with pytest.raises(ResultError) as exc_info:
@@ -226,7 +221,7 @@ async def test_timeout_fail(sh):
     )
 
 
-async def test_timeout_fail_no_capturing(sh):
+async def test_timeout_fail_no_capturing():
     "Test that an awaitable command can be called with a timeout."
     cmd = sh("sleep", "5").stdin(DEVNULL).stdout(DEVNULL).set(incomplete_result=True)
 
@@ -242,42 +237,42 @@ async def test_timeout_fail_no_capturing(sh):
     )
 
 
-async def test_timeout_okay(sh):
+async def test_timeout_okay():
     "Test awaitable command that doesn't timeout."
     result = await asyncio.wait_for(sh("echo", "jjj"), 1.0)
     assert result == "jjj\n"
 
 
-async def test_input(sh):
+async def test_input():
     "Test calling a command with input string."
     tr = sh("tr", "[:lower:]", "[:upper:]")
     result = await tr.stdin("some input")
     assert result == "SOME INPUT"
 
 
-async def test_input_bytes(sh):
+async def test_input_bytes():
     "Test calling a command with input bytes, and encoding is utf-8."
     tr = sh("tr", "[:lower:]", "[:upper:]")
     result = await tr.stdin(b"some input")
     assert result == "SOME INPUT"
 
 
-async def test_input_wrong_encoding(sh):
+async def test_input_wrong_encoding():
     "Test calling a command with input string, but bytes encoding expected."
-    sh = sh.set(encoding=None)
-    tr = sh("tr", "[:lower:]", "[:upper:]")
+    xsh = sh.set(encoding=None)
+    tr = xsh("tr", "[:lower:]", "[:upper:]")
     with pytest.raises(TypeError, match="input must be bytes"):
         await tr.stdin("some input")
 
 
-async def test_input_none_encoding(sh):
+async def test_input_none_encoding():
     "Test calling a command with input string, but bytes encoding expected."
     tr = sh("tr", "[:lower:]", "[:upper:]").set(encoding=None)
     result = await tr.stdin(b"here be bytes")
     assert result == b"HERE BE BYTES"
 
 
-async def test_exit_code_error(sh):
+async def test_exit_code_error():
     "Test calling a command that returns a non-zero exit status."
     with pytest.raises(ResultError) as exc_info:
         await sh("false")
@@ -291,7 +286,7 @@ async def test_exit_code_error(sh):
     )
 
 
-async def test_redirect_output_path(sh, tmp_path):
+async def test_redirect_output_path(tmp_path):
     "Test redirecting command output to a PathLike object."
     out = tmp_path / "test_redirect_output_path"
 
@@ -306,7 +301,7 @@ async def test_redirect_output_path(sh, tmp_path):
     assert out.read_bytes() == b"test 1 2 3\n.1.\n"
 
 
-async def test_redirect_output_str(sh, tmp_path):
+async def test_redirect_output_str(tmp_path):
     "Test redirecting command output to a filename string."
     out = tmp_path / "test_redirect_output_str"
 
@@ -321,7 +316,7 @@ async def test_redirect_output_str(sh, tmp_path):
     assert out.read_bytes() == b"test 4 5 6\n.2.\n"
 
 
-async def test_redirect_output_file(sh, tmp_path):
+async def test_redirect_output_file(tmp_path):
     "Test redirecting command output to a File-like object."
     out = tmp_path / "test_redirect_output_file"
 
@@ -332,7 +327,7 @@ async def test_redirect_output_file(sh, tmp_path):
     assert out.read_bytes() == b"123\n"
 
 
-async def test_redirect_output_stringio(sh):
+async def test_redirect_output_stringio():
     "Test redirecting command output to a StringIO buffer."
     buf = io.StringIO()
     result = await sh("echo", "456").stdout(buf)
@@ -340,38 +335,38 @@ async def test_redirect_output_stringio(sh):
     assert buf.getvalue() == "456\n"
 
 
-async def test_redirect_output_devnull(sh):
+async def test_redirect_output_devnull():
     "Test redirecting command output to /dev/null."
     result = await sh("echo", "789").stdout(DEVNULL)
     assert result == ""
 
 
-async def test_redirect_output_stdout(sh):
+async def test_redirect_output_stdout():
     "Test redirecting command output to STDOUT."
     with pytest.raises(ValueError, match="STDOUT is only supported by stderr"):
         await sh("echo", "789").stdout(STDOUT)
 
 
-async def test_redirect_output_none(sh):
+async def test_redirect_output_none():
     "Test redirecting command output to None (same as DEVNULL)."
     result = await sh("echo", "789").stdout(None)
     assert result == ""
 
 
-async def test_redirect_output_capture(sh):
+async def test_redirect_output_capture():
     "Test redirecting command output to None (same as DEVNULL)."
     result = await sh("echo", "789").stdout(CAPTURE)
     assert result == "789\n"
 
 
-async def test_redirect_output_inherit(sh, capfd):
+async def test_redirect_output_inherit(capfd):
     "Test redirecting command output to None (same as DEVNULL)."
     result = await sh("echo", "789").stdout(INHERIT)
     assert result == ""
     assert _readouterr(capfd) == ("789\n", "")
 
 
-async def test_redirect_input_path(sh, tmp_path):
+async def test_redirect_input_path(tmp_path):
     "Test redirecting input to a Path like object."
     data_file = tmp_path / "test_redirect_input_path"
     data_file.write_text("here is some text")
@@ -390,7 +385,6 @@ sys.stderr.write("hi stderr\n")
 sys.stderr.flush()
 sys.stdout.write("goodbye!")
 """
-    sh = context()
     return sh(sys.executable, "-").stdin(script)
 
 
@@ -464,7 +458,7 @@ async def test_redirect_error_to_logger(python_script, capfd, caplog):
     ]
 
 
-async def test_async_context_manager(sh):
+async def test_async_context_manager():
     "Use `async with` to read/write bytes incrementally."
     tr = sh("tr", "[:lower:]", "[:upper:]").stdin(CAPTURE)
 
@@ -479,7 +473,7 @@ async def test_async_context_manager(sh):
     assert result == b"A"
 
 
-async def test_async_iteration(sh):
+async def test_async_iteration():
     "Use `async for` to read stdout line by line."
     echo = sh("echo", "-n", "line1\n", "line2\n", "line3").stderr(DEVNULL)
     async with echo.run() as run:
@@ -487,7 +481,7 @@ async def test_async_iteration(sh):
     assert result == ["line1\n", " line2\n", " line3"]
 
 
-async def test_manually_created_pipeline(sh):
+async def test_manually_created_pipeline():
     "You can create a pipeline manually using input redirection and os.pipe()."
     (r, w) = os.pipe()
     echo = sh("echo", "-n", "abc").stdout(w, close=True)
@@ -496,21 +490,21 @@ async def test_manually_created_pipeline(sh):
     assert result == ["ABC", ""]
 
 
-async def test_pipeline(sh):
+async def test_pipeline():
     "Test a simple pipeline."
     pipe = sh("echo", "-n", "xyz") | sh("tr", "[:lower:]", "[:upper:]")
     result = await pipe
     assert result == "XYZ"
 
 
-async def test_pipeline_with_env(sh):
+async def test_pipeline_with_env():
     "Test a simple pipeline with an augmented environment."
     pipe = sh("echo", "-n", "xyz").env(FOO=1) | sh("tr", "[:lower:]", "[:upper:]")
     result = await pipe
     assert result == "XYZ"
 
 
-async def test_pipeline_with_result(sh):
+async def test_pipeline_with_result():
     "Test a simple pipeline with `return_result` set to True."
     echo = sh("echo", "-n", "xyz")
     tr = sh("tr", "[:lower:]", "[:upper:]").set(return_result=True)
@@ -533,31 +527,31 @@ async def test_pipeline_with_result(sh):
     )
 
 
-async def test_pipeline_single_cmd(sh):
+async def test_pipeline_single_cmd():
     "Test a single command pipeline."
     tr = sh("tr", "[:lower:]", "[:upper:]")
     result = await ("abc" | tr)
     assert result == "ABC"
 
 
-async def test_pipeline_invalid_cmd1(sh):
+async def test_pipeline_invalid_cmd1():
     pipe = sh(" non_existant ", "xyz") | sh("tr", "[:lower:]", "[:upper:]")
     # uvloop's error message does not include filename.
     with pytest.raises(FileNotFoundError):
         await pipe
 
 
-async def test_pipeline_invalid_cmd2(sh):
+async def test_pipeline_invalid_cmd2():
     pipe = sh("echo", "abc") | sh(" non_existant ", "xyz")
     # uvloop's error message does not include filename.
     with pytest.raises(FileNotFoundError):
         await pipe
 
 
-async def test_exit_codes(sh):
+async def test_exit_codes():
     "Test `allows_exit_codes` option."
-    sh = sh.stderr(STDOUT).set(exit_codes={1})
-    cmd = sh("cat", "/tmp/__does_not_exist__")
+    xsh = sh.stderr(STDOUT).set(exit_codes={1})
+    cmd = xsh("cat", "/tmp/__does_not_exist__")
     result = await cmd
     # "cat" may be displayed as "/usr/bin/cat" on some systems.
     assert re.fullmatch(
@@ -565,7 +559,7 @@ async def test_exit_codes(sh):
     )
 
 
-async def test_pipeline_async_iteration(sh):
+async def test_pipeline_async_iteration():
     "Use `async for` to read stdout line by line."
     echo = sh("echo", "-n", "line1\n", "line2\n", "line3")
     cat = sh("cat")
@@ -574,7 +568,7 @@ async def test_pipeline_async_iteration(sh):
     assert result == ["line1\n", " line2\n", " line3"]
 
 
-async def test_pipeline_async_context_manager(sh):
+async def test_pipeline_async_context_manager():
     "Use `async with` to read/write bytes incrementally."
     tr = sh("tr", "[:lower:]", "[:upper:]")
     pipe = (tr | sh("cat")).stdin(CAPTURE)
@@ -595,7 +589,7 @@ async def test_pipeline_async_context_manager(sh):
     )
 
 
-async def test_gather_same_cmd(sh):
+async def test_gather_same_cmd():
     """Test passing the same cmd to harvest().
 
     This test fails with `asyncio.gather`.
@@ -605,7 +599,7 @@ async def test_gather_same_cmd(sh):
     assert results[0] != results[1]
 
 
-async def test_cancelled_antipattern(sh):
+async def test_cancelled_antipattern():
     """Test the ResultError/cancellation anti-pattern.
 
     This occurs *only* when incomplete_result=True.
@@ -639,7 +633,7 @@ async def test_cancelled_antipattern(sh):
     assert exc_info.value.result.cancelled
 
 
-async def test_cancelled_antipattern_fix(sh):
+async def test_cancelled_antipattern_fix():
     """Test the ResultError/cancellation anti-pattern fix.
 
     Catching `ResultError` using try/except conceals the `CancelledError`
@@ -675,7 +669,7 @@ async def test_cancelled_antipattern_fix(sh):
 
 
 @pytest.mark.skipif(_IS_ALPINE, reason="test hangs on alpine")
-async def test_multiple_capture(sh):
+async def test_multiple_capture():
     "Test the multiple capture example from the documentation."
     cmd = sh("cat").stdin(CAPTURE)
 
@@ -688,13 +682,13 @@ async def test_multiple_capture(sh):
     assert result == "abc\n"
 
 
-async def test_multiple_capture_alpine(sh):
+async def test_multiple_capture_alpine():
     "Test alternate implementation of test_multiple_capture to see if it hangs."
     result = await sh("cat").stdin(b"abc\n")
     assert result == "abc\n"
 
 
-async def test_cancel_timeout(sh):
+async def test_cancel_timeout():
     "Test the `cancel_timeout` setting."
     sleep = sh("nohup", "sleep").set(
         cancel_timeout=0.25,
@@ -704,7 +698,7 @@ async def test_cancel_timeout(sh):
         await asyncio.wait_for(sleep(10.0), 0.25)
 
 
-async def test_shell_cmd(sh):
+async def test_shell_cmd():
     "Test a shell command.  (https://bugs.python.org/issue43884)"
     shell = sh("/bin/sh", "-c").set(
         return_result=True,
@@ -729,7 +723,7 @@ async def test_shell_cmd(sh):
     )
 
 
-async def test_large_cat(sh):
+async def test_large_cat():
     "Test cat with some decent sized data."
     data = b"x" * (4 * 1024 * 1024 + 1)
     cat = sh("cat").set(encoding=None)
@@ -738,14 +732,14 @@ async def test_large_cat(sh):
     assert result == data
 
 
-async def test_env_ellipsis_unix(sh):
+async def test_env_ellipsis_unix():
     "Test using `...` in env method to grab value from global environment."
     cmd = sh("env").set(inherit_env=False).env(PATH=...)
     result = await cmd
     assert result.startswith("PATH=")
 
 
-async def test_env_ellipsis_unix_wrong_case(sh):
+async def test_env_ellipsis_unix_wrong_case():
     "Test using `...` in env method to grab value from global environment."
 
     # Fails because actual env is named "PATH", not "path"
@@ -753,7 +747,7 @@ async def test_env_ellipsis_unix_wrong_case(sh):
         sh("env").set(inherit_env=False).env(path=...)
 
 
-async def test_process_substitution(sh):
+async def test_process_substitution():
     """Test process substitution.
 
     ```
@@ -770,7 +764,7 @@ async def test_process_substitution(sh):
         assert result == "1c1\n< a\n---\n> b\n"
 
 
-async def test_process_substitution_with_pipe(sh):
+async def test_process_substitution_with_pipe():
     """Test process substitution.
 
     ```
@@ -789,7 +783,7 @@ async def test_process_substitution_with_pipe(sh):
         assert result == "1c1\n< a\n---\n> b\n"
 
 
-async def test_process_substitution_write(sh, tmp_path):
+async def test_process_substitution_write(tmp_path):
     """Test process substitution with write_mode.
 
     ```
@@ -806,7 +800,7 @@ async def test_process_substitution_write(sh, tmp_path):
     assert out.read_bytes() == b"a\n"
 
 
-async def test_process_substitution_write_pipe(sh, tmp_path):
+async def test_process_substitution_write_pipe(tmp_path):
     """Test process substitution with write_mode.
 
     ```
@@ -823,7 +817,7 @@ async def test_process_substitution_write_pipe(sh, tmp_path):
     assert out.read_bytes() == b"b\n"
 
 
-async def test_process_substitution_write_pipe_alt(sh, tmp_path):
+async def test_process_substitution_write_pipe_alt(tmp_path):
     """Test process substitution with write_mode.
 
     Change where the .writable appears; put it on the first command of the pipe.
@@ -842,7 +836,7 @@ async def test_process_substitution_write_pipe_alt(sh, tmp_path):
     assert out.read_bytes() == b"b\n"
 
 
-async def test_process_substitution_error_filenotfound(sh):
+async def test_process_substitution_error_filenotfound():
     """Test process substitution with FileNotFoundError error."""
 
     cmd = sh("diff", sh("echo", "a"), sh("_unknown_", "b")).set(exit_codes={0, 1})
@@ -851,7 +845,7 @@ async def test_process_substitution_error_filenotfound(sh):
         await cmd
 
 
-async def test_process_substitution_error_exit_1(sh):
+async def test_process_substitution_error_exit_1():
     """Test process substitution with FileNotFoundError error."""
 
     # sleep exits with code 1 if no argument passed.
@@ -870,7 +864,7 @@ async def test_process_substitution_error_exit_1(sh):
     )
 
 
-async def test_start_new_session(sh):
+async def test_start_new_session():
     """Test `_start_new_session` option."""
 
     script = """import os; print(os.getsid(0) == os.getpid())"""
@@ -887,7 +881,7 @@ async def test_start_new_session(sh):
 
 
 @pytest.mark.xfail(_is_uvloop(), reason="uvloop")
-async def test_pty_manual(sh):
+async def test_pty_manual():
     """Test setting up a pty manually."""
 
     import pty  # import not supported on windows
@@ -992,7 +986,7 @@ async def _get_streams(fd):
 
 
 @pytest.mark.xfail(_is_uvloop(), reason="uvloop")
-async def test_pty_manual_streams(sh):
+async def test_pty_manual_streams():
     """Test setting up a pty manually."""
 
     import pty  # import not supported on windows
@@ -1019,7 +1013,7 @@ async def test_pty_manual_streams(sh):
 
 
 @pytest.mark.xfail(_is_uvloop(), reason="uvloop")
-async def test_pty(sh):
+async def test_pty():
     "Test the `pty` option."
     cmd = sh("tr", "[:lower:]", "[:upper:]").stdin(CAPTURE).set(pty=True)
 
@@ -1034,7 +1028,7 @@ async def test_pty(sh):
 
 
 @pytest.mark.xfail(_is_uvloop(), reason="uvloop")
-async def test_pty_ctermid(sh):
+async def test_pty_ctermid():
     "Test the `pty` option and print out the ctermid, ttyname for stdin/stdout."
     cmd = (
         sh(
@@ -1121,7 +1115,7 @@ _STTY_FREEBSD_13 = (
 
 
 @pytest.mark.xfail(_is_uvloop() or _IS_ALPINE, reason="uvloop,alpine")
-async def test_pty_stty_all(sh, tmp_path):
+async def test_pty_stty_all(tmp_path):
     "Test the `pty` option and print out the result of stty -a"
 
     err = tmp_path / "test_pty_stty_all"
@@ -1146,7 +1140,7 @@ async def test_pty_stty_all(sh, tmp_path):
 
 
 @pytest.mark.xfail(_is_uvloop(), reason="uvloop")
-async def test_pty_tr_eot(sh):
+async def test_pty_tr_eot():
     "Test the `pty` option with a control-D (EOT = 0x04)"
     cmd = sh("tr", "[:lower:]", "[:upper:]").stdin(CAPTURE).set(pty=True)
 
@@ -1163,7 +1157,7 @@ async def test_pty_tr_eot(sh):
 
 
 @pytest.mark.xfail(_is_uvloop(), reason="uvloop")
-async def test_pty_cat_eot(sh):
+async def test_pty_cat_eot():
     "Test the `pty` option with a control-D (EOT = 0x04)"
     cmd = sh("cat").stdin(CAPTURE).set(pty=True)
 
@@ -1180,7 +1174,7 @@ async def test_pty_cat_eot(sh):
 
 
 @pytest.mark.xfail(_is_uvloop(), reason="uvloop")
-async def test_pty_raw_size(sh):
+async def test_pty_raw_size():
     "Test the `pty` option in raw mode."
 
     cmd = sh("stty", "size").set(pty=raw(rows=17, cols=41))
@@ -1189,7 +1183,7 @@ async def test_pty_raw_size(sh):
 
 
 @pytest.mark.xfail(_is_uvloop(), reason="uvloop")
-async def test_pty_cbreak_size(sh):
+async def test_pty_cbreak_size():
     "Test the `pty` option in cbreak mode."
 
     cmd = sh("stty", "size").set(pty=cbreak(rows=19, cols=43))
@@ -1210,7 +1204,7 @@ async def test_pty_raw_ls(ls):
 
 
 @pytest.mark.xfail(_is_uvloop() or _IS_ALPINE, reason="uvloop,alpine")
-async def test_pty_raw_size_inherited(sh):
+async def test_pty_raw_size_inherited():
     "Test the `pty` option in raw mode."
 
     cmd = sh("stty", "size").set(pty=raw(rows=..., cols=...))
@@ -1221,7 +1215,7 @@ async def test_pty_raw_size_inherited(sh):
 
 
 @pytest.mark.xfail(_is_uvloop(), reason="uvloop")
-async def test_pty_cat_auto_eof(sh):
+async def test_pty_cat_auto_eof():
     "Test the `pty` option with string input and auto-EOF."
     cmd = "abc" | sh("cat").set(pty=True)
     result = await cmd
@@ -1233,7 +1227,7 @@ async def test_pty_cat_auto_eof(sh):
 
 
 @pytest.mark.xfail(_is_uvloop(), reason="uvloop")
-async def test_pty_cat_iteration_no_echo(sh):
+async def test_pty_cat_iteration_no_echo():
     "Test the `pty` option with string input, iteration, and echo=False."
 
     cmd = "abc\ndef\nghi" | sh("cat").set(pty=cooked(echo=False))
@@ -1317,7 +1311,7 @@ async def test_stress_pty_canonical_ls_sequence(ls, report_children):
 
 
 @pytest.mark.xfail(_is_uvloop(), reason="uvloop")
-async def test_pty_timeout_fail(sh):
+async def test_pty_timeout_fail():
     "Test that a pty command can be called with a timeout."
     cmd = sh("sleep", "5").set(incomplete_result=True, pty=True)
     with pytest.raises(ResultError) as exc_info:
@@ -1355,7 +1349,7 @@ async def test_pty_default_redirect_stderr(ls):
 
 
 @pytest.mark.xfail(_is_uvloop(), reason="uvloop")
-async def test_pty_cat_hangs(sh):
+async def test_pty_cat_hangs():
     "Test that cat under pty hangs because we don't send EOF."
 
     cmd = sh("cat")
@@ -1370,7 +1364,7 @@ async def test_pty_cat_hangs(sh):
 
 
 @pytest.mark.xfail(_is_uvloop(), reason="uvloop")
-async def test_pty_separate_stderr(sh, caplog):
+async def test_pty_separate_stderr(caplog):
     "Test that stderr can be separately redirected from stdout with pty."
 
     script = """
@@ -1392,7 +1386,7 @@ print('__test2__', file=sys.stderr, flush=True)
     assert "__test2__" in test_logs[0][2]
 
 
-async def test_redirect_stdin_streamreader(sh):
+async def test_redirect_stdin_streamreader():
     "Test reading stdin from StreamReader."
 
     def _hello(_reader, writer):
@@ -1414,7 +1408,7 @@ async def test_redirect_stdin_streamreader(sh):
 
 
 @pytest.mark.xfail(_is_uvloop(), reason="uvloop")
-async def test_pty_redirect_stdin_streamreader(sh):
+async def test_pty_redirect_stdin_streamreader():
     "Test reading stdin from StreamReader."
 
     def _hello(_reader, writer):
@@ -1435,7 +1429,7 @@ async def test_pty_redirect_stdin_streamreader(sh):
         await server.wait_closed()
 
 
-async def test_redirect_stdout_streamwriter(sh):
+async def test_redirect_stdout_streamwriter():
     "Test writing stdout to a StreamWriter."
 
     buf = io.BytesIO()
@@ -1460,7 +1454,7 @@ async def test_redirect_stdout_streamwriter(sh):
 
 
 @pytest.mark.xfail(_is_uvloop(), reason="uvloop")
-async def test_pty_redirect_stdout_streamwriter(sh):
+async def test_pty_redirect_stdout_streamwriter():
     "Test writing stdout to a StreamWriter."
 
     buf = io.BytesIO()
@@ -1484,7 +1478,7 @@ async def test_pty_redirect_stdout_streamwriter(sh):
         await server.wait_closed()
 
 
-async def test_audit_cancel_nohup(sh):
+async def test_audit_cancel_nohup():
     "Test audit callback when a command is cancelled."
 
     calls = []
@@ -1494,14 +1488,14 @@ async def test_audit_cancel_nohup(sh):
         signal = info.get("signal")
         calls.append((phase, runner.name, runner.returncode, runner.cancelled, signal))
 
-    sh = sh.set(
+    xsh = sh.set(
         cancel_signal=signal.SIGHUP,
         cancel_timeout=0.2,
         audit_callback=_audit,
     )
 
     with pytest.raises(asyncio.TimeoutError):
-        await asyncio.wait_for(sh("nohup", "sleep", "10"), timeout=0.2)
+        await asyncio.wait_for(xsh("nohup", "sleep", "10"), timeout=0.2)
 
     assert calls == [
         ("start", "nohup", None, False, None),
@@ -1511,7 +1505,7 @@ async def test_audit_cancel_nohup(sh):
     ]
 
 
-async def test_set_cancel_signal_invalid(sh):
+async def test_set_cancel_signal_invalid():
     "Test audit callback when a command is cancelled."
 
     calls = []
@@ -1521,14 +1515,14 @@ async def test_set_cancel_signal_invalid(sh):
         signal = info.get("signal")
         calls.append((phase, runner.name, runner.returncode, runner.cancelled, signal))
 
-    sh = sh.set(
+    xsh = sh.set(
         cancel_signal="INVALID",
         cancel_timeout=0.2,
         audit_callback=_audit,
     )
 
     with pytest.raises(TypeError):
-        await asyncio.wait_for(sh("nohup", "sleep", "10"), timeout=0.2)
+        await asyncio.wait_for(xsh("nohup", "sleep", "10"), timeout=0.2)
 
     assert calls == [
         ("start", "nohup", None, False, None),
@@ -1538,7 +1532,7 @@ async def test_set_cancel_signal_invalid(sh):
     ]
 
 
-async def test_timeout_and_wait_for(sh):
+async def test_timeout_and_wait_for():
     "Test combinining `asyncio.wait_for` with timeout and cancel_timeout."
 
     cmd = sh("nohup", "sleep", 10).set(
@@ -1561,7 +1555,7 @@ $4 ~ /^[0-9]+/ { sub(/[0-9]+/, "N", $9); print $4, $5, $9 }
 
 
 @pytest.mark.skipif(_is_lsof_unsupported(), reason="uvloop,codecov,alpine")
-async def test_open_file_descriptors(sh):
+async def test_open_file_descriptors():
     "Test what file descriptors are open in the subprocess."
 
     cmd = sh("cat").stdin(())
@@ -1581,7 +1575,7 @@ async def test_open_file_descriptors(sh):
 
 
 @pytest.mark.skipif(_is_lsof_unsupported(), reason="uvloop,codecov,alpine")
-async def test_open_file_descriptors_unclosed_fds(sh):
+async def test_open_file_descriptors_unclosed_fds():
     "Test what file descriptors are open in the subprocess (close_fds=False)."
 
     cmd = sh("cat").stdin(())
@@ -1601,7 +1595,7 @@ async def test_open_file_descriptors_unclosed_fds(sh):
 
 
 @pytest.mark.skipif(_is_lsof_unsupported(), reason="uvloop,codecov,alpine")
-async def test_open_file_descriptors_pty(sh):
+async def test_open_file_descriptors_pty():
     "Test what file descriptors are open in the pty subprocess."
 
     cmd = sh("cat").stdin(())
@@ -1624,7 +1618,7 @@ async def test_open_file_descriptors_pty(sh):
 
 
 @pytest.mark.skipif(_is_lsof_unsupported(), reason="uvloop,codecov,alpine")
-async def test_open_file_descriptors_pty_unclosed_fds(sh):
+async def test_open_file_descriptors_pty_unclosed_fds():
     "Test what file descriptors are open in the pty (close_fds=False)."
 
     cmd = sh("cat").stdin(())
@@ -1660,7 +1654,7 @@ def _limited_descriptors(limit):
 
 
 @pytest.mark.skipif(_is_uvloop() or _IS_PY3_11, reason="uvloop")
-async def test_limited_file_descriptors(sh, report_children):
+async def test_limited_file_descriptors(report_children):
     "Test running out of file descriptors."
     cmds = [sh("sleep", "1")] * 2
 

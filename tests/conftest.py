@@ -13,6 +13,7 @@ import threading
 
 import pytest
 import shellous
+from shellous import sh
 
 _PYPY = platform.python_implementation() == "PyPy"
 
@@ -147,7 +148,6 @@ async def _get_children():
     if sys.platform == "win32":
         return set()
 
-    sh = shellous.context()
     ps = sh("ps", "axo", "pid=,ppid=,stat=")
     my_pid = os.getpid()
 

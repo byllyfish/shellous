@@ -8,7 +8,7 @@ import threading
 import time
 
 import pytest
-import shellous
+from shellous import sh
 from shellous.log import log_method
 
 if sys.platform != "win32":
@@ -152,7 +152,6 @@ XFAIL_CHILDWATCHER = CHILD_WATCHER in (
 @run_in_thread(CHILD_WATCHER)
 async def test_thread_echo():
     "Test echo in another thread."
-    sh = shellous.context()
     result = await sh("echo", "abc")
     assert result == "abc\n"
 
@@ -161,7 +160,6 @@ async def test_thread_echo():
 @run_in_thread(CHILD_WATCHER)
 async def test_thread_pipe():
     "Test pipe in another thread."
-    sh = shellous.context()
     result = await (sh("echo", "abc") | sh("cat"))
     assert result == "abc\n"
 
@@ -170,7 +168,6 @@ async def test_thread_pipe():
 @run_in_thread(CHILD_WATCHER)
 async def test_thread_procsub():
     "Test process substituion in another thread."
-    sh = shellous.context()
     result = await sh("cat", sh("echo", "abc"), sh("echo", "def"))
     assert result == "abc\ndef\n"
 
@@ -179,8 +176,6 @@ async def test_thread_procsub():
 @run_in_thread(CHILD_WATCHER)
 async def test_thread_pty():
     "Test pty in another thread."
-    sh = shellous.context()
-
     if sys.platform == "linux":
         ls = sh("ls", "--color=never")
     else:
@@ -194,7 +189,6 @@ async def test_thread_pty():
 @run_in_thread(CHILD_WATCHER)
 async def test_thread_pipe_long():
     "Test pipe in another thread."
-    sh = shellous.context()
 
     # Create a pipe with 1 echo, and 9 cat commands.
     pipe = sh("echo", "xyz")
