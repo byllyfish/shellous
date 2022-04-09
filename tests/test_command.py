@@ -7,72 +7,67 @@ from pathlib import Path
 
 import pytest
 from immutables import Map as ImmutableDict
-from shellous import DEVNULL, CmdContext
+from shellous import DEVNULL, sh
 from shellous.command import Options
 
 
-@pytest.fixture
-def sh():
-    return CmdContext()
-
-
-def test_invalid(sh):
+def test_invalid():
     "Calling sh() with 0 arguments is invalid."
     with pytest.raises(ValueError, match="Command must include program name"):
         sh()
 
 
-def test_invalid_empty_args(sh):
+def test_invalid_empty_args():
     "Calling sh() with 0 arguments is invalid."
     with pytest.raises(ValueError, match="Command must include program name"):
         sh([], ())
 
 
-def test_args(sh):
+def test_args():
     "Test command args coercion."
     cmd = sh("echo", "a", 2)
     assert cmd.args == ("echo", "a", "2")
 
 
-def test_name(sh):
+def test_name():
     "Test command's name property."
     cmd = sh("echo", "a")
     assert cmd.name == "echo"
 
 
-def test_name_long(sh):
+def test_name_long():
     "Test command's name property with long name."
     cmd = sh("/venv-123456789/name_longer_than_many_names")
     assert cmd.name == "...789/name_longer_than_many_names"
 
 
-def test_alt_name(sh):
+def test_alt_name():
     "Test command's name property with alt_name option."
     cmd = sh("echo", "a").set(alt_name="my-echo-a")
     assert cmd.name == "my-echo-a"
 
 
-def test_apply_concat(sh):
+def test_apply_concat():
     "You can apply an arglist to an existing command."
     cmd = sh("echo", "-n")
     cmd2 = cmd("a", "b")
     assert cmd2.args == ("echo", "-n", "a", "b")
 
 
-def test_apply_noop(sh):
+def test_apply_noop():
     "It's a noop to apply an empty arglist to a command."
     cmd = sh("echo")
     assert cmd() is cmd
     assert cmd()() is cmd
 
 
-def test_str(sh):
+def test_str():
     "Command can be coerced to string."
     cmd = sh("/bin/echo", "-n", "secret").env(SECRET=42)
     assert str(cmd) == "/bin/echo"
 
 
-def test_repr(sh):
+def test_repr():
     "Command supplies a __repr__ implementation."
     cmd = sh("echo", "-n", "secret_arg").env(SECRET=42)
     result = repr(cmd)
@@ -84,31 +79,31 @@ def test_repr(sh):
     assert "SECRET" not in result
 
 
-def test_non_existant(sh):
+def test_non_existant():
     "Commands can be created with a bogus program name."
     cmd = sh("/bogus/zzz")
     assert cmd.args == ("/bogus/zzz",)
 
 
-def test_noexpand_glob(sh):
+def test_noexpand_glob():
     "Glob * is not supported."
     cmd = sh("echo", "*")
     assert cmd.args == ("echo", "*")
 
 
-def test_noexpand_variable(sh):
+def test_noexpand_variable():
     "Expanding environment variables is not supported."
     cmd = sh("echo", "$PATH")
     assert cmd.args == ("echo", "$PATH")
 
 
-def test_tuple_arg(sh):
+def test_tuple_arg():
     "Command may include tuple arguments."
     cmd = sh("echo", ("-n", "arg1", "arg2"))
     assert cmd.args == ("echo", "-n", "arg1", "arg2")
 
 
-def test_nested_list_arg(sh):
+def test_nested_list_arg():
     "Test a command that includes nested lists in its arguments."
     cmd = sh(
         "echo",
@@ -119,13 +114,13 @@ def test_nested_list_arg(sh):
     assert cmd.args == ("echo", "-n", "arg1", "1", "2", "3", "(1+3j)")
 
 
-def test_none_arg(sh):
+def test_none_arg():
     "Test passing None as an argument."
     with pytest.raises(TypeError):
         sh("echo", None)
 
 
-def test_ellipsis_as_arg(sh):
+def test_ellipsis_as_arg():
     """Test passing Ellipsis as an argument.
 
     This syntax is reserved for argument insertion."""
@@ -133,7 +128,7 @@ def test_ellipsis_as_arg(sh):
         sh("ls", ..., "some_file")
 
 
-def test_dict_arg(sh):
+def test_dict_arg():
     """Test passing a dictionary as an argument.
 
     This syntax is reserved for dict args feature.
@@ -142,7 +137,7 @@ def test_dict_arg(sh):
         sh("echo", dict(a="b"))
 
 
-def test_set_type_as_arg(sh):
+def test_set_type_as_arg():
     """Test passing a set as an argument.
 
     This syntax is reserved.
@@ -151,13 +146,13 @@ def test_set_type_as_arg(sh):
         sh("echo", {0})
 
 
-def test_bytearray_arg(sh):
+def test_bytearray_arg():
     "Test passing a bytearray as an argument."
     cmd = sh("echo", bytearray("abc", "utf-8"))
     assert cmd.args == ("echo", b"abc")
 
 
-def test_command_hash_eq(sh):
+def test_command_hash_eq():
     "Test that a command is hashable."
     cmd1 = sh("echo").env(FOO=1)
     cmd2 = sh("echo").env(FOO=1)
@@ -169,20 +164,20 @@ def test_command_hash_eq(sh):
     assert cmd3 != cmd1
 
 
-def test_command_env_init(sh):
+def test_command_env_init():
     "Test the environment handling of the Command class."
     cmd1 = sh("echo")
     assert cmd1.options.env is None
 
-    sh = sh.env(A=1)
-    cmd2 = sh("echo")
+    ash = sh.env(A=1)
+    cmd2 = ash("echo")
     assert cmd2.options.env == ImmutableDict(A="1")
 
     cmd3 = cmd2.env(B=2)
     assert cmd3.options.env == ImmutableDict(A="1", B="2")
 
 
-def test_options_merge_env(sh):
+def test_options_merge_env():
     "Test the internal Options class `merge_env` method."
     opts1 = Options()
     assert opts1.env is None
@@ -219,7 +214,7 @@ def test_options_hash_eq():
     assert opts2 != opts3
 
 
-def test_arg_checks_append(sh):
+def test_arg_checks_append():
     "Test that redirections with `append=True` use the allowed types."
 
     echo = sh("echo")
@@ -234,7 +229,7 @@ def test_arg_checks_append(sh):
         echo.stdout(DEVNULL, append=True)
 
 
-def test_replace_args_method(sh):
+def test_replace_args_method():
     "Test the Command set_args method."
     echo = sh("echo", 1, 2, 3)
     cmd = echo._replace_args(("echo", "4", "5"))
@@ -246,7 +241,7 @@ def test_replace_args_method(sh):
     assert cmd.options == echo.options
 
 
-def test_percent_op(sh):
+def test_percent_op():
     "Test the percent/modulo operator for concatenation."
 
     nohup = sh("nohup").stdin("abc")
@@ -258,7 +253,7 @@ def test_percent_op(sh):
     assert nohup % echo == nohup(echo.args)
 
 
-def test_percent_op_multiple(sh):
+def test_percent_op_multiple():
     "Test the percent/modulo operator for concatenation."
 
     nohup = sh("nohup").stdin("abc")
@@ -267,7 +262,7 @@ def test_percent_op_multiple(sh):
     assert nohup % echo % nohup == nohup(echo(nohup.args).args)
 
 
-def test_percent_op_not_implemented(sh):
+def test_percent_op_not_implemented():
     "Test the percent/modulo operator for concatenation."
 
     echo = sh("echo", "hello")
@@ -277,7 +272,7 @@ def test_percent_op_not_implemented(sh):
         assert echo % None
 
 
-def test_percent_equals_op(sh):
+def test_percent_equals_op():
     "Test the %= operator."
 
     cmd = sh("nohup")
@@ -285,7 +280,7 @@ def test_percent_equals_op(sh):
     assert cmd == sh("nohup", sh("echo", "abc").args)
 
 
-def test_command_pickle(sh):
+def test_command_pickle():
     "Test that basic commands can be pickled."
 
     cmd = sh("echo", "hello") | Path("/tmp/test_file")
@@ -297,7 +292,7 @@ def test_command_pickle(sh):
     assert result == cmd
 
 
-def test_command_pickle_callback(sh):
+def test_command_pickle_callback():
     "Test that some settings can't be pickled."
 
     def _callback(*_ignore):

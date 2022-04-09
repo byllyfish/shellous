@@ -12,15 +12,7 @@ from pathlib import Path
 
 import asyncstdlib as asl
 import pytest
-from shellous import (
-    CAPTURE,
-    DEVNULL,
-    INHERIT,
-    CmdContext,
-    PipeResult,
-    Result,
-    ResultError,
-)
+from shellous import CAPTURE, DEVNULL, INHERIT, PipeResult, Result, ResultError, sh
 from shellous.harvest import harvest_results
 
 # 4MB + 1: Much larger than necessary.
@@ -44,13 +36,7 @@ def test_debug_mode(event_loop):
 
 
 @pytest.fixture
-def sh():
-    "Create a default shellous context."
-    return CmdContext()
-
-
-@pytest.fixture
-def python_script(sh):
+def python_script():
     """Create a python script that can be used in tests.
 
     The script behaves like common versions of `echo`, `cat`, `sleep` or `env`
@@ -132,12 +118,12 @@ async def test_count(count_cmd):
     assert result == "1\n2\n3\n4\n5\n"
 
 
-async def test_nonexistant_cmd(sh):
+async def test_nonexistant_cmd():
     with pytest.raises(FileNotFoundError):
         await sh("non_existant_command").set(return_result=True)
 
 
-async def test_nonexecutable_cmd(sh):
+async def test_nonexecutable_cmd():
     if sys.platform == "win32":
         with pytest.raises(OSError, match="not a valid Win32 application"):
             await sh("./README.md").set(return_result=True)
@@ -447,7 +433,7 @@ async def test_redirect_stdin_unsupported_type(cat_cmd):
         await cat_cmd("abc").stdin(1 + 2j)
 
 
-async def test_broken_pipe(sh):
+async def test_broken_pipe():
     """Test broken pipe error for large data passed to stdin.
 
     We expect our process (Python) to fail with a broken pipe because `cmd`
@@ -812,13 +798,13 @@ async def test_pty_echo_exit_code(echo_cmd):
     assert result.output == "abc"
 
 
-async def test_redirect_to_arbitrary_tuple(sh):
+async def test_redirect_to_arbitrary_tuple():
     "Test redirection to an arbitrary tuple."
     with pytest.raises(TypeError, match="unsupported output type"):
         await (sh("echo") | (1, 2))
 
 
-async def test_command_context_manager_api(sh):
+async def test_command_context_manager_api():
     "Test running a command using its context manager."
 
     async with sh("echo", "hello") as run:
@@ -827,7 +813,7 @@ async def test_command_context_manager_api(sh):
     assert out == b"hello\n"
 
 
-async def test_command_context_manager_api_reentrant(sh):
+async def test_command_context_manager_api_reentrant():
     "Test running a command using its context manager."
 
     cmd = sh("echo", "hello")
@@ -841,7 +827,7 @@ async def test_command_context_manager_api_reentrant(sh):
     assert out1 == out2 == b"hello\n"
 
 
-async def test_pipe_context_manager_api(sh):
+async def test_pipe_context_manager_api():
     "Test running a pipeline using its context manager."
 
     async with sh("echo", "hello") | sh("cat") as run:
@@ -850,7 +836,7 @@ async def test_pipe_context_manager_api(sh):
     assert out == b"hello\n"
 
 
-async def test_pipe_context_manager_api_reentrant(sh):
+async def test_pipe_context_manager_api_reentrant():
     "Test running a pipeline using its context manager."
 
     cmd = sh("echo", "hello") | sh("cat")
@@ -1002,7 +988,7 @@ async def test_audit_callback(echo_cmd):
     ]
 
 
-async def test_audit_callback_launch_failure(sh):
+async def test_audit_callback_launch_failure():
     "Test the audit callback hook with a failure-to-launch error."
 
     calls = []
