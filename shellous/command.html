@@ -484,7 +484,7 @@ function to create these, rather than creating them directly.</p></li>
 
 <span class="sd">    ```</span>
 <span class="sd">    # Create a context.</span>
-<span class="sd">    sh = shellous.context()</span>
+<span class="sd">    from shellous import sh</span>
 
 <span class="sd">    # Create a new command from the context.</span>
 <span class="sd">    echo = sh(&quot;echo&quot;, &quot;hello, world&quot;)</span>
@@ -1765,7 +1765,7 @@ function to create these, rather than creating them directly.</p></li>
 
 <span class="sd">    ```</span>
 <span class="sd">    # Create a context.</span>
-<span class="sd">    sh = shellous.context()</span>
+<span class="sd">    from shellous import sh</span>
 
 <span class="sd">    # Create a new command from the context.</span>
 <span class="sd">    echo = sh(&quot;echo&quot;, &quot;hello, world&quot;)</span>
@@ -2066,7 +2066,7 @@ until they are awaited.</p>
 <p>Commands are always created by a CmdContext.</p>
 
 <pre><code># Create a context.
-sh = <a href="../shellous.html#context">shellous.context()</a>
+from shellous import sh
 
 # Create a new command from the context.
 echo = sh("echo", "hello, world")
