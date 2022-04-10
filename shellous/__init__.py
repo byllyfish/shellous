@@ -17,10 +17,11 @@ from .runner import AUDIT_EVENT_SUBPROCESS_SPAWN  # noqa: F401
 if sys.platform != "win32":
     from .watcher import DefaultChildWatcher  # noqa: F401
 
-STDOUT = Redirect.STDOUT
-DEVNULL = Redirect.DEVNULL
-CAPTURE = Redirect.CAPTURE
-INHERIT = Redirect.INHERIT
+if False:
+    STDOUT = Redirect.STDOUT
+    DEVNULL = Redirect.DEVNULL
+    CAPTURE = Redirect.CAPTURE
+    INHERIT = Redirect.INHERIT
 
 
 def context() -> CmdContext:

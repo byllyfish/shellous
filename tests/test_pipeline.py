@@ -244,37 +244,37 @@ def test_pipeline_len_getitem():
 def test_pipeline_redirect_none_stdin():
     "Test use of None in pipeline."
     cmd = None | sh("echo")
-    assert cmd == sh("echo").stdin(shellous.DEVNULL)
+    assert cmd == sh("echo").stdin(sh.DEVNULL)
 
 
 def test_pipeline_redirect_none_stdout():
     "Test use of None in pipeline."
     cmd = sh("echo") | None
-    assert cmd == sh("echo").stdout(shellous.DEVNULL)
+    assert cmd == sh("echo").stdout(sh.DEVNULL)
 
 
 def test_pipeline_redirect_ellipsis_stdin():
     "Test use of Ellipsis in pipeline."
     cmd = ... | sh("echo")
-    assert cmd == sh("echo").stdin(shellous.INHERIT)
+    assert cmd == sh("echo").stdin(sh.INHERIT)
 
 
 def test_pipeline_redirect_ellipsis_stdout():
     "Test use of Ellipsis in pipeline."
     cmd = sh("echo") | ...
-    assert cmd == sh("echo").stdout(shellous.INHERIT)
+    assert cmd == sh("echo").stdout(sh.INHERIT)
 
 
 def test_pipeline_redirect_tuple_stdin():
     "Test use of empty tuple in pipeline."
     cmd = () | sh("echo")
-    assert cmd == sh("echo").stdin(shellous.CAPTURE)
+    assert cmd == sh("echo").stdin(sh.CAPTURE)
 
 
 def test_pipeline_redirect_tuple_stdout():
     "Test use of empty tuple in pipeline."
     cmd = sh("echo") | ()
-    assert cmd == sh("echo").stdout(shellous.CAPTURE)
+    assert cmd == sh("echo").stdout(sh.CAPTURE)
 
 
 def test_pipeline_percent_op():

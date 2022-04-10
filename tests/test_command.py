@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 from immutables import Map as ImmutableDict
-from shellous import DEVNULL, sh
+from shellous import sh
 from shellous.command import Options
 
 
@@ -227,7 +227,7 @@ def test_arg_checks_append():
         echo.stdout(7, append=True)  # 7 is file descriptor
 
     with pytest.raises(TypeError, match="append"):
-        echo.stdout(DEVNULL, append=True)
+        echo.stdout(sh.DEVNULL, append=True)
 
 
 def test_replace_args_method():

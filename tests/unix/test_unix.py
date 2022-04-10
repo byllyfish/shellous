@@ -10,19 +10,7 @@ import signal
 import sys
 
 import pytest
-from shellous import (
-    CAPTURE,
-    DEVNULL,
-    INHERIT,
-    STDOUT,
-    PipeResult,
-    Result,
-    ResultError,
-    cbreak,
-    cooked,
-    raw,
-    sh,
-)
+from shellous import PipeResult, Result, ResultError, cbreak, cooked, raw, sh
 from shellous.harvest import harvest, harvest_results
 
 pytestmark = pytest.mark.skipif(sys.platform == "win32", reason="Unix")
@@ -223,7 +211,12 @@ async def test_timeout_fail():
 
 async def test_timeout_fail_no_capturing():
     "Test that an awaitable command can be called with a timeout."
-    cmd = sh("sleep", "5").stdin(DEVNULL).stdout(DEVNULL).set(incomplete_result=True)
+    cmd = (
+        sh("sleep", "5")
+        .stdin(sh.DEVNULL)
+        .stdout(sh.DEVNULL)
+        .set(incomplete_result=True)
+    )
 
     with pytest.raises(ResultError) as exc_info:
         await asyncio.wait_for(cmd, 0.2)
@@ -337,14 +330,14 @@ async def test_redirect_output_stringio():
 
 async def test_redirect_output_devnull():
     "Test redirecting command output to /dev/null."
-    result = await sh("echo", "789").stdout(DEVNULL)
+    result = await sh("echo", "789").stdout(sh.DEVNULL)
     assert result == ""
 
 
 async def test_redirect_output_stdout():
     "Test redirecting command output to STDOUT."
     with pytest.raises(ValueError, match="STDOUT is only supported by stderr"):
-        await sh("echo", "789").stdout(STDOUT)
+        await sh("echo", "789").stdout(sh.STDOUT)
 
 
 async def test_redirect_output_none():
@@ -355,13 +348,13 @@ async def test_redirect_output_none():
 
 async def test_redirect_output_capture():
     "Test redirecting command output to None (same as DEVNULL)."
-    result = await sh("echo", "789").stdout(CAPTURE)
+    result = await sh("echo", "789").stdout(sh.CAPTURE)
     assert result == "789\n"
 
 
 async def test_redirect_output_inherit(capfd):
     "Test redirecting command output to None (same as DEVNULL)."
-    result = await sh("echo", "789").stdout(INHERIT)
+    result = await sh("echo", "789").stdout(sh.INHERIT)
     assert result == ""
     assert _readouterr(capfd) == ("789\n", "")
 
@@ -399,42 +392,42 @@ async def test_redirection(python_script, capfd):
 
 async def test_redirect_output_to_devnull(python_script, capfd):
     "Test redirection options with both stdout and stderr output."
-    result = await python_script.stdout(DEVNULL)
+    result = await python_script.stdout(sh.DEVNULL)
     assert result == ""
     assert _readouterr(capfd) == ("", "")
 
 
 async def test_redirect_output_to_inherit(python_script, capfd):
     "Test redirection options with both stdout and stderr output."
-    result = await python_script.stdout(INHERIT)
+    result = await python_script.stdout(sh.INHERIT)
     assert result == ""
     assert _readouterr(capfd) == ("hi stdout\ngoodbye!", "")
 
 
 async def test_redirect_error_to_stdout(python_script, capfd):
     "Test redirection options with both stdout and stderr output."
-    result = await python_script.stderr(STDOUT)
+    result = await python_script.stderr(sh.STDOUT)
     assert result == "hi stdout\nhi stderr\ngoodbye!"
     assert _readouterr(capfd) == ("", "")
 
 
 async def test_capture_error_only(python_script, capfd):
     "Test redirection options with stderr output."
-    result = await python_script.stderr(CAPTURE).stdout(DEVNULL)
+    result = await python_script.stderr(sh.CAPTURE).stdout(sh.DEVNULL)
     assert result == "hi stderr\n"
     assert _readouterr(capfd) == ("", "")
 
 
 async def test_redirect_error_to_inherit(python_script, capfd):
     "Test redirection options with both stdout and stderr output."
-    result = await python_script.stderr(INHERIT)
+    result = await python_script.stderr(sh.INHERIT)
     assert result == "hi stdout\ngoodbye!"
     assert _readouterr(capfd) == ("", "hi stderr\n")
 
 
 async def test_redirect_error_to_devnull(python_script, capfd):
     "Test redirection options with both stdout and stderr output."
-    result = await python_script.stderr(DEVNULL)
+    result = await python_script.stderr(sh.DEVNULL)
     assert result == "hi stdout\ngoodbye!"
     assert _readouterr(capfd) == ("", "")
 
@@ -442,7 +435,7 @@ async def test_redirect_error_to_devnull(python_script, capfd):
 async def test_redirect_error_to_capture(python_script):
     "Test using CAPTURE when not using `async with`."
     with pytest.raises(ValueError, match="multiple capture requires 'async with'"):
-        await python_script.stderr(CAPTURE)
+        await python_script.stderr(sh.CAPTURE)
 
 
 async def test_redirect_error_to_logger(python_script, capfd, caplog):
@@ -460,7 +453,7 @@ async def test_redirect_error_to_logger(python_script, capfd, caplog):
 
 async def test_async_context_manager():
     "Use `async with` to read/write bytes incrementally."
-    tr = sh("tr", "[:lower:]", "[:upper:]").stdin(CAPTURE)
+    tr = sh("tr", "[:lower:]", "[:upper:]").stdin(sh.CAPTURE)
 
     async with tr.run() as run:
         assert run.stderr is None
@@ -475,7 +468,7 @@ async def test_async_context_manager():
 
 async def test_async_iteration():
     "Use `async for` to read stdout line by line."
-    echo = sh("echo", "-n", "line1\n", "line2\n", "line3").stderr(DEVNULL)
+    echo = sh("echo", "-n", "line1\n", "line2\n", "line3").stderr(sh.DEVNULL)
     async with echo.run() as run:
         result = [line async for line in run]
     assert result == ["line1\n", " line2\n", " line3"]
@@ -550,7 +543,7 @@ async def test_pipeline_invalid_cmd2():
 
 async def test_exit_codes():
     "Test `allows_exit_codes` option."
-    xsh = sh.stderr(STDOUT).set(exit_codes={1})
+    xsh = sh.stderr(sh.STDOUT).set(exit_codes={1})
     cmd = xsh("cat", "/tmp/__does_not_exist__")
     result = await cmd
     # "cat" may be displayed as "/usr/bin/cat" on some systems.
@@ -571,7 +564,7 @@ async def test_pipeline_async_iteration():
 async def test_pipeline_async_context_manager():
     "Use `async with` to read/write bytes incrementally."
     tr = sh("tr", "[:lower:]", "[:upper:]")
-    pipe = (tr | sh("cat")).stdin(CAPTURE)
+    pipe = (tr | sh("cat")).stdin(sh.CAPTURE)
     async with pipe.run() as run:
         assert run.stderr is None
 
@@ -671,7 +664,7 @@ async def test_cancelled_antipattern_fix():
 @pytest.mark.skipif(_IS_ALPINE, reason="test hangs on alpine")
 async def test_multiple_capture():
     "Test the multiple capture example from the documentation."
-    cmd = sh("cat").stdin(CAPTURE)
+    cmd = sh("cat").stdin(sh.CAPTURE)
 
     async with cmd.run() as run:
         run.stdin.write(b"abc\n")
@@ -829,7 +822,7 @@ async def test_process_substitution_write_pipe_alt(tmp_path):
 
     out = tmp_path / "test_process_sub_write"
     cat = sh("cat").writable | sh("cat") | out
-    pipe = sh("echo", "b") | sh("tee", cat()).stderr(INHERIT)
+    pipe = sh("echo", "b") | sh("tee", cat()).stderr(sh.INHERIT)
 
     result = await pipe
     assert result == "b\n"
@@ -1015,7 +1008,7 @@ async def test_pty_manual_streams():
 @pytest.mark.xfail(_is_uvloop(), reason="uvloop")
 async def test_pty():
     "Test the `pty` option."
-    cmd = sh("tr", "[:lower:]", "[:upper:]").stdin(CAPTURE).set(pty=True)
+    cmd = sh("tr", "[:lower:]", "[:upper:]").stdin(sh.CAPTURE).set(pty=True)
 
     async with cmd.run() as run:
         run.stdin.write(b"abc\n")
@@ -1036,7 +1029,7 @@ async def test_pty_ctermid():
             "-c",
             "import os; print(os.ctermid(), os.ttyname(0), os.ttyname(1))",
         )
-        .stdin(CAPTURE)
+        .stdin(sh.CAPTURE)
         .set(pty=True)
     )
 
@@ -1119,7 +1112,7 @@ async def test_pty_stty_all(tmp_path):
     "Test the `pty` option and print out the result of stty -a"
 
     err = tmp_path / "test_pty_stty_all"
-    cmd = sh("stty", "-a").stdin(CAPTURE).stderr(err).set(pty=True)
+    cmd = sh("stty", "-a").stdin(sh.CAPTURE).stderr(err).set(pty=True)
 
     buf = b""
     async with cmd.run() as run:
@@ -1142,7 +1135,7 @@ async def test_pty_stty_all(tmp_path):
 @pytest.mark.xfail(_is_uvloop(), reason="uvloop")
 async def test_pty_tr_eot():
     "Test the `pty` option with a control-D (EOT = 0x04)"
-    cmd = sh("tr", "[:lower:]", "[:upper:]").stdin(CAPTURE).set(pty=True)
+    cmd = sh("tr", "[:lower:]", "[:upper:]").stdin(sh.CAPTURE).set(pty=True)
 
     async with cmd.run() as run:
         run.stdin.write(b"abc\n\x04")
@@ -1159,7 +1152,7 @@ async def test_pty_tr_eot():
 @pytest.mark.xfail(_is_uvloop(), reason="uvloop")
 async def test_pty_cat_eot():
     "Test the `pty` option with a control-D (EOT = 0x04)"
-    cmd = sh("cat").stdin(CAPTURE).set(pty=True)
+    cmd = sh("cat").stdin(sh.CAPTURE).set(pty=True)
 
     async with cmd.run() as run:
         run.stdin.write(b"abc\x04\x04")
@@ -1195,7 +1188,7 @@ async def test_pty_cbreak_size():
 async def test_pty_raw_ls(ls):
     "Test the `pty` option in raw mode."
 
-    cmd = ls.set(pty=raw(rows=24, cols=40)).stderr(STDOUT)
+    cmd = ls.set(pty=raw(rows=24, cols=40)).stderr(sh.STDOUT)
     result = await cmd
 
     assert "README.md" in result
