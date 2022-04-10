@@ -12,7 +12,7 @@ import os
 import signal
 from collections.abc import Iterable
 from dataclasses import dataclass, field
-from typing import Any, Callable, Optional, TypeVar, Union
+from typing import Any, Callable, ClassVar, Optional, TypeVar, Union
 
 from immutables import Map as ImmutableDict
 
@@ -183,6 +183,18 @@ class Options:  # pylint: disable=too-many-instance-attributes
 @dataclass(frozen=True)
 class CmdContext:
     """Concrete class for an immutable execution context."""
+
+    CAPTURE: ClassVar[Redirect] = Redirect.CAPTURE
+    "Capture and read/write stream manually."
+
+    DEVNULL: ClassVar[Redirect] = Redirect.DEVNULL
+    "Redirect to /dev/null."
+
+    INHERIT: ClassVar[Redirect] = Redirect.INHERIT
+    "Redirect to same place as existing stdin/stderr/stderr."
+
+    STDOUT: ClassVar[Redirect] = Redirect.STDOUT
+    "Redirect stderr to same place as stdout."
 
     options: Options = Options()
     "Default command options."
