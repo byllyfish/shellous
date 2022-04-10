@@ -9,12 +9,12 @@ Redirection Constants
 
 shellous defines several redirection constants that you can use:
 
-| Constant | Literal Form | What is does... |
-| -------- | ------------ | --------------- |
-| DEVNULL  | `None` | Reads/writes to special file `/dev/null`. |
-| CAPTURE  | `()`   | Pipe input/output to current Python process. |
-| INHERIT  | `...`  | Inherit stdin/stdout/stderr from current Python process. |
-| STDOUT   | `1`    | Write standard error to same place as standard output. |
+| Constant | What is does... |
+| -------- | --------------- |
+| DEVNULL  | Reads/writes to special file `/dev/null`. |
+| CAPTURE  | Pipe input/output to current Python process. |
+| INHERIT  | Inherit stdin/stdout/stderr from current Python process. |
+| STDOUT   | Write standard error to same place as standard output. |
 
 
 Standard Input

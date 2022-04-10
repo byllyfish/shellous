@@ -341,19 +341,20 @@ async def test_redirect_output_stdout():
 
 
 async def test_redirect_output_none():
-    "Test redirecting command output to None (same as DEVNULL)."
-    result = await sh("echo", "789").stdout(None)
-    assert result == ""
+    "Test redirecting command output to None (deprecated)."
+    with pytest.deprecated_call():
+        result = await sh("echo", "789").stdout(None)
+        assert result == ""
 
 
 async def test_redirect_output_capture():
-    "Test redirecting command output to None (same as DEVNULL)."
+    "Test redirecting command output to CAPTURE."
     result = await sh("echo", "789").stdout(sh.CAPTURE)
     assert result == "789\n"
 
 
 async def test_redirect_output_inherit(capfd):
-    "Test redirecting command output to None (same as DEVNULL)."
+    "Test redirecting command output to INHERIT."
     result = await sh("echo", "789").stdout(sh.INHERIT)
     assert result == ""
     assert _readouterr(capfd) == ("789\n", "")
@@ -1551,9 +1552,9 @@ $4 ~ /^[0-9]+/ { sub(/[0-9]+/, "N", $9); print $4, $5, $9 }
 async def test_open_file_descriptors():
     "Test what file descriptors are open in the subprocess."
 
-    cmd = sh("cat").stdin(())
-    lsof = sh("lsof", "-n", "-P", "-p").stderr(1)
-    awk = sh("awk", _AWK_SCRIPT).stderr(1)
+    cmd = sh("cat").stdin(sh.CAPTURE)
+    lsof = sh("lsof", "-n", "-P", "-p").stderr(sh.STDOUT)
+    awk = sh("awk", _AWK_SCRIPT).stderr(sh.STDOUT)
 
     async with cmd.set(close_fds=True) as run:
         result = await (lsof(run.pid) | awk)
@@ -1571,9 +1572,9 @@ async def test_open_file_descriptors():
 async def test_open_file_descriptors_unclosed_fds():
     "Test what file descriptors are open in the subprocess (close_fds=False)."
 
-    cmd = sh("cat").stdin(())
-    lsof = sh("lsof", "-n", "-P", "-p").stderr(1)
-    awk = sh("awk", _AWK_SCRIPT).stderr(1)
+    cmd = sh("cat").stdin(sh.CAPTURE)
+    lsof = sh("lsof", "-n", "-P", "-p").stderr(sh.STDOUT)
+    awk = sh("awk", _AWK_SCRIPT).stderr(sh.STDOUT)
 
     async with cmd.set(close_fds=False) as run:
         result = await (lsof(run.pid) | awk)
@@ -1591,9 +1592,9 @@ async def test_open_file_descriptors_unclosed_fds():
 async def test_open_file_descriptors_pty():
     "Test what file descriptors are open in the pty subprocess."
 
-    cmd = sh("cat").stdin(())
-    lsof = sh("lsof", "-n", "-P", "-p").stderr(1)
-    awk = sh("awk", _AWK_SCRIPT).stderr(1)
+    cmd = sh("cat").stdin(sh.CAPTURE)
+    lsof = sh("lsof", "-n", "-P", "-p").stderr(sh.STDOUT)
+    awk = sh("awk", _AWK_SCRIPT).stderr(sh.STDOUT)
 
     async with cmd.set(close_fds=True, pty=True) as run:
         result = await (lsof(run.pid) | awk)
@@ -1614,9 +1615,9 @@ async def test_open_file_descriptors_pty():
 async def test_open_file_descriptors_pty_unclosed_fds():
     "Test what file descriptors are open in the pty (close_fds=False)."
 
-    cmd = sh("cat").stdin(())
-    lsof = sh("lsof", "-n", "-P", "-p").stderr(1)
-    awk = sh("awk", _AWK_SCRIPT).stderr(1)
+    cmd = sh("cat").stdin(sh.CAPTURE)
+    lsof = sh("lsof", "-n", "-P", "-p").stderr(sh.STDOUT)
+    awk = sh("awk", _AWK_SCRIPT).stderr(sh.STDOUT)
 
     async with cmd.set(close_fds=False, pty=True) as run:
         result = await (lsof(run.pid) | awk)

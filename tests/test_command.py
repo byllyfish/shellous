@@ -246,7 +246,7 @@ def test_percent_op():
     "Test the percent/modulo operator for concatenation."
 
     nohup = sh("nohup").stdin("abc")
-    echo = sh("echo", "hello").stdout(...)
+    echo = sh("echo", "hello").stdout(sh.INHERIT)
 
     # Note that the concatenated command is a new command with default
     # redirections and settings (from the lhs context)
@@ -258,7 +258,7 @@ def test_percent_op_multiple():
     "Test the percent/modulo operator for concatenation."
 
     nohup = sh("nohup").stdin("abc")
-    echo = sh("echo", "hello").stdout(...)
+    echo = sh("echo", "hello").stdout(sh.INHERIT)
 
     assert nohup % echo % nohup == nohup(echo(nohup.args).args)
 

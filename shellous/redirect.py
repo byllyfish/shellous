@@ -4,6 +4,7 @@ import asyncio
 import enum
 import io
 import os
+import warnings
 from logging import Logger
 from typing import Optional
 
@@ -45,9 +46,20 @@ class Redirect(enum.IntEnum):
     @staticmethod
     def from_literal(literal, is_stderr=False):
         "Return object with literal values replaced by Redirect constant."
+
+        if isinstance(literal, (tuple, type(...), type(None))):
+            warnings.warn(
+                f"literal {literal!r} is no longer supported",
+                DeprecationWarning,
+            )
+
         # For stderr, the literal `1` indicates that stderr is redirected to
         # the same place as STDOUT.
         if is_stderr and isinstance(literal, int) and literal == 1:
+            warnings.warn(
+                f"stderr literal {literal!r} is no longer supported",
+                DeprecationWarning,
+            )
             return Redirect.STDOUT
 
         try:
