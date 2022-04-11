@@ -12,7 +12,7 @@ from pathlib import Path
 
 import asyncstdlib as asl
 import pytest
-from shellous import CAPTURE, DEVNULL, INHERIT, PipeResult, Result, ResultError, sh
+from shellous import PipeResult, Result, ResultError, sh
 from shellous.harvest import harvest_results
 
 # 4MB + 1: Much larger than necessary.
@@ -43,7 +43,7 @@ def python_script():
     depending on environment variables.
     """
     source_file = Path("tests/python_script.py")
-    return sh(sys.executable, "-u", source_file).stderr(INHERIT)
+    return sh(sys.executable, "-u", source_file).stderr(sh.INHERIT)
 
 
 @pytest.fixture
@@ -420,7 +420,7 @@ async def test_redirect_stdin_inherit(echo_cmd):
     "Test reading stdin from INHERIT."
 
     try:
-        result = await echo_cmd("abc").stdin(INHERIT)
+        result = await echo_cmd("abc").stdin(sh.INHERIT)
         assert result == "abc"
     except io.UnsupportedOperation:
         # Raises UnsupportedOperation under code coverage.
@@ -506,7 +506,7 @@ async def test_broken_pipe_in_async_with_failed_pipeline(cat_cmd, echo_cmd):
     data = b"c" * PIPE_MAX_SIZE
     echo = echo_cmd.env(SHELLOUS_EXIT_CODE=7)
 
-    cmd = (data | cat_cmd | echo("abc")).stdin(CAPTURE).stdout(DEVNULL)
+    cmd = (data | cat_cmd | echo("abc")).stdin(sh.CAPTURE).stdout(sh.DEVNULL)
     async with cmd.run() as run:
         run.stdin.write(data)
         try:
@@ -597,7 +597,7 @@ async def test_encoding_utf8_split(cat_cmd):
     "Test reconstitution of split utf-8 chars in output."
 
     buf = io.StringIO()
-    cmd = CAPTURE | cat_cmd | buf
+    cmd = sh.CAPTURE | cat_cmd | buf
 
     async with cmd.run() as run:
         # Not split.
@@ -655,7 +655,7 @@ async def test_redirect_stdin_capture_iter(cat_cmd):
         RuntimeError,
         match="multiple capture not supported in iterator",
     ):
-        async with cat_cmd.stdin(CAPTURE).run() as run:
+        async with cat_cmd.stdin(sh.CAPTURE).run() as run:
             async for _ in run:
                 pass
 
@@ -666,7 +666,7 @@ async def test_pipe_redirect_stdin_capture_iter(cat_cmd, tr_cmd):
     with pytest.raises(
         RuntimeError, match="multiple capture not supported in iterator"
     ):
-        async with cmd.stdin(CAPTURE).run() as run:
+        async with cmd.stdin(sh.CAPTURE).run() as run:
             async for _ in run:
                 pass
 
@@ -801,7 +801,8 @@ async def test_pty_echo_exit_code(echo_cmd):
 async def test_redirect_to_arbitrary_tuple():
     "Test redirection to an arbitrary tuple."
     with pytest.raises(TypeError, match="unsupported output type"):
-        await (sh("echo") | (1, 2))
+        with pytest.deprecated_call():
+            await (sh("echo") | (1, 2))
 
 
 async def test_command_context_manager_api():

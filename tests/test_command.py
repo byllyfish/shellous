@@ -2,12 +2,13 @@
 
 # pylint: disable=redefined-outer-name,invalid-name
 
+import dataclasses
 import pickle
 from pathlib import Path
 
 import pytest
 from immutables import Map as ImmutableDict
-from shellous import DEVNULL, sh
+from shellous import sh
 from shellous.command import Options
 
 
@@ -226,7 +227,7 @@ def test_arg_checks_append():
         echo.stdout(7, append=True)  # 7 is file descriptor
 
     with pytest.raises(TypeError, match="append"):
-        echo.stdout(DEVNULL, append=True)
+        echo.stdout(sh.DEVNULL, append=True)
 
 
 def test_replace_args_method():
@@ -245,7 +246,7 @@ def test_percent_op():
     "Test the percent/modulo operator for concatenation."
 
     nohup = sh("nohup").stdin("abc")
-    echo = sh("echo", "hello").stdout(...)
+    echo = sh("echo", "hello").stdout(sh.INHERIT)
 
     # Note that the concatenated command is a new command with default
     # redirections and settings (from the lhs context)
@@ -257,7 +258,7 @@ def test_percent_op_multiple():
     "Test the percent/modulo operator for concatenation."
 
     nohup = sh("nohup").stdin("abc")
-    echo = sh("echo", "hello").stdout(...)
+    echo = sh("echo", "hello").stdout(sh.INHERIT)
 
     assert nohup % echo % nohup == nohup(echo(nohup.args).args)
 
@@ -302,3 +303,55 @@ def test_command_pickle_callback():
 
     with pytest.raises((pickle.PicklingError, AttributeError)):
         pickle.dumps(cmd)
+
+
+def test_dataclasses():
+    """Test that data classes have the expected fields.
+
+    Check that class variables don't appear here.
+    """
+
+    ctxt_fields = [field.name for field in dataclasses.fields(sh)]
+    assert sorted(ctxt_fields) == ["options"]
+
+    cmd_fields = [field.name for field in dataclasses.fields(sh("echo"))]
+    assert sorted(cmd_fields) == ["args", "options"]
+
+    opt_fields = [field.name for field in dataclasses.fields(sh.options)]
+    assert sorted(opt_fields) == [
+        "_preexec_fn",
+        "_start_new_session",
+        "alt_name",
+        "audit_callback",
+        "cancel_signal",
+        "cancel_timeout",
+        "close_fds",
+        "encoding",
+        "env",
+        "error",
+        "error_append",
+        "error_close",
+        "exit_codes",
+        "incomplete_result",
+        "inherit_env",
+        "input",
+        "input_close",
+        "output",
+        "output_append",
+        "output_close",
+        "pass_fds",
+        "pass_fds_close",
+        "pty",
+        "return_result",
+        "timeout",
+        "writable",
+    ]
+
+
+def test_context_enums():
+    "Test that `sh` defines the important Redirect enums."
+
+    assert sh.CAPTURE.name == "CAPTURE"
+    assert sh.DEVNULL.name == "DEVNULL"
+    assert sh.INHERIT.name == "INHERIT"
+    assert sh.STDOUT.name == "STDOUT"

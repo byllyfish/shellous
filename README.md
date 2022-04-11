@@ -142,7 +142,7 @@ By default, standard error is not captured. To redirect standard error, use the 
 method.
 
 ```pycon
->>> cmd = sh("cat", "does_not_exist").stderr(shellous.STDOUT)
+>>> cmd = sh("cat", "does_not_exist").stderr(sh.STDOUT)
 >>> await cmd.set(exit_codes={0,1})
 'cat: does_not_exist: No such file or directory\n'
 ```
@@ -153,7 +153,7 @@ To redirect standard error to the hosting program's `sys.stderr`, use the INHERI
 option.
 
 ```pycon
->>> cmd = sh("cat", "does_not_exist").stderr(shellous.INHERIT)
+>>> cmd = sh("cat", "does_not_exist").stderr(sh.INHERIT)
 >>> await cmd
 cat: does_not_exist: No such file or directory
 Traceback (most recent call last):
@@ -189,7 +189,7 @@ Use `.writable` to write to a command instead.
 
 ```pycon
 >>> buf = bytearray()
->>> cmd = sh("ls") | sh("tee", sh("grep", "README").writable | buf) | shellous.DEVNULL
+>>> cmd = sh("ls") | sh("tee", sh("grep", "README").writable | buf) | sh.DEVNULL
 >>> await cmd
 ''
 >>> buf

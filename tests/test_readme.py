@@ -6,7 +6,7 @@ import re
 import sys
 
 import pytest
-from shellous import CAPTURE, sh
+from shellous import sh
 from shellous.harvest import harvest_results
 from shellous.log import LOGGER
 
@@ -58,7 +58,7 @@ async def run_asyncio_repl(cmds, logfile=None):
     errbuf = bytearray()
     repl = (
         sh(sys.executable, "-m", "asyncio")
-        .stdin(CAPTURE)
+        .stdin(sh.CAPTURE)
         .stderr(errbuf)
         .set(return_result=True, inherit_env=False)
         .env(**_current_env())
@@ -132,16 +132,16 @@ def test_parse_readme():
         'cmd = sh("echo", "def") >> output_file',
         "await cmd",
         "output_file.read_bytes()",
-        'cmd = sh("cat", "does_not_exist").stderr(shellous.STDOUT)',
+        'cmd = sh("cat", "does_not_exist").stderr(sh.STDOUT)',
         "await cmd.set(exit_codes={0,1})",
-        'cmd = sh("cat", "does_not_exist").stderr(shellous.INHERIT)',
+        'cmd = sh("cat", "does_not_exist").stderr(sh.INHERIT)',
         "await cmd",
         'pipe = sh("ls") | sh("grep", "README")',
         "await pipe",
         'cmd = sh("grep", "README", sh("ls"))',
         "await cmd",
         "buf = bytearray()",
-        'cmd = sh("ls") | sh("tee", sh("grep", "README").writable | buf) | shellous.DEVNULL',
+        'cmd = sh("ls") | sh("tee", sh("grep", "README").writable | buf) | sh.DEVNULL',
         "await cmd",
         "buf",
         "async with pipe as run:\n"
