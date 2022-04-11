@@ -136,6 +136,18 @@
                                 <a class="function" href="#CmdContext.__init__">CmdContext</a>
                         </li>
                         <li>
+                                <a class="variable" href="#CmdContext.CAPTURE">CAPTURE</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#CmdContext.DEVNULL">DEVNULL</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#CmdContext.INHERIT">INHERIT</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#CmdContext.STDOUT">STDOUT</a>
+                        </li>
+                        <li>
                                 <a class="variable" href="#CmdContext.options">options</a>
                         </li>
                         <li>
@@ -245,7 +257,7 @@ function to create these, rather than creating them directly.</p></li>
 <span class="kn">import</span> <span class="nn">signal</span>
 <span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Iterable</span>
 <span class="kn">from</span> <span class="nn">dataclasses</span> <span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">TypeVar</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">ClassVar</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">TypeVar</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="kn">from</span> <span class="nn">immutables</span> <span class="kn">import</span> <span class="n">Map</span> <span class="k">as</span> <span class="n">ImmutableDict</span>
 
@@ -416,6 +428,18 @@ function to create these, rather than creating them directly.</p></li>
 <span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">class</span> <span class="nc">CmdContext</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Concrete class for an immutable execution context.&quot;&quot;&quot;</span>
+
+    <span class="n">CAPTURE</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="n">Redirect</span><span class="p">]</span> <span class="o">=</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">CAPTURE</span>
+    <span class="s2">&quot;Capture and read/write stream manually.&quot;</span>
+
+    <span class="n">DEVNULL</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="n">Redirect</span><span class="p">]</span> <span class="o">=</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">DEVNULL</span>
+    <span class="s2">&quot;Redirect to /dev/null.&quot;</span>
+
+    <span class="n">INHERIT</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="n">Redirect</span><span class="p">]</span> <span class="o">=</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">INHERIT</span>
+    <span class="s2">&quot;Redirect to same place as existing stdin/stderr/stderr.&quot;</span>
+
+    <span class="n">STDOUT</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="n">Redirect</span><span class="p">]</span> <span class="o">=</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">STDOUT</span>
+    <span class="s2">&quot;Redirect stderr to same place as stdout.&quot;</span>
 
     <span class="n">options</span><span class="p">:</span> <span class="n">Options</span> <span class="o">=</span> <span class="n">Options</span><span class="p">()</span>
     <span class="s2">&quot;Default command options.&quot;</span>
@@ -1481,6 +1505,18 @@ function to create these, rather than creating them directly.</p></li>
 <span class="k">class</span> <span class="nc">CmdContext</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Concrete class for an immutable execution context.&quot;&quot;&quot;</span>
 
+    <span class="n">CAPTURE</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="n">Redirect</span><span class="p">]</span> <span class="o">=</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">CAPTURE</span>
+    <span class="s2">&quot;Capture and read/write stream manually.&quot;</span>
+
+    <span class="n">DEVNULL</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="n">Redirect</span><span class="p">]</span> <span class="o">=</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">DEVNULL</span>
+    <span class="s2">&quot;Redirect to /dev/null.&quot;</span>
+
+    <span class="n">INHERIT</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="n">Redirect</span><span class="p">]</span> <span class="o">=</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">INHERIT</span>
+    <span class="s2">&quot;Redirect to same place as existing stdin/stderr/stderr.&quot;</span>
+
+    <span class="n">STDOUT</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="n">Redirect</span><span class="p">]</span> <span class="o">=</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">STDOUT</span>
+    <span class="s2">&quot;Redirect stderr to same place as stdout.&quot;</span>
+
     <span class="n">options</span><span class="p">:</span> <span class="n">Options</span> <span class="o">=</span> <span class="n">Options</span><span class="p">()</span>
     <span class="s2">&quot;Default command options.&quot;</span>
 
@@ -1555,6 +1591,54 @@ function to create these, rather than creating them directly.</p></li>
 
     
     
+
+                            </div>
+                            <div id="CmdContext.CAPTURE" class="classattr">
+                                            <div class="attr variable"><a class="headerlink" href="#CmdContext.CAPTURE">#&nbsp;&nbsp</a>
+
+        <span class="name">CAPTURE</span><span class="annotation">: ClassVar[<a href="redirect.html#Redirect">shellous.redirect.Redirect</a>]</span><span class="default_value"> = &lt;Redirect.CAPTURE: -10&gt;</span>
+    </div>
+
+    
+            <div class="docstring"><p>Capture and read/write stream manually.</p>
+</div>
+
+
+                            </div>
+                            <div id="CmdContext.DEVNULL" class="classattr">
+                                            <div class="attr variable"><a class="headerlink" href="#CmdContext.DEVNULL">#&nbsp;&nbsp</a>
+
+        <span class="name">DEVNULL</span><span class="annotation">: ClassVar[<a href="redirect.html#Redirect">shellous.redirect.Redirect</a>]</span><span class="default_value"> = &lt;Redirect.DEVNULL: -3&gt;</span>
+    </div>
+
+    
+            <div class="docstring"><p>Redirect to /dev/null.</p>
+</div>
+
+
+                            </div>
+                            <div id="CmdContext.INHERIT" class="classattr">
+                                            <div class="attr variable"><a class="headerlink" href="#CmdContext.INHERIT">#&nbsp;&nbsp</a>
+
+        <span class="name">INHERIT</span><span class="annotation">: ClassVar[<a href="redirect.html#Redirect">shellous.redirect.Redirect</a>]</span><span class="default_value"> = &lt;Redirect.INHERIT: -11&gt;</span>
+    </div>
+
+    
+            <div class="docstring"><p>Redirect to same place as existing stdin/stderr/stderr.</p>
+</div>
+
+
+                            </div>
+                            <div id="CmdContext.STDOUT" class="classattr">
+                                            <div class="attr variable"><a class="headerlink" href="#CmdContext.STDOUT">#&nbsp;&nbsp</a>
+
+        <span class="name">STDOUT</span><span class="annotation">: ClassVar[<a href="redirect.html#Redirect">shellous.redirect.Redirect</a>]</span><span class="default_value"> = &lt;Redirect.STDOUT: -2&gt;</span>
+    </div>
+
+    
+            <div class="docstring"><p>Redirect stderr to same place as stdout.</p>
+</div>
+
 
                             </div>
                             <div id="CmdContext.options" class="classattr">

@@ -111,6 +111,7 @@
 <span class="kn">import</span> <span class="nn">enum</span>
 <span class="kn">import</span> <span class="nn">io</span>
 <span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
 <span class="kn">from</span> <span class="nn">logging</span> <span class="kn">import</span> <span class="n">Logger</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span>
 
@@ -152,9 +153,20 @@
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">from_literal</span><span class="p">(</span><span class="n">literal</span><span class="p">,</span> <span class="n">is_stderr</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="s2">&quot;Return object with literal values replaced by Redirect constant.&quot;</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">literal</span><span class="p">,</span> <span class="p">(</span><span class="nb">tuple</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="o">...</span><span class="p">),</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">))):</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;literal </span><span class="si">{</span><span class="n">literal</span><span class="si">!r}</span><span class="s2"> is no longer supported&quot;</span><span class="p">,</span>
+                <span class="ne">DeprecationWarning</span><span class="p">,</span>
+            <span class="p">)</span>
+
         <span class="c1"># For stderr, the literal `1` indicates that stderr is redirected to</span>
         <span class="c1"># the same place as STDOUT.</span>
         <span class="k">if</span> <span class="n">is_stderr</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">literal</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">and</span> <span class="n">literal</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;stderr literal </span><span class="si">{</span><span class="n">literal</span><span class="si">!r}</span><span class="s2"> is no longer supported&quot;</span><span class="p">,</span>
+                <span class="ne">DeprecationWarning</span><span class="p">,</span>
+            <span class="p">)</span>
             <span class="k">return</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">STDOUT</span>
 
         <span class="k">try</span><span class="p">:</span>
@@ -414,9 +426,20 @@
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">from_literal</span><span class="p">(</span><span class="n">literal</span><span class="p">,</span> <span class="n">is_stderr</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="s2">&quot;Return object with literal values replaced by Redirect constant.&quot;</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">literal</span><span class="p">,</span> <span class="p">(</span><span class="nb">tuple</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="o">...</span><span class="p">),</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">))):</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;literal </span><span class="si">{</span><span class="n">literal</span><span class="si">!r}</span><span class="s2"> is no longer supported&quot;</span><span class="p">,</span>
+                <span class="ne">DeprecationWarning</span><span class="p">,</span>
+            <span class="p">)</span>
+
         <span class="c1"># For stderr, the literal `1` indicates that stderr is redirected to</span>
         <span class="c1"># the same place as STDOUT.</span>
         <span class="k">if</span> <span class="n">is_stderr</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">literal</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">and</span> <span class="n">literal</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;stderr literal </span><span class="si">{</span><span class="n">literal</span><span class="si">!r}</span><span class="s2"> is no longer supported&quot;</span><span class="p">,</span>
+                <span class="ne">DeprecationWarning</span><span class="p">,</span>
+            <span class="p">)</span>
             <span class="k">return</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">STDOUT</span>
 
         <span class="k">try</span><span class="p">:</span>
@@ -549,9 +572,20 @@
             <div class="pdoc-code codehilite"><pre><span></span>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">from_literal</span><span class="p">(</span><span class="n">literal</span><span class="p">,</span> <span class="n">is_stderr</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="s2">&quot;Return object with literal values replaced by Redirect constant.&quot;</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">literal</span><span class="p">,</span> <span class="p">(</span><span class="nb">tuple</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="o">...</span><span class="p">),</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">))):</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;literal </span><span class="si">{</span><span class="n">literal</span><span class="si">!r}</span><span class="s2"> is no longer supported&quot;</span><span class="p">,</span>
+                <span class="ne">DeprecationWarning</span><span class="p">,</span>
+            <span class="p">)</span>
+
         <span class="c1"># For stderr, the literal `1` indicates that stderr is redirected to</span>
         <span class="c1"># the same place as STDOUT.</span>
         <span class="k">if</span> <span class="n">is_stderr</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">literal</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">and</span> <span class="n">literal</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;stderr literal </span><span class="si">{</span><span class="n">literal</span><span class="si">!r}</span><span class="s2"> is no longer supported&quot;</span><span class="p">,</span>
+                <span class="ne">DeprecationWarning</span><span class="p">,</span>
+            <span class="p">)</span>
             <span class="k">return</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">STDOUT</span>
 
         <span class="k">try</span><span class="p">:</span>
