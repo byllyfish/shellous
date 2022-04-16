@@ -6,7 +6,7 @@ Shellous Change Log
 
 - [API] Add `sh` global execution context and update documentation to use it instead of `context()`.
 - [LATERAL] Update `immutables` dependency version.
- -[LATERAL] Add continuous integration support for pypy-3.9.
+- [LATERAL] Add continuous integration support for pypy-3.9.
  
 0.15.0
 ------

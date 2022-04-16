@@ -1,9 +1,8 @@
-Async Processes and Pipelines
-=============================
+# Async Processes and Pipelines
 
 [![docs](https://img.shields.io/badge/-documentation-informational)](https://byllyfish.github.io/shellous/shellous.html) [![PyPI](https://img.shields.io/pypi/v/shellous)](https://pypi.org/project/shellous/) [![CI](https://github.com/byllyfish/shellous/actions/workflows/ci.yml/badge.svg)](https://github.com/byllyfish/shellous/actions/workflows/ci.yml) [![codecov](https://codecov.io/gh/byllyfish/shellous/branch/main/graph/badge.svg?token=W44NZE89AW)](https://codecov.io/gh/byllyfish/shellous) [![Downloads](https://pepy.tech/badge/shellous)](https://pepy.tech/project/shellous)
 
-shellous provides a concise API for running subprocesses using asyncio. It is 
+**shellous** provides a concise API for running subprocesses using [asyncio](https://docs.python.org/3/library/asyncio.html). It is 
 similar to and inspired by [sh](https://pypi.org/project/sh/).
 
 ```python
@@ -17,27 +16,27 @@ async def main():
 asyncio.run(main())
 ```
 
-Benefits
---------
+## Benefits
 
 - Run programs asychronously in a single line.
-- Easily capture output or redirect stdin, stdout and stderr to files, memory buffers or loggers.
-- Easily construct [pipelines](https://en.wikipedia.org/wiki/Pipeline_(Unix)) and use [process substitution](https://en.wikipedia.org/wiki/Process_substitution).
-- Easily set timeouts and reliably cancel running processes.
+- Redirect stdin, stdout and stderr to files, memory buffers or loggers.
+- Construct [pipelines](https://en.wikipedia.org/wiki/Pipeline_(Unix)) and use [process substitution](https://en.wikipedia.org/wiki/Process_substitution).
+- Set timeouts and reliably cancel running processes.
 - Run a program with a pseudo-terminal (pty).
 - Runs on Linux, MacOS, FreeBSD and Windows.
 - Monitor processes being started and stopped with `audit_callback` API.
 
-Requirements
-------------
+## Requirements
 
 - Requires Python 3.9 or later.
 - Requires an asyncio event loop.
 - Process substitution requires a Unix system with /dev/fd support.
 - Pseudo-terminals require a Unix system.
 
-Basic Usage
------------
+## Running a Command
+
+The tutorial in this README uses the asyncio REPL built into Python. In these examples, `>>>`
+is the REPL prompt.
 
 Start the asyncio REPL by typing `python3 -m asyncio`, and import **sh** from the **shellous** module:
 
@@ -52,10 +51,17 @@ Here's a command that runs `echo "hello, world"`.
 'hello, world\n'
 ```
 
-The first argument is the program name. It is followed by zero or more separate arguments.
+The first argument to `sh` is the program name. It is followed by zero or more arguments. Each argument will be
+converted to a string. If an argument is a list or tuple, it is flattened recursively.
 
-A command does not run until you `await` it. Here, we create our own echo command with "-n"
-to omit the newline. Note, `echo("abc")` is the same as `echo -n "abc"`.
+```pycon
+>>> await sh("echo", 1, 2, [3, 4, (5, 6)])
+'1 2 3 4 5 6\n'
+```
+
+A command does not run until you `await` it. When you run a command using `await`, it returns the value of the standard output interpreted as a UTF-8 string.
+
+Here, we create our own echo command with "-n" to omit the newline. Note, `echo("abc")` will run the same command as `echo -n "abc"`.
 
 ```pycon
 >>> echo = sh("echo", "-n")
@@ -63,13 +69,71 @@ to omit the newline. Note, `echo("abc")` is the same as `echo -n "abc"`.
 'abc'
 ```
 
-[More on commands...](docs/commands.md) <!-- __REL_LINK__ -->
+Commands are **immutable** objects that represent a program invocation: program name, arguments, environment
+variables, redirection operators and other settings. When you use a method to modify a `Command`, you are
+returning a new `Command` object. The original object is unchanged.
 
-Results and Exit Codes
-----------------------
+In this example, we use the `set()` modifier to change the output encoding. The new command `echob`
+will return standard output as bytes (encoding=None).
 
-If a command exits with a non-zero exit code, it raises a `ResultError` exception that contains
-the `Result` object. The `Result` object contains the exit code for the command among other details.
+
+```pycon
+>>> echob = echo.set(encoding=None)
+>>> await echob("def")
+b'def'
+```
+
+### Async For
+
+Using `await` to run a command collects the entire output of the command before returning it. You can also
+iterate over the output lines as they arrive using `async for`.
+
+```pycon
+>>> [line async for line in echo("hi\n", "there")]
+['hi\n', ' there']
+```
+
+Use an `async for` loop when you want to examine the stream of output from a command, line by line. For example, suppose you want to run tail on a log file.
+
+```python
+async for line in sh("tail", "-f", "/var/log/syslog"):
+    if "ERROR" in line:
+        print(line.rstrip())
+```
+
+### Async With
+
+You can use a command as an asynchronous context manager. Use `async with` when you need byte-by-byte control over the individual process streams: stdin, stdout and stderr. To control standard input, we need to explicitly
+tell shellous to "capture" standard input (For more on this, see Redirection.)
+
+```python
+async with sh("cat").stdin(sh.CAPTURE) as run:
+    run.stdin.write(b"abc")
+    run.stdin.close()
+    print(await run.stdout.readline())
+```
+
+When reading or writing individual streams, you are responsible for managing reads and writes so they don't
+deadlock. The streams on the `run` object are `asyncio.StreamReader` and `asyncio.StreamWriter` objects.
+
+## Results
+
+When a command completes successfully, it normally returns the standard output. For a more detailed response,
+you can specify that the command should return a `Result` object by using the `.result` modifier:
+
+```pycon
+>>> await echo("abc").result
+Result(output_bytes=b'abc', exit_code=0, cancelled=False, encoding='utf-8', extra=None)
+```
+
+A `Result` object contains the command's `exit_code` in addition to its output. If the command exited with
+a non-zero exit status, the `exit_code` will be set appropriately.
+
+When you don't use the `.result` modifier and a command fails, it will raise a `ResultError` exception.
+
+## Failures
+
+When your command returning standard output exits with a non-zero exit code, it raises a `ResultError` exception:
 
 ```pycon
 >>> await sh("cat", "does_not_exist")
@@ -78,19 +142,31 @@ Traceback (most recent call last):
 shellous.result.ResultError: Result(output_bytes=b'', exit_code=1, cancelled=False, encoding='utf-8', extra=None)
 ```
 
-To always return a `Result` object (and not raise an error for a non-zero exit status), add the `.result` modifier.
+The `ResultError` exception contains a `Result` object with the output so far.
+
+In some cases, you want to ignore certain exit code values. That is, you want to treat them as if they are normal.
+To do this, you can set the `exit_codes` option:
 
 ```pycon
->>> await echo("abc").result
-Result(output_bytes=b'abc', exit_code=0, cancelled=False, encoding='utf-8', extra=None)
+>>> await sh("cat", "does_not_exist").set(exit_codes={0,1})
+''
 ```
 
-[More on results...](docs/results.md) <!-- __REL_LINK__ -->
+If there is a problem launching a process, shellous can also raise a separate `FileNotFoundError` or  `PermissionError`.
 
-Redirecting Standard Input
---------------------------
 
-You can change the standard input of a command by using the `|` operator.
+## Redirection
+
+shellous supports the redirection operators `|` and `>>`. They work similar to how they work in 
+the unix shell.
+
+To redirect to or from a file, use a `pathlib.Path` object. Alternatively, you can redirect input/output
+to a StringIO object, an open file, a Logger, or use a special redirection constant like `sh.DEVNULL`.
+
+### Redirecting Standard Input
+
+To redirect standard input, use the pipe operator `|` with the argument on the left-side.
+Here is an example that passes the string "abc" as standard input.
 
 ```pycon
 >>> cmd = "abc" | sh("wc", "-c")
@@ -98,7 +174,7 @@ You can change the standard input of a command by using the `|` operator.
 '       3\n'
 ```
 
-To redirect stdin using a file's contents, use a `Path` object from `pathlib`.
+To read input from a file, use a `Path` object from `pathlib`.
 
 ```pycon
 >>> from pathlib import Path
@@ -107,12 +183,24 @@ To redirect stdin using a file's contents, use a `Path` object from `pathlib`.
 '     201\n'
 ```
 
-[More on redirection...](docs/redirection.md) <!-- __REL_LINK__ -->
+Shellous supports different STDIN behavior when using different Python types.
 
-Redirecting Standard Output
----------------------------
+| Python Type | Behavior as STDIN |
+| ----------- | --------------- |
+| str | Read input from string object. |
+| bytes, bytearray | Read input from bytes object. |
+| Path | Read input from file specified by `Path`. |
+| File, StringIO, ByteIO | Read input from open file object. |
+| int | Read input from existing file descriptor. |
+| asyncio.StreamReader | Read input from `StreamReader`. |
+| sh.DEVNULL | Read input from `/dev/null`. |
+| sh.INHERIT  | Read input from existing `sys.stdin`. |
+| sh.CAPTURE | You will write to stdin interactively. |
 
-To redirect standard output, use the `|` operator.
+### Redirecting Standard Output
+
+To redirect standard output, use the pipe operator `|` with the argument on the right-side. Here is an example
+that writes to a temporary file.
 
 ```pycon
 >>> output_file = Path("/tmp/output_file")
@@ -133,13 +221,28 @@ To redirect standard output with append, use the `>>` operator.
 b'abc\ndef\n'
 ```
 
-[More on redirection...](docs/redirection.md) <!-- __REL_LINK__ -->
+Shellous supports different STDOUT behavior when using different Python types.
 
-Redirecting Standard Error
---------------------------
+| Python Type | Behavior as STDOUT/STDERR | append=True
+| ----------- | --------------- | ------
+| Path | Write output to file path specified by `Path`. | Open file for append
+| str | Write output to file path specified by string object. | Open file for append
+| bytes | Write output to file path specified by bytes object. | Open file for append
+| bytearray | Write output to mutable byte array. | TypeError
+| File, StringIO, ByteIO | Write output to open file object. | TypeError
+| int | Write output to existing file descriptor. | TypeError
+| logging.Logger | Log each line of output. | TypeError
+| asyncio.StreamWriter | Write output to `StreamWriter`. | TypeError
+| sh.CAPTURE | Return standard output or error. See *Multiple Capture*. | TypeError
+| sh.DEVNULL | Write output to `/dev/null`. | TypeError
+| sh.INHERIT  | Write output to existing `sys.stdout` or `sys.stderr`. | TypeError
+| sh.STDOUT | Redirect stderr to same place as stdout. | TypeError
 
-By default, standard error is not captured. To redirect standard error, use the `stderr`
-method.
+### Redirecting Standard Error
+
+To redirect standard error, use the `stderr` method. Standard error supports the
+same Python types as standard output. To redirect stderr to the same place as stdout, 
+use the `sh.STDOUT` constant.
 
 ```pycon
 >>> cmd = sh("cat", "does_not_exist").stderr(sh.STDOUT)
@@ -147,9 +250,7 @@ method.
 'cat: does_not_exist: No such file or directory\n'
 ```
 
-You can redirect standard error to a file or path. 
-
-To redirect standard error to the hosting program's `sys.stderr`, use the INHERIT redirect
+To redirect standard error to the hosting program's `sys.stderr`, use the `sh.INHERIT` redirect
 option.
 
 ```pycon
@@ -161,10 +262,22 @@ Traceback (most recent call last):
 shellous.result.ResultError: Result(output_bytes=b'', exit_code=1, cancelled=False, encoding='utf-8', extra=None)
 ```
 
-[More on redirection...](docs/redirection.md) <!-- __REL_LINK__ -->
+### Default Redirections
 
-Pipelines
----------
+For regular commands, the default redirections are:
+
+- Standard input is read from the empty string ("").
+- Standard out is captured by the program and returned (CAPTURE).
+- Standard error is discarded (DEVNULL).
+
+However, the default redirections are adjusted when using a pseudo-terminal (pty):
+
+- Standard input is captured and ignored (CAPTURE).
+- Standard out is captured by the program and returned (CAPTURE).
+- Standard error is redirected to standard output (STDOUT).
+
+
+## Pipelines
 
 You can create a pipeline by combining commands using the `|` operator.
 
@@ -174,8 +287,7 @@ You can create a pipeline by combining commands using the `|` operator.
 'README.md\n'
 ```
 
-Process Substitution (Unix Only)
---------------------------------
+## Process Substitution (Unix Only)
 
 You can pass a shell command as an argument to another.
 
@@ -196,43 +308,7 @@ Use `.writable` to write to a command instead.
 bytearray(b'README.md\n')
 ```
 
-Async With & For
-----------------
-
-You can loop over a command's output by using the context manager as an iterator.
-
-```pycon
->>> async with pipe as run:
-...   async for line in run:
-...     print(line.rstrip())
-... 
-README.md
-```
-
-> <span style="font-size:1.5em;">⚠️ </span> You can also acquire an async iterator directly from
-> the command or pipeline object. This is discouraged because you will have less control over the final
-> clean up of the command invocation than with a context manager.
-
-```pycon
->>> async for line in pipe:   # Use caution!
-...   print(line.rstrip())
-... 
-README.md
-```
-
-You can use `async with` to interact with the process streams directly. You have to be careful; you
-are responsible for correctly reading and writing multiple streams at the same time.
-
-```pycon
->>> async with pipe as run:
-...   data = await run.stdout.readline()
-...   print(data)
-... 
-b'README.md\n'
-```
-
-Timeouts
---------
+## Timeouts
 
 You can specify a timeout using the `timeout` option. If the timeout expires, shellous will raise
 a `TimeoutError`.
@@ -246,8 +322,7 @@ TimeoutError
 
 Timeouts are just a special case of cancellation.
 
-Cancellation
-------------
+## Cancellation
 
 When a command is cancelled, shellous terminates the process and raises a `CancelledError`.
 
@@ -268,8 +343,7 @@ shellous.result.ResultError: Result(output_bytes=b'', exit_code=-15, cancelled=T
 When you use `incomplete_result`, your code should respect the `cancelled` attribute in the Result object. 
 Otherwise, your code may swallow the CancelledError.
 
-Pseudo-Terminal Support (Unix Only)
------------------------------------
+## Pseudo-Terminal Support (Unix Only)
 
 To run a command through a pseudo-terminal, set the `pty` option to True. Alternatively, you can pass
 a function to configure the tty mode and size.
@@ -280,11 +354,10 @@ a function to configure the tty mode and size.
 'CHANGELOG.md\tREADME.md\r\n'
 ```
 
-Context Objects
----------------
+## Context Objects
 
-You can store shared command settings in an immutable context object. To create a new context 
-object, specify your changes to the default context **sh**:
+You can store shared command settings in an immutable context object. To create a new 
+context object, specify your changes to the default context **sh**:
 
 ```pycon
 >>> auditor = lambda phase, info: print(phase, info["runner"].name)

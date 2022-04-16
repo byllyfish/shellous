@@ -116,10 +116,15 @@ def test_parse_readme():
     assert cmds == [
         "from shellous import sh",
         'await sh("echo", "hello, world")',
+        'await sh("echo", 1, 2, [3, 4, (5, 6)])',
         'echo = sh("echo", "-n")',
         'await echo("abc")',
-        'await sh("cat", "does_not_exist")',
+        "echob = echo.set(encoding=None)",
+        'await echob("def")',
+        '[line async for line in echo("hi\\n", "there")]',
         'await echo("abc").result',
+        'await sh("cat", "does_not_exist")',
+        'await sh("cat", "does_not_exist").set(exit_codes={0,1})',
         'cmd = "abc" | sh("wc", "-c")',
         "await cmd",
         "from pathlib import Path",
@@ -144,13 +149,6 @@ def test_parse_readme():
         'cmd = sh("ls") | sh("tee", sh("grep", "README").writable | buf) | sh.DEVNULL',
         "await cmd",
         "buf",
-        "async with pipe as run:\n"
-        "  async for line in run:\n"
-        "    print(line.rstrip())\n",
-        "async for line in pipe:   # Use caution!\n  print(line.rstrip())\n",
-        "async with pipe as run:\n"
-        "  data = await run.stdout.readline()\n"
-        "  print(data)\n",
         'await sh("sleep", 60).set(timeout=0.1)',
         'sleep = sh("sleep", 60).set(incomplete_result=True)',
         "t = asyncio.create_task(sleep.coro())",
