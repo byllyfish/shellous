@@ -30,6 +30,13 @@ def _is_uvloop():
     return os.environ.get("SHELLOUS_LOOP_TYPE") == "uvloop"
 
 
+def _attach_loop():
+    "Make sure the current child watcher is attached to a loop, if necessary."
+    if sys.platform != "win32":
+        cw = asyncio.get_child_watcher()
+        cw.attach_loop(asyncio.get_running_loop())
+
+
 def test_debug_mode(event_loop):
     "Tests should be running on a loop with asyncio debug mode set."
     assert event_loop.get_debug()
@@ -885,6 +892,8 @@ def test_command_iterator_api_interrupted_sync(echo_cmd):
     "Test running a command's async iterator directly."
 
     async def _test():
+        _attach_loop()
+
         async for line in echo_cmd("hello\n", "cruel\n", "world\n"):
             if "hello" in line:
                 return True
@@ -957,6 +966,7 @@ def test_pipe_iterator_api_interrupted_sync(echo_cmd, cat_cmd):
     async def _test():
         loop = asyncio.get_running_loop()
         loop.set_exception_handler(_custom_exception_handler)
+        _attach_loop()
 
         cmd = echo_cmd("hello\n", "cruel\n", "world\n") | cat_cmd()
         async for line in cmd:
@@ -1364,7 +1374,12 @@ async def test_bulk_line_limit(bulk_cmd):
 
 def _run(cmd):
     "Run command in process pool executor."
-    return asyncio.run(cmd.coro())
+
+    async def _coro():
+        _attach_loop()
+        return await cmd
+
+    return asyncio.run(_coro())
 
 
 async def test_process_pool_executor(echo_cmd, report_children):

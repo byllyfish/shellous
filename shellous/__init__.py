@@ -33,3 +33,17 @@ STDOUT = sh.STDOUT
 DEVNULL = sh.DEVNULL
 CAPTURE = sh.CAPTURE
 INHERIT = sh.INHERIT
+
+
+__all__ = [
+    "sh",
+    "CmdContext",
+    "Command",
+    "cbreak",
+    "cooked",
+    "raw",
+    "Result",
+    "ResultError",
+    "AUDIT_EVENT_SUBPROCESS_SPAWN",
+    "DefaultChildWatcher",
+]
