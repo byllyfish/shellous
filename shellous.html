@@ -18,8 +18,6 @@
         <input id="togglestate" type="checkbox" aria-hidden="true" tabindex="-1">
         <div>
 
-            <input type="search" placeholder="Search..." role="searchbox" aria-label="search"
-                   pattern=".+" required>
 
         <h2>Contents</h2>
         <ul>
@@ -27,14 +25,12 @@
   <ul>
     <li><a href="#benefits">Benefits</a></li>
     <li><a href="#requirements">Requirements</a></li>
-    <li><a href="#basic-usage">Basic Usage</a></li>
-    <li><a href="#results-and-exit-codes">Results and Exit Codes</a></li>
-    <li><a href="#redirecting-standard-input">Redirecting Standard Input</a></li>
-    <li><a href="#redirecting-standard-output">Redirecting Standard Output</a></li>
-    <li><a href="#redirecting-standard-error">Redirecting Standard Error</a></li>
+    <li><a href="#running-a-command">Running a Command</a></li>
+    <li><a href="#results">Results</a></li>
+    <li><a href="#failures">Failures</a></li>
+    <li><a href="#redirection">Redirection</a></li>
     <li><a href="#pipelines">Pipelines</a></li>
     <li><a href="#process-substitution-unix-only">Process Substitution (Unix Only)</a></li>
-    <li><a href="#async-with-for">Async With &amp; For</a></li>
     <li><a href="#timeouts">Timeouts</a></li>
     <li><a href="#cancellation">Cancellation</a></li>
     <li><a href="#pseudo-terminal-support-unix-only">Pseudo-Terminal Support (Unix Only)</a></li>
@@ -43,27 +39,155 @@
 </ul>
 
 
-        <h2>Submodules</h2>
-        <ul>
-                <li><a href="shellous/command.html">shellous.command</a></li>
-                <li><a href="shellous/harvest.html">shellous.harvest</a></li>
-                <li><a href="shellous/log.html">shellous.log</a></li>
-                <li><a href="shellous/pipeline.html">shellous.pipeline</a></li>
-                <li><a href="shellous/pty_util.html">shellous.pty_util</a></li>
-                <li><a href="shellous/redirect.html">shellous.redirect</a></li>
-                <li><a href="shellous/result.html">shellous.result</a></li>
-                <li><a href="shellous/runner.html">shellous.runner</a></li>
-                <li><a href="shellous/util.html">shellous.util</a></li>
-                <li><a href="shellous/watcher.html">shellous.watcher</a></li>
-        </ul>
 
         <h2>API Documentation</h2>
             <ul class="memberlist">
             <li>
-                    <a class="function" href="#context">context</a>
+                    <a class="variable" href="#sh">sh</a>
             </li>
             <li>
-                    <a class="variable" href="#sh">sh</a>
+                    <a class="class" href="#CmdContext">CmdContext</a>
+                            <ul class="memberlist">
+                        <li>
+                                <a class="function" href="#CmdContext.__init__">CmdContext</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#CmdContext.CAPTURE">CAPTURE</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#CmdContext.DEVNULL">DEVNULL</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#CmdContext.INHERIT">INHERIT</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#CmdContext.STDOUT">STDOUT</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#CmdContext.options">options</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#CmdContext.stdin">stdin</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#CmdContext.stdout">stdout</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#CmdContext.stderr">stderr</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#CmdContext.env">env</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#CmdContext.set">set</a>
+                        </li>
+                </ul>
+
+            </li>
+            <li>
+                    <a class="class" href="#Command">Command</a>
+                            <ul class="memberlist">
+                        <li>
+                                <a class="function" href="#Command.__init__">Command</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Command.args">args</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Command.options">options</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Command.name">name</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#Command.stdin">stdin</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#Command.stdout">stdout</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#Command.stderr">stderr</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#Command.env">env</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#Command.set">set</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#Command.coro">coro</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#Command.run">run</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Command.writable">writable</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Command.result">result</a>
+                        </li>
+                </ul>
+
+            </li>
+            <li>
+                    <a class="function" href="#cbreak">cbreak</a>
+            </li>
+            <li>
+                    <a class="function" href="#cooked">cooked</a>
+            </li>
+            <li>
+                    <a class="function" href="#raw">raw</a>
+            </li>
+            <li>
+                    <a class="class" href="#Result">Result</a>
+                            <ul class="memberlist">
+                        <li>
+                                <a class="function" href="#Result.__init__">Result</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Result.extra">extra</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Result.output">output</a>
+                        </li>
+                </ul>
+
+            </li>
+            <li>
+                    <a class="class" href="#ResultError">ResultError</a>
+                            <ul class="memberlist">
+                        <li>
+                                <a class="variable" href="#ResultError.result">result</a>
+                        </li>
+                </ul>
+
+            </li>
+            <li>
+                    <a class="variable" href="#AUDIT_EVENT_SUBPROCESS_SPAWN">AUDIT_EVENT_SUBPROCESS_SPAWN</a>
+            </li>
+            <li>
+                    <a class="class" href="#DefaultChildWatcher">DefaultChildWatcher</a>
+                            <ul class="memberlist">
+                        <li>
+                                <a class="function" href="#DefaultChildWatcher.__init__">DefaultChildWatcher</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#DefaultChildWatcher.add_child_handler">add_child_handler</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#DefaultChildWatcher.remove_child_handler">remove_child_handler</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#DefaultChildWatcher.attach_loop">attach_loop</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#DefaultChildWatcher.close">close</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#DefaultChildWatcher.is_active">is_active</a>
+                        </li>
+                </ul>
+
             </li>
     </ul>
 
@@ -85,7 +209,7 @@ shellous    </h1>
 
 <p><a href="https://byllyfish.github.io/shellous/shellous.html"><img src="https://img.shields.io/badge/-documentation-informational" alt="docs" /></a> <a href="https://pypi.org/project/shellous/"><img src="https://img.shields.io/pypi/v/shellous" alt="PyPI" /></a> <a href="https://github.com/byllyfish/shellous/actions/workflows/ci.yml"><img src="https://github.com/byllyfish/shellous/actions/workflows/ci.yml/badge.svg" alt="CI" /></a> <a href="https://codecov.io/gh/byllyfish/shellous"><img src="https://codecov.io/gh/byllyfish/shellous/branch/main/graph/badge.svg?token=W44NZE89AW" alt="codecov" /></a> <a href="https://pepy.tech/project/shellous"><img src="https://pepy.tech/badge/shellous" alt="Downloads" /></a></p>
 
-<p>shellous provides a concise API for running subprocesses using asyncio. It is 
+<p><strong>shellous</strong> provides a concise API for running subprocesses using <a href="https://docs.python.org/3/library/asyncio.html">asyncio</a>. It is 
 similar to and inspired by <a href="https://pypi.org/project/sh/">sh</a>.</p>
 
 <div class="pdoc-code codehilite"><pre><span></span><code><span class="kn">import</span> <span class="nn">asyncio</span>
@@ -102,9 +226,9 @@ similar to and inspired by <a href="https://pypi.org/project/sh/">sh</a>.</p>
 
 <ul>
 <li>Run programs asychronously in a single line.</li>
-<li>Easily capture output or redirect stdin, stdout and stderr to files, memory buffers or loggers.</li>
-<li>Easily construct <a href="https://en.wikipedia.org/wiki/Pipeline_(Unix)">pipelines</a> and use <a href="https://en.wikipedia.org/wiki/Process_substitution">process substitution</a>.</li>
-<li>Easily set timeouts and reliably cancel running processes.</li>
+<li>Redirect stdin, stdout and stderr to files, memory buffers or loggers.</li>
+<li>Construct <a href="https://en.wikipedia.org/wiki/Pipeline_(Unix)">pipelines</a> and use <a href="https://en.wikipedia.org/wiki/Process_substitution">process substitution</a>.</li>
+<li>Set timeouts and reliably cancel running processes.</li>
 <li>Run a program with a pseudo-terminal (pty).</li>
 <li>Runs on Linux, MacOS, FreeBSD and Windows.</li>
 <li>Monitor processes being started and stopped with <code>audit_callback</code> API.</li>
@@ -119,7 +243,10 @@ similar to and inspired by <a href="https://pypi.org/project/sh/">sh</a>.</p>
 <li>Pseudo-terminals require a Unix system.</li>
 </ul>
 
-<h2 id="basic-usage">Basic Usage</h2>
+<h2 id="running-a-command">Running a Command</h2>
+
+<p>The tutorial in this README uses the asyncio REPL built into Python. In these examples, <code>&gt;&gt;&gt;</code>
+is the REPL prompt.</p>
 
 <p>Start the asyncio REPL by typing <code>python3 -m asyncio</code>, and import <strong>sh</strong> from the <strong>shellous</strong> module:</p>
 
@@ -132,47 +259,118 @@ similar to and inspired by <a href="https://pypi.org/project/sh/">sh</a>.</p>
 <span class="go">&#39;hello, world\n&#39;</span>
 </code></pre></div>
 
-<p>The first argument is the program name. It is followed by zero or more separate arguments.</p>
+<p>The first argument to <code><a href="#sh">sh</a></code> is the program name. It is followed by zero or more arguments. Each argument will be
+converted to a string. If an argument is a list or tuple, it is flattened recursively.</p>
 
-<p>A command does not run until you <code>await</code> it. Here, we create our own echo command with "-n"
-to omit the newline. Note, <code>echo("abc")</code> is the same as <code>echo -n "abc"</code>.</p>
+<div class="pdoc-code codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;echo&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">)])</span>
+<span class="go">&#39;1 2 3 4 5 6\n&#39;</span>
+</code></pre></div>
+
+<p>A command does not run until you <code>await</code> it. When you run a command using <code>await</code>, it returns the value of the standard output interpreted as a UTF-8 string.</p>
+
+<p>Here, we create our own echo command with "-n" to omit the newline. Note, <code>echo("abc")</code> will run the same command as <code>echo -n "abc"</code>.</p>
 
 <div class="pdoc-code codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">echo</span> <span class="o">=</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;echo&quot;</span><span class="p">,</span> <span class="s2">&quot;-n&quot;</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">echo</span><span class="p">(</span><span class="s2">&quot;abc&quot;</span><span class="p">)</span>
 <span class="go">&#39;abc&#39;</span>
 </code></pre></div>
 
-<p><a href="docs/commands.md">More on commands...</a> <!-- __REL_LINK__ --></p>
+<p>Commands are <strong>immutable</strong> objects that represent a program invocation: program name, arguments, environment
+variables, redirection operators and other settings. When you use a method to modify a <code><a href="#Command">Command</a></code>, you are
+returning a new <code><a href="#Command">Command</a></code> object. The original object is unchanged.</p>
 
-<h2 id="results-and-exit-codes">Results and Exit Codes</h2>
+<p>In this example, we use the <code>set()</code> modifier to change the output encoding. The new command <code>echob</code>
+will return standard output as bytes (encoding=None).</p>
 
-<p>If a command exits with a non-zero exit code, it raises a <code>ResultError</code> exception that contains
-the <code>Result</code> object. The <code>Result</code> object contains the exit code for the command among other details.</p>
-
-<div class="pdoc-code codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;cat&quot;</span><span class="p">,</span> <span class="s2">&quot;does_not_exist&quot;</span><span class="p">)</span>
-<span class="gt">Traceback (most recent call last):</span>
-  <span class="c">...</span>
-<span class="gr"><a href="shellous/result.html#ResultError">shellous.result.ResultError</a></span>: <span class="n">Result(output_bytes=b&#39;&#39;, exit_code=1, cancelled=False, encoding=&#39;utf-8&#39;, extra=None)</span>
+<div class="pdoc-code codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">echob</span> <span class="o">=</span> <span class="n">echo</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">encoding</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">echob</span><span class="p">(</span><span class="s2">&quot;def&quot;</span><span class="p">)</span>
+<span class="go">b&#39;def&#39;</span>
 </code></pre></div>
 
-<p>To always return a <code>Result</code> object (and not raise an error for a non-zero exit status), add the <code>.result</code> modifier.</p>
+<h3 id="async-for">Async For</h3>
+
+<p>Using <code>await</code> to run a command collects the entire output of the command before returning it. You can also
+iterate over the output lines as they arrive using <code>async for</code>.</p>
+
+<div class="pdoc-code codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="p">[</span><span class="n">line</span> <span class="k">async</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">echo</span><span class="p">(</span><span class="s2">&quot;hi</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;there&quot;</span><span class="p">)]</span>
+<span class="go">[&#39;hi\n&#39;, &#39; there&#39;]</span>
+</code></pre></div>
+
+<p>Use an <code>async for</code> loop when you want to examine the stream of output from a command, line by line. For example, suppose you want to run tail on a log file.</p>
+
+<div class="pdoc-code codehilite"><pre><span></span><code><span class="k">async</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;tail&quot;</span><span class="p">,</span> <span class="s2">&quot;-f&quot;</span><span class="p">,</span> <span class="s2">&quot;/var/log/syslog&quot;</span><span class="p">):</span>
+    <span class="k">if</span> <span class="s2">&quot;ERROR&quot;</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">rstrip</span><span class="p">())</span>
+</code></pre></div>
+
+<h3 id="async-with">Async With</h3>
+
+<p>You can use a command as an asynchronous context manager. Use <code>async with</code> when you need byte-by-byte control over the individual process streams: stdin, stdout and stderr. To control standard input, we need to explicitly
+tell shellous to "capture" standard input (For more on this, see Redirection.)</p>
+
+<div class="pdoc-code codehilite"><pre><span></span><code><span class="k">async</span> <span class="k">with</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;cat&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">stdin</span><span class="p">(</span><span class="n">sh</span><span class="o">.</span><span class="n">CAPTURE</span><span class="p">)</span> <span class="k">as</span> <span class="n">run</span><span class="p">:</span>
+    <span class="n">run</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">b</span><span class="s2">&quot;abc&quot;</span><span class="p">)</span>
+    <span class="n">run</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="k">await</span> <span class="n">run</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">readline</span><span class="p">())</span>
+</code></pre></div>
+
+<p>When reading or writing individual streams, you are responsible for managing reads and writes so they don't
+deadlock. The streams on the <code>run</code> object are <code>asyncio.StreamReader</code> and <code>asyncio.StreamWriter</code> objects.</p>
+
+<h2 id="results">Results</h2>
+
+<p>When a command completes successfully, it normally returns the standard output. For a more detailed response,
+you can specify that the command should return a <code><a href="#Result">Result</a></code> object by using the <code>.result</code> modifier:</p>
 
 <div class="pdoc-code codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">echo</span><span class="p">(</span><span class="s2">&quot;abc&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">result</span>
 <span class="go">Result(output_bytes=b&#39;abc&#39;, exit_code=0, cancelled=False, encoding=&#39;utf-8&#39;, extra=None)</span>
 </code></pre></div>
 
-<p><a href="docs/results.md">More on results...</a> <!-- __REL_LINK__ --></p>
+<p>A <code><a href="#Result">Result</a></code> object contains the command's <code>exit_code</code> in addition to its output. If the command exited with
+a non-zero exit status, the <code>exit_code</code> will be set appropriately.</p>
 
-<h2 id="redirecting-standard-input">Redirecting Standard Input</h2>
+<p>When you don't use the <code>.result</code> modifier and a command fails, it will raise a <code><a href="#ResultError">ResultError</a></code> exception.</p>
 
-<p>You can change the standard input of a command by using the <code>|</code> operator.</p>
+<h2 id="failures">Failures</h2>
+
+<p>When your command returning standard output exits with a non-zero exit code, it raises a <code><a href="#ResultError">ResultError</a></code> exception:</p>
+
+<div class="pdoc-code codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;cat&quot;</span><span class="p">,</span> <span class="s2">&quot;does_not_exist&quot;</span><span class="p">)</span>
+<span class="gt">Traceback (most recent call last):</span>
+  <span class="c">...</span>
+<span class="gr"><a href="#ResultError">shellous.ResultError</a></span>: <span class="n">Result(output_bytes=b&#39;&#39;, exit_code=1, cancelled=False, encoding=&#39;utf-8&#39;, extra=None)</span>
+</code></pre></div>
+
+<p>The <code><a href="#ResultError">ResultError</a></code> exception contains a <code><a href="#Result">Result</a></code> object with the output so far.</p>
+
+<p>In some cases, you want to ignore certain exit code values. That is, you want to treat them as if they are normal.
+To do this, you can set the <code>exit_codes</code> option:</p>
+
+<div class="pdoc-code codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;cat&quot;</span><span class="p">,</span> <span class="s2">&quot;does_not_exist&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">exit_codes</span><span class="o">=</span><span class="p">{</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">})</span>
+<span class="go">&#39;&#39;</span>
+</code></pre></div>
+
+<p>If there is a problem launching a process, shellous can also raise a separate <code>FileNotFoundError</code> or  <code>PermissionError</code>.</p>
+
+<h2 id="redirection">Redirection</h2>
+
+<p>shellous supports the redirection operators <code>|</code> and <code>&gt;&gt;</code>. They work similar to how they work in 
+the unix shell.</p>
+
+<p>To redirect to or from a file, use a <code>pathlib.Path</code> object. Alternatively, you can redirect input/output
+to a StringIO object, an open file, a Logger, or use a special redirection constant like <code>sh.DEVNULL</code>.</p>
+
+<h3 id="redirecting-standard-input">Redirecting Standard Input</h3>
+
+<p>To redirect standard input, use the pipe operator <code>|</code> with the argument on the left-side.
+Here is an example that passes the string "abc" as standard input.</p>
 
 <div class="pdoc-code codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">cmd</span> <span class="o">=</span> <span class="s2">&quot;abc&quot;</span> <span class="o">|</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;wc&quot;</span><span class="p">,</span> <span class="s2">&quot;-c&quot;</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">cmd</span>
 <span class="go">&#39;       3\n&#39;</span>
 </code></pre></div>
 
-<p>To redirect stdin using a file's contents, use a <code>Path</code> object from <code>pathlib</code>.</p>
+<p>To read input from a file, use a <code>Path</code> object from <code>pathlib</code>.</p>
 
 <div class="pdoc-code codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">cmd</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">&quot;LICENSE&quot;</span><span class="p">)</span> <span class="o">|</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;wc&quot;</span><span class="p">,</span> <span class="s2">&quot;-l&quot;</span><span class="p">)</span>
@@ -180,11 +378,59 @@ the <code>Result</code> object. The <code>Result</code> object contains the exit
 <span class="go">&#39;     201\n&#39;</span>
 </code></pre></div>
 
-<p><a href="docs/redirection.md">More on redirection...</a> <!-- __REL_LINK__ --></p>
+<p>Shellous supports different STDIN behavior when using different Python types.</p>
 
-<h2 id="redirecting-standard-output">Redirecting Standard Output</h2>
+<table>
+<thead>
+<tr>
+  <th>Python Type</th>
+  <th>Behavior as STDIN</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>str</td>
+  <td>Read input from string object.</td>
+</tr>
+<tr>
+  <td>bytes, bytearray</td>
+  <td>Read input from bytes object.</td>
+</tr>
+<tr>
+  <td>Path</td>
+  <td>Read input from file specified by <code>Path</code>.</td>
+</tr>
+<tr>
+  <td>File, StringIO, ByteIO</td>
+  <td>Read input from open file object.</td>
+</tr>
+<tr>
+  <td>int</td>
+  <td>Read input from existing file descriptor.</td>
+</tr>
+<tr>
+  <td>asyncio.StreamReader</td>
+  <td>Read input from <code>StreamReader</code>.</td>
+</tr>
+<tr>
+  <td>sh.DEVNULL</td>
+  <td>Read input from <code>/dev/null</code>.</td>
+</tr>
+<tr>
+  <td>sh.INHERIT</td>
+  <td>Read input from existing <code>sys.stdin</code>.</td>
+</tr>
+<tr>
+  <td>sh.CAPTURE</td>
+  <td>You will write to stdin interactively.</td>
+</tr>
+</tbody>
+</table>
 
-<p>To redirect standard output, use the <code>|</code> operator.</p>
+<h3 id="redirecting-standard-output">Redirecting Standard Output</h3>
+
+<p>To redirect standard output, use the pipe operator <code>|</code> with the argument on the right-side. Here is an example
+that writes to a temporary file.</p>
 
 <div class="pdoc-code codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">output_file</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">&quot;/tmp/output_file&quot;</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">cmd</span> <span class="o">=</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;echo&quot;</span><span class="p">,</span> <span class="s2">&quot;abc&quot;</span><span class="p">)</span> <span class="o">|</span> <span class="n">output_file</span>
@@ -203,21 +449,92 @@ the <code>Result</code> object. The <code>Result</code> object contains the exit
 <span class="go">b&#39;abc\ndef\n&#39;</span>
 </code></pre></div>
 
-<p><a href="docs/redirection.md">More on redirection...</a> <!-- __REL_LINK__ --></p>
+<p>Shellous supports different STDOUT behavior when using different Python types.</p>
 
-<h2 id="redirecting-standard-error">Redirecting Standard Error</h2>
+<table>
+<thead>
+<tr>
+  <th>Python Type</th>
+  <th>Behavior as STDOUT/STDERR</th>
+  <th>append=True</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Path</td>
+  <td>Write output to file path specified by <code>Path</code>.</td>
+  <td>Open file for append</td>
+</tr>
+<tr>
+  <td>str</td>
+  <td>Write output to file path specified by string object.</td>
+  <td>Open file for append</td>
+</tr>
+<tr>
+  <td>bytes</td>
+  <td>Write output to file path specified by bytes object.</td>
+  <td>Open file for append</td>
+</tr>
+<tr>
+  <td>bytearray</td>
+  <td>Write output to mutable byte array.</td>
+  <td>TypeError</td>
+</tr>
+<tr>
+  <td>File, StringIO, ByteIO</td>
+  <td>Write output to open file object.</td>
+  <td>TypeError</td>
+</tr>
+<tr>
+  <td>int</td>
+  <td>Write output to existing file descriptor.</td>
+  <td>TypeError</td>
+</tr>
+<tr>
+  <td>logging.Logger</td>
+  <td>Log each line of output.</td>
+  <td>TypeError</td>
+</tr>
+<tr>
+  <td>asyncio.StreamWriter</td>
+  <td>Write output to <code>StreamWriter</code>.</td>
+  <td>TypeError</td>
+</tr>
+<tr>
+  <td>sh.CAPTURE</td>
+  <td>Return standard output or error. See <em>Multiple Capture</em>.</td>
+  <td>TypeError</td>
+</tr>
+<tr>
+  <td>sh.DEVNULL</td>
+  <td>Write output to <code>/dev/null</code>.</td>
+  <td>TypeError</td>
+</tr>
+<tr>
+  <td>sh.INHERIT</td>
+  <td>Write output to existing <code>sys.stdout</code> or <code>sys.stderr</code>.</td>
+  <td>TypeError</td>
+</tr>
+<tr>
+  <td>sh.STDOUT</td>
+  <td>Redirect stderr to same place as stdout.</td>
+  <td>TypeError</td>
+</tr>
+</tbody>
+</table>
 
-<p>By default, standard error is not captured. To redirect standard error, use the <code>stderr</code>
-method.</p>
+<h3 id="redirecting-standard-error">Redirecting Standard Error</h3>
+
+<p>To redirect standard error, use the <code>stderr</code> method. Standard error supports the
+same Python types as standard output. To redirect stderr to the same place as stdout, 
+use the <code>sh.STDOUT</code> constant.</p>
 
 <div class="pdoc-code codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">cmd</span> <span class="o">=</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;cat&quot;</span><span class="p">,</span> <span class="s2">&quot;does_not_exist&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">stderr</span><span class="p">(</span><span class="n">sh</span><span class="o">.</span><span class="n">STDOUT</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">cmd</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">exit_codes</span><span class="o">=</span><span class="p">{</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">})</span>
 <span class="go">&#39;cat: does_not_exist: No such file or directory\n&#39;</span>
 </code></pre></div>
 
-<p>You can redirect standard error to a file or path. </p>
-
-<p>To redirect standard error to the hosting program's <code>sys.stderr</code>, use the INHERIT redirect
+<p>To redirect standard error to the hosting program's <code>sys.stderr</code>, use the <code>sh.INHERIT</code> redirect
 option.</p>
 
 <div class="pdoc-code codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">cmd</span> <span class="o">=</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;cat&quot;</span><span class="p">,</span> <span class="s2">&quot;does_not_exist&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">stderr</span><span class="p">(</span><span class="n">sh</span><span class="o">.</span><span class="n">INHERIT</span><span class="p">)</span>
@@ -225,10 +542,26 @@ option.</p>
 <span class="go">cat: does_not_exist: No such file or directory</span>
 <span class="gt">Traceback (most recent call last):</span>
   <span class="c">...</span>
-<span class="gr"><a href="shellous/result.html#ResultError">shellous.result.ResultError</a></span>: <span class="n">Result(output_bytes=b&#39;&#39;, exit_code=1, cancelled=False, encoding=&#39;utf-8&#39;, extra=None)</span>
+<span class="gr"><a href="#ResultError">shellous.ResultError</a></span>: <span class="n">Result(output_bytes=b&#39;&#39;, exit_code=1, cancelled=False, encoding=&#39;utf-8&#39;, extra=None)</span>
 </code></pre></div>
 
-<p><a href="docs/redirection.md">More on redirection...</a> <!-- __REL_LINK__ --></p>
+<h3 id="default-redirections">Default Redirections</h3>
+
+<p>For regular commands, the default redirections are:</p>
+
+<ul>
+<li>Standard input is read from the empty string ("").</li>
+<li>Standard out is captured by the program and returned (CAPTURE).</li>
+<li>Standard error is discarded (DEVNULL).</li>
+</ul>
+
+<p>However, the default redirections are adjusted when using a pseudo-terminal (pty):</p>
+
+<ul>
+<li>Standard input is captured and ignored (CAPTURE).</li>
+<li>Standard out is captured by the program and returned (CAPTURE).</li>
+<li>Standard error is redirected to standard output (STDOUT).</li>
+</ul>
 
 <h2 id="pipelines">Pipelines</h2>
 
@@ -258,39 +591,6 @@ option.</p>
 <span class="go">bytearray(b&#39;README.md\n&#39;)</span>
 </code></pre></div>
 
-<h2 id="async-with-for">Async With &amp; For</h2>
-
-<p>You can loop over a command's output by using the context manager as an iterator.</p>
-
-<div class="pdoc-code codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="k">async</span> <span class="k">with</span> <span class="n">pipe</span> <span class="k">as</span> <span class="n">run</span><span class="p">:</span>
-<span class="gp">... </span>  <span class="k">async</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">run</span><span class="p">:</span>
-<span class="gp">... </span>    <span class="nb">print</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">rstrip</span><span class="p">())</span>
-<span class="gp">... </span>
-<span class="go">README.md</span>
-</code></pre></div>
-
-<blockquote>
-  <p><span style="font-size:1.5em;">⚠️ </span> You can also acquire an async iterator directly from
-  the command or pipeline object. This is discouraged because you will have less control over the final
-  clean up of the command invocation than with a context manager.</p>
-</blockquote>
-
-<div class="pdoc-code codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="k">async</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">pipe</span><span class="p">:</span>   <span class="c1"># Use caution!</span>
-<span class="gp">... </span>  <span class="nb">print</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">rstrip</span><span class="p">())</span>
-<span class="gp">... </span>
-<span class="go">README.md</span>
-</code></pre></div>
-
-<p>You can use <code>async with</code> to interact with the process streams directly. You have to be careful; you
-are responsible for correctly reading and writing multiple streams at the same time.</p>
-
-<div class="pdoc-code codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="k">async</span> <span class="k">with</span> <span class="n">pipe</span> <span class="k">as</span> <span class="n">run</span><span class="p">:</span>
-<span class="gp">... </span>  <span class="n">data</span> <span class="o">=</span> <span class="k">await</span> <span class="n">run</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
-<span class="gp">... </span>  <span class="nb">print</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
-<span class="gp">... </span>
-<span class="go">b&#39;README.md\n&#39;</span>
-</code></pre></div>
-
 <h2 id="timeouts">Timeouts</h2>
 
 <p>You can specify a timeout using the <code>timeout</code> option. If the timeout expires, shellous will raise
@@ -309,7 +609,7 @@ a <code>TimeoutError</code>.</p>
 <p>When a command is cancelled, shellous terminates the process and raises a <code>CancelledError</code>.</p>
 
 <p>You can retrieve the partial result by setting <code>incomplete_result</code> to True. Shellous will return a
-<code>ResultError</code> when the specified command is cancelled (or timed out).</p>
+<code><a href="#ResultError">ResultError</a></code> when the specified command is cancelled (or timed out).</p>
 
 <div class="pdoc-code codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">sleep</span> <span class="o">=</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;sleep&quot;</span><span class="p">,</span> <span class="mi">60</span><span class="p">)</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">incomplete_result</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">t</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="n">sleep</span><span class="o">.</span><span class="n">coro</span><span class="p">())</span>
@@ -318,7 +618,7 @@ a <code>TimeoutError</code>.</p>
 <span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">t</span>
 <span class="gt">Traceback (most recent call last):</span>
   <span class="c">...</span>
-<span class="gr"><a href="shellous/result.html#ResultError">shellous.result.ResultError</a></span>: <span class="n">Result(output_bytes=b&#39;&#39;, exit_code=-15, cancelled=True, encoding=&#39;utf-8&#39;, extra=None)</span>
+<span class="gr"><a href="#ResultError">shellous.ResultError</a></span>: <span class="n">Result(output_bytes=b&#39;&#39;, exit_code=-15, cancelled=True, encoding=&#39;utf-8&#39;, extra=None)</span>
 </code></pre></div>
 
 <p>When you use <code>incomplete_result</code>, your code should respect the <code>cancelled</code> attribute in the Result object. 
@@ -336,8 +636,8 @@ a function to configure the tty mode and size.</p>
 
 <h2 id="context-objects">Context Objects</h2>
 
-<p>You can store shared command settings in an immutable context object. To create a new context 
-object, specify your changes to the default context <strong>sh</strong>:</p>
+<p>You can store shared command settings in an immutable context object. To create a new 
+context object, specify your changes to the default context <strong>sh</strong>:</p>
 
 <div class="pdoc-code codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">auditor</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">phase</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="n">phase</span><span class="p">,</span> <span class="n">info</span><span class="p">[</span><span class="s2">&quot;runner&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">sh_audit</span> <span class="o">=</span> <span class="n">sh</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">audit_callback</span><span class="o">=</span><span class="n">auditor</span><span class="p">)</span>
@@ -389,36 +689,25 @@ object, specify your changes to the default context <strong>sh</strong>:</p>
 <span class="n">DEVNULL</span> <span class="o">=</span> <span class="n">sh</span><span class="o">.</span><span class="n">DEVNULL</span>
 <span class="n">CAPTURE</span> <span class="o">=</span> <span class="n">sh</span><span class="o">.</span><span class="n">CAPTURE</span>
 <span class="n">INHERIT</span> <span class="o">=</span> <span class="n">sh</span><span class="o">.</span><span class="n">INHERIT</span>
+
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;sh&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;CmdContext&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Command&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;cbreak&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;cooked&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;raw&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Result&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;ResultError&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;AUDIT_EVENT_SUBPROCESS_SPAWN&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;DefaultChildWatcher&quot;</span><span class="p">,</span>
+<span class="p">]</span>
 </pre></div>
 
         </details>
 
             </section>
-                <section id="context">
-                            <div class="attr function"><a class="headerlink" href="#context">#&nbsp;&nbsp</a>
-
-        
-            <span class="def">def</span>
-            <span class="name">context</span><span class="signature">() -&gt; <a href="shellous/command.html#CmdContext">shellous.command.CmdContext</a></span>:
-    </div>
-
-            <details>
-            <summary>View Source</summary>
-            <div class="pdoc-code codehilite"><pre><span></span><span class="k">def</span> <span class="nf">context</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">CmdContext</span><span class="p">:</span>
-    <span class="s2">&quot;Construct a new execution context.&quot;</span>
-    <span class="kn">import</span> <span class="nn">warnings</span>
-
-    <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;context() is deprecated; use sh.&quot;</span><span class="p">,</span> <span class="ne">DeprecationWarning</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">CmdContext</span><span class="p">()</span>
-</pre></div>
-
-        </details>
-
-            <div class="docstring"><p>Construct a new execution context.</p>
-</div>
-
-
-                </section>
                 <section id="sh">
                                 <div class="attr variable"><a class="headerlink" href="#sh">#&nbsp;&nbsp</a>
 
@@ -431,183 +720,1736 @@ object, specify your changes to the default context <strong>sh</strong>:</p>
 
 
                 </section>
+                <section id="CmdContext">
+                                <div class="attr class">
+        <a class="headerlink" href="#CmdContext">#&nbsp;&nbsp</a>
+
+                <div class="decorator">@dataclass(frozen=True)</div>
+
+        <span class="def">class</span>
+        <span class="name">CmdContext</span>:
+    </div>
+
+            <details>
+            <summary>View Source</summary>
+            <div class="pdoc-code codehilite"><pre><span></span><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">CmdContext</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Concrete class for an immutable execution context.&quot;&quot;&quot;</span>
+
+    <span class="n">CAPTURE</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="n">Redirect</span><span class="p">]</span> <span class="o">=</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">CAPTURE</span>
+    <span class="s2">&quot;Capture and read/write stream manually.&quot;</span>
+
+    <span class="n">DEVNULL</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="n">Redirect</span><span class="p">]</span> <span class="o">=</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">DEVNULL</span>
+    <span class="s2">&quot;Redirect to /dev/null.&quot;</span>
+
+    <span class="n">INHERIT</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="n">Redirect</span><span class="p">]</span> <span class="o">=</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">INHERIT</span>
+    <span class="s2">&quot;Redirect to same place as existing stdin/stderr/stderr.&quot;</span>
+
+    <span class="n">STDOUT</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="n">Redirect</span><span class="p">]</span> <span class="o">=</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">STDOUT</span>
+    <span class="s2">&quot;Redirect stderr to same place as stdout.&quot;</span>
+
+    <span class="n">options</span><span class="p">:</span> <span class="n">Options</span> <span class="o">=</span> <span class="n">Options</span><span class="p">()</span>
+    <span class="s2">&quot;Default command options.&quot;</span>
+
+    <span class="k">def</span> <span class="nf">stdin</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">close</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;CmdContext&quot;</span><span class="p">:</span>
+        <span class="s2">&quot;Return new context with updated `input` settings.&quot;</span>
+        <span class="n">new_options</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">set_stdin</span><span class="p">(</span><span class="n">input_</span><span class="p">,</span> <span class="n">close</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">CmdContext</span><span class="p">(</span><span class="n">new_options</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">stdout</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">append</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">close</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;CmdContext&quot;</span><span class="p">:</span>
+        <span class="s2">&quot;Return new context with updated `output` settings.&quot;</span>
+        <span class="n">new_options</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">set_stdout</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="n">append</span><span class="p">,</span> <span class="n">close</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">CmdContext</span><span class="p">(</span><span class="n">new_options</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">stderr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">error</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">append</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">close</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;CmdContext&quot;</span><span class="p">:</span>
+        <span class="s2">&quot;Return new context with updated `error` settings.&quot;</span>
+        <span class="n">new_options</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">set_stderr</span><span class="p">(</span><span class="n">error</span><span class="p">,</span> <span class="n">append</span><span class="p">,</span> <span class="n">close</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">CmdContext</span><span class="p">(</span><span class="n">new_options</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">env</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;CmdContext&quot;</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Return new context with augmented environment.&quot;&quot;&quot;</span>
+        <span class="n">new_options</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">set_env</span><span class="p">(</span><span class="n">kwds</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">CmdContext</span><span class="p">(</span><span class="n">new_options</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">set</span><span class="p">(</span>  <span class="c1"># pylint: disable=unused-argument, too-many-locals</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">inherit_env</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">encoding</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">return_result</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">incomplete_result</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">exit_codes</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">timeout</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">cancel_timeout</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">cancel_signal</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">alt_name</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">pass_fds</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">pass_fds_closed</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">writable</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">_start_new_session</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">_preexec_fn</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">pty</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">close_fds</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">audit_callback</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;CmdContext&quot;</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Return new context with custom options set.</span>
+
+<span class="sd">        See `Command.set` for option reference.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">kwargs</span> <span class="o">=</span> <span class="nb">locals</span><span class="p">()</span>
+        <span class="k">del</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;self&quot;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">CmdContext</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">kwargs</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="s2">&quot;Construct a new command.&quot;</span>
+        <span class="k">return</span> <span class="n">Command</span><span class="p">(</span><span class="n">coerce</span><span class="p">(</span><span class="n">args</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="p">)</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Concrete class for an immutable execution context.</p>
+</div>
+
+
+                            <div id="CmdContext.__init__" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#CmdContext.__init__">#&nbsp;&nbsp</a>
+
+        
+            <span class="name">CmdContext</span><span class="signature">(
+    options: shellous.command.Options = Options(inherit_env=True, input=&lt;Redirect.DEFAULT: -20&gt;, input_close=False, output=&lt;Redirect.DEFAULT: -20&gt;, output_append=False, output_close=False, error=&lt;Redirect.DEFAULT: -20&gt;, error_append=False, error_close=False, encoding=&#39;utf-8&#39;, return_result=False, incomplete_result=False, exit_codes=None, timeout=None, cancel_timeout=3.0, cancel_signal=&lt;Signals.SIGTERM: 15&gt;, alt_name=None, pass_fds=(), pass_fds_close=False, writable=False, _start_new_session=False, _preexec_fn=None, pty=False, close_fds=False, audit_callback=None)
+)</span>
+    </div>
+
+    
+    
+
+                            </div>
+                            <div id="CmdContext.CAPTURE" class="classattr">
+                                            <div class="attr variable"><a class="headerlink" href="#CmdContext.CAPTURE">#&nbsp;&nbsp</a>
+
+        <span class="name">CAPTURE</span><span class="annotation">: ClassVar[shellous.redirect.Redirect]</span><span class="default_value"> = &lt;Redirect.CAPTURE: -10&gt;</span>
+    </div>
+
+    
+            <div class="docstring"><p>Capture and read/write stream manually.</p>
+</div>
+
+
+                            </div>
+                            <div id="CmdContext.DEVNULL" class="classattr">
+                                            <div class="attr variable"><a class="headerlink" href="#CmdContext.DEVNULL">#&nbsp;&nbsp</a>
+
+        <span class="name">DEVNULL</span><span class="annotation">: ClassVar[shellous.redirect.Redirect]</span><span class="default_value"> = &lt;Redirect.DEVNULL: -3&gt;</span>
+    </div>
+
+    
+            <div class="docstring"><p>Redirect to /dev/null.</p>
+</div>
+
+
+                            </div>
+                            <div id="CmdContext.INHERIT" class="classattr">
+                                            <div class="attr variable"><a class="headerlink" href="#CmdContext.INHERIT">#&nbsp;&nbsp</a>
+
+        <span class="name">INHERIT</span><span class="annotation">: ClassVar[shellous.redirect.Redirect]</span><span class="default_value"> = &lt;Redirect.INHERIT: -11&gt;</span>
+    </div>
+
+    
+            <div class="docstring"><p>Redirect to same place as existing stdin/stderr/stderr.</p>
+</div>
+
+
+                            </div>
+                            <div id="CmdContext.STDOUT" class="classattr">
+                                            <div class="attr variable"><a class="headerlink" href="#CmdContext.STDOUT">#&nbsp;&nbsp</a>
+
+        <span class="name">STDOUT</span><span class="annotation">: ClassVar[shellous.redirect.Redirect]</span><span class="default_value"> = &lt;Redirect.STDOUT: -2&gt;</span>
+    </div>
+
+    
+            <div class="docstring"><p>Redirect stderr to same place as stdout.</p>
+</div>
+
+
+                            </div>
+                            <div id="CmdContext.options" class="classattr">
+                                            <div class="attr variable"><a class="headerlink" href="#CmdContext.options">#&nbsp;&nbsp</a>
+
+        <span class="name">options</span><span class="annotation">: shellous.command.Options</span><span class="default_value"> = Options(inherit_env=True, input=&lt;Redirect.DEFAULT: -20&gt;, input_close=False, output=&lt;Redirect.DEFAULT: -20&gt;, output_append=False, output_close=False, error=&lt;Redirect.DEFAULT: -20&gt;, error_append=False, error_close=False, encoding=&#39;utf-8&#39;, return_result=False, incomplete_result=False, exit_codes=None, timeout=None, cancel_timeout=3.0, cancel_signal=&lt;Signals.SIGTERM: 15&gt;, alt_name=None, pass_fds=(), pass_fds_close=False, writable=False, _start_new_session=False, _preexec_fn=None, pty=False, close_fds=False, audit_callback=None)</span>
+    </div>
+
+    
+            <div class="docstring"><p>Default command options.</p>
+</div>
+
+
+                            </div>
+                            <div id="CmdContext.stdin" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#CmdContext.stdin">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">stdin</span><span class="signature">(self, input_, *, close=False) -&gt; <a href="#CmdContext">shellous.CmdContext</a></span>:
+    </div>
+
+            <details>
+            <summary>View Source</summary>
+            <div class="pdoc-code codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">stdin</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">close</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;CmdContext&quot;</span><span class="p">:</span>
+        <span class="s2">&quot;Return new context with updated `input` settings.&quot;</span>
+        <span class="n">new_options</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">set_stdin</span><span class="p">(</span><span class="n">input_</span><span class="p">,</span> <span class="n">close</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">CmdContext</span><span class="p">(</span><span class="n">new_options</span><span class="p">)</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Return new context with updated <code>input</code> settings.</p>
+</div>
+
+
+                            </div>
+                            <div id="CmdContext.stdout" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#CmdContext.stdout">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">stdout</span><span class="signature">(
+    self,
+    output,
+    *,
+    append=False,
+    close=False
+) -&gt; <a href="#CmdContext">shellous.CmdContext</a></span>:
+    </div>
+
+            <details>
+            <summary>View Source</summary>
+            <div class="pdoc-code codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">stdout</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">append</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">close</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;CmdContext&quot;</span><span class="p">:</span>
+        <span class="s2">&quot;Return new context with updated `output` settings.&quot;</span>
+        <span class="n">new_options</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">set_stdout</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="n">append</span><span class="p">,</span> <span class="n">close</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">CmdContext</span><span class="p">(</span><span class="n">new_options</span><span class="p">)</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Return new context with updated <code>output</code> settings.</p>
+</div>
+
+
+                            </div>
+                            <div id="CmdContext.stderr" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#CmdContext.stderr">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">stderr</span><span class="signature">(
+    self,
+    error,
+    *,
+    append=False,
+    close=False
+) -&gt; <a href="#CmdContext">shellous.CmdContext</a></span>:
+    </div>
+
+            <details>
+            <summary>View Source</summary>
+            <div class="pdoc-code codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">stderr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">error</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">append</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">close</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;CmdContext&quot;</span><span class="p">:</span>
+        <span class="s2">&quot;Return new context with updated `error` settings.&quot;</span>
+        <span class="n">new_options</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">set_stderr</span><span class="p">(</span><span class="n">error</span><span class="p">,</span> <span class="n">append</span><span class="p">,</span> <span class="n">close</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">CmdContext</span><span class="p">(</span><span class="n">new_options</span><span class="p">)</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Return new context with updated <code>error</code> settings.</p>
+</div>
+
+
+                            </div>
+                            <div id="CmdContext.env" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#CmdContext.env">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">env</span><span class="signature">(self, **kwds) -&gt; <a href="#CmdContext">shellous.CmdContext</a></span>:
+    </div>
+
+            <details>
+            <summary>View Source</summary>
+            <div class="pdoc-code codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">env</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;CmdContext&quot;</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Return new context with augmented environment.&quot;&quot;&quot;</span>
+        <span class="n">new_options</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">set_env</span><span class="p">(</span><span class="n">kwds</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">CmdContext</span><span class="p">(</span><span class="n">new_options</span><span class="p">)</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Return new context with augmented environment.</p>
+</div>
+
+
+                            </div>
+                            <div id="CmdContext.set" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#CmdContext.set">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">set</span><span class="signature">(
+    self,
+    *,
+    inherit_env=&lt;UNSET.UNSET: 1&gt;,
+    encoding=&lt;UNSET.UNSET: 1&gt;,
+    return_result=&lt;UNSET.UNSET: 1&gt;,
+    incomplete_result=&lt;UNSET.UNSET: 1&gt;,
+    exit_codes=&lt;UNSET.UNSET: 1&gt;,
+    timeout=&lt;UNSET.UNSET: 1&gt;,
+    cancel_timeout=&lt;UNSET.UNSET: 1&gt;,
+    cancel_signal=&lt;UNSET.UNSET: 1&gt;,
+    alt_name=&lt;UNSET.UNSET: 1&gt;,
+    pass_fds=&lt;UNSET.UNSET: 1&gt;,
+    pass_fds_closed=&lt;UNSET.UNSET: 1&gt;,
+    writable=&lt;UNSET.UNSET: 1&gt;,
+    _start_new_session=&lt;UNSET.UNSET: 1&gt;,
+    _preexec_fn=&lt;UNSET.UNSET: 1&gt;,
+    pty=&lt;UNSET.UNSET: 1&gt;,
+    close_fds=&lt;UNSET.UNSET: 1&gt;,
+    audit_callback=&lt;UNSET.UNSET: 1&gt;
+) -&gt; <a href="#CmdContext">shellous.CmdContext</a></span>:
+    </div>
+
+            <details>
+            <summary>View Source</summary>
+            <div class="pdoc-code codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">set</span><span class="p">(</span>  <span class="c1"># pylint: disable=unused-argument, too-many-locals</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">inherit_env</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">encoding</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">return_result</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">incomplete_result</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">exit_codes</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">timeout</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">cancel_timeout</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">cancel_signal</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">alt_name</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">pass_fds</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">pass_fds_closed</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">writable</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">_start_new_session</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">_preexec_fn</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">pty</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">close_fds</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">audit_callback</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;CmdContext&quot;</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Return new context with custom options set.</span>
+
+<span class="sd">        See `Command.set` for option reference.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">kwargs</span> <span class="o">=</span> <span class="nb">locals</span><span class="p">()</span>
+        <span class="k">del</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;self&quot;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">CmdContext</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">kwargs</span><span class="p">))</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Return new context with custom options set.</p>
+
+<p>See <code><a href="#Command.set">Command.set</a></code> for option reference.</p>
+</div>
+
+
+                            </div>
+                </section>
+                <section id="Command">
+                                <div class="attr class">
+        <a class="headerlink" href="#Command">#&nbsp;&nbsp</a>
+
+                <div class="decorator">@dataclass(frozen=True)</div>
+
+        <span class="def">class</span>
+        <span class="name">Command</span>:
+    </div>
+
+            <details>
+            <summary>View Source</summary>
+            <div class="pdoc-code codehilite"><pre><span></span><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">Command</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;A Command instance is lightweight and immutable object that specifies the</span>
+<span class="sd">    arguments and options used to run a program. Commands do not do anything</span>
+<span class="sd">    until they are awaited.</span>
+
+<span class="sd">    Commands are always created by a CmdContext.</span>
+
+<span class="sd">    ```</span>
+<span class="sd">    # Create a context.</span>
+<span class="sd">    from shellous import sh</span>
+
+<span class="sd">    # Create a new command from the context.</span>
+<span class="sd">    echo = sh(&quot;echo&quot;, &quot;hello, world&quot;)</span>
+
+<span class="sd">    # Run the command.</span>
+<span class="sd">    result = await echo</span>
+<span class="sd">    ```</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">args</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">],</span> <span class="o">...</span><span class="p">]</span>
+    <span class="s2">&quot;Command arguments including the program name as first argument.&quot;</span>
+
+    <span class="n">options</span><span class="p">:</span> <span class="n">Options</span>
+    <span class="s2">&quot;Command options.&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;Validate the command.&quot;</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Command must include program name&quot;</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Returns the name of the program being run.</span>
+
+<span class="sd">        Names longer than 31 characters are truncated. If `alt_name` option</span>
+<span class="sd">        is set, return that instead.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">alt_name</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">alt_name</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">31</span><span class="p">:</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;...</span><span class="si">{</span><span class="n">name</span><span class="p">[</span><span class="o">-</span><span class="mi">31</span><span class="p">:]</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">return</span> <span class="n">name</span>
+
+    <span class="k">def</span> <span class="nf">stdin</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">close</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Command&quot;</span><span class="p">:</span>
+        <span class="s2">&quot;Pass `input` to command&#39;s standard input.&quot;</span>
+        <span class="n">new_options</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">set_stdin</span><span class="p">(</span><span class="n">input_</span><span class="p">,</span> <span class="n">close</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Command</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">,</span> <span class="n">new_options</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">stdout</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">append</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">close</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Command&quot;</span><span class="p">:</span>
+        <span class="s2">&quot;Redirect standard output to `output`.&quot;</span>
+        <span class="n">_check_args</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="n">append</span><span class="p">)</span>
+        <span class="n">new_options</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">set_stdout</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="n">append</span><span class="p">,</span> <span class="n">close</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Command</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">,</span> <span class="n">new_options</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">stderr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">error</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">append</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">close</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Command&quot;</span><span class="p">:</span>
+        <span class="s2">&quot;Redirect standard error to `error`.&quot;</span>
+        <span class="n">_check_args</span><span class="p">(</span><span class="n">error</span><span class="p">,</span> <span class="n">append</span><span class="p">)</span>
+        <span class="n">new_options</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">set_stderr</span><span class="p">(</span><span class="n">error</span><span class="p">,</span> <span class="n">append</span><span class="p">,</span> <span class="n">close</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Command</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">,</span> <span class="n">new_options</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">env</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Command&quot;</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Return new command with augmented environment.&quot;&quot;&quot;</span>
+        <span class="n">new_options</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">set_env</span><span class="p">(</span><span class="n">kwds</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Command</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">,</span> <span class="n">new_options</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">set</span><span class="p">(</span>  <span class="c1"># pylint: disable=unused-argument, too-many-locals</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">inherit_env</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">encoding</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">return_result</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">incomplete_result</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">exit_codes</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">set</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">timeout</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">cancel_timeout</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">cancel_signal</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="n">signal</span><span class="o">.</span><span class="n">Signals</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">alt_name</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">pass_fds</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Iterable</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">pass_fds_close</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">writable</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">_start_new_session</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">_preexec_fn</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">_Preexec_Fn_T</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">pty</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">close_fds</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">audit_callback</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">_Audit_Fn_T</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Command&quot;</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Return new command with custom options set.</span>
+
+<span class="sd">        **inherit_env** (bool) default=True&lt;br&gt;</span>
+<span class="sd">        Subprocess should inherit the parent process environment. If this is</span>
+<span class="sd">        False, the subprocess will only have environment variables specified</span>
+<span class="sd">        by `Command.env`. If `inherit_env` is True, the parent process</span>
+<span class="sd">        environment is augmented/overriden by any variables specified in</span>
+<span class="sd">        `Command.env`.</span>
+
+<span class="sd">        **encoding** (str | None) default=&quot;utf-8&quot;&lt;br&gt;</span>
+<span class="sd">        String encoding to use for subprocess input/output. If `encoding` is</span>
+<span class="sd">        None, use raw bytes. To specify `errors`, append it after a space. For</span>
+<span class="sd">        example, use &quot;utf-8 replace&quot; to specify &quot;utf-8&quot; with errors &quot;replace&quot;.</span>
+
+<span class="sd">        **return_result** (bool) default=False&lt;br&gt;</span>
+<span class="sd">        When True, return a `Result` object instead of the standard output.</span>
+
+<span class="sd">        **incomplete_result** (bool) default=False&lt;br&gt;</span>
+<span class="sd">        When True, raise a `ResultError` when the command is cancelled. On the</span>
+<span class="sd">        plus side, this gives you access to the initial output of the command.</span>
+<span class="sd">        On the negative side, the `ResultError` swallows the `CancelledError`.</span>
+<span class="sd">        Your code may need to re-raise a CancelledError after dealing with the</span>
+<span class="sd">        partial result. When `incomplete_result` is False, a cancelled command</span>
+<span class="sd">        will raise a `CancelledError`.</span>
+
+<span class="sd">        **exit_codes** (set[int] | None) default=None&lt;br&gt;</span>
+<span class="sd">        Set of allowed exit codes that will not raise a `ResultError`. By default,</span>
+<span class="sd">        `exit_codes` is `None` which indicates that 0 is the only valid exit</span>
+<span class="sd">        status. Any other exit status will raise a `ResultError`. In addition to</span>
+<span class="sd">        sets of integers, you can use a `range` object, e.g. `range(256)` for</span>
+<span class="sd">        any positive exit status.</span>
+
+<span class="sd">        **timeout** (float | None) default=None&lt;br&gt;</span>
+<span class="sd">        Timeout in seconds to wait before we cancel the process. The timer</span>
+<span class="sd">        begins immediately after the process is launched. This differs from</span>
+<span class="sd">        using `asyncio.wait_for` which includes the process launch time also.</span>
+<span class="sd">        If timeout is None (the default), there is no timeout.</span>
+
+<span class="sd">        **cancel_timeout** (float) default=3.0 seconds&lt;br&gt;</span>
+<span class="sd">        Timeout in seconds to wait for a process to exit after sending it a</span>
+<span class="sd">        `cancel_signal`. If the process does not exit after waiting for</span>
+<span class="sd">        `cancel_timeout` seconds, we send a kill signal to the process.</span>
+
+<span class="sd">        **cancel_signal** (signals.Signal | None) default=signal.SIGTERM&lt;br&gt;</span>
+<span class="sd">        Signal sent to a process when it is cancelled. If `cancel_signal` is</span>
+<span class="sd">        None, send a `SIGKILL` on Unix and `SIGTERM` (TerminateProcess) on</span>
+<span class="sd">        Windows.</span>
+
+<span class="sd">        **alt_name** (str| None) default=None&lt;br&gt;</span>
+<span class="sd">        Alternative name of the command displayed in logs. Used to resolve</span>
+<span class="sd">        ambiguity when the actual command name is a scripting language.</span>
+
+<span class="sd">        **pass_fds** (Iterable[int]) default=()&lt;br&gt;</span>
+<span class="sd">        Specify open file descriptors to pass to the subprocess.</span>
+
+<span class="sd">        **pass_fds_close** (bool) default=False&lt;br&gt;</span>
+<span class="sd">        Close the file descriptors in `pass_fds` immediately in the current</span>
+<span class="sd">        process immediately after launching the subprocess.</span>
+
+<span class="sd">        **writable** (bool) default=False&lt;br&gt;</span>
+<span class="sd">        Used to indicate process substitution is writing.</span>
+
+<span class="sd">        **_start_new_session** (bool) default=False&lt;br&gt;</span>
+<span class="sd">        Provided for testing purposes only.</span>
+
+<span class="sd">        **_preexec_fn** (Callable() | None) default=None&lt;br&gt;</span>
+<span class="sd">        Provided for testing purposes only.</span>
+
+<span class="sd">        **pty** (bool | Callable(int)) default=False&lt;br&gt;</span>
+<span class="sd">        If True, use a pseudo-terminal (pty) to control the child process.</span>
+<span class="sd">        If `pty` is set to a callable, the function must take one int argument</span>
+<span class="sd">        for the child side of the pty. The function is called to set the child</span>
+<span class="sd">        pty&#39;s termios settings before spawning the subprocess.</span>
+
+<span class="sd">        shellous provides three utility functions: `shellous.cooked`,</span>
+<span class="sd">        `shellous.raw` and `shellous.cbreak` that can be used as arguments to</span>
+<span class="sd">        the `pty` option.</span>
+
+<span class="sd">        **close_fds** (bool) default=False&lt;br&gt;</span>
+<span class="sd">        Close all unnecessary file descriptors in the child process. This</span>
+<span class="sd">        defaults to False to align with `posix_spawn` requirements. Please refer</span>
+<span class="sd">        to the documentation on [inheritance of file descriptors](</span>
+<span class="sd">        https://docs.python.org/3/library/os.html#inheritance-of-file-descriptors)</span>
+<span class="sd">        for behavior on Unix and Windows.</span>
+
+<span class="sd">        **audit_callback** (Callable(phase, info) | None) default=None&lt;br&gt;</span>
+<span class="sd">        Specify a function to call as the command execution goes through its</span>
+<span class="sd">        lifecycle. `audit_callback` is a function called with two arguments,</span>
+<span class="sd">        *phase* and *info*.</span>
+
+<span class="sd">        *phase* can be one of three values:</span>
+
+<span class="sd">            &quot;start&quot;: The process is about to start.</span>
+
+<span class="sd">            &quot;stop&quot;: The process finally stopped.</span>
+
+<span class="sd">            &quot;signal&quot;: The process is being sent a signal.</span>
+
+<span class="sd">        *info* is a dictionary providing more information for the callback. The</span>
+<span class="sd">        following keys are currently defined:</span>
+
+<span class="sd">            &quot;runner&quot; (Runner): Reference to the Runner object.</span>
+
+<span class="sd">            &quot;failure&quot; (str): When phase is &quot;stop&quot;, optional string with the</span>
+<span class="sd">            name of the exception from launching the process.</span>
+
+<span class="sd">            &quot;signal&quot; (str): When phase is &quot;signal&quot;, the signal name/number</span>
+<span class="sd">            sent to the process, e.g. &quot;SIGTERM&quot;.</span>
+
+<span class="sd">        The primary use case for `audit_callback` is measuring how long each</span>
+<span class="sd">        command takes to run and exporting this information to a metrics</span>
+<span class="sd">        framework like Prometheus.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">kwargs</span> <span class="o">=</span> <span class="nb">locals</span><span class="p">()</span>
+        <span class="k">del</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;self&quot;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">Command</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">kwargs</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">_replace_args</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return new command with arguments replaced by `new_args`.</span>
+
+<span class="sd">        Arguments are NOT type-checked by the context. Program name must be the</span>
+<span class="sd">        exact same object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="n">new_args</span>
+        <span class="k">assert</span> <span class="n">new_args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">is</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">Command</span><span class="p">(</span><span class="nb">tuple</span><span class="p">(</span><span class="n">new_args</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">coro</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">_run_future</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="s2">&quot;Return coroutine object to run awaitable.&quot;</span>
+        <span class="k">return</span> <span class="n">Runner</span><span class="o">.</span><span class="n">run_command</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_run_future</span><span class="o">=</span><span class="n">_run_future</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Runner</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Return a `Runner` to run the process incrementally.</span>
+
+<span class="sd">        ```</span>
+<span class="sd">        async with cmd.run() as run:</span>
+<span class="sd">            # do something with run.stdin, run.stdout, run.stderr...</span>
+<span class="sd">            # close run.stdin to signal we&#39;re done...</span>
+<span class="sd">        result = run.result()</span>
+<span class="sd">        ```</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">Runner</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__await__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;Run process and return the standard output.&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">coro</span><span class="p">()</span><span class="o">.</span><span class="fm">__await__</span><span class="p">()</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="fm">__aenter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;Enter the async context manager.&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="n">context_aenter</span><span class="p">(</span><span class="nb">id</span><span class="p">(</span><span class="bp">self</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">run</span><span class="p">())</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="fm">__aexit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exc_type</span><span class="p">,</span> <span class="n">exc_value</span><span class="p">,</span> <span class="n">exc_tb</span><span class="p">):</span>
+        <span class="s2">&quot;Exit the async context manager.&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="n">context_aexit</span><span class="p">(</span><span class="nb">id</span><span class="p">(</span><span class="bp">self</span><span class="p">),</span> <span class="n">exc_type</span><span class="p">,</span> <span class="n">exc_value</span><span class="p">,</span> <span class="n">exc_tb</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__aiter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;Return async iterator to iterate over output lines.&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_readlines</span><span class="p">()</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">_readlines</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;Async generator to iterate over lines.&quot;</span>
+        <span class="k">async</span> <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">run</span><span class="p">()</span> <span class="k">as</span> <span class="n">run</span><span class="p">:</span>
+            <span class="k">async</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">run</span><span class="p">:</span>
+                <span class="k">yield</span> <span class="n">line</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="s2">&quot;Apply more arguments to the end of the command.&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">args</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span>
+        <span class="k">return</span> <span class="n">Command</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span> <span class="o">+</span> <span class="n">coerce</span><span class="p">(</span><span class="n">args</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return string representation for command.</span>
+
+<span class="sd">        Display the full name of the command only. Don&#39;t include arguments or</span>
+<span class="sd">        environment variables.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+    <span class="k">def</span> <span class="fm">__or__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rhs</span><span class="p">):</span>
+        <span class="s2">&quot;Bitwise or operator is used to build pipelines.&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rhs</span><span class="p">,</span> <span class="n">STDOUT_TYPES</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">stdout</span><span class="p">(</span><span class="n">rhs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">shellous</span><span class="o">.</span><span class="n">Pipeline</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">|</span> <span class="n">rhs</span>
+
+    <span class="k">def</span> <span class="fm">__ror__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lhs</span><span class="p">):</span>
+        <span class="s2">&quot;Bitwise or operator is used to build pipelines.&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">lhs</span><span class="p">,</span> <span class="n">STDIN_TYPES</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">stdin</span><span class="p">(</span><span class="n">lhs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">NotImplemented</span>
+
+    <span class="k">def</span> <span class="fm">__rshift__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rhs</span><span class="p">):</span>
+        <span class="s2">&quot;Right shift operator is used to build pipelines.&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rhs</span><span class="p">,</span> <span class="n">STDOUT_APPEND_TYPES</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">stdout</span><span class="p">(</span><span class="n">rhs</span><span class="p">,</span> <span class="n">append</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">NotImplemented</span>
+
+    <span class="k">def</span> <span class="fm">__mod__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rhs</span><span class="p">):</span>
+        <span class="s2">&quot;Modulo operator is used to concatenate commands.&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rhs</span><span class="p">,</span> <span class="n">Command</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="p">(</span><span class="n">rhs</span><span class="o">.</span><span class="n">args</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">NotImplemented</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">writable</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;Set `writable` to True.&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">writable</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">result</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;Set `return_result` and `exit_codes`.&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">return_result</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exit_codes</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span><span class="o">-</span><span class="mi">255</span><span class="p">,</span> <span class="mi">256</span><span class="p">))</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>A Command instance is lightweight and immutable object that specifies the
+arguments and options used to run a program. Commands do not do anything
+until they are awaited.</p>
+
+<p>Commands are always created by a CmdContext.</p>
+
+<pre><code># Create a context.
+from shellous import sh
+
+# Create a new command from the context.
+echo = sh("echo", "hello, world")
+
+# Run the command.
+result = await echo
+</code></pre>
+</div>
+
+
+                            <div id="Command.__init__" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#Command.__init__">#&nbsp;&nbsp</a>
+
+        
+            <span class="name">Command</span><span class="signature">(
+    args: tuple[typing.Union[str, bytes, os.PathLike], ...],
+    options: shellous.command.Options
+)</span>
+    </div>
+
+    
+    
+
+                            </div>
+                            <div id="Command.args" class="classattr">
+                                            <div class="attr variable"><a class="headerlink" href="#Command.args">#&nbsp;&nbsp</a>
+
+        <span class="name">args</span><span class="annotation">: tuple[typing.Union[str, bytes, os.PathLike], ...]</span>
+    </div>
+
+    
+            <div class="docstring"><p>Command arguments including the program name as first argument.</p>
+</div>
+
+
+                            </div>
+                            <div id="Command.options" class="classattr">
+                                            <div class="attr variable"><a class="headerlink" href="#Command.options">#&nbsp;&nbsp</a>
+
+        <span class="name">options</span><span class="annotation">: shellous.command.Options</span>
+    </div>
+
+    
+            <div class="docstring"><p>Command options.</p>
+</div>
+
+
+                            </div>
+                            <div id="Command.name" class="classattr">
+                                            <div class="attr variable"><a class="headerlink" href="#Command.name">#&nbsp;&nbsp</a>
+
+        <span class="name">name</span><span class="annotation">: str</span>
+    </div>
+
+    
+            <div class="docstring"><p>Returns the name of the program being run.</p>
+
+<p>Names longer than 31 characters are truncated. If <code>alt_name</code> option
+is set, return that instead.</p>
+</div>
+
+
+                            </div>
+                            <div id="Command.stdin" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#Command.stdin">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">stdin</span><span class="signature">(self, input_, *, close=False) -&gt; <a href="#Command">shellous.Command</a></span>:
+    </div>
+
+            <details>
+            <summary>View Source</summary>
+            <div class="pdoc-code codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">stdin</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">close</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Command&quot;</span><span class="p">:</span>
+        <span class="s2">&quot;Pass `input` to command&#39;s standard input.&quot;</span>
+        <span class="n">new_options</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">set_stdin</span><span class="p">(</span><span class="n">input_</span><span class="p">,</span> <span class="n">close</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Command</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">,</span> <span class="n">new_options</span><span class="p">)</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Pass <code>input</code> to command's standard input.</p>
+</div>
+
+
+                            </div>
+                            <div id="Command.stdout" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#Command.stdout">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">stdout</span><span class="signature">(
+    self,
+    output,
+    *,
+    append=False,
+    close=False
+) -&gt; <a href="#Command">shellous.Command</a></span>:
+    </div>
+
+            <details>
+            <summary>View Source</summary>
+            <div class="pdoc-code codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">stdout</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">append</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">close</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Command&quot;</span><span class="p">:</span>
+        <span class="s2">&quot;Redirect standard output to `output`.&quot;</span>
+        <span class="n">_check_args</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="n">append</span><span class="p">)</span>
+        <span class="n">new_options</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">set_stdout</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="n">append</span><span class="p">,</span> <span class="n">close</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Command</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">,</span> <span class="n">new_options</span><span class="p">)</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Redirect standard output to <code>output</code>.</p>
+</div>
+
+
+                            </div>
+                            <div id="Command.stderr" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#Command.stderr">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">stderr</span><span class="signature">(
+    self,
+    error,
+    *,
+    append=False,
+    close=False
+) -&gt; <a href="#Command">shellous.Command</a></span>:
+    </div>
+
+            <details>
+            <summary>View Source</summary>
+            <div class="pdoc-code codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">stderr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">error</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">append</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">close</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Command&quot;</span><span class="p">:</span>
+        <span class="s2">&quot;Redirect standard error to `error`.&quot;</span>
+        <span class="n">_check_args</span><span class="p">(</span><span class="n">error</span><span class="p">,</span> <span class="n">append</span><span class="p">)</span>
+        <span class="n">new_options</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">set_stderr</span><span class="p">(</span><span class="n">error</span><span class="p">,</span> <span class="n">append</span><span class="p">,</span> <span class="n">close</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Command</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">,</span> <span class="n">new_options</span><span class="p">)</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Redirect standard error to <code>error</code>.</p>
+</div>
+
+
+                            </div>
+                            <div id="Command.env" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#Command.env">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">env</span><span class="signature">(self, **kwds) -&gt; <a href="#Command">shellous.Command</a></span>:
+    </div>
+
+            <details>
+            <summary>View Source</summary>
+            <div class="pdoc-code codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">env</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Command&quot;</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Return new command with augmented environment.&quot;&quot;&quot;</span>
+        <span class="n">new_options</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">set_env</span><span class="p">(</span><span class="n">kwds</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Command</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">,</span> <span class="n">new_options</span><span class="p">)</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Return new command with augmented environment.</p>
+</div>
+
+
+                            </div>
+                            <div id="Command.set" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#Command.set">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">set</span><span class="signature">(
+    self,
+    *,
+    inherit_env: Union[bool, shellous.command.UNSET] = &lt;UNSET.UNSET: 1&gt;,
+    encoding: Union[str, NoneType, shellous.command.UNSET] = &lt;UNSET.UNSET: 1&gt;,
+    return_result: Union[bool, shellous.command.UNSET] = &lt;UNSET.UNSET: 1&gt;,
+    incomplete_result: Union[bool, shellous.command.UNSET] = &lt;UNSET.UNSET: 1&gt;,
+    exit_codes: Union[set, NoneType, shellous.command.UNSET] = &lt;UNSET.UNSET: 1&gt;,
+    timeout: Union[float, NoneType, shellous.command.UNSET] = &lt;UNSET.UNSET: 1&gt;,
+    cancel_timeout: Union[float, shellous.command.UNSET] = &lt;UNSET.UNSET: 1&gt;,
+    cancel_signal: Union[signal.Signals, NoneType, shellous.command.UNSET] = &lt;UNSET.UNSET: 1&gt;,
+    alt_name: Union[str, NoneType, shellous.command.UNSET] = &lt;UNSET.UNSET: 1&gt;,
+    pass_fds: Union[collections.abc.Iterable[int], shellous.command.UNSET] = &lt;UNSET.UNSET: 1&gt;,
+    pass_fds_close: Union[bool, shellous.command.UNSET] = &lt;UNSET.UNSET: 1&gt;,
+    writable: Union[bool, shellous.command.UNSET] = &lt;UNSET.UNSET: 1&gt;,
+    _start_new_session: Union[bool, shellous.command.UNSET] = &lt;UNSET.UNSET: 1&gt;,
+    _preexec_fn: Union[Callable[[], NoneType], NoneType, shellous.command.UNSET] = &lt;UNSET.UNSET: 1&gt;,
+    pty: Union[bool, shellous.command.UNSET] = &lt;UNSET.UNSET: 1&gt;,
+    close_fds: Union[bool, shellous.command.UNSET] = &lt;UNSET.UNSET: 1&gt;,
+    audit_callback: Union[Callable[[str, dict], NoneType], NoneType, shellous.command.UNSET] = &lt;UNSET.UNSET: 1&gt;
+) -&gt; <a href="#Command">shellous.Command</a></span>:
+    </div>
+
+            <details>
+            <summary>View Source</summary>
+            <div class="pdoc-code codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">set</span><span class="p">(</span>  <span class="c1"># pylint: disable=unused-argument, too-many-locals</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">inherit_env</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">encoding</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">return_result</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">incomplete_result</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">exit_codes</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">set</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">timeout</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">cancel_timeout</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">cancel_signal</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="n">signal</span><span class="o">.</span><span class="n">Signals</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">alt_name</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">pass_fds</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Iterable</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">pass_fds_close</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">writable</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">_start_new_session</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">_preexec_fn</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">_Preexec_Fn_T</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">pty</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">close_fds</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">audit_callback</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">_Audit_Fn_T</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Command&quot;</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Return new command with custom options set.</span>
+
+<span class="sd">        **inherit_env** (bool) default=True&lt;br&gt;</span>
+<span class="sd">        Subprocess should inherit the parent process environment. If this is</span>
+<span class="sd">        False, the subprocess will only have environment variables specified</span>
+<span class="sd">        by `Command.env`. If `inherit_env` is True, the parent process</span>
+<span class="sd">        environment is augmented/overriden by any variables specified in</span>
+<span class="sd">        `Command.env`.</span>
+
+<span class="sd">        **encoding** (str | None) default=&quot;utf-8&quot;&lt;br&gt;</span>
+<span class="sd">        String encoding to use for subprocess input/output. If `encoding` is</span>
+<span class="sd">        None, use raw bytes. To specify `errors`, append it after a space. For</span>
+<span class="sd">        example, use &quot;utf-8 replace&quot; to specify &quot;utf-8&quot; with errors &quot;replace&quot;.</span>
+
+<span class="sd">        **return_result** (bool) default=False&lt;br&gt;</span>
+<span class="sd">        When True, return a `Result` object instead of the standard output.</span>
+
+<span class="sd">        **incomplete_result** (bool) default=False&lt;br&gt;</span>
+<span class="sd">        When True, raise a `ResultError` when the command is cancelled. On the</span>
+<span class="sd">        plus side, this gives you access to the initial output of the command.</span>
+<span class="sd">        On the negative side, the `ResultError` swallows the `CancelledError`.</span>
+<span class="sd">        Your code may need to re-raise a CancelledError after dealing with the</span>
+<span class="sd">        partial result. When `incomplete_result` is False, a cancelled command</span>
+<span class="sd">        will raise a `CancelledError`.</span>
+
+<span class="sd">        **exit_codes** (set[int] | None) default=None&lt;br&gt;</span>
+<span class="sd">        Set of allowed exit codes that will not raise a `ResultError`. By default,</span>
+<span class="sd">        `exit_codes` is `None` which indicates that 0 is the only valid exit</span>
+<span class="sd">        status. Any other exit status will raise a `ResultError`. In addition to</span>
+<span class="sd">        sets of integers, you can use a `range` object, e.g. `range(256)` for</span>
+<span class="sd">        any positive exit status.</span>
+
+<span class="sd">        **timeout** (float | None) default=None&lt;br&gt;</span>
+<span class="sd">        Timeout in seconds to wait before we cancel the process. The timer</span>
+<span class="sd">        begins immediately after the process is launched. This differs from</span>
+<span class="sd">        using `asyncio.wait_for` which includes the process launch time also.</span>
+<span class="sd">        If timeout is None (the default), there is no timeout.</span>
+
+<span class="sd">        **cancel_timeout** (float) default=3.0 seconds&lt;br&gt;</span>
+<span class="sd">        Timeout in seconds to wait for a process to exit after sending it a</span>
+<span class="sd">        `cancel_signal`. If the process does not exit after waiting for</span>
+<span class="sd">        `cancel_timeout` seconds, we send a kill signal to the process.</span>
+
+<span class="sd">        **cancel_signal** (signals.Signal | None) default=signal.SIGTERM&lt;br&gt;</span>
+<span class="sd">        Signal sent to a process when it is cancelled. If `cancel_signal` is</span>
+<span class="sd">        None, send a `SIGKILL` on Unix and `SIGTERM` (TerminateProcess) on</span>
+<span class="sd">        Windows.</span>
+
+<span class="sd">        **alt_name** (str| None) default=None&lt;br&gt;</span>
+<span class="sd">        Alternative name of the command displayed in logs. Used to resolve</span>
+<span class="sd">        ambiguity when the actual command name is a scripting language.</span>
+
+<span class="sd">        **pass_fds** (Iterable[int]) default=()&lt;br&gt;</span>
+<span class="sd">        Specify open file descriptors to pass to the subprocess.</span>
+
+<span class="sd">        **pass_fds_close** (bool) default=False&lt;br&gt;</span>
+<span class="sd">        Close the file descriptors in `pass_fds` immediately in the current</span>
+<span class="sd">        process immediately after launching the subprocess.</span>
+
+<span class="sd">        **writable** (bool) default=False&lt;br&gt;</span>
+<span class="sd">        Used to indicate process substitution is writing.</span>
+
+<span class="sd">        **_start_new_session** (bool) default=False&lt;br&gt;</span>
+<span class="sd">        Provided for testing purposes only.</span>
+
+<span class="sd">        **_preexec_fn** (Callable() | None) default=None&lt;br&gt;</span>
+<span class="sd">        Provided for testing purposes only.</span>
+
+<span class="sd">        **pty** (bool | Callable(int)) default=False&lt;br&gt;</span>
+<span class="sd">        If True, use a pseudo-terminal (pty) to control the child process.</span>
+<span class="sd">        If `pty` is set to a callable, the function must take one int argument</span>
+<span class="sd">        for the child side of the pty. The function is called to set the child</span>
+<span class="sd">        pty&#39;s termios settings before spawning the subprocess.</span>
+
+<span class="sd">        shellous provides three utility functions: `shellous.cooked`,</span>
+<span class="sd">        `shellous.raw` and `shellous.cbreak` that can be used as arguments to</span>
+<span class="sd">        the `pty` option.</span>
+
+<span class="sd">        **close_fds** (bool) default=False&lt;br&gt;</span>
+<span class="sd">        Close all unnecessary file descriptors in the child process. This</span>
+<span class="sd">        defaults to False to align with `posix_spawn` requirements. Please refer</span>
+<span class="sd">        to the documentation on [inheritance of file descriptors](</span>
+<span class="sd">        https://docs.python.org/3/library/os.html#inheritance-of-file-descriptors)</span>
+<span class="sd">        for behavior on Unix and Windows.</span>
+
+<span class="sd">        **audit_callback** (Callable(phase, info) | None) default=None&lt;br&gt;</span>
+<span class="sd">        Specify a function to call as the command execution goes through its</span>
+<span class="sd">        lifecycle. `audit_callback` is a function called with two arguments,</span>
+<span class="sd">        *phase* and *info*.</span>
+
+<span class="sd">        *phase* can be one of three values:</span>
+
+<span class="sd">            &quot;start&quot;: The process is about to start.</span>
+
+<span class="sd">            &quot;stop&quot;: The process finally stopped.</span>
+
+<span class="sd">            &quot;signal&quot;: The process is being sent a signal.</span>
+
+<span class="sd">        *info* is a dictionary providing more information for the callback. The</span>
+<span class="sd">        following keys are currently defined:</span>
+
+<span class="sd">            &quot;runner&quot; (Runner): Reference to the Runner object.</span>
+
+<span class="sd">            &quot;failure&quot; (str): When phase is &quot;stop&quot;, optional string with the</span>
+<span class="sd">            name of the exception from launching the process.</span>
+
+<span class="sd">            &quot;signal&quot; (str): When phase is &quot;signal&quot;, the signal name/number</span>
+<span class="sd">            sent to the process, e.g. &quot;SIGTERM&quot;.</span>
+
+<span class="sd">        The primary use case for `audit_callback` is measuring how long each</span>
+<span class="sd">        command takes to run and exporting this information to a metrics</span>
+<span class="sd">        framework like Prometheus.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">kwargs</span> <span class="o">=</span> <span class="nb">locals</span><span class="p">()</span>
+        <span class="k">del</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;self&quot;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">Command</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">kwargs</span><span class="p">))</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Return new command with custom options set.</p>
+
+<p><strong>inherit_env</strong> (bool) default=True<br>
+Subprocess should inherit the parent process environment. If this is
+False, the subprocess will only have environment variables specified
+by <code><a href="#Command.env">Command.env</a></code>. If <code>inherit_env</code> is True, the parent process
+environment is augmented/overriden by any variables specified in
+<code><a href="#Command.env">Command.env</a></code>.</p>
+
+<p><strong>encoding</strong> (str | None) default="utf-8"<br>
+String encoding to use for subprocess input/output. If <code>encoding</code> is
+None, use raw bytes. To specify <code>errors</code>, append it after a space. For
+example, use "utf-8 replace" to specify "utf-8" with errors "replace".</p>
+
+<p><strong>return_result</strong> (bool) default=False<br>
+When True, return a <code><a href="#Result">Result</a></code> object instead of the standard output.</p>
+
+<p><strong>incomplete_result</strong> (bool) default=False<br>
+When True, raise a <code><a href="#ResultError">ResultError</a></code> when the command is cancelled. On the
+plus side, this gives you access to the initial output of the command.
+On the negative side, the <code><a href="#ResultError">ResultError</a></code> swallows the <code>CancelledError</code>.
+Your code may need to re-raise a CancelledError after dealing with the
+partial result. When <code>incomplete_result</code> is False, a cancelled command
+will raise a <code>CancelledError</code>.</p>
+
+<p><strong>exit_codes</strong> (set[int] | None) default=None<br>
+Set of allowed exit codes that will not raise a <code><a href="#ResultError">ResultError</a></code>. By default,
+<code>exit_codes</code> is <code>None</code> which indicates that 0 is the only valid exit
+status. Any other exit status will raise a <code><a href="#ResultError">ResultError</a></code>. In addition to
+sets of integers, you can use a <code>range</code> object, e.g. <code>range(256)</code> for
+any positive exit status.</p>
+
+<p><strong>timeout</strong> (float | None) default=None<br>
+Timeout in seconds to wait before we cancel the process. The timer
+begins immediately after the process is launched. This differs from
+using <code>asyncio.wait_for</code> which includes the process launch time also.
+If timeout is None (the default), there is no timeout.</p>
+
+<p><strong>cancel_timeout</strong> (float) default=3.0 seconds<br>
+Timeout in seconds to wait for a process to exit after sending it a
+<code>cancel_signal</code>. If the process does not exit after waiting for
+<code>cancel_timeout</code> seconds, we send a kill signal to the process.</p>
+
+<p><strong>cancel_signal</strong> (signals.Signal | None) default=signal.SIGTERM<br>
+Signal sent to a process when it is cancelled. If <code>cancel_signal</code> is
+None, send a <code>SIGKILL</code> on Unix and <code>SIGTERM</code> (TerminateProcess) on
+Windows.</p>
+
+<p><strong>alt_name</strong> (str| None) default=None<br>
+Alternative name of the command displayed in logs. Used to resolve
+ambiguity when the actual command name is a scripting language.</p>
+
+<p><strong>pass_fds</strong> (Iterable[int]) default=()<br>
+Specify open file descriptors to pass to the subprocess.</p>
+
+<p><strong>pass_fds_close</strong> (bool) default=False<br>
+Close the file descriptors in <code>pass_fds</code> immediately in the current
+process immediately after launching the subprocess.</p>
+
+<p><strong>writable</strong> (bool) default=False<br>
+Used to indicate process substitution is writing.</p>
+
+<p><strong>_start_new_session</strong> (bool) default=False<br>
+Provided for testing purposes only.</p>
+
+<p><strong>_preexec_fn</strong> (Callable() | None) default=None<br>
+Provided for testing purposes only.</p>
+
+<p><strong>pty</strong> (bool | Callable(int)) default=False<br>
+If True, use a pseudo-terminal (pty) to control the child process.
+If <code>pty</code> is set to a callable, the function must take one int argument
+for the child side of the pty. The function is called to set the child
+pty's termios settings before spawning the subprocess.</p>
+
+<p>shellous provides three utility functions: <code><a href="#cooked">shellous.cooked</a></code>,
+<code><a href="#raw">shellous.raw</a></code> and <code><a href="#cbreak">shellous.cbreak</a></code> that can be used as arguments to
+the <code>pty</code> option.</p>
+
+<p><strong>close_fds</strong> (bool) default=False<br>
+Close all unnecessary file descriptors in the child process. This
+defaults to False to align with <code>posix_spawn</code> requirements. Please refer
+to the documentation on <a href="https://docs.python.org/3/library/os.html#inheritance-of-file-descriptors">inheritance of file descriptors</a>
+for behavior on Unix and Windows.</p>
+
+<p><strong>audit_callback</strong> (Callable(phase, info) | None) default=None<br>
+Specify a function to call as the command execution goes through its
+lifecycle. <code>audit_callback</code> is a function called with two arguments,
+<em>phase</em> and <em>info</em>.</p>
+
+<p><em>phase</em> can be one of three values:</p>
+
+<pre><code>"start": The process is about to start.
+
+"stop": The process finally stopped.
+
+"signal": The process is being sent a signal.
+</code></pre>
+
+<p><em>info</em> is a dictionary providing more information for the callback. The
+following keys are currently defined:</p>
+
+<pre><code>"runner" (Runner): Reference to the Runner object.
+
+"failure" (str): When phase is "stop", optional string with the
+name of the exception from launching the process.
+
+"signal" (str): When phase is "signal", the signal name/number
+sent to the process, e.g. "SIGTERM".
+</code></pre>
+
+<p>The primary use case for <code>audit_callback</code> is measuring how long each
+command takes to run and exporting this information to a metrics
+framework like Prometheus.</p>
+</div>
+
+
+                            </div>
+                            <div id="Command.coro" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#Command.coro">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">coro</span><span class="signature">(self, *, _run_future=None)</span>:
+    </div>
+
+            <details>
+            <summary>View Source</summary>
+            <div class="pdoc-code codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">coro</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">_run_future</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="s2">&quot;Return coroutine object to run awaitable.&quot;</span>
+        <span class="k">return</span> <span class="n">Runner</span><span class="o">.</span><span class="n">run_command</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_run_future</span><span class="o">=</span><span class="n">_run_future</span><span class="p">)</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Return coroutine object to run awaitable.</p>
+</div>
+
+
+                            </div>
+                            <div id="Command.run" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#Command.run">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">run</span><span class="signature">(self) -&gt; shellous.runner.Runner</span>:
+    </div>
+
+            <details>
+            <summary>View Source</summary>
+            <div class="pdoc-code codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Runner</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Return a `Runner` to run the process incrementally.</span>
+
+<span class="sd">        ```</span>
+<span class="sd">        async with cmd.run() as run:</span>
+<span class="sd">            # do something with run.stdin, run.stdout, run.stderr...</span>
+<span class="sd">            # close run.stdin to signal we&#39;re done...</span>
+<span class="sd">        result = run.result()</span>
+<span class="sd">        ```</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">Runner</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Return a <code>Runner</code> to run the process incrementally.</p>
+
+<pre><code>async with cmd.run() as run:
+    # do something with run.stdin, run.stdout, run.stderr...
+    # close run.stdin to signal we're done...
+result = run.result()
+</code></pre>
+</div>
+
+
+                            </div>
+                            <div id="Command.writable" class="classattr">
+                                            <div class="attr variable"><a class="headerlink" href="#Command.writable">#&nbsp;&nbsp</a>
+
+        <span class="name">writable</span>
+    </div>
+
+    
+            <div class="docstring"><p>Set <code><a href="#Command.writable">writable</a></code> to True.</p>
+</div>
+
+
+                            </div>
+                            <div id="Command.result" class="classattr">
+                                            <div class="attr variable"><a class="headerlink" href="#Command.result">#&nbsp;&nbsp</a>
+
+        <span class="name">result</span>
+    </div>
+
+    
+            <div class="docstring"><p>Set <code>return_result</code> and <code>exit_codes</code>.</p>
+</div>
+
+
+                            </div>
+                </section>
+                <section id="cbreak">
+                            <div class="attr function"><a class="headerlink" href="#cbreak">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">cbreak</span><span class="signature">(rows=0, cols=0)</span>:
+    </div>
+
+            <details>
+            <summary>View Source</summary>
+            <div class="pdoc-code codehilite"><pre><span></span><span class="k">def</span> <span class="nf">cbreak</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">cols</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+    <span class="s2">&quot;Return a function that sets PtyOptions.child_fd to cbreak mode.&quot;</span>
+
+    <span class="k">if</span> <span class="bp">Ellipsis</span> <span class="ow">in</span> <span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">):</span>
+        <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span> <span class="o">=</span> <span class="n">_inherit_term_size</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_pty_set_cbreak</span><span class="p">(</span><span class="n">fdesc</span><span class="p">):</span>
+        <span class="n">tty</span><span class="o">.</span><span class="n">setcbreak</span><span class="p">(</span><span class="n">fdesc</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">rows</span> <span class="ow">or</span> <span class="n">cols</span><span class="p">:</span>
+            <span class="n">_set_term_size</span><span class="p">(</span><span class="n">fdesc</span><span class="p">,</span> <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">_get_eof</span><span class="p">(</span><span class="n">fdesc</span><span class="p">)</span> <span class="o">==</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span>
+
+    <span class="k">return</span> <span class="n">_pty_set_cbreak</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Return a function that sets PtyOptions.child_fd to cbreak mode.</p>
+</div>
+
+
+                </section>
+                <section id="cooked">
+                            <div class="attr function"><a class="headerlink" href="#cooked">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">cooked</span><span class="signature">(rows=0, cols=0, echo=True)</span>:
+    </div>
+
+            <details>
+            <summary>View Source</summary>
+            <div class="pdoc-code codehilite"><pre><span></span><span class="k">def</span> <span class="nf">cooked</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">cols</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">echo</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="s2">&quot;Return a function that leaves PtyOptions.child_fd in cooked mode.&quot;</span>
+
+    <span class="k">if</span> <span class="bp">Ellipsis</span> <span class="ow">in</span> <span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">):</span>
+        <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span> <span class="o">=</span> <span class="n">_inherit_term_size</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_pty_set_canonical</span><span class="p">(</span><span class="n">fdesc</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">rows</span> <span class="ow">or</span> <span class="n">cols</span><span class="p">:</span>
+            <span class="n">_set_term_size</span><span class="p">(</span><span class="n">fdesc</span><span class="p">,</span> <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">echo</span><span class="p">:</span>
+            <span class="n">_set_term_echo</span><span class="p">(</span><span class="n">fdesc</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">_get_eof</span><span class="p">(</span><span class="n">fdesc</span><span class="p">)</span> <span class="o">==</span> <span class="sa">b</span><span class="s2">&quot;</span><span class="se">\x04</span><span class="s2">&quot;</span>
+
+    <span class="k">return</span> <span class="n">_pty_set_canonical</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Return a function that leaves PtyOptions.child_fd in cooked mode.</p>
+</div>
+
+
+                </section>
+                <section id="raw">
+                            <div class="attr function"><a class="headerlink" href="#raw">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">raw</span><span class="signature">(rows=0, cols=0)</span>:
+    </div>
+
+            <details>
+            <summary>View Source</summary>
+            <div class="pdoc-code codehilite"><pre><span></span><span class="k">def</span> <span class="nf">raw</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">cols</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+    <span class="s2">&quot;Return a function that sets PtyOptions.child_fd to raw mode.&quot;</span>
+
+    <span class="k">if</span> <span class="bp">Ellipsis</span> <span class="ow">in</span> <span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">):</span>
+        <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span> <span class="o">=</span> <span class="n">_inherit_term_size</span><span class="p">(</span><span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_pty_set_raw</span><span class="p">(</span><span class="n">fdesc</span><span class="p">):</span>
+        <span class="n">tty</span><span class="o">.</span><span class="n">setraw</span><span class="p">(</span><span class="n">fdesc</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">rows</span> <span class="ow">or</span> <span class="n">cols</span><span class="p">:</span>
+            <span class="n">_set_term_size</span><span class="p">(</span><span class="n">fdesc</span><span class="p">,</span> <span class="n">rows</span><span class="p">,</span> <span class="n">cols</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">_get_eof</span><span class="p">(</span><span class="n">fdesc</span><span class="p">)</span> <span class="o">==</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span>
+
+    <span class="k">return</span> <span class="n">_pty_set_raw</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Return a function that sets PtyOptions.child_fd to raw mode.</p>
+</div>
+
+
+                </section>
+                <section id="Result">
+                                <div class="attr class">
+        <a class="headerlink" href="#Result">#&nbsp;&nbsp</a>
+
+                <div class="decorator">@dataclass(frozen=True)</div>
+
+        <span class="def">class</span>
+        <span class="name">Result</span>:
+    </div>
+
+            <details>
+            <summary>View Source</summary>
+            <div class="pdoc-code codehilite"><pre><span></span><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">Result</span><span class="p">:</span>
+    <span class="s2">&quot;Concrete class for the result of a Command.&quot;</span>
+
+    <span class="n">output_bytes</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bytes</span><span class="p">]</span>
+    <span class="n">exit_code</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">cancelled</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">encoding</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+    <span class="n">extra</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">output</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="s2">&quot;Return output string, based on encoding.&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoding</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;use output_bytes instead; encoding is None&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">decode</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_bytes</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoding</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__bool__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="s2">&quot;Return true if exit_code is 0.&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">exit_code</span> <span class="o">==</span> <span class="mi">0</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Concrete class for the result of a Command.</p>
+</div>
+
+
+                            <div id="Result.__init__" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#Result.__init__">#&nbsp;&nbsp</a>
+
+        
+            <span class="name">Result</span><span class="signature">(
+    output_bytes: Optional[bytes],
+    exit_code: int,
+    cancelled: bool,
+    encoding: Optional[str],
+    extra: Any = None
+)</span>
+    </div>
+
+    
+    
+
+                            </div>
+                            <div id="Result.extra" class="classattr">
+                                            <div class="attr variable"><a class="headerlink" href="#Result.extra">#&nbsp;&nbsp</a>
+
+        <span class="name">extra</span><span class="annotation">: Any</span><span class="default_value"> = None</span>
+    </div>
+
+    
+    
+
+                            </div>
+                            <div id="Result.output" class="classattr">
+                                            <div class="attr variable"><a class="headerlink" href="#Result.output">#&nbsp;&nbsp</a>
+
+        <span class="name">output</span><span class="annotation">: str</span>
+    </div>
+
+    
+            <div class="docstring"><p>Return output string, based on encoding.</p>
+</div>
+
+
+                            </div>
+                </section>
+                <section id="ResultError">
+                                <div class="attr class">
+        <a class="headerlink" href="#ResultError">#&nbsp;&nbsp</a>
+
+        
+        <span class="def">class</span>
+        <span class="name">ResultError</span><wbr>(<span class="base">builtins.Exception</span>):
+    </div>
+
+            <details>
+            <summary>View Source</summary>
+            <div class="pdoc-code codehilite"><pre><span></span><span class="k">class</span> <span class="nc">ResultError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="s2">&quot;Represents a non-zero exit status.&quot;</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">result</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;Return the `Result` object.&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Represents a non-zero exit status.</p>
+</div>
+
+
+                            <div id="ResultError.result" class="classattr">
+                                            <div class="attr variable"><a class="headerlink" href="#ResultError.result">#&nbsp;&nbsp</a>
+
+        <span class="name">result</span>
+    </div>
+
+    
+            <div class="docstring"><p>Return the <code><a href="#Result">Result</a></code> object.</p>
+</div>
+
+
+                            </div>
+                            <div class="inherited">
+                                <h5>Inherited Members</h5>
+                                <dl>
+                                    <div><dt>builtins.Exception</dt>
+                                <dd id="ResultError.__init__" class="function">Exception</dd>
+
+            </div>
+            <div><dt>builtins.BaseException</dt>
+                                <dd id="ResultError.with_traceback" class="function">with_traceback</dd>
+                <dd id="ResultError.args" class="variable">args</dd>
+
+            </div>
+                                </dl>
+                            </div>
+                </section>
+                <section id="AUDIT_EVENT_SUBPROCESS_SPAWN">
+                                <div class="attr variable"><a class="headerlink" href="#AUDIT_EVENT_SUBPROCESS_SPAWN">#&nbsp;&nbsp</a>
+
+        <span class="name">AUDIT_EVENT_SUBPROCESS_SPAWN</span><span class="default_value"> = &#39;byllyfish/shellous.subprocess_spawn&#39;</span>
+    </div>
+
+    
+    
+
+                </section>
+                <section id="DefaultChildWatcher">
+                                <div class="attr class">
+        <a class="headerlink" href="#DefaultChildWatcher">#&nbsp;&nbsp</a>
+
+        
+        <span class="def">class</span>
+        <span class="name">DefaultChildWatcher</span><wbr>(<span class="base">asyncio.unix_events.AbstractChildWatcher</span>):
+    </div>
+
+            <details>
+            <summary>View Source</summary>
+            <div class="pdoc-code codehilite"><pre><span></span><span class="k">class</span> <span class="nc">DefaultChildWatcher</span><span class="p">(</span><span class="n">asyncio</span><span class="o">.</span><span class="n">AbstractChildWatcher</span><span class="p">):</span>
+    <span class="s2">&quot;Use platform-dependent strategy to monitor for exiting child processes.&quot;</span>
+
+    <span class="n">_strategy</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ChildStrategy</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;Initialize child watcher.&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_strategy</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_lock</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Lock</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">add_child_handler</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pid</span><span class="p">,</span> <span class="n">callback</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Register a new child handler.</span>
+
+<span class="sd">        Arrange for callback(pid, returncode, *args) to be called when</span>
+<span class="sd">        process &#39;pid&#39; terminates. Specifying another callback for the same</span>
+<span class="sd">        process replaces the previous handler.</span>
+
+<span class="sd">        Note: callback() must be thread-safe.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_strategy</span><span class="p">:</span>  <span class="c1"># ATOMIC: self._strategy</span>
+            <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lock</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_init_strategy</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_strategy</span><span class="o">.</span><span class="n">watch_pid</span><span class="p">(</span><span class="n">pid</span><span class="p">,</span> <span class="n">callback</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span>  <span class="c1"># ATOMIC: self._strategy</span>
+
+    <span class="k">def</span> <span class="nf">remove_child_handler</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pid</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Removes the handler for process &#39;pid&#39;.</span>
+
+<span class="sd">        The function returns True if the handler was successfully removed,</span>
+<span class="sd">        False if there was nothing to remove.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="kc">False</span>  <span class="c1"># not supported</span>
+
+    <span class="k">def</span> <span class="nf">attach_loop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">loop</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Attach the watcher to an event loop.</span>
+
+<span class="sd">        If the watcher was previously attached to an event loop, then it is</span>
+<span class="sd">        first detached before attaching to the new loop.</span>
+
+<span class="sd">        Note: loop may be None.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># no op</span>
+
+    <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Close the watcher.</span>
+
+<span class="sd">        This must be called to make sure that any underlying resource is freed.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lock</span><span class="p">:</span>
+            <span class="n">strategy</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_strategy</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_strategy</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="n">strategy</span><span class="p">:</span>
+            <span class="n">strategy</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">is_active</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return ``True`` if the watcher is active and is used by the event loop.</span>
+
+<span class="sd">        Return True if the watcher is installed and ready to handle process exit</span>
+<span class="sd">        notifications.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="kc">True</span>
+
+    <span class="k">def</span> <span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Enter the watcher&#39;s context and allow starting new processes.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span>
+
+    <span class="k">def</span> <span class="fm">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">_args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Exit the watcher&#39;s context&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="nf">_init_strategy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;Construct child watcher strategy.&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_strategy</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">os</span><span class="p">,</span> <span class="s2">&quot;pidfd_open&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">select</span><span class="p">,</span> <span class="s2">&quot;epoll&quot;</span><span class="p">):</span>
+            <span class="n">strategy</span> <span class="o">=</span> <span class="n">EPollStrategy</span>
+        <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">select</span><span class="p">,</span> <span class="s2">&quot;kqueue&quot;</span><span class="p">):</span>
+            <span class="n">strategy</span> <span class="o">=</span> <span class="n">KQueueStrategy</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">strategy</span> <span class="o">=</span> <span class="n">ThreadStrategy</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_strategy</span> <span class="o">=</span> <span class="n">strategy</span><span class="p">()</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Use platform-dependent strategy to monitor for exiting child processes.</p>
+</div>
+
+
+                            <div id="DefaultChildWatcher.__init__" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#DefaultChildWatcher.__init__">#&nbsp;&nbsp</a>
+
+        
+            <span class="name">DefaultChildWatcher</span><span class="signature">()</span>
+    </div>
+
+            <details>
+            <summary>View Source</summary>
+            <div class="pdoc-code codehilite"><pre><span></span>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="s2">&quot;Initialize child watcher.&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_strategy</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_lock</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Lock</span><span class="p">()</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Initialize child watcher.</p>
+</div>
+
+
+                            </div>
+                            <div id="DefaultChildWatcher.add_child_handler" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#DefaultChildWatcher.add_child_handler">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">add_child_handler</span><span class="signature">(self, pid, callback, *args)</span>:
+    </div>
+
+            <details>
+            <summary>View Source</summary>
+            <div class="pdoc-code codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">add_child_handler</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pid</span><span class="p">,</span> <span class="n">callback</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Register a new child handler.</span>
+
+<span class="sd">        Arrange for callback(pid, returncode, *args) to be called when</span>
+<span class="sd">        process &#39;pid&#39; terminates. Specifying another callback for the same</span>
+<span class="sd">        process replaces the previous handler.</span>
+
+<span class="sd">        Note: callback() must be thread-safe.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_strategy</span><span class="p">:</span>  <span class="c1"># ATOMIC: self._strategy</span>
+            <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lock</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_init_strategy</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_strategy</span><span class="o">.</span><span class="n">watch_pid</span><span class="p">(</span><span class="n">pid</span><span class="p">,</span> <span class="n">callback</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span>  <span class="c1"># ATOMIC: self._strategy</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Register a new child handler.</p>
+
+<p>Arrange for callback(pid, returncode, *args) to be called when
+process 'pid' terminates. Specifying another callback for the same
+process replaces the previous handler.</p>
+
+<p>Note: callback() must be thread-safe.</p>
+</div>
+
+
+                            </div>
+                            <div id="DefaultChildWatcher.remove_child_handler" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#DefaultChildWatcher.remove_child_handler">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">remove_child_handler</span><span class="signature">(self, pid)</span>:
+    </div>
+
+            <details>
+            <summary>View Source</summary>
+            <div class="pdoc-code codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">remove_child_handler</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pid</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Removes the handler for process &#39;pid&#39;.</span>
+
+<span class="sd">        The function returns True if the handler was successfully removed,</span>
+<span class="sd">        False if there was nothing to remove.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="kc">False</span>  <span class="c1"># not supported</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Removes the handler for process 'pid'.</p>
+
+<p>The function returns True if the handler was successfully removed,
+False if there was nothing to remove.</p>
+</div>
+
+
+                            </div>
+                            <div id="DefaultChildWatcher.attach_loop" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#DefaultChildWatcher.attach_loop">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">attach_loop</span><span class="signature">(self, loop)</span>:
+    </div>
+
+            <details>
+            <summary>View Source</summary>
+            <div class="pdoc-code codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">attach_loop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">loop</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Attach the watcher to an event loop.</span>
+
+<span class="sd">        If the watcher was previously attached to an event loop, then it is</span>
+<span class="sd">        first detached before attaching to the new loop.</span>
+
+<span class="sd">        Note: loop may be None.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># no op</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Attach the watcher to an event loop.</p>
+
+<p>If the watcher was previously attached to an event loop, then it is
+first detached before attaching to the new loop.</p>
+
+<p>Note: loop may be None.</p>
+</div>
+
+
+                            </div>
+                            <div id="DefaultChildWatcher.close" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#DefaultChildWatcher.close">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">close</span><span class="signature">(self)</span>:
+    </div>
+
+            <details>
+            <summary>View Source</summary>
+            <div class="pdoc-code codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Close the watcher.</span>
+
+<span class="sd">        This must be called to make sure that any underlying resource is freed.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lock</span><span class="p">:</span>
+            <span class="n">strategy</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_strategy</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_strategy</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="n">strategy</span><span class="p">:</span>
+            <span class="n">strategy</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Close the watcher.</p>
+
+<p>This must be called to make sure that any underlying resource is freed.</p>
+</div>
+
+
+                            </div>
+                            <div id="DefaultChildWatcher.is_active" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#DefaultChildWatcher.is_active">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">is_active</span><span class="signature">(self)</span>:
+    </div>
+
+            <details>
+            <summary>View Source</summary>
+            <div class="pdoc-code codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">is_active</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return ``True`` if the watcher is active and is used by the event loop.</span>
+
+<span class="sd">        Return True if the watcher is installed and ready to handle process exit</span>
+<span class="sd">        notifications.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="kc">True</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Return <code>True</code> if the watcher is active and is used by the event loop.</p>
+
+<p>Return True if the watcher is installed and ready to handle process exit
+notifications.</p>
+</div>
+
+
+                            </div>
+                </section>
     </main>
-<script>
-    function escapeHTML(html) {
-        return document.createElement('div').appendChild(document.createTextNode(html)).parentNode.innerHTML;
-    }
-
-    const originalContent = document.querySelector("main.pdoc");
-    let currentContent = originalContent;
-
-    function setContent(innerHTML) {
-        let elem;
-        if (innerHTML) {
-            elem = document.createElement("main");
-            elem.classList.add("pdoc");
-            elem.innerHTML = innerHTML;
-        } else {
-            elem = originalContent;
-        }
-        if (currentContent !== elem) {
-            currentContent.replaceWith(elem);
-            currentContent = elem;
-        }
-    }
-
-    function getSearchTerm() {
-        return (new URL(window.location)).searchParams.get("search");
-    }
-
-    const searchBox = document.querySelector(".pdoc input[type=search]");
-    searchBox.addEventListener("input", function () {
-        let url = new URL(window.location);
-        if (searchBox.value.trim()) {
-            url.hash = "";
-            url.searchParams.set("search", searchBox.value);
-        } else {
-            url.searchParams.delete("search");
-        }
-        history.replaceState("", "", url.toString());
-        onInput();
-    });
-    window.addEventListener("popstate", onInput);
-
-
-    let search, searchErr;
-
-    async function initialize() {
-        try {
-            search = await new Promise((resolve, reject) => {
-                const script = document.createElement("script");
-                script.type = "text/javascript";
-                script.async = true;
-                script.onload = () => resolve(window.pdocSearch);
-                script.onerror = (e) => reject(e);
-                script.src = "search.js";
-                document.getElementsByTagName("head")[0].appendChild(script);
-            });
-        } catch (e) {
-            console.error("Cannot fetch pdoc search index");
-            searchErr = "Cannot fetch search index.";
-        }
-        onInput();
-
-        document.querySelector("nav.pdoc").addEventListener("click", e => {
-            if (e.target.hash) {
-                searchBox.value = "";
-                searchBox.dispatchEvent(new Event("input"));
-            }
-        });
-    }
-
-    function onInput() {
-        setContent((() => {
-            const term = getSearchTerm();
-            if (!term) {
-                return null
-            }
-            if (searchErr) {
-                return `<h3>Error: ${searchErr}</h3>`
-            }
-            if (!search) {
-                return "<h3>Searching...</h3>"
-            }
-
-            window.scrollTo({top: 0, left: 0, behavior: 'auto'});
-
-            const results = search(term);
-
-            let html;
-            if (results.length === 0) {
-                html = `No search results for '${escapeHTML(term)}'.`
-            } else {
-                html = `<h4>${results.length} search result${results.length > 1 ? "s" : ""} for '${escapeHTML(term)}'.</h4>`;
-            }
-            for (let result of results.slice(0, 10)) {
-                let doc = result.doc;
-                let url = `${doc.modulename.replaceAll(".", "/")}.html`;
-                if (doc.qualname) {
-                    url += `#${doc.qualname}`;
-                }
-
-                let heading;
-                switch (result.doc.type) {
-                    case "function":
-                        heading = `<span class="def">${doc.funcdef}</span> <span class="name">${doc.fullname}</span><span class="signature">${doc.signature}:</span>`;
-                        break;
-                    case "class":
-                        heading = `<span class="def">class</span> <span class="name">${doc.fullname}</span>`;
-                        if (doc.bases)
-                            heading += `<wbr>(<span class="base">${doc.bases}</span>)`;
-                        heading += `:`;
-                        break;
-                    case "variable":
-                        heading = `<span class="name">${doc.fullname}</span>`;
-                        if (doc.annotation)
-                            heading += `<span class="annotation">${doc.annotation}</span>`;
-                        if (doc.default_value)
-                            heading += `<span class="default_value">${doc.default_value}</span>`;
-                        break;
-                    default:
-                        heading = `<span class="name">${doc.fullname}</span>`;
-                        break;
-                }
-                html += `
-                        <section class="search-result">
-                        <a href="${url}" class="attr ${doc.type}">${heading}</a>
-                        <div class="docstring">${doc.doc}</div>
-                        </section>
-                    `;
-
-            }
-            return html;
-        })());
-    }
-
-    if (getSearchTerm()) {
-        initialize();
-        searchBox.value = getSearchTerm();
-        onInput();
-    } else {
-        searchBox.addEventListener("focus", initialize, {once: true});
-    }
-
-    searchBox.addEventListener("keydown", e => {
-        if (["ArrowDown", "ArrowUp", "Enter"].includes(e.key)) {
-            let focused = currentContent.querySelector(".search-result.focused");
-            if (!focused) {
-                currentContent.querySelector(".search-result").classList.add("focused");
-            } else if (
-                e.key === "ArrowDown"
-                && focused.nextElementSibling
-                && focused.nextElementSibling.classList.contains("search-result")
-            ) {
-                focused.classList.remove("focused");
-                focused.nextElementSibling.classList.add("focused");
-                focused.nextElementSibling.scrollIntoView({
-                    behavior: "smooth",
-                    block: "nearest",
-                    inline: "nearest"
-                });
-            } else if (
-                e.key === "ArrowUp"
-                && focused.previousElementSibling
-                && focused.previousElementSibling.classList.contains("search-result")
-            ) {
-                focused.classList.remove("focused");
-                focused.previousElementSibling.classList.add("focused");
-                focused.previousElementSibling.scrollIntoView({
-                    behavior: "smooth",
-                    block: "nearest",
-                    inline: "nearest"
-                });
-            } else if (
-                e.key === "Enter"
-            ) {
-                focused.querySelector("a").click();
-            }
-        }
-    });
-</script></body>
+</body>
 </html>
