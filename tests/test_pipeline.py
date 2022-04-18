@@ -7,7 +7,6 @@ import logging
 from pathlib import Path
 
 import pytest
-import shellous
 from shellous import Pipeline, sh
 from shellous.command import Command
 
