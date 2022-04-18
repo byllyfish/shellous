@@ -16,6 +16,10 @@ classifiers = [
   "Framework :: AsyncIO",
 ]
 
+[tool.poetry.urls]
+"Release Notes" = "https://github.com/byllyfish/shellous/blob/main/CHANGELOG.md"
+"Issue Tracker" = "https://github.com/byllyfish/shellous/issues"
+
 [tool.poetry.dependencies]
 python = "^3.9"
 immutables = "^0.17"
