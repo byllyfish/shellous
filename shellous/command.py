@@ -262,7 +262,6 @@ class Command:
     Commands are always created by a CmdContext.
 
     ```
-    # Create a context.
     from shellous import sh
 
     # Create a new command from the context.

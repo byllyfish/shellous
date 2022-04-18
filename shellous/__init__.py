@@ -26,7 +26,15 @@ def context() -> CmdContext:
 
 
 sh = CmdContext()
-"Default execution context. Immutable."
+"""`sh` is the default command context (`CmdContext`).
+
+Use `sh` to create commands or new command contexts.
+
+```python
+from shellous import sh
+result = await sh("echo", "hello")
+```
+"""
 
 # TODO: These aliases here are deprecated; use the sh.CONSTANT forms.
 STDOUT = sh.STDOUT
@@ -45,5 +53,4 @@ __all__ = [
     "Result",
     "ResultError",
     "AUDIT_EVENT_SUBPROCESS_SPAWN",
-    "DefaultChildWatcher",
 ]

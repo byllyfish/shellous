@@ -104,36 +104,24 @@ async for line in sh("tail", "-f", "/var/log/syslog"):
 ### Async With
 
 You can use a command as an asynchronous context manager. Use `async with` when you need byte-by-byte control over the individual process streams: stdin, stdout and stderr. To control standard input, we need to explicitly
-tell shellous to "capture" standard input (For more on this, see Redirection.)
+tell shellous to "capture" standard input (For more on this, see [Redirection](#redirection).)
 
 ```python
 async with sh("cat").stdin(sh.CAPTURE) as run:
     run.stdin.write(b"abc")
     run.stdin.close()
     print(await run.stdout.readline())
+
+result = run.result()
 ```
 
 When reading or writing individual streams, you are responsible for managing reads and writes so they don't
 deadlock. The streams on the `run` object are `asyncio.StreamReader` and `asyncio.StreamWriter` objects.
 
-## Results
 
-When a command completes successfully, it normally returns the standard output. For a more detailed response,
-you can specify that the command should return a `Result` object by using the `.result` modifier:
+### ResultError
 
-```pycon
->>> await echo("abc").result
-Result(output_bytes=b'abc', exit_code=0, cancelled=False, encoding='utf-8', extra=None)
-```
-
-A `Result` object contains the command's `exit_code` in addition to its output. If the command exited with
-a non-zero exit status, the `exit_code` will be set appropriately.
-
-When you don't use the `.result` modifier and a command fails, it will raise a `ResultError` exception.
-
-## Failures
-
-When your command returning standard output exits with a non-zero exit code, it raises a `ResultError` exception:
+When a command fails, it raises a `ResultError` exception:
 
 ```pycon
 >>> await sh("cat", "does_not_exist")
@@ -142,7 +130,7 @@ Traceback (most recent call last):
 shellous.result.ResultError: Result(output_bytes=b'', exit_code=1, cancelled=False, encoding='utf-8', extra=None)
 ```
 
-The `ResultError` exception contains a `Result` object with the output so far.
+The `ResultError` exception contains a `Result` object with the exit_code.
 
 In some cases, you want to ignore certain exit code values. That is, you want to treat them as if they are normal.
 To do this, you can set the `exit_codes` option:
@@ -154,6 +142,24 @@ To do this, you can set the `exit_codes` option:
 
 If there is a problem launching a process, shellous can also raise a separate `FileNotFoundError` or  `PermissionError`.
 
+## Results
+
+When a command completes successfully, it returns the standard output (unless it is redirected). For a more detailed response, you can specify that the command should return a `Result` object by using the `.result` modifier:
+
+```pycon
+>>> await echo("abc").result
+Result(output_bytes=b'abc', exit_code=0, cancelled=False, encoding='utf-8', extra=None)
+```
+
+A `Result` object contains the command's `exit_code` in addition to its output. A `Result` is True if 
+the command's exit_code is zero. You can access the string value of the output using the `.output` property:
+
+```python
+if result := sh("cat", "some-file").result:
+    output = result.output
+else:
+    print(f"Command failed with exit_code={result.exit_code})
+```
 
 ## Redirection
 
