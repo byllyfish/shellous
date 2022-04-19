@@ -150,8 +150,7 @@ def test_parse_readme():
         "await cmd",
         "buf",
         'await sh("sleep", 60).set(timeout=0.1)',
-        'sleep = sh("sleep", 60).set(incomplete_result=True)',
-        "t = asyncio.create_task(sleep.coro())",
+        't = asyncio.create_task(sh("sleep", 60).coro())',
         "t.cancel()",
         "await t",
         'ls = sh("ls").set(pty=shellous.cooked(cols=40, rows=10, echo=False))',
@@ -271,6 +270,11 @@ def _check_result(output, result):
     # Fix TimeoutError for Python 3.11a4.
     if "asyncio.exceptions.TimeoutError" in result:
         result = result.replace("asyncio.exceptions.TimeoutError", "TimeoutError")
+    # Make CancelledError more readable.
+    if "concurrent.futures._base.CancelledError" in result:
+        result = result.replace(
+            "concurrent.futures._base.CancelledError", "CancelledError"
+        )
 
     pattern = re.escape(output).replace(r"\.\.\.", ".*")
     if not re.fullmatch(pattern, result, re.DOTALL):

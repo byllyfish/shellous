@@ -76,7 +76,7 @@ class Options:  # pylint: disable=too-many-instance-attributes
     return_result: bool = False
     "True if we should return `Result` object instead of the output text/bytes."
 
-    incomplete_result: bool = False
+    catch_cancelled_error: bool = False
     "True if we should raise `ResultError` after clean up from cancelled task."
 
     exit_codes: Optional[set] = None
@@ -225,7 +225,7 @@ class CmdContext:
         inherit_env=_UNSET,
         encoding=_UNSET,
         return_result=_UNSET,
-        incomplete_result=_UNSET,
+        catch_cancelled_error=_UNSET,
         exit_codes=_UNSET,
         timeout=_UNSET,
         cancel_timeout=_UNSET,
@@ -325,7 +325,7 @@ class Command:
         inherit_env: Unset[bool] = _UNSET,
         encoding: Unset[Optional[str]] = _UNSET,
         return_result: Unset[bool] = _UNSET,
-        incomplete_result: Unset[bool] = _UNSET,
+        catch_cancelled_error: Unset[bool] = _UNSET,
         exit_codes: Unset[Optional[set]] = _UNSET,
         timeout: Unset[Optional[float]] = _UNSET,
         cancel_timeout: Unset[float] = _UNSET,
@@ -357,12 +357,12 @@ class Command:
         **return_result** (bool) default=False<br>
         When True, return a `Result` object instead of the standard output.
 
-        **incomplete_result** (bool) default=False<br>
+        **catch_cancelled_error** (bool) default=False<br>
         When True, raise a `ResultError` when the command is cancelled. On the
         plus side, this gives you access to the initial output of the command.
         On the negative side, the `ResultError` swallows the `CancelledError`.
         Your code may need to re-raise a CancelledError after dealing with the
-        partial result. When `incomplete_result` is False, a cancelled command
+        partial result. When `catch_cancelled_error` is False, a cancelled command
         will raise a `CancelledError`.
 
         **exit_codes** (set[int] | None) default=None<br>

@@ -94,7 +94,7 @@ def make_result(command, result, cancelled, timed_out=False):
 
     assert isinstance(result, Result)
 
-    if cancelled and not command.options.incomplete_result:
+    if cancelled and not command.options.catch_cancelled_error:
         raise asyncio.CancelledError()
 
     exit_codes = command.options.exit_codes or {0}
