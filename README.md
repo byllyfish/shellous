@@ -326,28 +326,18 @@ Traceback (most recent call last):
 TimeoutError
 ```
 
-Timeouts are just a special case of cancellation.
-
-## Cancellation
-
-When a command is cancelled, shellous terminates the process and raises a `CancelledError`.
-
-You can retrieve the partial result by setting `incomplete_result` to True. Shellous will return a
-`ResultError` when the specified command is cancelled (or timed out).
+Timeouts are just a special case of **cancellation**. When a command is cancelled, shellous terminates 
+the process and raises a `CancelledError`.
 
 ```pycon
->>> sleep = sh("sleep", 60).set(incomplete_result=True)
->>> t = asyncio.create_task(sleep.coro())
+>>> t = asyncio.create_task(sh("sleep", 60).coro())
 >>> t.cancel()
 True
 >>> await t
 Traceback (most recent call last):
   ...
-shellous.result.ResultError: Result(output_bytes=b'', exit_code=-15, cancelled=True, encoding='utf-8', extra=None)
+concurrent.futures._base.CancelledError
 ```
-
-When you use `incomplete_result`, your code should respect the `cancelled` attribute in the Result object. 
-Otherwise, your code may swallow the CancelledError.
 
 ## Pseudo-Terminal Support (Unix Only)
 

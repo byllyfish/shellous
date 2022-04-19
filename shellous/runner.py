@@ -500,7 +500,7 @@ class Runner:
             self._audit_callback("stop", failure=type(ex).__name__)
             raise
         finally:
-            if self._cancelled and self.command.options.incomplete_result:
+            if self._cancelled and self.command.options.catch_cancelled_error:
                 # Raises ResultError instead of CancelledError.
                 self.result()
 
@@ -693,7 +693,7 @@ class Runner:
         if (
             self._cancelled
             and self._timed_out
-            and not self.command.options.incomplete_result
+            and not self.command.options.catch_cancelled_error
         ):
             raise asyncio.TimeoutError()
         return suppress
@@ -952,7 +952,7 @@ class PipeRunner:
             cmds[i + 1] = cmds[i + 1].stdin(read_fd, close=True)
 
         for i in range(cmd_count):
-            cmds[i] = cmds[i].set(return_result=True, incomplete_result=True)
+            cmds[i] = cmds[i].set(return_result=True, catch_cancelled_error=True)
 
         return cmds
 
