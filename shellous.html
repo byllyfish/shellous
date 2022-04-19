@@ -31,7 +31,6 @@
     <li><a href="#pipelines">Pipelines</a></li>
     <li><a href="#process-substitution-unix-only">Process Substitution (Unix Only)</a></li>
     <li><a href="#timeouts">Timeouts</a></li>
-    <li><a href="#cancellation">Cancellation</a></li>
     <li><a href="#pseudo-terminal-support-unix-only">Pseudo-Terminal Support (Unix Only)</a></li>
     <li><a href="#context-objects">Context Objects</a></li>
   </ul></li>
@@ -594,27 +593,22 @@ a <code>TimeoutError</code>.</p>
 <span class="gr">TimeoutError</span>
 </code></pre></div>
 
-<p>Timeouts are just a special case of cancellation.</p>
+<p>Timeouts are just a special case of <strong>cancellation</strong>. When a command is cancelled, shellous terminates 
+the running process and raises a <code>CancelledError</code>.</p>
 
-<h2 id="cancellation">Cancellation</h2>
-
-<p>When a command is cancelled, shellous terminates the process and raises a <code>CancelledError</code>.</p>
-
-<p>You can retrieve the partial result by setting <code>incomplete_result</code> to True. Shellous will return a
-<code><a href="#ResultError">ResultError</a></code> when the specified command is cancelled (or timed out).</p>
-
-<div class="pdoc-code codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">sleep</span> <span class="o">=</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;sleep&quot;</span><span class="p">,</span> <span class="mi">60</span><span class="p">)</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">incomplete_result</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">t</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="n">sleep</span><span class="o">.</span><span class="n">coro</span><span class="p">())</span>
+<div class="pdoc-code codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">t</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="n">sh</span><span class="p">(</span><span class="s2">&quot;sleep&quot;</span><span class="p">,</span> <span class="mi">60</span><span class="p">)</span><span class="o">.</span><span class="n">coro</span><span class="p">())</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">t</span><span class="o">.</span><span class="n">cancel</span><span class="p">()</span>
 <span class="go">True</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">t</span>
 <span class="gt">Traceback (most recent call last):</span>
   <span class="c">...</span>
-<span class="gr"><a href="#ResultError">shellous.ResultError</a></span>: <span class="n">Result(output_bytes=b&#39;&#39;, exit_code=-15, cancelled=True, encoding=&#39;utf-8&#39;, extra=None)</span>
+<span class="gr">CancelledError</span>
 </code></pre></div>
 
-<p>When you use <code>incomplete_result</code>, your code should respect the <code>cancelled</code> attribute in the Result object. 
-Otherwise, your code may swallow the CancelledError.</p>
+<p>By default, shellous will send a SIGTERM signal to the process to tell it to exit. If the process does not
+exit within 3 seconds, shellous will send a SIGKILL signal. You can change these defaults with the
+<code>cancel_signal</code> and <code>cancel_timeout</code> settings. A command is not considered fully cancelled until the 
+process exits.</p>
 
 <h2 id="pseudo-terminal-support-unix-only">Pseudo-Terminal Support (Unix Only)</h2>
 
@@ -710,7 +704,7 @@ context object, specify your changes to the default context <strong>sh</strong>:
                 <section id="sh">
                                 <div class="attr variable"><a class="headerlink" href="#sh">#&nbsp;&nbsp</a>
 
-        <span class="name">sh</span><span class="default_value"> = CmdContext(options=Options(inherit_env=True, input=&lt;Redirect.DEFAULT: -20&gt;, input_close=False, output=&lt;Redirect.DEFAULT: -20&gt;, output_append=False, output_close=False, error=&lt;Redirect.DEFAULT: -20&gt;, error_append=False, error_close=False, encoding=&#39;utf-8&#39;, return_result=False, incomplete_result=False, exit_codes=None, timeout=None, cancel_timeout=3.0, cancel_signal=&lt;Signals.SIGTERM: 15&gt;, alt_name=None, pass_fds=(), pass_fds_close=False, writable=False, _start_new_session=False, _preexec_fn=None, pty=False, close_fds=False, audit_callback=None))</span>
+        <span class="name">sh</span><span class="default_value"> = CmdContext(options=Options(inherit_env=True, input=&lt;Redirect.DEFAULT: -20&gt;, input_close=False, output=&lt;Redirect.DEFAULT: -20&gt;, output_append=False, output_close=False, error=&lt;Redirect.DEFAULT: -20&gt;, error_append=False, error_close=False, encoding=&#39;utf-8&#39;, return_result=False, catch_cancelled_error=False, exit_codes=None, timeout=None, cancel_timeout=3.0, cancel_signal=&lt;Signals.SIGTERM: 15&gt;, alt_name=None, pass_fds=(), pass_fds_close=False, writable=False, _start_new_session=False, _preexec_fn=None, pty=False, close_fds=False, audit_callback=None))</span>
     </div>
 
     
@@ -782,7 +776,7 @@ context object, specify your changes to the default context <strong>sh</strong>:
         <span class="n">inherit_env</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">encoding</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">return_result</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
-        <span class="n">incomplete_result</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">catch_cancelled_error</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">exit_codes</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">timeout</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">cancel_timeout</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
@@ -821,7 +815,7 @@ context object, specify your changes to the default context <strong>sh</strong>:
 
         
             <span class="name">CmdContext</span><span class="signature">(
-    options: shellous.command.Options = Options(inherit_env=True, input=&lt;Redirect.DEFAULT: -20&gt;, input_close=False, output=&lt;Redirect.DEFAULT: -20&gt;, output_append=False, output_close=False, error=&lt;Redirect.DEFAULT: -20&gt;, error_append=False, error_close=False, encoding=&#39;utf-8&#39;, return_result=False, incomplete_result=False, exit_codes=None, timeout=None, cancel_timeout=3.0, cancel_signal=&lt;Signals.SIGTERM: 15&gt;, alt_name=None, pass_fds=(), pass_fds_close=False, writable=False, _start_new_session=False, _preexec_fn=None, pty=False, close_fds=False, audit_callback=None)
+    options: shellous.command.Options = Options(inherit_env=True, input=&lt;Redirect.DEFAULT: -20&gt;, input_close=False, output=&lt;Redirect.DEFAULT: -20&gt;, output_append=False, output_close=False, error=&lt;Redirect.DEFAULT: -20&gt;, error_append=False, error_close=False, encoding=&#39;utf-8&#39;, return_result=False, catch_cancelled_error=False, exit_codes=None, timeout=None, cancel_timeout=3.0, cancel_signal=&lt;Signals.SIGTERM: 15&gt;, alt_name=None, pass_fds=(), pass_fds_close=False, writable=False, _start_new_session=False, _preexec_fn=None, pty=False, close_fds=False, audit_callback=None)
 )</span>
     </div>
 
@@ -880,7 +874,7 @@ context object, specify your changes to the default context <strong>sh</strong>:
                             <div id="CmdContext.options" class="classattr">
                                             <div class="attr variable"><a class="headerlink" href="#CmdContext.options">#&nbsp;&nbsp</a>
 
-        <span class="name">options</span><span class="annotation">: shellous.command.Options</span><span class="default_value"> = Options(inherit_env=True, input=&lt;Redirect.DEFAULT: -20&gt;, input_close=False, output=&lt;Redirect.DEFAULT: -20&gt;, output_append=False, output_close=False, error=&lt;Redirect.DEFAULT: -20&gt;, error_append=False, error_close=False, encoding=&#39;utf-8&#39;, return_result=False, incomplete_result=False, exit_codes=None, timeout=None, cancel_timeout=3.0, cancel_signal=&lt;Signals.SIGTERM: 15&gt;, alt_name=None, pass_fds=(), pass_fds_close=False, writable=False, _start_new_session=False, _preexec_fn=None, pty=False, close_fds=False, audit_callback=None)</span>
+        <span class="name">options</span><span class="annotation">: shellous.command.Options</span><span class="default_value"> = Options(inherit_env=True, input=&lt;Redirect.DEFAULT: -20&gt;, input_close=False, output=&lt;Redirect.DEFAULT: -20&gt;, output_append=False, output_close=False, error=&lt;Redirect.DEFAULT: -20&gt;, error_append=False, error_close=False, encoding=&#39;utf-8&#39;, return_result=False, catch_cancelled_error=False, exit_codes=None, timeout=None, cancel_timeout=3.0, cancel_signal=&lt;Signals.SIGTERM: 15&gt;, alt_name=None, pass_fds=(), pass_fds_close=False, writable=False, _start_new_session=False, _preexec_fn=None, pty=False, close_fds=False, audit_callback=None)</span>
     </div>
 
     
@@ -1004,7 +998,7 @@ context object, specify your changes to the default context <strong>sh</strong>:
     inherit_env=&lt;UNSET.UNSET: 1&gt;,
     encoding=&lt;UNSET.UNSET: 1&gt;,
     return_result=&lt;UNSET.UNSET: 1&gt;,
-    incomplete_result=&lt;UNSET.UNSET: 1&gt;,
+    catch_cancelled_error=&lt;UNSET.UNSET: 1&gt;,
     exit_codes=&lt;UNSET.UNSET: 1&gt;,
     timeout=&lt;UNSET.UNSET: 1&gt;,
     cancel_timeout=&lt;UNSET.UNSET: 1&gt;,
@@ -1029,7 +1023,7 @@ context object, specify your changes to the default context <strong>sh</strong>:
         <span class="n">inherit_env</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">encoding</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">return_result</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
-        <span class="n">incomplete_result</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">catch_cancelled_error</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">exit_codes</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">timeout</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">cancel_timeout</span><span class="o">=</span><span class="n">_UNSET</span><span class="p">,</span>
@@ -1147,7 +1141,7 @@ context object, specify your changes to the default context <strong>sh</strong>:
         <span class="n">inherit_env</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">encoding</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">return_result</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
-        <span class="n">incomplete_result</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">catch_cancelled_error</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">exit_codes</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">set</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">timeout</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">cancel_timeout</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
@@ -1179,12 +1173,12 @@ context object, specify your changes to the default context <strong>sh</strong>:
 <span class="sd">        **return_result** (bool) default=False&lt;br&gt;</span>
 <span class="sd">        When True, return a `Result` object instead of the standard output.</span>
 
-<span class="sd">        **incomplete_result** (bool) default=False&lt;br&gt;</span>
+<span class="sd">        **catch_cancelled_error** (bool) default=False&lt;br&gt;</span>
 <span class="sd">        When True, raise a `ResultError` when the command is cancelled. On the</span>
 <span class="sd">        plus side, this gives you access to the initial output of the command.</span>
 <span class="sd">        On the negative side, the `ResultError` swallows the `CancelledError`.</span>
 <span class="sd">        Your code may need to re-raise a CancelledError after dealing with the</span>
-<span class="sd">        partial result. When `incomplete_result` is False, a cancelled command</span>
+<span class="sd">        partial result. When `catch_cancelled_error` is False, a cancelled command</span>
 <span class="sd">        will raise a `CancelledError`.</span>
 
 <span class="sd">        **exit_codes** (set[int] | None) default=None&lt;br&gt;</span>
@@ -1565,7 +1559,7 @@ is set, return that instead.</p>
     inherit_env: Union[bool, shellous.command.UNSET] = &lt;UNSET.UNSET: 1&gt;,
     encoding: Union[str, NoneType, shellous.command.UNSET] = &lt;UNSET.UNSET: 1&gt;,
     return_result: Union[bool, shellous.command.UNSET] = &lt;UNSET.UNSET: 1&gt;,
-    incomplete_result: Union[bool, shellous.command.UNSET] = &lt;UNSET.UNSET: 1&gt;,
+    catch_cancelled_error: Union[bool, shellous.command.UNSET] = &lt;UNSET.UNSET: 1&gt;,
     exit_codes: Union[set, NoneType, shellous.command.UNSET] = &lt;UNSET.UNSET: 1&gt;,
     timeout: Union[float, NoneType, shellous.command.UNSET] = &lt;UNSET.UNSET: 1&gt;,
     cancel_timeout: Union[float, shellous.command.UNSET] = &lt;UNSET.UNSET: 1&gt;,
@@ -1590,7 +1584,7 @@ is set, return that instead.</p>
         <span class="n">inherit_env</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">encoding</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">return_result</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
-        <span class="n">incomplete_result</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
+        <span class="n">catch_cancelled_error</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">exit_codes</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">set</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">timeout</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
         <span class="n">cancel_timeout</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
@@ -1622,12 +1616,12 @@ is set, return that instead.</p>
 <span class="sd">        **return_result** (bool) default=False&lt;br&gt;</span>
 <span class="sd">        When True, return a `Result` object instead of the standard output.</span>
 
-<span class="sd">        **incomplete_result** (bool) default=False&lt;br&gt;</span>
+<span class="sd">        **catch_cancelled_error** (bool) default=False&lt;br&gt;</span>
 <span class="sd">        When True, raise a `ResultError` when the command is cancelled. On the</span>
 <span class="sd">        plus side, this gives you access to the initial output of the command.</span>
 <span class="sd">        On the negative side, the `ResultError` swallows the `CancelledError`.</span>
 <span class="sd">        Your code may need to re-raise a CancelledError after dealing with the</span>
-<span class="sd">        partial result. When `incomplete_result` is False, a cancelled command</span>
+<span class="sd">        partial result. When `catch_cancelled_error` is False, a cancelled command</span>
 <span class="sd">        will raise a `CancelledError`.</span>
 
 <span class="sd">        **exit_codes** (set[int] | None) default=None&lt;br&gt;</span>
@@ -1742,12 +1736,12 @@ example, use "utf-8 replace" to specify "utf-8" with errors "replace".</p>
 <p><strong>return_result</strong> (bool) default=False<br>
 When True, return a <code><a href="#Result">Result</a></code> object instead of the standard output.</p>
 
-<p><strong>incomplete_result</strong> (bool) default=False<br>
+<p><strong>catch_cancelled_error</strong> (bool) default=False<br>
 When True, raise a <code><a href="#ResultError">ResultError</a></code> when the command is cancelled. On the
 plus side, this gives you access to the initial output of the command.
 On the negative side, the <code><a href="#ResultError">ResultError</a></code> swallows the <code>CancelledError</code>.
 Your code may need to re-raise a CancelledError after dealing with the
-partial result. When <code>incomplete_result</code> is False, a cancelled command
+partial result. When <code>catch_cancelled_error</code> is False, a cancelled command
 will raise a <code>CancelledError</code>.</p>
 
 <p><strong>exit_codes</strong> (set[int] | None) default=None<br>
