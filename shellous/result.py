@@ -12,7 +12,7 @@ class ResultError(Exception):
 
     @property
     def result(self):
-        "Return the `Result` object."
+        "Result of the command."
         return self.args[0]
 
 
@@ -21,14 +21,23 @@ class Result:
     "Concrete class for the result of a Command."
 
     output_bytes: Optional[bytes]
+    "Output of command as bytes. May be None if there is no output."
+
     exit_code: int
+    "Command's exit code."
+
     cancelled: bool
+    "Command was cancelled."
+
     encoding: Optional[str]
+    "Output encoding. None indicates no encoding."
+
     extra: Any = None
+    "Used for pipeline results (see `PipeResult`)."
 
     @property
     def output(self) -> str:
-        "Return output string, based on encoding."
+        "Output of command as a string."
         if self.encoding is None:
             raise TypeError("use output_bytes instead; encoding is None")
         return decode(self.output_bytes, self.encoding)

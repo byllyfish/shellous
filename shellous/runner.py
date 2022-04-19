@@ -23,6 +23,10 @@ _UNLAUNCHED_EXIT_CODE = -255
 _BSD = sys.platform.startswith("freebsd") or sys.platform == "darwin"
 
 AUDIT_EVENT_SUBPROCESS_SPAWN = "byllyfish/shellous.subprocess_spawn"
+"""Audit event raised by sys.audit() when shellous runs a subprocess.
+
+The audit event has one argument: the name of the command.
+"""
 
 
 def _is_cancelled(ex):
