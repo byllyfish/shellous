@@ -327,7 +327,7 @@ TimeoutError
 ```
 
 Timeouts are just a special case of **cancellation**. When a command is cancelled, shellous terminates 
-the process and raises a `CancelledError`.
+the running process and raises a `CancelledError`.
 
 ```pycon
 >>> t = asyncio.create_task(sh("sleep", 60).coro())
@@ -336,8 +336,13 @@ True
 >>> await t
 Traceback (most recent call last):
   ...
-concurrent.futures._base.CancelledError
+CancelledError
 ```
+
+By default, shellous will send a SIGTERM signal to the process to tell it to exit. If the process does not
+exit within 3 seconds, shellous will send a SIGKILL signal. You can change these defaults with the
+`cancel_signal` and `cancel_timeout` settings. A command is not considered fully cancelled until the 
+process exits.
 
 ## Pseudo-Terminal Support (Unix Only)
 
