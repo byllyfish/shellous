@@ -27,7 +27,6 @@
     <li><a href="#requirements">Requirements</a></li>
     <li><a href="#running-a-command">Running a Command</a></li>
     <li><a href="#results">Results</a></li>
-    <li><a href="#failures">Failures</a></li>
     <li><a href="#redirection">Redirection</a></li>
     <li><a href="#pipelines">Pipelines</a></li>
     <li><a href="#process-substitution-unix-only">Process Substitution (Unix Only)</a></li>
@@ -145,6 +144,18 @@
                                 <a class="function" href="#Result.__init__">Result</a>
                         </li>
                         <li>
+                                <a class="variable" href="#Result.output_bytes">output_bytes</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Result.exit_code">exit_code</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Result.cancelled">cancelled</a>
+                        </li>
+                        <li>
+                                <a class="variable" href="#Result.encoding">encoding</a>
+                        </li>
+                        <li>
                                 <a class="variable" href="#Result.extra">extra</a>
                         </li>
                         <li>
@@ -164,30 +175,6 @@
             </li>
             <li>
                     <a class="variable" href="#AUDIT_EVENT_SUBPROCESS_SPAWN">AUDIT_EVENT_SUBPROCESS_SPAWN</a>
-            </li>
-            <li>
-                    <a class="class" href="#DefaultChildWatcher">DefaultChildWatcher</a>
-                            <ul class="memberlist">
-                        <li>
-                                <a class="function" href="#DefaultChildWatcher.__init__">DefaultChildWatcher</a>
-                        </li>
-                        <li>
-                                <a class="function" href="#DefaultChildWatcher.add_child_handler">add_child_handler</a>
-                        </li>
-                        <li>
-                                <a class="function" href="#DefaultChildWatcher.remove_child_handler">remove_child_handler</a>
-                        </li>
-                        <li>
-                                <a class="function" href="#DefaultChildWatcher.attach_loop">attach_loop</a>
-                        </li>
-                        <li>
-                                <a class="function" href="#DefaultChildWatcher.close">close</a>
-                        </li>
-                        <li>
-                                <a class="function" href="#DefaultChildWatcher.is_active">is_active</a>
-                        </li>
-                </ul>
-
             </li>
     </ul>
 
@@ -306,34 +293,22 @@ iterate over the output lines as they arrive using <code>async for</code>.</p>
 <h3 id="async-with">Async With</h3>
 
 <p>You can use a command as an asynchronous context manager. Use <code>async with</code> when you need byte-by-byte control over the individual process streams: stdin, stdout and stderr. To control standard input, we need to explicitly
-tell shellous to "capture" standard input (For more on this, see Redirection.)</p>
+tell shellous to "capture" standard input (For more on this, see <a href="#redirection">Redirection</a>.)</p>
 
 <div class="pdoc-code codehilite"><pre><span></span><code><span class="k">async</span> <span class="k">with</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;cat&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">stdin</span><span class="p">(</span><span class="n">sh</span><span class="o">.</span><span class="n">CAPTURE</span><span class="p">)</span> <span class="k">as</span> <span class="n">run</span><span class="p">:</span>
     <span class="n">run</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">b</span><span class="s2">&quot;abc&quot;</span><span class="p">)</span>
     <span class="n">run</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
     <span class="nb">print</span><span class="p">(</span><span class="k">await</span> <span class="n">run</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">readline</span><span class="p">())</span>
+
+<span class="n">result</span> <span class="o">=</span> <span class="n">run</span><span class="o">.</span><span class="n">result</span><span class="p">()</span>
 </code></pre></div>
 
 <p>When reading or writing individual streams, you are responsible for managing reads and writes so they don't
 deadlock. The streams on the <code>run</code> object are <code>asyncio.StreamReader</code> and <code>asyncio.StreamWriter</code> objects.</p>
 
-<h2 id="results">Results</h2>
+<h3 id="resulterror">ResultError</h3>
 
-<p>When a command completes successfully, it normally returns the standard output. For a more detailed response,
-you can specify that the command should return a <code><a href="#Result">Result</a></code> object by using the <code>.result</code> modifier:</p>
-
-<div class="pdoc-code codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">echo</span><span class="p">(</span><span class="s2">&quot;abc&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">result</span>
-<span class="go">Result(output_bytes=b&#39;abc&#39;, exit_code=0, cancelled=False, encoding=&#39;utf-8&#39;, extra=None)</span>
-</code></pre></div>
-
-<p>A <code><a href="#Result">Result</a></code> object contains the command's <code>exit_code</code> in addition to its output. If the command exited with
-a non-zero exit status, the <code>exit_code</code> will be set appropriately.</p>
-
-<p>When you don't use the <code>.result</code> modifier and a command fails, it will raise a <code><a href="#ResultError">ResultError</a></code> exception.</p>
-
-<h2 id="failures">Failures</h2>
-
-<p>When your command returning standard output exits with a non-zero exit code, it raises a <code><a href="#ResultError">ResultError</a></code> exception:</p>
+<p>When a command fails, it raises a <code><a href="#ResultError">ResultError</a></code> exception:</p>
 
 <div class="pdoc-code codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;cat&quot;</span><span class="p">,</span> <span class="s2">&quot;does_not_exist&quot;</span><span class="p">)</span>
 <span class="gt">Traceback (most recent call last):</span>
@@ -341,7 +316,7 @@ a non-zero exit status, the <code>exit_code</code> will be set appropriately.</p
 <span class="gr"><a href="#ResultError">shellous.ResultError</a></span>: <span class="n">Result(output_bytes=b&#39;&#39;, exit_code=1, cancelled=False, encoding=&#39;utf-8&#39;, extra=None)</span>
 </code></pre></div>
 
-<p>The <code><a href="#ResultError">ResultError</a></code> exception contains a <code><a href="#Result">Result</a></code> object with the output so far.</p>
+<p>The <code><a href="#ResultError">ResultError</a></code> exception contains a <code><a href="#Result">Result</a></code> object with the exit_code.</p>
 
 <p>In some cases, you want to ignore certain exit code values. That is, you want to treat them as if they are normal.
 To do this, you can set the <code>exit_codes</code> option:</p>
@@ -351,6 +326,23 @@ To do this, you can set the <code>exit_codes</code> option:</p>
 </code></pre></div>
 
 <p>If there is a problem launching a process, shellous can also raise a separate <code>FileNotFoundError</code> or  <code>PermissionError</code>.</p>
+
+<h2 id="results">Results</h2>
+
+<p>When a command completes successfully, it returns the standard output (unless it is redirected). For a more detailed response, you can specify that the command should return a <code><a href="#Result">Result</a></code> object by using the <code>.result</code> modifier:</p>
+
+<div class="pdoc-code codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">echo</span><span class="p">(</span><span class="s2">&quot;abc&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">result</span>
+<span class="go">Result(output_bytes=b&#39;abc&#39;, exit_code=0, cancelled=False, encoding=&#39;utf-8&#39;, extra=None)</span>
+</code></pre></div>
+
+<p>A <code><a href="#Result">Result</a></code> object contains the command's <code>exit_code</code> in addition to its output. A <code><a href="#Result">Result</a></code> is True if 
+the command's exit_code is zero. You can access the string value of the output using the <code>.output</code> property:</p>
+
+<div class="pdoc-code codehilite"><pre><span></span><code><span class="k">if</span> <span class="n">result</span> <span class="o">:=</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;cat&quot;</span><span class="p">,</span> <span class="s2">&quot;some-file&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">result</span><span class="p">:</span>
+    <span class="n">output</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">output</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Command failed with exit_code=</span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">exit_code</span><span class="si">}</span><span class="s2">)</span>
+</code></pre></div>
 
 <h2 id="redirection">Redirection</h2>
 
@@ -682,7 +674,15 @@ context object, specify your changes to the default context <strong>sh</strong>:
 
 
 <span class="n">sh</span> <span class="o">=</span> <span class="n">CmdContext</span><span class="p">()</span>
-<span class="s2">&quot;Default execution context. Immutable.&quot;</span>
+<span class="sd">&quot;&quot;&quot;`sh` is the default command context (`CmdContext`).</span>
+
+<span class="sd">Use `sh` to create commands or new command contexts.</span>
+
+<span class="sd">```python</span>
+<span class="sd">from shellous import sh</span>
+<span class="sd">result = await sh(&quot;echo&quot;, &quot;hello&quot;)</span>
+<span class="sd">```</span>
+<span class="sd">&quot;&quot;&quot;</span>
 
 <span class="c1"># TODO: These aliases here are deprecated; use the sh.CONSTANT forms.</span>
 <span class="n">STDOUT</span> <span class="o">=</span> <span class="n">sh</span><span class="o">.</span><span class="n">STDOUT</span>
@@ -701,7 +701,6 @@ context object, specify your changes to the default context <strong>sh</strong>:
     <span class="s2">&quot;Result&quot;</span><span class="p">,</span>
     <span class="s2">&quot;ResultError&quot;</span><span class="p">,</span>
     <span class="s2">&quot;AUDIT_EVENT_SUBPROCESS_SPAWN&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;DefaultChildWatcher&quot;</span><span class="p">,</span>
 <span class="p">]</span>
 </pre></div>
 
@@ -715,7 +714,13 @@ context object, specify your changes to the default context <strong>sh</strong>:
     </div>
 
     
-            <div class="docstring"><p>Default execution context. Immutable.</p>
+            <div class="docstring"><p><code><a href="#sh">sh</a></code> is the default command context (<code><a href="#CmdContext">CmdContext</a></code>).</p>
+
+<p>Use <code><a href="#sh">sh</a></code> to create commands or new command contexts.</p>
+
+<div class="pdoc-code codehilite"><pre><span></span><code><span class="kn">from</span> <span class="nn">shellous</span> <span class="kn">import</span> <span class="n">sh</span>
+<span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;echo&quot;</span><span class="p">,</span> <span class="s2">&quot;hello&quot;</span><span class="p">)</span>
+</code></pre></div>
 </div>
 
 
@@ -1079,7 +1084,6 @@ context object, specify your changes to the default context <strong>sh</strong>:
 <span class="sd">    Commands are always created by a CmdContext.</span>
 
 <span class="sd">    ```</span>
-<span class="sd">    # Create a context.</span>
 <span class="sd">    from shellous import sh</span>
 
 <span class="sd">    # Create a new command from the context.</span>
@@ -1380,8 +1384,7 @@ until they are awaited.</p>
 
 <p>Commands are always created by a CmdContext.</p>
 
-<pre><code># Create a context.
-from shellous import sh
+<pre><code>from shellous import sh
 
 # Create a new command from the context.
 echo = sh("echo", "hello, world")
@@ -2036,14 +2039,23 @@ result = run.result()
     <span class="s2">&quot;Concrete class for the result of a Command.&quot;</span>
 
     <span class="n">output_bytes</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bytes</span><span class="p">]</span>
+    <span class="s2">&quot;Output of command as bytes. May be None if there is no output.&quot;</span>
+
     <span class="n">exit_code</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="s2">&quot;Command&#39;s exit code.&quot;</span>
+
     <span class="n">cancelled</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="s2">&quot;Command was cancelled.&quot;</span>
+
     <span class="n">encoding</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+    <span class="s2">&quot;Output encoding. None indicates no encoding.&quot;</span>
+
     <span class="n">extra</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="s2">&quot;Used for pipeline results (see `PipeResult`).&quot;</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">output</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="s2">&quot;Return output string, based on encoding.&quot;</span>
+        <span class="s2">&quot;Output of command as a string.&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoding</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;use output_bytes instead; encoding is None&quot;</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">decode</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_bytes</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoding</span><span class="p">)</span>
@@ -2076,6 +2088,54 @@ result = run.result()
     
 
                             </div>
+                            <div id="Result.output_bytes" class="classattr">
+                                            <div class="attr variable"><a class="headerlink" href="#Result.output_bytes">#&nbsp;&nbsp</a>
+
+        <span class="name">output_bytes</span><span class="annotation">: Optional[bytes]</span>
+    </div>
+
+    
+            <div class="docstring"><p>Output of command as bytes. May be None if there is no output.</p>
+</div>
+
+
+                            </div>
+                            <div id="Result.exit_code" class="classattr">
+                                            <div class="attr variable"><a class="headerlink" href="#Result.exit_code">#&nbsp;&nbsp</a>
+
+        <span class="name">exit_code</span><span class="annotation">: int</span>
+    </div>
+
+    
+            <div class="docstring"><p>Command's exit code.</p>
+</div>
+
+
+                            </div>
+                            <div id="Result.cancelled" class="classattr">
+                                            <div class="attr variable"><a class="headerlink" href="#Result.cancelled">#&nbsp;&nbsp</a>
+
+        <span class="name">cancelled</span><span class="annotation">: bool</span>
+    </div>
+
+    
+            <div class="docstring"><p>Command was cancelled.</p>
+</div>
+
+
+                            </div>
+                            <div id="Result.encoding" class="classattr">
+                                            <div class="attr variable"><a class="headerlink" href="#Result.encoding">#&nbsp;&nbsp</a>
+
+        <span class="name">encoding</span><span class="annotation">: Optional[str]</span>
+    </div>
+
+    
+            <div class="docstring"><p>Output encoding. None indicates no encoding.</p>
+</div>
+
+
+                            </div>
                             <div id="Result.extra" class="classattr">
                                             <div class="attr variable"><a class="headerlink" href="#Result.extra">#&nbsp;&nbsp</a>
 
@@ -2083,7 +2143,9 @@ result = run.result()
     </div>
 
     
-    
+            <div class="docstring"><p>Used for pipeline results (see <code>PipeResult</code>).</p>
+</div>
+
 
                             </div>
                             <div id="Result.output" class="classattr">
@@ -2093,7 +2155,7 @@ result = run.result()
     </div>
 
     
-            <div class="docstring"><p>Return output string, based on encoding.</p>
+            <div class="docstring"><p>Output of command as a string.</p>
 </div>
 
 
@@ -2115,7 +2177,7 @@ result = run.result()
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">result</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="s2">&quot;Return the `Result` object.&quot;</span>
+        <span class="s2">&quot;Result of the command.&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 </pre></div>
 
@@ -2132,7 +2194,7 @@ result = run.result()
     </div>
 
     
-            <div class="docstring"><p>Return the <code><a href="#Result">Result</a></code> object.</p>
+            <div class="docstring"><p>Result of the command.</p>
 </div>
 
 
@@ -2161,294 +2223,6 @@ result = run.result()
     
     
 
-                </section>
-                <section id="DefaultChildWatcher">
-                                <div class="attr class">
-        <a class="headerlink" href="#DefaultChildWatcher">#&nbsp;&nbsp</a>
-
-        
-        <span class="def">class</span>
-        <span class="name">DefaultChildWatcher</span><wbr>(<span class="base">asyncio.unix_events.AbstractChildWatcher</span>):
-    </div>
-
-            <details>
-            <summary>View Source</summary>
-            <div class="pdoc-code codehilite"><pre><span></span><span class="k">class</span> <span class="nc">DefaultChildWatcher</span><span class="p">(</span><span class="n">asyncio</span><span class="o">.</span><span class="n">AbstractChildWatcher</span><span class="p">):</span>
-    <span class="s2">&quot;Use platform-dependent strategy to monitor for exiting child processes.&quot;</span>
-
-    <span class="n">_strategy</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ChildStrategy</span><span class="p">]</span>
-
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="s2">&quot;Initialize child watcher.&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_strategy</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_lock</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Lock</span><span class="p">()</span>
-
-    <span class="k">def</span> <span class="nf">add_child_handler</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pid</span><span class="p">,</span> <span class="n">callback</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Register a new child handler.</span>
-
-<span class="sd">        Arrange for callback(pid, returncode, *args) to be called when</span>
-<span class="sd">        process &#39;pid&#39; terminates. Specifying another callback for the same</span>
-<span class="sd">        process replaces the previous handler.</span>
-
-<span class="sd">        Note: callback() must be thread-safe.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_strategy</span><span class="p">:</span>  <span class="c1"># ATOMIC: self._strategy</span>
-            <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lock</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_init_strategy</span><span class="p">()</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">_strategy</span><span class="o">.</span><span class="n">watch_pid</span><span class="p">(</span><span class="n">pid</span><span class="p">,</span> <span class="n">callback</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span>  <span class="c1"># ATOMIC: self._strategy</span>
-
-    <span class="k">def</span> <span class="nf">remove_child_handler</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pid</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Removes the handler for process &#39;pid&#39;.</span>
-
-<span class="sd">        The function returns True if the handler was successfully removed,</span>
-<span class="sd">        False if there was nothing to remove.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="kc">False</span>  <span class="c1"># not supported</span>
-
-    <span class="k">def</span> <span class="nf">attach_loop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">loop</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Attach the watcher to an event loop.</span>
-
-<span class="sd">        If the watcher was previously attached to an event loop, then it is</span>
-<span class="sd">        first detached before attaching to the new loop.</span>
-
-<span class="sd">        Note: loop may be None.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># no op</span>
-
-    <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Close the watcher.</span>
-
-<span class="sd">        This must be called to make sure that any underlying resource is freed.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lock</span><span class="p">:</span>
-            <span class="n">strategy</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_strategy</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_strategy</span> <span class="o">=</span> <span class="kc">None</span>
-
-        <span class="k">if</span> <span class="n">strategy</span><span class="p">:</span>
-            <span class="n">strategy</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
-
-    <span class="k">def</span> <span class="nf">is_active</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Return ``True`` if the watcher is active and is used by the event loop.</span>
-
-<span class="sd">        Return True if the watcher is installed and ready to handle process exit</span>
-<span class="sd">        notifications.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="kc">True</span>
-
-    <span class="k">def</span> <span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Enter the watcher&#39;s context and allow starting new processes.&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span>
-
-    <span class="k">def</span> <span class="fm">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">_args</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Exit the watcher&#39;s context&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="kc">None</span>
-
-    <span class="k">def</span> <span class="nf">_init_strategy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="s2">&quot;Construct child watcher strategy.&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_strategy</span><span class="p">:</span>
-            <span class="k">return</span>
-
-        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">os</span><span class="p">,</span> <span class="s2">&quot;pidfd_open&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">select</span><span class="p">,</span> <span class="s2">&quot;epoll&quot;</span><span class="p">):</span>
-            <span class="n">strategy</span> <span class="o">=</span> <span class="n">EPollStrategy</span>
-        <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">select</span><span class="p">,</span> <span class="s2">&quot;kqueue&quot;</span><span class="p">):</span>
-            <span class="n">strategy</span> <span class="o">=</span> <span class="n">KQueueStrategy</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">strategy</span> <span class="o">=</span> <span class="n">ThreadStrategy</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">_strategy</span> <span class="o">=</span> <span class="n">strategy</span><span class="p">()</span>
-</pre></div>
-
-        </details>
-
-            <div class="docstring"><p>Use platform-dependent strategy to monitor for exiting child processes.</p>
-</div>
-
-
-                            <div id="DefaultChildWatcher.__init__" class="classattr">
-                                        <div class="attr function"><a class="headerlink" href="#DefaultChildWatcher.__init__">#&nbsp;&nbsp</a>
-
-        
-            <span class="name">DefaultChildWatcher</span><span class="signature">()</span>
-    </div>
-
-            <details>
-            <summary>View Source</summary>
-            <div class="pdoc-code codehilite"><pre><span></span>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="s2">&quot;Initialize child watcher.&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_strategy</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_lock</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Lock</span><span class="p">()</span>
-</pre></div>
-
-        </details>
-
-            <div class="docstring"><p>Initialize child watcher.</p>
-</div>
-
-
-                            </div>
-                            <div id="DefaultChildWatcher.add_child_handler" class="classattr">
-                                        <div class="attr function"><a class="headerlink" href="#DefaultChildWatcher.add_child_handler">#&nbsp;&nbsp</a>
-
-        
-            <span class="def">def</span>
-            <span class="name">add_child_handler</span><span class="signature">(self, pid, callback, *args)</span>:
-    </div>
-
-            <details>
-            <summary>View Source</summary>
-            <div class="pdoc-code codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">add_child_handler</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pid</span><span class="p">,</span> <span class="n">callback</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Register a new child handler.</span>
-
-<span class="sd">        Arrange for callback(pid, returncode, *args) to be called when</span>
-<span class="sd">        process &#39;pid&#39; terminates. Specifying another callback for the same</span>
-<span class="sd">        process replaces the previous handler.</span>
-
-<span class="sd">        Note: callback() must be thread-safe.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_strategy</span><span class="p">:</span>  <span class="c1"># ATOMIC: self._strategy</span>
-            <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lock</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_init_strategy</span><span class="p">()</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">_strategy</span><span class="o">.</span><span class="n">watch_pid</span><span class="p">(</span><span class="n">pid</span><span class="p">,</span> <span class="n">callback</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span>  <span class="c1"># ATOMIC: self._strategy</span>
-</pre></div>
-
-        </details>
-
-            <div class="docstring"><p>Register a new child handler.</p>
-
-<p>Arrange for callback(pid, returncode, *args) to be called when
-process 'pid' terminates. Specifying another callback for the same
-process replaces the previous handler.</p>
-
-<p>Note: callback() must be thread-safe.</p>
-</div>
-
-
-                            </div>
-                            <div id="DefaultChildWatcher.remove_child_handler" class="classattr">
-                                        <div class="attr function"><a class="headerlink" href="#DefaultChildWatcher.remove_child_handler">#&nbsp;&nbsp</a>
-
-        
-            <span class="def">def</span>
-            <span class="name">remove_child_handler</span><span class="signature">(self, pid)</span>:
-    </div>
-
-            <details>
-            <summary>View Source</summary>
-            <div class="pdoc-code codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">remove_child_handler</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pid</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Removes the handler for process &#39;pid&#39;.</span>
-
-<span class="sd">        The function returns True if the handler was successfully removed,</span>
-<span class="sd">        False if there was nothing to remove.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="kc">False</span>  <span class="c1"># not supported</span>
-</pre></div>
-
-        </details>
-
-            <div class="docstring"><p>Removes the handler for process 'pid'.</p>
-
-<p>The function returns True if the handler was successfully removed,
-False if there was nothing to remove.</p>
-</div>
-
-
-                            </div>
-                            <div id="DefaultChildWatcher.attach_loop" class="classattr">
-                                        <div class="attr function"><a class="headerlink" href="#DefaultChildWatcher.attach_loop">#&nbsp;&nbsp</a>
-
-        
-            <span class="def">def</span>
-            <span class="name">attach_loop</span><span class="signature">(self, loop)</span>:
-    </div>
-
-            <details>
-            <summary>View Source</summary>
-            <div class="pdoc-code codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">attach_loop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">loop</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Attach the watcher to an event loop.</span>
-
-<span class="sd">        If the watcher was previously attached to an event loop, then it is</span>
-<span class="sd">        first detached before attaching to the new loop.</span>
-
-<span class="sd">        Note: loop may be None.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># no op</span>
-</pre></div>
-
-        </details>
-
-            <div class="docstring"><p>Attach the watcher to an event loop.</p>
-
-<p>If the watcher was previously attached to an event loop, then it is
-first detached before attaching to the new loop.</p>
-
-<p>Note: loop may be None.</p>
-</div>
-
-
-                            </div>
-                            <div id="DefaultChildWatcher.close" class="classattr">
-                                        <div class="attr function"><a class="headerlink" href="#DefaultChildWatcher.close">#&nbsp;&nbsp</a>
-
-        
-            <span class="def">def</span>
-            <span class="name">close</span><span class="signature">(self)</span>:
-    </div>
-
-            <details>
-            <summary>View Source</summary>
-            <div class="pdoc-code codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Close the watcher.</span>
-
-<span class="sd">        This must be called to make sure that any underlying resource is freed.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lock</span><span class="p">:</span>
-            <span class="n">strategy</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_strategy</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_strategy</span> <span class="o">=</span> <span class="kc">None</span>
-
-        <span class="k">if</span> <span class="n">strategy</span><span class="p">:</span>
-            <span class="n">strategy</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
-</pre></div>
-
-        </details>
-
-            <div class="docstring"><p>Close the watcher.</p>
-
-<p>This must be called to make sure that any underlying resource is freed.</p>
-</div>
-
-
-                            </div>
-                            <div id="DefaultChildWatcher.is_active" class="classattr">
-                                        <div class="attr function"><a class="headerlink" href="#DefaultChildWatcher.is_active">#&nbsp;&nbsp</a>
-
-        
-            <span class="def">def</span>
-            <span class="name">is_active</span><span class="signature">(self)</span>:
-    </div>
-
-            <details>
-            <summary>View Source</summary>
-            <div class="pdoc-code codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">is_active</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Return ``True`` if the watcher is active and is used by the event loop.</span>
-
-<span class="sd">        Return True if the watcher is installed and ready to handle process exit</span>
-<span class="sd">        notifications.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="kc">True</span>
-</pre></div>
-
-        </details>
-
-            <div class="docstring"><p>Return <code>True</code> if the watcher is active and is used by the event loop.</p>
-
-<p>Return True if the watcher is installed and ready to handle process exit
-notifications.</p>
-</div>
-
-
-                            </div>
                 </section>
     </main>
 </body>
