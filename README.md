@@ -232,8 +232,6 @@ Shellous supports different STDOUT behavior when using different Python types.
 | Python Type | Behavior as STDOUT/STDERR | append=True
 | ----------- | --------------- | ------
 | Path | Write output to file path specified by `Path`. | Open file for append
-| str | Write output to file path specified by string object. | Open file for append
-| bytes | Write output to file path specified by bytes object. | Open file for append
 | bytearray | Write output to mutable byte array. | TypeError
 | File, StringIO, ByteIO | Write output to open file object. | TypeError
 | int | Write output to existing file descriptor. | TypeError
