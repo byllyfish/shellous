@@ -1,6 +1,16 @@
 Shellous Change Log
 ===================
 
+0.17.0
+------
+
+- [API] In the future, refer to redirection constants using `sh`: `sh.DEVNULL`, `sh.STDOUT`, `sh.INHERIT`.
+- [API] Redirecting output to a str or bytes object raises a DeprecationWarning; use a Path object instead.
+- [API] The `context()` function now raises a DeprecationWarning.
+- [API] Using literal constants None, ..., () and 1 in redirection operators now raises a DeprecationWarning.
+- [API] Rename `incomplete_result` setting to `catch_cancelled_error`.
+- [LATERAL] Work-around test that is failing on Alpine linux (#241).
+
 0.16.0
 ------
 
