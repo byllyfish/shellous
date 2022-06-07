@@ -52,7 +52,7 @@ class DefaultChildWatcher(asyncio.AbstractChildWatcher):
         self._lock = threading.Lock()
 
         if thread_strategy:
-            # Force use of ThreadStragegy for testing.
+            # Force use of ThreadStrategy for coverage test.
             self._strategy = ThreadStrategy()
 
     def add_child_handler(self, pid, callback, *args):
