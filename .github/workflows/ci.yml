@@ -68,6 +68,8 @@ jobs:
         coverage run --source shellous -m pytest
         # Re-run with coverage for shellous/watcher.py
         SHELLOUS_CHILDWATCHER_TYPE=default coverage run --source shellous -m pytest
+        # Re-run with coverage for shellous/watcher.py and ThreadStrategy.
+        SHELLOUS_CHILDWATCHER_TYPE=default SHELLOUS_THREADSTRATEGY=1 coverage run --source shellous -m pytest
         codecov
       env:
         SHELLOUS_CODE_COVERAGE: 1
