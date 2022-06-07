@@ -70,7 +70,12 @@ def _init_child_watcher():
         # Use patched child watcher...
         asyncio.set_child_watcher(PatchedMultiLoopChildWatcher())
     elif childwatcher_type == "default":
-        asyncio.set_child_watcher(shellous.DefaultChildWatcher())
+        thread_strategy = os.environ.get("SHELLOUS_THREADSTRATEGY") is not None
+        asyncio.set_child_watcher(
+            shellous.DefaultChildWatcher(
+                thread_strategy=thread_strategy,
+            )
+        )
 
 
 @pytest.fixture(autouse=True)
