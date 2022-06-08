@@ -1,6 +1,12 @@
 Shellous Change Log
 ===================
 
+0.18.0
+------
+
+- [LATERAL] Update `immutables` dependency version.
+- [LATERAL] Include ThreadStrategy in code coverage tests.
+
 0.17.0
 ------
 
