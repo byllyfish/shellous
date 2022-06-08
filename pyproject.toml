@@ -22,13 +22,13 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = "^3.9"
-immutables = "^0.17"
+immutables = "^0.18"
 
 [tool.poetry.dev-dependencies]
 pytest = "^7.1.2"
 pytest-asyncio = "^0.18.3"
 pylint = "^2.13.2"
-mypy = "^0.942"
+mypy = "^0.961"
 black = "^22.1.0"
 codecov = "^2.1.12"
 flake8 = "^4.0.1"
