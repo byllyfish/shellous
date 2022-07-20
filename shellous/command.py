@@ -12,7 +12,7 @@ import os
 import signal
 from collections.abc import Iterable
 from dataclasses import dataclass, field
-from typing import Any, Callable, ClassVar, Optional, TypeVar, Union
+from typing import Any, Callable, ClassVar, Container, Optional, TypeVar, Union
 
 from immutables import Map as ImmutableDict
 
@@ -79,7 +79,7 @@ class Options:  # pylint: disable=too-many-instance-attributes
     catch_cancelled_error: bool = False
     "True if we should raise `ResultError` after clean up from cancelled task."
 
-    exit_codes: Optional[set] = None
+    exit_codes: Optional[Container] = None
     "Set of exit codes that do not raise a `ResultError`. None means {0}."
 
     timeout: Optional[float] = None
@@ -326,7 +326,7 @@ class Command:
         encoding: Unset[Optional[str]] = _UNSET,
         return_result: Unset[bool] = _UNSET,
         catch_cancelled_error: Unset[bool] = _UNSET,
-        exit_codes: Unset[Optional[set]] = _UNSET,
+        exit_codes: Unset[Optional[Container]] = _UNSET,
         timeout: Unset[Optional[float]] = _UNSET,
         cancel_timeout: Unset[float] = _UNSET,
         cancel_signal: Unset[Optional[signal.Signals]] = _UNSET,

@@ -67,6 +67,7 @@ class DefaultChildWatcher(asyncio.AbstractChildWatcher):
         if not self._strategy:  # ATOMIC: self._strategy
             with self._lock:
                 self._init_strategy()
+            assert self._strategy is not None  # (pyright)
 
         self._strategy.watch_pid(pid, callback, args)  # ATOMIC: self._strategy
 
@@ -275,6 +276,8 @@ class EPollStrategy(ChildStrategy):
     @log_thread(True)
     def _run(self):
         "Event loop that handles epoll events."
+        assert self._selfpipe is not None
+
         try:
             pipe_fd = self._selfpipe[0]
 

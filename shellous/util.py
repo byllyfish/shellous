@@ -12,7 +12,7 @@ from typing import Any, Iterable, Optional, Union
 from .log import LOG_DETAIL, LOGGER, log_timer
 
 # Stores current stack of context managers for immutable Command objects.
-_CTXT_STACK = contextvars.ContextVar("ctxt_stack", default=None)
+_CTXT_STACK = contextvars.ContextVar[Union[dict, None]]("ctxt_stack", default=None)
 
 
 def decode(data: Optional[bytes], encoding: str) -> str:
@@ -147,7 +147,7 @@ async def context_aenter(scope, ctxt_manager):
         ctxt_stack = defaultdict(list)
         _CTXT_STACK.set(ctxt_stack)
 
-    result = await ctxt_manager.__aenter__()
+    result = await ctxt_manager.__aenter__()  # pylint: disable=unnecessary-dunder-call
     stack = ctxt_stack[scope]
     stack.append(ctxt_manager)
 
@@ -157,6 +157,7 @@ async def context_aenter(scope, ctxt_manager):
 async def context_aexit(scope, exc_type, exc_value, exc_tb):
     "Exit an async context manager."
     ctxt_stack = _CTXT_STACK.get()
+    assert ctxt_stack is not None  # (pyright)
 
     stack = ctxt_stack[scope]
     ctxt_manager = stack.pop()

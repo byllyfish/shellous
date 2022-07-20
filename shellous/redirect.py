@@ -6,7 +6,7 @@ import io
 import os
 import warnings
 from logging import Logger
-from typing import Optional
+from typing import Any, Optional, Union
 
 from shellous.log import LOG_DETAIL, log_method
 from shellous.util import decode
@@ -70,7 +70,7 @@ class Redirect(enum.IntEnum):
 
 # This table has the default redirections for (src, pty).
 # Sources are stdin, stdout, stderr. Used by Redirect.from_default().
-_DEFAULT_REDIRECTION = {
+_DEFAULT_REDIRECTION: dict[tuple[int, bool], Union[bytes, Redirect]] = {
     # (FD, PTY)
     (_STDIN, False): b"",
     (_STDIN, True): Redirect.CAPTURE,
@@ -80,7 +80,7 @@ _DEFAULT_REDIRECTION = {
     (_STDERR, True): Redirect.STDOUT,
 }
 
-_LITERAL_REDIRECT = {
+_LITERAL_REDIRECT: dict[Any, Redirect] = {
     None: Redirect.DEVNULL,
     ...: Redirect.INHERIT,
     (): Redirect.CAPTURE,
