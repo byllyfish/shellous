@@ -6,7 +6,7 @@ import pytest
 from shellous.log import _LOG_IGNORE_STEPIN, _LOG_IGNORE_STEPOUT, log_method, log_timer
 
 
-class _Tester:  # pylint: disable=no-self-use
+class _Tester:
     @log_method(True)
     async def demo1(self):
         pass

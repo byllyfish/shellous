@@ -147,7 +147,7 @@ async def context_aenter(scope, ctxt_manager):
         ctxt_stack = defaultdict(list)
         _CTXT_STACK.set(ctxt_stack)
 
-    result = await ctxt_manager.__aenter__()
+    result = await ctxt_manager.__aenter__()  # pylint: disable=unnecessary-dunder-call
     stack = ctxt_stack[scope]
     stack.append(ctxt_manager)
 
