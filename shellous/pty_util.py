@@ -223,7 +223,7 @@ def _set_term_size(fdesc, rows, cols):
     "Set pseudo-terminal size."
     try:
         winsz = struct.pack("HHHH", rows, cols, 0, 0)
-        fcntl.ioctl(fdesc, tty.TIOCSWINSZ, winsz)
+        fcntl.ioctl(fdesc, tty.TIOCSWINSZ, winsz)  # pyright: ignore
     except OSError as ex:
         LOGGER.warning("_set_term_size ex=%r", ex)
 
@@ -232,7 +232,7 @@ def _inherit_term_size(rows, cols):
     "Override ... with terminal setting from current stdin."
     try:
         zeros = struct.pack("HHHH", 0, 0, 0, 0)
-        winsz = fcntl.ioctl(_STDOUT_FILENO, tty.TIOCGWINSZ, zeros)
+        winsz = fcntl.ioctl(_STDOUT_FILENO, tty.TIOCGWINSZ, zeros)  # pyright: ignore
         winsz = struct.unpack("HHHH", winsz)
     except (OSError, struct.error) as ex:
         winsz = (0, 0, 0, 0)
@@ -273,9 +273,9 @@ def _patch_child_watcher():
 
     saved_add_handler = watcher.add_child_handler
 
-    def _add_child_handler(*args):
+    def _add_child_handler(pid, callback, *args):
         if not _IGNORE_CHILD_PROCESS.get():
-            saved_add_handler(*args)
+            saved_add_handler(pid, callback, *args)
 
     watcher.add_child_handler = _add_child_handler
 

@@ -6,6 +6,7 @@ import os
 import sys
 import warnings
 from logging import Logger
+from typing import Any
 
 import shellous
 import shellous.redirect as redir
@@ -429,7 +430,10 @@ class Runner:
     async def _wait_pid(self):
         "Manually poll `waitpid` until process finishes."
         assert self._is_bsd_pty()
+
         while True:
+            assert self._proc is not None  # (pyright)
+
             if poll_wait_pid(self._proc):
                 break
             await asyncio.sleep(0.025)
@@ -466,6 +470,7 @@ class Runner:
 
     def _send_signal(self, sig):
         "Send a signal to the process."
+        assert self._proc is not None  # (pyright)
 
         LOGGER.info("Runner.signal %r signal=%r", self, sig)
         self._audit_callback("signal", signal=sig)
@@ -521,6 +526,7 @@ class Runner:
             # Set up subprocess arguments and launch subprocess.
             with self._options as opts:
                 await self._subprocess_spawn(opts)
+                assert self._proc is not None  # (pyright)
 
             stdin = self._proc.stdin
             stdout = self._proc.stdout
@@ -602,6 +608,8 @@ class Runner:
     @log_method(LOG_DETAIL)
     async def _waiter(self):
         "Run task that waits for process to exit."
+        assert self._proc is not None  # (pyright)
+
         try:
             if self._is_bsd_pty():
                 await self._wait_pid()
@@ -726,7 +734,7 @@ class Runner:
     @log_method(LOG_DETAIL)
     async def _close(self):
         "Make sure that our resources are properly closed."
-        assert self._proc
+        assert self._proc is not None
 
         if self._options.pty_fds:
             self._options.pty_fds.close()
@@ -761,7 +769,7 @@ class Runner:
         "Call `audit_callback` if there is one."
         callback = self.command.options.audit_callback
         if callback:
-            info = {"runner": self}
+            info: dict[str, Any] = {"runner": self}
             if failure:
                 info["failure"] = failure
             if phase == "signal":

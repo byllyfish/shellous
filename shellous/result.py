@@ -83,6 +83,7 @@ def make_result(command, result, cancelled, timed_out=False):
         # Everything in result is now either a Result or ResultError.
         key_result = _find_key_result(result)
         last = _get_result(result[-1])
+        assert key_result is not None  # (pyright)
 
         result = Result(
             last.output_bytes,
