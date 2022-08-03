@@ -88,14 +88,9 @@ STDIN_TYPES = (
     int,
     Redirect,
     asyncio.StreamReader,
-    type(None),
-    type(...),
-    tuple,
 )
 
 STDOUT_TYPES = (
-    str,
-    bytes,
     os.PathLike,
     bytearray,
     io.IOBase,
@@ -103,12 +98,9 @@ STDOUT_TYPES = (
     Redirect,
     Logger,
     asyncio.StreamWriter,
-    type(None),
-    type(...),
-    tuple,
 )
 
-STDOUT_APPEND_TYPES = (str, bytes, os.PathLike)
+STDOUT_APPEND_TYPES = (os.PathLike,)
 
 
 async def _drain(stream: asyncio.StreamWriter):

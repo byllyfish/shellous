@@ -4,7 +4,6 @@ import asyncio
 import io
 import os
 import sys
-import warnings
 from logging import Logger
 from typing import Any
 

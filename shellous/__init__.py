@@ -28,13 +28,6 @@ result = await sh("echo", "hello")
 ```
 """
 
-# TODO: These aliases here are deprecated; use the sh.CONSTANT forms.
-STDOUT = sh.STDOUT
-DEVNULL = sh.DEVNULL
-CAPTURE = sh.CAPTURE
-INHERIT = sh.INHERIT
-
-
 __all__ = [
     "sh",
     "CmdContext",
