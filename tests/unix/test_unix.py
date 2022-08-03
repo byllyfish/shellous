@@ -299,33 +299,16 @@ async def test_redirect_output_str(tmp_path):
     out = tmp_path / "test_redirect_output_str"
 
     # Erase and write to file.
-    with pytest.deprecated_call():
-        result = await sh("echo", "test", 4, 5, 6).stdout(str(out))
-    assert result == ""
-    assert out.read_bytes() == b"test 4 5 6\n"
-
-    # Append to the above file.
-    with pytest.deprecated_call():
-        result = await sh("echo", ".2.").stdout(str(out), append=True)
-    assert result == ""
-    assert out.read_bytes() == b"test 4 5 6\n.2.\n"
+    with pytest.raises(TypeError, match="output file"):
+        await sh("echo", "test", 4, 5, 6).stdout(str(out))
 
 
 async def test_redirect_output_bytes(tmp_path):
     "Test redirecting command output to a filename string."
     out = tmp_path / "test_redirect_output_str"
 
-    # Erase and write to file.
-    with pytest.deprecated_call():
-        result = await sh("echo", "test", 4, 5, 6).stdout(bytes(out))
-    assert result == ""
-    assert out.read_bytes() == b"test 4 5 6\n"
-
-    # Append to the above file.
-    with pytest.deprecated_call():
-        result = await sh("echo", ".2.").stdout(bytes(out), append=True)
-    assert result == ""
-    assert out.read_bytes() == b"test 4 5 6\n.2.\n"
+    with pytest.raises(TypeError, match="output file"):
+        await sh("echo", "test", 4, 5, 6).stdout(bytes(out))
 
 
 async def test_redirect_output_file(tmp_path):
@@ -360,10 +343,9 @@ async def test_redirect_output_stdout():
 
 
 async def test_redirect_output_none():
-    "Test redirecting command output to None (deprecated)."
-    with pytest.deprecated_call():
-        result = await sh("echo", "789").stdout(None)
-        assert result == ""
+    "Test redirecting command output to None."
+    with pytest.raises(TypeError, match="None"):
+        await sh("echo", "789").stdout(None)
 
 
 async def test_redirect_output_capture():

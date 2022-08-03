@@ -245,13 +245,9 @@ class _RunOptions:
 
         stdout = asyncio.subprocess.PIPE
 
-        # TODO: str|bytes as output are deprecated.
         if isinstance(output, (str, bytes, os.PathLike)):
-            if isinstance(output, (str, bytes)):
-                warnings.warn(
-                    "Using str|bytes as output file is deprecated",
-                    DeprecationWarning,
-                )
+            if isinstance(output, (str, bytes)):  # TODO: remove this check...
+                raise TypeError("Using str|bytes as output file is unsupported")
             mode = "ab" if append else "wb"
             stdout = open(output, mode=mode)  # pylint: disable=consider-using-with
             self.open_fds.append(stdout)

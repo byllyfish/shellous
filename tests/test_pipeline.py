@@ -242,44 +242,38 @@ def test_pipeline_len_getitem():
 
 def test_pipeline_redirect_none_stdin():
     "Test use of None in pipeline."
-    with pytest.deprecated_call():
-        cmd = None | sh("echo")
-        assert cmd == sh("echo").stdin(sh.DEVNULL)
+    with pytest.raises(TypeError, match="unsupported"):
+        _cmd = None | sh("echo")
 
 
 def test_pipeline_redirect_none_stdout():
     "Test use of None in pipeline."
-    with pytest.deprecated_call():
-        cmd = sh("echo") | None
-        assert cmd == sh("echo").stdout(sh.DEVNULL)
+    with pytest.raises(TypeError, match="unsupported"):
+        _cmd = sh("echo") | None
 
 
 def test_pipeline_redirect_ellipsis_stdin():
     "Test use of Ellipsis in pipeline."
-    with pytest.deprecated_call():
-        cmd = ... | sh("echo")
-        assert cmd == sh("echo").stdin(sh.INHERIT)
+    with pytest.raises(TypeError, match="unsupported"):
+        _cmd = ... | sh("echo")
 
 
 def test_pipeline_redirect_ellipsis_stdout():
     "Test use of Ellipsis in pipeline."
-    with pytest.deprecated_call():
-        cmd = sh("echo") | ...
-        assert cmd == sh("echo").stdout(sh.INHERIT)
+    with pytest.raises(TypeError, match="unsupported"):
+        _cmd = sh("echo") | ...
 
 
 def test_pipeline_redirect_tuple_stdin():
     "Test use of empty tuple in pipeline."
-    with pytest.deprecated_call():
-        cmd = () | sh("echo")
-        assert cmd == sh("echo").stdin(sh.CAPTURE)
+    with pytest.raises(TypeError, match="unsupported"):
+        _cmd = () | sh("echo")
 
 
 def test_pipeline_redirect_tuple_stdout():
     "Test use of empty tuple in pipeline."
-    with pytest.deprecated_call():
-        cmd = sh("echo") | ()
-        assert cmd == sh("echo").stdout(sh.CAPTURE)
+    with pytest.raises(TypeError, match="unsupported"):
+        _cmd = sh("echo") | ()
 
 
 def test_pipeline_percent_op():
