@@ -197,7 +197,7 @@ async def test_timeout_fail():
     "Test that an awaitable command can be called with a timeout."
     cmd = sh("sleep", "5").set(catch_cancelled_error=True)
     with pytest.raises(ResultError) as exc_info:
-        await asyncio.wait_for(cmd, 0.2)
+        await asyncio.wait_for(cmd, 0.25)
 
     assert exc_info.type is ResultError
     assert exc_info.value.result == Result(
@@ -219,7 +219,7 @@ async def test_timeout_fail_no_capturing():
     )
 
     with pytest.raises(ResultError) as exc_info:
-        await asyncio.wait_for(cmd, 0.2)
+        await asyncio.wait_for(cmd, 0.25)
 
     assert exc_info.value.result == Result(
         output_bytes=b"",
@@ -1310,7 +1310,7 @@ async def test_pty_timeout_fail():
     "Test that a pty command can be called with a timeout."
     cmd = sh("sleep", "5").set(catch_cancelled_error=True, pty=True)
     with pytest.raises(ResultError) as exc_info:
-        await asyncio.wait_for(cmd, 0.2)
+        await asyncio.wait_for(cmd, 0.25)
 
     assert exc_info.type is ResultError
     assert exc_info.value.result == Result(
@@ -1490,7 +1490,7 @@ async def test_audit_cancel_nohup():
     )
 
     with pytest.raises(asyncio.TimeoutError):
-        await asyncio.wait_for(xsh("nohup", "sleep", "10"), timeout=0.2)
+        await asyncio.wait_for(xsh("nohup", "sleep", "10"), timeout=0.25)
 
     assert calls == [
         ("start", "nohup", None, False, None),
@@ -1517,7 +1517,7 @@ async def test_set_cancel_signal_invalid():
     )
 
     with pytest.raises(TypeError):
-        await asyncio.wait_for(xsh("nohup", "sleep", "10"), timeout=0.2)
+        await asyncio.wait_for(xsh("nohup", "sleep", "10"), timeout=0.25)
 
     assert calls == [
         ("start", "nohup", None, False, None),
