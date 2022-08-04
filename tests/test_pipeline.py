@@ -253,37 +253,37 @@ def test_pipeline_len_getitem():
 def test_pipeline_redirect_none_stdin():
     "Test use of None in pipeline."
     with pytest.raises(TypeError, match="unsupported"):
-        _cmd = None | sh("echo")
+        _ = None | sh("echo")
 
 
 def test_pipeline_redirect_none_stdout():
     "Test use of None in pipeline."
     with pytest.raises(TypeError, match="unsupported"):
-        _cmd = sh("echo") | None
+        _ = sh("echo") | None
 
 
 def test_pipeline_redirect_ellipsis_stdin():
     "Test use of Ellipsis in pipeline."
     with pytest.raises(TypeError, match="unsupported"):
-        _cmd = ... | sh("echo")
+        _ = ... | sh("echo")
 
 
 def test_pipeline_redirect_ellipsis_stdout():
     "Test use of Ellipsis in pipeline."
     with pytest.raises(TypeError, match="unsupported"):
-        _cmd = sh("echo") | ...
+        _ = sh("echo") | ...
 
 
 def test_pipeline_redirect_tuple_stdin():
     "Test use of empty tuple in pipeline."
     with pytest.raises(TypeError, match="unsupported"):
-        _cmd = () | sh("echo")
+        _ = () | sh("echo")
 
 
 def test_pipeline_redirect_tuple_stdout():
     "Test use of empty tuple in pipeline."
     with pytest.raises(TypeError, match="unsupported"):
-        _cmd = sh("echo") | ()
+        _ = sh("echo") | ()
 
 
 def test_pipeline_percent_op():
