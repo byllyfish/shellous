@@ -156,7 +156,7 @@ async def test_echo_cancel(echo_cmd):
     "When a command is cancelled, we should see partial output."
     cmd = echo_cmd("abc").env(SHELLOUS_EXIT_SLEEP=2)
     with pytest.raises(asyncio.TimeoutError):
-        await asyncio.wait_for(cmd, timeout=0.2)
+        await asyncio.wait_for(cmd, timeout=0.75)
 
 
 async def test_echo_cancel_incomplete(echo_cmd):
@@ -164,7 +164,7 @@ async def test_echo_cancel_incomplete(echo_cmd):
 
     cmd = echo_cmd("abc").env(SHELLOUS_EXIT_SLEEP=2).set(catch_cancelled_error=True)
     with pytest.raises(ResultError) as exc_info:
-        await asyncio.wait_for(cmd, timeout=0.2)
+        await asyncio.wait_for(cmd, timeout=0.75)
 
     assert exc_info.type is ResultError
     assert exc_info.value.result == Result(
@@ -182,7 +182,7 @@ async def test_echo_cancel_stringio(echo_cmd):
     buf = io.StringIO()
     cmd = echo_cmd("abc").env(SHELLOUS_EXIT_SLEEP=2).stdout(buf)
     with pytest.raises(asyncio.TimeoutError):
-        await asyncio.wait_for(cmd, timeout=0.4)
+        await asyncio.wait_for(cmd, timeout=0.75)
 
     assert buf.getvalue() == "abc"
 
@@ -198,7 +198,7 @@ async def test_echo_cancel_stringio_incomplete(echo_cmd):
         .set(catch_cancelled_error=True)
     )
     with pytest.raises(ResultError) as exc_info:
-        await asyncio.wait_for(cmd, timeout=0.4)
+        await asyncio.wait_for(cmd, timeout=0.75)
 
     assert buf.getvalue() == "abc"
     assert exc_info.type is ResultError
@@ -264,7 +264,7 @@ async def test_pipe_cancel(echo_cmd, tr_cmd):
 
     cmd = echo_cmd | tr_cmd
     with pytest.raises(asyncio.TimeoutError):
-        await asyncio.wait_for(cmd, timeout=0.2)
+        await asyncio.wait_for(cmd, timeout=0.75)
 
 
 async def test_pipe_cancel_incomplete(echo_cmd, cat_cmd):
@@ -274,7 +274,7 @@ async def test_pipe_cancel_incomplete(echo_cmd, cat_cmd):
 
     cmd = echo_cmd | cat_cmd
     with pytest.raises(ResultError) as exc_info:
-        await asyncio.wait_for(cmd, timeout=0.4)
+        await asyncio.wait_for(cmd, timeout=0.75)
 
     assert exc_info.type is ResultError
     assert exc_info.value.result == Result(
@@ -1046,7 +1046,7 @@ async def test_audit_pipe_cancel(echo_cmd, tr_cmd):
 
     cmd = echo_cmd | tr_cmd
     with pytest.raises(asyncio.TimeoutError):
-        await asyncio.wait_for(cmd, timeout=0.2)
+        await asyncio.wait_for(cmd, timeout=0.75)
 
     assert calls == [
         ("start", "echo", None, None),
