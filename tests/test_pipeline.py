@@ -27,8 +27,13 @@ def test_pipeline_name():
 
 
 def test_pipeline_cmd_append():
-    pipe = Pipeline.create(sh("cmd1").stdin("a"), sh("cmd2").stdout("b", append=True))
-    assert pipe.commands == (sh("cmd1").stdin("a"), sh("cmd2").stdout("b", append=True))
+    pipe = Pipeline.create(
+        sh("cmd1").stdin("a"), sh("cmd2").stdout(Path("b"), append=True)
+    )
+    assert pipe.commands == (
+        sh("cmd1").stdin("a"),
+        sh("cmd2").stdout(Path("b"), append=True),
+    )
 
 
 def test_pipeline():
@@ -57,13 +62,18 @@ def test_pipeline_input():
 
 
 def test_pipeline_output():
-    pipe = Pipeline.create(sh("echo")) | "/tmp/somefile"
-    assert pipe.commands == (sh("echo").stdout("/tmp/somefile"),)
+    pipe = Pipeline.create(sh("echo")) | Path("/tmp/somefile")
+    assert pipe.commands == (sh("echo").stdout(Path("/tmp/somefile")),)
+
+
+def test_pipeline_output_str():
+    with pytest.raises(TypeError, match="unsupported"):
+        _ = Pipeline.create(sh("echo")) | "/tmp/somefile"
 
 
 def test_pipeline_output_append():
-    pipe = Pipeline.create(sh("echo")) >> "/tmp/somefile"
-    assert pipe.commands == (sh("echo").stdout("/tmp/somefile", append=True),)
+    pipe = Pipeline.create(sh("echo")) >> Path("/tmp/somefile")
+    assert pipe.commands == (sh("echo").stdout(Path("/tmp/somefile"), append=True),)
 
 
 def test_pipeline_full():
@@ -72,22 +82,22 @@ def test_pipeline_full():
         "/tmp/input"
         | Pipeline.create(sh("cmd1"))
         | sh("cmd2")
-        | Pipeline.create(sh("cmd3")) >> "/tmp/output"
+        | Pipeline.create(sh("cmd3")) >> Path("/tmp/output")
     )
     assert pipe.commands == (
         sh("cmd1").stdin("/tmp/input"),
         sh("cmd2"),
-        sh("cmd3").stdout("/tmp/output", append=True),
+        sh("cmd3").stdout(Path("/tmp/output"), append=True),
     )
 
 
 def test_pipeline_pieces():
     input_ = "/tmp/input" | Pipeline.create(sh("cmd1"))
-    output = Pipeline.create(sh("cmd2")) >> "/tmp/output"
+    output = Pipeline.create(sh("cmd2")) >> Path("/tmp/output")
     pipe = input_ | output
     assert pipe.commands == (
         sh("cmd1").stdin("/tmp/input"),
-        sh("cmd2").stdout("/tmp/output", append=True),
+        sh("cmd2").stdout(Path("/tmp/output"), append=True),
     )
 
 
@@ -102,18 +112,18 @@ def test_pipeline_or_eq():
 
 def test_pipeline_rshift_eq():
     pipe = Pipeline.create(sh("ls"))
-    pipe >>= "/tmp/output"
+    pipe >>= Path("/tmp/output")
     assert pipe == Pipeline.create(
-        sh("ls").stdout("/tmp/output", append=True),
+        sh("ls").stdout(Path("/tmp/output"), append=True),
     )
 
 
 def test_pipeline_stderr():
     pipe = Pipeline.create(sh("ls"), sh("grep"))
-    pipe = pipe.stderr("/tmp/output", append=True)
+    pipe = pipe.stderr(Path("/tmp/output"), append=True)
 
     assert pipe == Pipeline.create(
-        sh("ls"), sh("grep").stderr("/tmp/output", append=True)
+        sh("ls"), sh("grep").stderr(Path("/tmp/output"), append=True)
     )
 
 
@@ -127,13 +137,13 @@ def test_pipeline_full_commands():
         | sh("cmd1")
         | sh("cmd2")
         | sh("cmd3")
-        | sh("cmd4") >> "/tmp/output"
+        | sh("cmd4") >> Path("/tmp/output")
     )
     assert pipe == Pipeline.create(
         sh("cmd1").stdin("/tmp/input"),
         sh("cmd2"),
         sh("cmd3"),
-        sh("cmd4").stdout("/tmp/output", append=True),
+        sh("cmd4").stdout(Path("/tmp/output"), append=True),
     )
 
 
@@ -145,18 +155,18 @@ def test_pipeline_or_eq_commands():
 
 def test_pipeline_rshift_eq_commands():
     pipe = sh("ls") | sh("grep")
-    pipe >>= "/tmp/output"
+    pipe >>= Path("/tmp/output")
     assert pipe == Pipeline.create(
         sh("ls"),
-        sh("grep").stdout("/tmp/output", append=True),
+        sh("grep").stdout(Path("/tmp/output"), append=True),
     )
 
 
 def test_pipeline_or_eq_input_commands():
     pipe = "/tmp/input"
     pipe |= sh("grep")
-    pipe |= "/tmp/output"
-    assert pipe == sh("grep").stdin("/tmp/input").stdout("/tmp/output")
+    pipe |= Path("/tmp/output")
+    assert pipe == sh("grep").stdin("/tmp/input").stdout(Path("/tmp/output"))
 
 
 def test_pipeline_path_input():
@@ -202,9 +212,9 @@ def test_invalid_pipeline_override_stdin():
 
 def test_invalid_pipeline_operators():
     "Test >> in the middle of a pipeline."
-    pipe = sh("echo") >> "/tmp/tmp_file" | sh("cat")
+    pipe = sh("echo") >> Path("/tmp/tmp_file") | sh("cat")
     assert pipe == Pipeline.create(
-        sh("echo").stdout("/tmp/tmp_file", append=True), sh("cat")
+        sh("echo").stdout(Path("/tmp/tmp_file"), append=True), sh("cat")
     )
 
 
@@ -242,44 +252,38 @@ def test_pipeline_len_getitem():
 
 def test_pipeline_redirect_none_stdin():
     "Test use of None in pipeline."
-    with pytest.deprecated_call():
-        cmd = None | sh("echo")
-        assert cmd == sh("echo").stdin(sh.DEVNULL)
+    with pytest.raises(TypeError, match="unsupported"):
+        _ = None | sh("echo")
 
 
 def test_pipeline_redirect_none_stdout():
     "Test use of None in pipeline."
-    with pytest.deprecated_call():
-        cmd = sh("echo") | None
-        assert cmd == sh("echo").stdout(sh.DEVNULL)
+    with pytest.raises(TypeError, match="unsupported"):
+        _ = sh("echo") | None
 
 
 def test_pipeline_redirect_ellipsis_stdin():
     "Test use of Ellipsis in pipeline."
-    with pytest.deprecated_call():
-        cmd = ... | sh("echo")
-        assert cmd == sh("echo").stdin(sh.INHERIT)
+    with pytest.raises(TypeError, match="unsupported"):
+        _ = ... | sh("echo")
 
 
 def test_pipeline_redirect_ellipsis_stdout():
     "Test use of Ellipsis in pipeline."
-    with pytest.deprecated_call():
-        cmd = sh("echo") | ...
-        assert cmd == sh("echo").stdout(sh.INHERIT)
+    with pytest.raises(TypeError, match="unsupported"):
+        _ = sh("echo") | ...
 
 
 def test_pipeline_redirect_tuple_stdin():
     "Test use of empty tuple in pipeline."
-    with pytest.deprecated_call():
-        cmd = () | sh("echo")
-        assert cmd == sh("echo").stdin(sh.CAPTURE)
+    with pytest.raises(TypeError, match="unsupported"):
+        _ = () | sh("echo")
 
 
 def test_pipeline_redirect_tuple_stdout():
     "Test use of empty tuple in pipeline."
-    with pytest.deprecated_call():
-        cmd = sh("echo") | ()
-        assert cmd == sh("echo").stdout(sh.CAPTURE)
+    with pytest.raises(TypeError, match="unsupported"):
+        _ = sh("echo") | ()
 
 
 def test_pipeline_percent_op():
@@ -296,8 +300,8 @@ def test_pipeline_percent_op():
 def test_pipeline_percent_precedence():
     "Test operator precedence with % operator."
 
-    cmd = sh("nohup") % sh("echo") >> "/tmp/output"
-    assert cmd == sh("nohup", sh("echo").args).stdout("/tmp/output", append=True)
+    cmd = sh("nohup") % sh("echo") >> Path("/tmp/output")
+    assert cmd == sh("nohup", sh("echo").args).stdout(Path("/tmp/output"), append=True)
 
     cmd = "xyz" | sh("nohup") % sh("echo") | sh("cat")
     assert cmd == "xyz" | sh("nohup", sh("echo").args) | sh("cat")

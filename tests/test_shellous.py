@@ -807,9 +807,8 @@ async def test_pty_echo_exit_code(echo_cmd):
 
 async def test_redirect_to_arbitrary_tuple():
     "Test redirection to an arbitrary tuple."
-    with pytest.raises(TypeError, match="unsupported output type"):
-        with pytest.deprecated_call():
-            await (sh("echo") | (1, 2))
+    with pytest.raises(TypeError, match="unsupported"):
+        await (sh("echo") | (1, 2))
 
 
 async def test_command_context_manager_api():

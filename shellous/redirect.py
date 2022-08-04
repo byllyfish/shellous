@@ -4,7 +4,6 @@ import asyncio
 import enum
 import io
 import os
-import warnings
 from logging import Logger
 from typing import Any, Optional, Union
 
@@ -48,19 +47,12 @@ class Redirect(enum.IntEnum):
         "Return object with literal values replaced by Redirect constant."
 
         if isinstance(literal, (tuple, type(...), type(None))):
-            warnings.warn(
-                f"literal {literal!r} is no longer supported",
-                DeprecationWarning,
-            )
+            raise TypeError(f"literal {literal!r} is unsupported")
 
         # For stderr, the literal `1` indicates that stderr is redirected to
         # the same place as STDOUT.
         if is_stderr and isinstance(literal, int) and literal == 1:
-            warnings.warn(
-                f"stderr literal {literal!r} is no longer supported",
-                DeprecationWarning,
-            )
-            return Redirect.STDOUT
+            raise TypeError(f"stderr literal {literal!r} is unupported")
 
         try:
             return _LITERAL_REDIRECT.get(literal, literal)
@@ -96,14 +88,9 @@ STDIN_TYPES = (
     int,
     Redirect,
     asyncio.StreamReader,
-    type(None),
-    type(...),
-    tuple,
 )
 
 STDOUT_TYPES = (
-    str,
-    bytes,
     os.PathLike,
     bytearray,
     io.IOBase,
@@ -111,12 +98,9 @@ STDOUT_TYPES = (
     Redirect,
     Logger,
     asyncio.StreamWriter,
-    type(None),
-    type(...),
-    tuple,
 )
 
-STDOUT_APPEND_TYPES = (str, bytes, os.PathLike)
+STDOUT_APPEND_TYPES = (os.PathLike,)
 
 
 async def _drain(stream: asyncio.StreamWriter):

@@ -16,14 +16,6 @@ from .runner import AUDIT_EVENT_SUBPROCESS_SPAWN  # noqa: F401
 if sys.platform != "win32":
     from .watcher import DefaultChildWatcher  # noqa: F401
 
-# TODO: This function is deprecated; do not use.
-def context() -> CmdContext:
-    "Construct a new execution context."
-    import warnings
-
-    warnings.warn("context() is deprecated; use sh.", DeprecationWarning)
-    return CmdContext()
-
 
 sh = CmdContext()
 """`sh` is the default command context (`CmdContext`).
@@ -35,13 +27,6 @@ from shellous import sh
 result = await sh("echo", "hello")
 ```
 """
-
-# TODO: These aliases here are deprecated; use the sh.CONSTANT forms.
-STDOUT = sh.STDOUT
-DEVNULL = sh.DEVNULL
-CAPTURE = sh.CAPTURE
-INHERIT = sh.INHERIT
-
 
 __all__ = [
     "sh",
