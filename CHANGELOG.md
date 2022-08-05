@@ -1,6 +1,14 @@
 Shellous Change Log
 ===================
 
+0.19.0
+------
+
+- [API] Remove DeprecationWarnings. Literal constants are no longer supported in redirections.
+- [API] Redirecting stdout/stderr to a string/bytes file name is no longer supported. (Use `pathlib.Path`)
+- [API] Remove the deprecated `context()` function.
+- [LATERAL] Improve test reliability by increasing some timeouts slightly.
+
 0.18.0
 ------
 
