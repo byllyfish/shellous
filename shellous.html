@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="generator" content="pdoc 12.1.0"/>
+    <meta name="generator" content="pdoc 12.2.0"/>
     <title>shellous API documentation</title>
 
     <style>/*! * Bootstrap Reboot v5.0.0 (https://getbootstrap.com/) * Copyright 2011-2021 The Bootstrap Authors * Copyright 2011-2021 Twitter, Inc. * Licensed under MIT (https://github.com/twbs/bootstrap/blob/main/LICENSE) * Forked from Normalize.css, licensed MIT (https://github.com/necolas/normalize.css/blob/master/LICENSE.md) */*,::after,::before{box-sizing:border-box}@media (prefers-reduced-motion:no-preference){:root{scroll-behavior:smooth}}body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans","Liberation Sans",sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji";font-size:1rem;font-weight:400;line-height:1.5;color:#212529;background-color:#fff;-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}hr{margin:1rem 0;color:inherit;background-color:currentColor;border:0;opacity:.25}hr:not([size]){height:1px}h1,h2,h3,h4,h5,h6{margin-top:0;margin-bottom:.5rem;font-weight:500;line-height:1.2}h1{font-size:calc(1.375rem + 1.5vw)}@media (min-width:1200px){h1{font-size:2.5rem}}h2{font-size:calc(1.325rem + .9vw)}@media (min-width:1200px){h2{font-size:2rem}}h3{font-size:calc(1.3rem + .6vw)}@media (min-width:1200px){h3{font-size:1.75rem}}h4{font-size:calc(1.275rem + .3vw)}@media (min-width:1200px){h4{font-size:1.5rem}}h5{font-size:1.25rem}h6{font-size:1rem}p{margin-top:0;margin-bottom:1rem}abbr[data-bs-original-title],abbr[title]{-webkit-text-decoration:underline dotted;text-decoration:underline dotted;cursor:help;-webkit-text-decoration-skip-ink:none;text-decoration-skip-ink:none}address{margin-bottom:1rem;font-style:normal;line-height:inherit}ol,ul{padding-left:2rem}dl,ol,ul{margin-top:0;margin-bottom:1rem}ol ol,ol ul,ul ol,ul ul{margin-bottom:0}dt{font-weight:700}dd{margin-bottom:.5rem;margin-left:0}blockquote{margin:0 0 1rem}b,strong{font-weight:bolder}small{font-size:.875em}mark{padding:.2em;background-color:#fcf8e3}sub,sup{position:relative;font-size:.75em;line-height:0;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}a{color:#0d6efd;text-decoration:underline}a:hover{color:#0a58ca}a:not([href]):not([class]),a:not([href]):not([class]):hover{color:inherit;text-decoration:none}code,kbd,pre,samp{font-family:SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;font-size:1em;direction:ltr;unicode-bidi:bidi-override}pre{display:block;margin-top:0;margin-bottom:1rem;overflow:auto;font-size:.875em}pre code{font-size:inherit;color:inherit;word-break:normal}code{font-size:.875em;color:#d63384;word-wrap:break-word}a>code{color:inherit}kbd{padding:.2rem .4rem;font-size:.875em;color:#fff;background-color:#212529;border-radius:.2rem}kbd kbd{padding:0;font-size:1em;font-weight:700}figure{margin:0 0 1rem}img,svg{vertical-align:middle}table{caption-side:bottom;border-collapse:collapse}caption{padding-top:.5rem;padding-bottom:.5rem;color:#6c757d;text-align:left}th{text-align:inherit;text-align:-webkit-match-parent}tbody,td,tfoot,th,thead,tr{border-color:inherit;border-style:solid;border-width:0}label{display:inline-block}button{border-radius:0}button:focus:not(:focus-visible){outline:0}button,input,optgroup,select,textarea{margin:0;font-family:inherit;font-size:inherit;line-height:inherit}button,select{text-transform:none}[role=button]{cursor:pointer}select{word-wrap:normal}select:disabled{opacity:1}[list]::-webkit-calendar-picker-indicator{display:none}[type=button],[type=reset],[type=submit],button{-webkit-appearance:button}[type=button]:not(:disabled),[type=reset]:not(:disabled),[type=submit]:not(:disabled),button:not(:disabled){cursor:pointer}::-moz-focus-inner{padding:0;border-style:none}textarea{resize:vertical}fieldset{min-width:0;padding:0;margin:0;border:0}legend{float:left;width:100%;padding:0;margin-bottom:.5rem;font-size:calc(1.275rem + .3vw);line-height:inherit}@media (min-width:1200px){legend{font-size:1.5rem}}legend+*{clear:left}::-webkit-datetime-edit-day-field,::-webkit-datetime-edit-fields-wrapper,::-webkit-datetime-edit-hour-field,::-webkit-datetime-edit-minute,::-webkit-datetime-edit-month-field,::-webkit-datetime-edit-text,::-webkit-datetime-edit-year-field{padding:0}::-webkit-inner-spin-button{height:auto}[type=search]{outline-offset:-2px;-webkit-appearance:textfield}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-color-swatch-wrapper{padding:0}::file-selector-button{font:inherit}::-webkit-file-upload-button{font:inherit;-webkit-appearance:button}output{display:inline-block}iframe{border:0}summary{display:list-item;cursor:pointer}progress{vertical-align:baseline}[hidden]{display:none!important}</style>
@@ -198,7 +198,8 @@ shellous    </h1>
 <p><strong>shellous</strong> provides a concise API for running subprocesses using <a href="https://docs.python.org/3/library/asyncio.html">asyncio</a>. It is 
 similar to and inspired by <a href="https://pypi.org/project/sh/">sh</a>.</p>
 
-<div class="pdoc-code codehilite"><pre><span></span><code><span class="kn">import</span> <span class="nn">asyncio</span>
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="kn">import</span> <span class="nn">asyncio</span>
 <span class="kn">from</span> <span class="nn">shellous</span> <span class="kn">import</span> <span class="n">sh</span>
 
 <span class="k">async</span> <span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
@@ -206,7 +207,8 @@ similar to and inspired by <a href="https://pypi.org/project/sh/">sh</a>.</p>
     <span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
 
 <span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">main</span><span class="p">())</span>
-</code></pre></div>
+</code></pre>
+</div>
 
 <h2 id="benefits">Benefits</h2>
 
@@ -236,30 +238,38 @@ is the REPL prompt.</p>
 
 <p>Start the asyncio REPL by typing <code>python3 -m asyncio</code>, and import <strong>sh</strong> from the <strong>shellous</strong> module:</p>
 
-<div class="pdoc-code codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">shellous</span> <span class="kn">import</span> <span class="n">sh</span>
-</code></pre></div>
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">shellous</span> <span class="kn">import</span> <span class="n">sh</span>
+</code></pre>
+</div>
 
 <p>Here's a command that runs <code>echo "hello, world"</code>.</p>
 
-<div class="pdoc-code codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;echo&quot;</span><span class="p">,</span> <span class="s2">&quot;hello, world&quot;</span><span class="p">)</span>
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;echo&quot;</span><span class="p">,</span> <span class="s2">&quot;hello, world&quot;</span><span class="p">)</span>
 <span class="go">&#39;hello, world\n&#39;</span>
-</code></pre></div>
+</code></pre>
+</div>
 
 <p>The first argument to <code><a href="#sh">sh</a></code> is the program name. It is followed by zero or more arguments. Each argument will be
 converted to a string. If an argument is a list or tuple, it is flattened recursively.</p>
 
-<div class="pdoc-code codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;echo&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">)])</span>
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;echo&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">)])</span>
 <span class="go">&#39;1 2 3 4 5 6\n&#39;</span>
-</code></pre></div>
+</code></pre>
+</div>
 
 <p>A command does not run until you <code>await</code> it. When you run a command using <code>await</code>, it returns the value of the standard output interpreted as a UTF-8 string.</p>
 
 <p>Here, we create our own echo command with "-n" to omit the newline. Note, <code>echo("abc")</code> will run the same command as <code>echo -n "abc"</code>.</p>
 
-<div class="pdoc-code codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">echo</span> <span class="o">=</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;echo&quot;</span><span class="p">,</span> <span class="s2">&quot;-n&quot;</span><span class="p">)</span>
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">echo</span> <span class="o">=</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;echo&quot;</span><span class="p">,</span> <span class="s2">&quot;-n&quot;</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">echo</span><span class="p">(</span><span class="s2">&quot;abc&quot;</span><span class="p">)</span>
 <span class="go">&#39;abc&#39;</span>
-</code></pre></div>
+</code></pre>
+</div>
 
 <p>Commands are <strong>immutable</strong> objects that represent a program invocation: program name, arguments, environment
 variables, redirection operators and other settings. When you use a method to modify a <code><a href="#Command">Command</a></code>, you are
@@ -268,39 +278,47 @@ returning a new <code><a href="#Command">Command</a></code> object. The original
 <p>In this example, we use the <code>set()</code> modifier to change the output encoding. The new command <code>echob</code>
 will return standard output as bytes (encoding=None).</p>
 
-<div class="pdoc-code codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">echob</span> <span class="o">=</span> <span class="n">echo</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">encoding</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">echob</span> <span class="o">=</span> <span class="n">echo</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">encoding</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">echob</span><span class="p">(</span><span class="s2">&quot;def&quot;</span><span class="p">)</span>
 <span class="go">b&#39;def&#39;</span>
-</code></pre></div>
+</code></pre>
+</div>
 
 <h3 id="async-for">Async For</h3>
 
 <p>Using <code>await</code> to run a command collects the entire output of the command before returning it. You can also
 iterate over the output lines as they arrive using <code>async for</code>.</p>
 
-<div class="pdoc-code codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="p">[</span><span class="n">line</span> <span class="k">async</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">echo</span><span class="p">(</span><span class="s2">&quot;hi</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;there&quot;</span><span class="p">)]</span>
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="p">[</span><span class="n">line</span> <span class="k">async</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">echo</span><span class="p">(</span><span class="s2">&quot;hi</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;there&quot;</span><span class="p">)]</span>
 <span class="go">[&#39;hi\n&#39;, &#39; there&#39;]</span>
-</code></pre></div>
+</code></pre>
+</div>
 
 <p>Use an <code>async for</code> loop when you want to examine the stream of output from a command, line by line. For example, suppose you want to run tail on a log file.</p>
 
-<div class="pdoc-code codehilite"><pre><span></span><code><span class="k">async</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;tail&quot;</span><span class="p">,</span> <span class="s2">&quot;-f&quot;</span><span class="p">,</span> <span class="s2">&quot;/var/log/syslog&quot;</span><span class="p">):</span>
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="k">async</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;tail&quot;</span><span class="p">,</span> <span class="s2">&quot;-f&quot;</span><span class="p">,</span> <span class="s2">&quot;/var/log/syslog&quot;</span><span class="p">):</span>
     <span class="k">if</span> <span class="s2">&quot;ERROR&quot;</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
         <span class="nb">print</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">rstrip</span><span class="p">())</span>
-</code></pre></div>
+</code></pre>
+</div>
 
 <h3 id="async-with">Async With</h3>
 
 <p>You can use a command as an asynchronous context manager. Use <code>async with</code> when you need byte-by-byte control over the individual process streams: stdin, stdout and stderr. To control standard input, we need to explicitly
 tell shellous to "capture" standard input (For more on this, see <a href="#redirection">Redirection</a>.)</p>
 
-<div class="pdoc-code codehilite"><pre><span></span><code><span class="k">async</span> <span class="k">with</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;cat&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">stdin</span><span class="p">(</span><span class="n">sh</span><span class="o">.</span><span class="n">CAPTURE</span><span class="p">)</span> <span class="k">as</span> <span class="n">run</span><span class="p">:</span>
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="k">async</span> <span class="k">with</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;cat&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">stdin</span><span class="p">(</span><span class="n">sh</span><span class="o">.</span><span class="n">CAPTURE</span><span class="p">)</span> <span class="k">as</span> <span class="n">run</span><span class="p">:</span>
     <span class="n">run</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">b</span><span class="s2">&quot;abc&quot;</span><span class="p">)</span>
     <span class="n">run</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
     <span class="nb">print</span><span class="p">(</span><span class="k">await</span> <span class="n">run</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">readline</span><span class="p">())</span>
 
 <span class="n">result</span> <span class="o">=</span> <span class="n">run</span><span class="o">.</span><span class="n">result</span><span class="p">()</span>
-</code></pre></div>
+</code></pre>
+</div>
 
 <p>When reading or writing individual streams, you are responsible for managing reads and writes so they don't
 deadlock. The streams on the <code>run</code> object are <code>asyncio.StreamReader</code> and <code>asyncio.StreamWriter</code> objects.</p>
@@ -309,20 +327,24 @@ deadlock. The streams on the <code>run</code> object are <code>asyncio.StreamRea
 
 <p>When a command fails, it raises a <code><a href="#ResultError">ResultError</a></code> exception:</p>
 
-<div class="pdoc-code codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;cat&quot;</span><span class="p">,</span> <span class="s2">&quot;does_not_exist&quot;</span><span class="p">)</span>
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;cat&quot;</span><span class="p">,</span> <span class="s2">&quot;does_not_exist&quot;</span><span class="p">)</span>
 <span class="gt">Traceback (most recent call last):</span>
   <span class="c">...</span>
 <span class="gr"><a href="#ResultError">shellous.ResultError</a></span>: <span class="n">Result(output_bytes=b&#39;&#39;, exit_code=1, cancelled=False, encoding=&#39;utf-8&#39;, extra=None)</span>
-</code></pre></div>
+</code></pre>
+</div>
 
 <p>The <code><a href="#ResultError">ResultError</a></code> exception contains a <code><a href="#Result">Result</a></code> object with the exit_code.</p>
 
 <p>In some cases, you want to ignore certain exit code values. That is, you want to treat them as if they are normal.
 To do this, you can set the <code>exit_codes</code> option:</p>
 
-<div class="pdoc-code codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;cat&quot;</span><span class="p">,</span> <span class="s2">&quot;does_not_exist&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">exit_codes</span><span class="o">=</span><span class="p">{</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">})</span>
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;cat&quot;</span><span class="p">,</span> <span class="s2">&quot;does_not_exist&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">exit_codes</span><span class="o">=</span><span class="p">{</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">})</span>
 <span class="go">&#39;&#39;</span>
-</code></pre></div>
+</code></pre>
+</div>
 
 <p>If there is a problem launching a process, shellous can also raise a separate <code>FileNotFoundError</code> or  <code>PermissionError</code>.</p>
 
@@ -330,18 +352,22 @@ To do this, you can set the <code>exit_codes</code> option:</p>
 
 <p>When a command completes successfully, it returns the standard output (unless it is redirected). For a more detailed response, you can specify that the command should return a <code><a href="#Result">Result</a></code> object by using the <code>.result</code> modifier:</p>
 
-<div class="pdoc-code codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">echo</span><span class="p">(</span><span class="s2">&quot;abc&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">result</span>
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">echo</span><span class="p">(</span><span class="s2">&quot;abc&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">result</span>
 <span class="go">Result(output_bytes=b&#39;abc&#39;, exit_code=0, cancelled=False, encoding=&#39;utf-8&#39;, extra=None)</span>
-</code></pre></div>
+</code></pre>
+</div>
 
 <p>A <code><a href="#Result">Result</a></code> object contains the command's <code>exit_code</code> in addition to its output. A <code><a href="#Result">Result</a></code> is True if 
 the command's exit_code is zero. You can access the string value of the output using the <code>.output</code> property:</p>
 
-<div class="pdoc-code codehilite"><pre><span></span><code><span class="k">if</span> <span class="n">result</span> <span class="o">:=</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;cat&quot;</span><span class="p">,</span> <span class="s2">&quot;some-file&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">result</span><span class="p">:</span>
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="k">if</span> <span class="n">result</span> <span class="o">:=</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;cat&quot;</span><span class="p">,</span> <span class="s2">&quot;some-file&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">result</span><span class="p">:</span>
     <span class="n">output</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">output</span>
 <span class="k">else</span><span class="p">:</span>
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Command failed with exit_code=</span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">exit_code</span><span class="si">}</span><span class="s2">)</span>
-</code></pre></div>
+</code></pre>
+</div>
 
 <h2 id="redirection">Redirection</h2>
 
@@ -356,18 +382,22 @@ to a StringIO object, an open file, a Logger, or use a special redirection const
 <p>To redirect standard input, use the pipe operator <code>|</code> with the argument on the left-side.
 Here is an example that passes the string "abc" as standard input.</p>
 
-<div class="pdoc-code codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">cmd</span> <span class="o">=</span> <span class="s2">&quot;abc&quot;</span> <span class="o">|</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;wc&quot;</span><span class="p">,</span> <span class="s2">&quot;-c&quot;</span><span class="p">)</span>
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">cmd</span> <span class="o">=</span> <span class="s2">&quot;abc&quot;</span> <span class="o">|</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;wc&quot;</span><span class="p">,</span> <span class="s2">&quot;-c&quot;</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">cmd</span>
 <span class="go">&#39;       3\n&#39;</span>
-</code></pre></div>
+</code></pre>
+</div>
 
 <p>To read input from a file, use a <code>Path</code> object from <code>pathlib</code>.</p>
 
-<div class="pdoc-code codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">cmd</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">&quot;LICENSE&quot;</span><span class="p">)</span> <span class="o">|</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;wc&quot;</span><span class="p">,</span> <span class="s2">&quot;-l&quot;</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">cmd</span>
 <span class="go">&#39;     201\n&#39;</span>
-</code></pre></div>
+</code></pre>
+</div>
 
 <p>Shellous supports different STDIN behavior when using different Python types.</p>
 
@@ -423,22 +453,26 @@ Here is an example that passes the string "abc" as standard input.</p>
 <p>To redirect standard output, use the pipe operator <code>|</code> with the argument on the right-side. Here is an example
 that writes to a temporary file.</p>
 
-<div class="pdoc-code codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">output_file</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">&quot;/tmp/output_file&quot;</span><span class="p">)</span>
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">output_file</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">&quot;/tmp/output_file&quot;</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">cmd</span> <span class="o">=</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;echo&quot;</span><span class="p">,</span> <span class="s2">&quot;abc&quot;</span><span class="p">)</span> <span class="o">|</span> <span class="n">output_file</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">cmd</span>
 <span class="go">&#39;&#39;</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">output_file</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">()</span>
 <span class="go">b&#39;abc\n&#39;</span>
-</code></pre></div>
+</code></pre>
+</div>
 
 <p>To redirect standard output with append, use the <code>&gt;&gt;</code> operator.</p>
 
-<div class="pdoc-code codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">cmd</span> <span class="o">=</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;echo&quot;</span><span class="p">,</span> <span class="s2">&quot;def&quot;</span><span class="p">)</span> <span class="o">&gt;&gt;</span> <span class="n">output_file</span>
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">cmd</span> <span class="o">=</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;echo&quot;</span><span class="p">,</span> <span class="s2">&quot;def&quot;</span><span class="p">)</span> <span class="o">&gt;&gt;</span> <span class="n">output_file</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">cmd</span>
 <span class="go">&#39;&#39;</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">output_file</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">()</span>
 <span class="go">b&#39;abc\ndef\n&#39;</span>
-</code></pre></div>
+</code></pre>
+</div>
 
 <p>Shellous supports different STDOUT behavior when using different Python types.</p>
 
@@ -510,21 +544,25 @@ that writes to a temporary file.</p>
 same Python types as standard output. To redirect stderr to the same place as stdout, 
 use the <code>sh.STDOUT</code> constant.</p>
 
-<div class="pdoc-code codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">cmd</span> <span class="o">=</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;cat&quot;</span><span class="p">,</span> <span class="s2">&quot;does_not_exist&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">stderr</span><span class="p">(</span><span class="n">sh</span><span class="o">.</span><span class="n">STDOUT</span><span class="p">)</span>
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">cmd</span> <span class="o">=</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;cat&quot;</span><span class="p">,</span> <span class="s2">&quot;does_not_exist&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">stderr</span><span class="p">(</span><span class="n">sh</span><span class="o">.</span><span class="n">STDOUT</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">cmd</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">exit_codes</span><span class="o">=</span><span class="p">{</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">})</span>
 <span class="go">&#39;cat: does_not_exist: No such file or directory\n&#39;</span>
-</code></pre></div>
+</code></pre>
+</div>
 
 <p>To redirect standard error to the hosting program's <code>sys.stderr</code>, use the <code>sh.INHERIT</code> redirect
 option.</p>
 
-<div class="pdoc-code codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">cmd</span> <span class="o">=</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;cat&quot;</span><span class="p">,</span> <span class="s2">&quot;does_not_exist&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">stderr</span><span class="p">(</span><span class="n">sh</span><span class="o">.</span><span class="n">INHERIT</span><span class="p">)</span>
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">cmd</span> <span class="o">=</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;cat&quot;</span><span class="p">,</span> <span class="s2">&quot;does_not_exist&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">stderr</span><span class="p">(</span><span class="n">sh</span><span class="o">.</span><span class="n">INHERIT</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">cmd</span>
 <span class="go">cat: does_not_exist: No such file or directory</span>
 <span class="gt">Traceback (most recent call last):</span>
   <span class="c">...</span>
 <span class="gr"><a href="#ResultError">shellous.ResultError</a></span>: <span class="n">Result(output_bytes=b&#39;&#39;, exit_code=1, cancelled=False, encoding=&#39;utf-8&#39;, extra=None)</span>
-</code></pre></div>
+</code></pre>
+</div>
 
 <h3 id="default-redirections">Default Redirections</h3>
 
@@ -548,52 +586,62 @@ option.</p>
 
 <p>You can create a pipeline by combining commands using the <code>|</code> operator.</p>
 
-<div class="pdoc-code codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">pipe</span> <span class="o">=</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;ls&quot;</span><span class="p">)</span> <span class="o">|</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;grep&quot;</span><span class="p">,</span> <span class="s2">&quot;README&quot;</span><span class="p">)</span>
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">pipe</span> <span class="o">=</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;ls&quot;</span><span class="p">)</span> <span class="o">|</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;grep&quot;</span><span class="p">,</span> <span class="s2">&quot;README&quot;</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">pipe</span>
 <span class="go">&#39;README.md\n&#39;</span>
-</code></pre></div>
+</code></pre>
+</div>
 
 <h2 id="process-substitution-unix-only">Process Substitution (Unix Only)</h2>
 
 <p>You can pass a shell command as an argument to another.</p>
 
-<div class="pdoc-code codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">cmd</span> <span class="o">=</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;grep&quot;</span><span class="p">,</span> <span class="s2">&quot;README&quot;</span><span class="p">,</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;ls&quot;</span><span class="p">))</span>
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">cmd</span> <span class="o">=</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;grep&quot;</span><span class="p">,</span> <span class="s2">&quot;README&quot;</span><span class="p">,</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;ls&quot;</span><span class="p">))</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">cmd</span>
 <span class="go">&#39;README.md\n&#39;</span>
-</code></pre></div>
+</code></pre>
+</div>
 
 <p>Use <code>.writable</code> to write to a command instead.</p>
 
-<div class="pdoc-code codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">buf</span> <span class="o">=</span> <span class="nb">bytearray</span><span class="p">()</span>
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">buf</span> <span class="o">=</span> <span class="nb">bytearray</span><span class="p">()</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">cmd</span> <span class="o">=</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;ls&quot;</span><span class="p">)</span> <span class="o">|</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;tee&quot;</span><span class="p">,</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;grep&quot;</span><span class="p">,</span> <span class="s2">&quot;README&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">writable</span> <span class="o">|</span> <span class="n">buf</span><span class="p">)</span> <span class="o">|</span> <span class="n">sh</span><span class="o">.</span><span class="n">DEVNULL</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">cmd</span>
 <span class="go">&#39;&#39;</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">buf</span>
 <span class="go">bytearray(b&#39;README.md\n&#39;)</span>
-</code></pre></div>
+</code></pre>
+</div>
 
 <h2 id="timeouts">Timeouts</h2>
 
 <p>You can specify a timeout using the <code>timeout</code> option. If the timeout expires, shellous will raise
 a <code>TimeoutError</code>.</p>
 
-<div class="pdoc-code codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;sleep&quot;</span><span class="p">,</span> <span class="mi">60</span><span class="p">)</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;sleep&quot;</span><span class="p">,</span> <span class="mi">60</span><span class="p">)</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
 <span class="gt">Traceback (most recent call last):</span>
   <span class="c">...</span>
 <span class="gr">TimeoutError</span>
-</code></pre></div>
+</code></pre>
+</div>
 
 <p>Timeouts are just a special case of <strong>cancellation</strong>. When a command is cancelled, shellous terminates 
 the running process and raises a <code>CancelledError</code>.</p>
 
-<div class="pdoc-code codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">t</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="n">sh</span><span class="p">(</span><span class="s2">&quot;sleep&quot;</span><span class="p">,</span> <span class="mi">60</span><span class="p">)</span><span class="o">.</span><span class="n">coro</span><span class="p">())</span>
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">t</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="n">sh</span><span class="p">(</span><span class="s2">&quot;sleep&quot;</span><span class="p">,</span> <span class="mi">60</span><span class="p">)</span><span class="o">.</span><span class="n">coro</span><span class="p">())</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">t</span><span class="o">.</span><span class="n">cancel</span><span class="p">()</span>
 <span class="go">True</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">t</span>
 <span class="gt">Traceback (most recent call last):</span>
   <span class="c">...</span>
 <span class="gr">CancelledError</span>
-</code></pre></div>
+</code></pre>
+</div>
 
 <p>By default, shellous will send a SIGTERM signal to the process to tell it to exit. If the process does not
 exit within 3 seconds, shellous will send a SIGKILL signal. You can change these defaults with the
@@ -605,32 +653,38 @@ process exits.</p>
 <p>To run a command through a pseudo-terminal, set the <code>pty</code> option to True. Alternatively, you can pass
 a function to configure the tty mode and size.</p>
 
-<div class="pdoc-code codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">ls</span> <span class="o">=</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;ls&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">pty</span><span class="o">=</span><span class="n"><a href="#cooked">shellous.cooked</a></span><span class="p">(</span><span class="n">cols</span><span class="o">=</span><span class="mi">40</span><span class="p">,</span> <span class="n">rows</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">echo</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span>
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">ls</span> <span class="o">=</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;ls&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">pty</span><span class="o">=</span><span class="n"><a href="#cooked">shellous.cooked</a></span><span class="p">(</span><span class="n">cols</span><span class="o">=</span><span class="mi">40</span><span class="p">,</span> <span class="n">rows</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">echo</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">ls</span><span class="p">(</span><span class="s2">&quot;README.md&quot;</span><span class="p">,</span> <span class="s2">&quot;CHANGELOG.md&quot;</span><span class="p">)</span>
 <span class="go">&#39;CHANGELOG.md\tREADME.md\r\n&#39;</span>
-</code></pre></div>
+</code></pre>
+</div>
 
 <h2 id="context-objects">Context Objects</h2>
 
 <p>You can store shared command settings in an immutable context object. To create a new 
 context object, specify your changes to the default context <strong>sh</strong>:</p>
 
-<div class="pdoc-code codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">auditor</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">phase</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="n">phase</span><span class="p">,</span> <span class="n">info</span><span class="p">[</span><span class="s2">&quot;runner&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">auditor</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">phase</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="n">phase</span><span class="p">,</span> <span class="n">info</span><span class="p">[</span><span class="s2">&quot;runner&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">sh_audit</span> <span class="o">=</span> <span class="n">sh</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">audit_callback</span><span class="o">=</span><span class="n">auditor</span><span class="p">)</span>
-</code></pre></div>
+</code></pre>
+</div>
 
 <p>Now all commands created with <code>sh_audit</code> will log their progress using the audit callback.</p>
 
-<div class="pdoc-code codehilite"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">sh_audit</span><span class="p">(</span><span class="s2">&quot;echo&quot;</span><span class="p">,</span> <span class="s2">&quot;goodbye&quot;</span><span class="p">)</span>
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">sh_audit</span><span class="p">(</span><span class="s2">&quot;echo&quot;</span><span class="p">,</span> <span class="s2">&quot;goodbye&quot;</span><span class="p">)</span>
 <span class="go">start echo</span>
 <span class="go">stop echo</span>
 <span class="go">&#39;goodbye\n&#39;</span>
-</code></pre></div>
+</code></pre>
+</div>
 </div>
 
-                        <input id="shellous-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
+                        <input id="mod-shellous-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
 
-                        <label class="view-source-button" for="shellous-view-source"><span>View Source</span></label>
+                        <label class="view-source-button" for="mod-shellous-view-source"><span>View Source</span></label>
 
                         <div class="pdoc-code codehilite"><pre><span></span><span id="L-1"><a href="#L-1"><span class="linenos"> 1</span></a><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="L-2"><a href="#L-2"><span class="linenos"> 2</span></a><span class="sd">.. include:: ../README.md</span>
@@ -689,9 +743,11 @@ context object, specify your changes to the default context <strong>sh</strong>:
 
 <p>Use <code><a href="#sh">sh</a></code> to create commands or new command contexts.</p>
 
-<div class="pdoc-code codehilite"><pre><span></span><code><span class="kn">from</span> <span class="nn">shellous</span> <span class="kn">import</span> <span class="n">sh</span>
+<div class="pdoc-code codehilite">
+<pre><span></span><code><span class="kn">from</span> <span class="nn">shellous</span> <span class="kn">import</span> <span class="n">sh</span>
 <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;echo&quot;</span><span class="p">,</span> <span class="s2">&quot;hello&quot;</span><span class="p">)</span>
-</code></pre></div>
+</code></pre>
+</div>
 </div>
 
 
@@ -2120,7 +2176,6 @@ result = run.result()
             </div>
             <div><dt>builtins.BaseException</dt>
                                 <dd id="ResultError.with_traceback" class="function">with_traceback</dd>
-                <dd id="ResultError.args" class="variable">args</dd>
 
             </div>
                                 </dl>
