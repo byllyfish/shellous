@@ -57,3 +57,6 @@ max-module-lines = 1200
 
 [tool.pylint.'DESIGN']
 max-attributes = 12
+
+[tool.pyright]
+pythonPlatform = "All"

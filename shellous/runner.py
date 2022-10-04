@@ -734,18 +734,16 @@ class Runner:
         if self._options.pty_fds:
             self._options.pty_fds.close()
 
+        # Make sure the transport is closed (for asyncio and uvloop).
+        self._proc._transport.close()  # pyright: ignore pylint: disable=protected-access
+
         # _close can be called when unwinding exceptions. We need to handle
-        # the case that the process has not exited yet. Remember to close the
-        # transport.
+        # the case that the process has not exited yet.
         if self._proc.returncode is None:
             LOGGER.critical("Runner._close process still running %r", self._proc)
-            self._proc._transport.close()  # pylint: disable=protected-access
             return
 
         try:
-            # Make sure the transport is closed (for asyncio and uvloop).
-            self._proc._transport.close()  # pylint: disable=protected-access
-
             # Make sure that original stdin is properly closed. `wait_closed`
             # will raise a BrokenPipeError if not all input was properly written.
             if self._proc.stdin is not None:
