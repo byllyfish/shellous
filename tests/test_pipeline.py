@@ -67,8 +67,19 @@ def test_pipeline_output():
 
 
 def test_pipeline_output_str():
-    with pytest.raises(TypeError, match="unsupported"):
+    with pytest.raises(TypeError, match=r"unsupported.+ 'pathlib\.Path'"):
         _ = Pipeline.create(sh("echo")) | "/tmp/somefile"
+
+    with pytest.raises(TypeError, match=r"unsupported.+ 'pathlib\.Path'"):
+        _ = Pipeline.create(sh("echo")) >> "/tmp/somefile"
+
+
+def test_pipeline_output_bytes():
+    with pytest.raises(TypeError, match=r"unsupported.+ 'pathlib\.Path'"):
+        _ = Pipeline.create(sh("echo")) | b"/tmp/somefile"
+
+    with pytest.raises(TypeError, match=r"unsupported.+ 'pathlib\.Path'"):
+        _ = Pipeline.create(sh("echo")) >> b"/tmp/somefile"
 
 
 def test_pipeline_output_append():

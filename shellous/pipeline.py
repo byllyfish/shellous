@@ -103,6 +103,10 @@ class Pipeline:
             return self._add(rhs)
         if isinstance(rhs, STDOUT_TYPES):
             return self.stdout(rhs)
+        if isinstance(rhs, (str, bytes)):
+            raise TypeError(
+                f"{type(rhs)!r} unsupported for | output (Use 'pathlib.Path')"
+            )
         return NotImplemented
 
     def __ror__(self, lhs):
@@ -113,6 +117,10 @@ class Pipeline:
     def __rshift__(self, rhs):
         if isinstance(rhs, STDOUT_APPEND_TYPES):
             return self.stdout(rhs, append=True)
+        if isinstance(rhs, (str, bytes)):
+            raise TypeError(
+                f"{type(rhs)!r} unsupported for >> output (Use 'pathlib.Path')"
+            )
         return NotImplemented
 
     @property
