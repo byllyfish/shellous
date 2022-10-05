@@ -68,4 +68,5 @@ strict = [
   "shellous/redirect.py",
   "shellous/result.py",
   "shellous/util.py",
+  "shellous/watcher.py",
 ]
