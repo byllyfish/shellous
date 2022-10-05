@@ -13,7 +13,7 @@ from typing import Any, AsyncContextManager, Coroutine, Iterable, Optional, Unio
 from .log import LOG_DETAIL, LOGGER, log_timer
 
 # Stores current stack of context managers for immutable Command objects.
-_CTXT_STACK = contextvars.ContextVar[Union[dict[int, list[Any]], None]](
+_CTXT_STACK = contextvars.ContextVar[Optional[dict[int, list[Any]]]](
     "ctxt_stack",
     default=None,
 )
