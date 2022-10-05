@@ -10,6 +10,7 @@ import sys
 import threading
 import time
 from contextlib import contextmanager
+from typing import Union
 
 LOGGER = logging.getLogger(__package__)
 
@@ -41,7 +42,7 @@ def _exc():
     return sys.exc_info()[1]
 
 
-def log_method(enabled: bool | int, *, _info: bool = False, **kwds: int):
+def log_method(enabled: Union[bool, int], *, _info: bool = False, **kwds: int):
     """`log_method` logs when an async method call is entered and exited.
 
     <method-name> stepin <self>
