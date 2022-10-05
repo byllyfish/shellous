@@ -8,7 +8,8 @@ import shutil
 from asyncio.subprocess import Process
 from collections import defaultdict
 from types import TracebackType
-from typing import Any, AsyncContextManager, Coroutine, Iterable, Optional, Union
+from typing import (Any, AsyncContextManager, Coroutine, Iterable, Optional,
+                    Union)
 
 from .log import LOG_DETAIL, LOGGER, log_timer
 
@@ -160,9 +161,9 @@ async def context_aenter(scope: int, ctxt_manager: AsyncContextManager[Any]):
 
 async def context_aexit(
     scope: int,
-    exc_type: type[BaseException] | None,
-    exc_value: BaseException | None,
-    exc_tb: TracebackType | None,
+    exc_type: Optional[type[BaseException]],
+    exc_value: Optional[BaseException],
+    exc_tb: Optional[TracebackType],
 ):
     "Exit an async context manager."
     ctxt_stack = _CTXT_STACK.get()
