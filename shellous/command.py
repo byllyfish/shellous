@@ -17,6 +17,7 @@ from typing import Any, Callable, ClassVar, Container, Optional, TypeVar, Union
 from immutables import Map as ImmutableDict
 
 import shellous
+from shellous.pty_util import PtyAdapterOrBool
 from shellous.redirect import STDIN_TYPES, STDOUT_APPEND_TYPES, STDOUT_TYPES, Redirect
 from shellous.runner import Runner
 from shellous.util import coerce_env, context_aenter, context_aexit
@@ -109,7 +110,7 @@ class Options:  # pylint: disable=too-many-instance-attributes
     _preexec_fn: _Preexec_Fn_T = None
     "Function to call in child process after fork from parent."
 
-    pty: bool = False
+    pty: PtyAdapterOrBool = False
     "True if child process should be controlled using a pseudo-terminal (pty)."
 
     close_fds: bool = False
@@ -336,7 +337,7 @@ class Command:
         writable: Unset[bool] = _UNSET,
         _start_new_session: Unset[bool] = _UNSET,
         _preexec_fn: Unset[_Preexec_Fn_T] = _UNSET,
-        pty: Unset[bool] = _UNSET,
+        pty: Unset[PtyAdapterOrBool] = _UNSET,
         close_fds: Unset[bool] = _UNSET,
         audit_callback: Unset[_Audit_Fn_T] = _UNSET,
     ) -> "Command":

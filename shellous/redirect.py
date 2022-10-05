@@ -3,8 +3,8 @@
 import asyncio
 import enum
 import io
-import os
 from logging import Logger
+from pathlib import Path
 from typing import Any, Optional, Union
 
 from shellous.log import LOG_DETAIL, log_method
@@ -34,7 +34,7 @@ class Redirect(enum.IntEnum):
         }
 
     @staticmethod
-    def from_default(obj, fdesc, pty):
+    def from_default(obj: Any, fdesc: int, pty: bool):
         "Return object with Redirect.DEFAULT replaced by actual value."
         if not isinstance(obj, Redirect) or obj != Redirect.DEFAULT:
             return obj
@@ -43,7 +43,7 @@ class Redirect(enum.IntEnum):
         return _DEFAULT_REDIRECTION[(fdesc, bool(pty))]
 
     @staticmethod
-    def from_literal(literal, is_stderr=False):
+    def from_literal(literal: Any, is_stderr: bool = False):
         "Return object with literal values replaced by Redirect constant."
 
         if isinstance(literal, (tuple, type(...), type(None))):
@@ -82,7 +82,7 @@ _LITERAL_REDIRECT: dict[Any, Redirect] = {
 STDIN_TYPES = (
     str,
     bytes,
-    os.PathLike,
+    Path,
     bytearray,
     io.IOBase,
     int,
@@ -91,7 +91,7 @@ STDIN_TYPES = (
 )
 
 STDOUT_TYPES = (
-    os.PathLike,
+    Path,
     bytearray,
     io.IOBase,
     int,
@@ -100,7 +100,7 @@ STDOUT_TYPES = (
     asyncio.StreamWriter,
 )
 
-STDOUT_APPEND_TYPES = (os.PathLike,)
+STDOUT_APPEND_TYPES = (Path,)
 
 
 async def _drain(stream: asyncio.StreamWriter):
