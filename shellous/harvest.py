@@ -1,6 +1,7 @@
 "Implementation for harvest and harvest_results function."
 
 import asyncio
+from typing import Any, Awaitable, Iterable, Optional
 
 from shellous.log import LOG_DETAIL, LOGGER
 
@@ -8,11 +9,11 @@ _CANCEL_TIMEOUT = 15.0  # seconds to wait for cancelled task to finish
 
 
 async def harvest(
-    *aws,
-    timeout=None,
-    cancel_timeout=_CANCEL_TIMEOUT,
-    trustee=None,
-    cancel_finish=False,
+    *aws: Awaitable[Any],
+    timeout: Optional[float] = None,
+    cancel_timeout: float = _CANCEL_TIMEOUT,
+    trustee: Any = None,
+    cancel_finish: bool = False,
 ):
     """Run a bunch of awaitables as tasks. Do not return results.
 
@@ -48,10 +49,10 @@ async def harvest(
 
 
 async def harvest_results(
-    *aws,
-    timeout=None,
-    cancel_timeout=_CANCEL_TIMEOUT,
-    trustee=None,
+    *aws: Awaitable[Any],
+    timeout: Optional[float] = None,
+    cancel_timeout: float = _CANCEL_TIMEOUT,
+    trustee: Any = None,
 ):
     """Run a bunch of awaitables as tasks and return (cancelled, results).
 
@@ -90,12 +91,12 @@ async def harvest_results(
 
 
 async def harvest_wait(
-    tasks,
+    tasks: Iterable[asyncio.Task[Any]],
     *,
-    timeout=None,
-    cancel_timeout=_CANCEL_TIMEOUT,
-    cancel_finish=False,
-    trustee=None,
+    timeout: Optional[float] = None,
+    cancel_timeout: float = _CANCEL_TIMEOUT,
+    cancel_finish: bool = False,
+    trustee: Any = None,
 ):
     """Wait for tasks to finish or raise an exception.
 
@@ -155,7 +156,12 @@ async def harvest_wait(
         raise asyncio.TimeoutError()
 
 
-async def _cancel_wait(tasks, trustee, cancel_timeout, cancel_finish=False):
+async def _cancel_wait(
+    tasks: Iterable[asyncio.Task[Any]],
+    trustee: Any,
+    cancel_timeout: float,
+    cancel_finish: bool = False,
+):
     "Cancel tasks and wait for them to finish."
     try:
         if not cancel_finish:
@@ -171,7 +177,11 @@ async def _cancel_wait(tasks, trustee, cancel_timeout, cancel_finish=False):
         await _cancel_waiter(tasks, trustee, cancel_timeout)
 
 
-async def _cancel_waiter(tasks, trustee, timeout):
+async def _cancel_waiter(
+    tasks: Iterable[asyncio.Task[Any]],
+    trustee: Any,
+    timeout: float,
+):
     "Handle case where _cancel_wait is cancelled itself."
 
     _, pending = await asyncio.wait(
@@ -193,7 +203,7 @@ async def _cancel_waiter(tasks, trustee, timeout):
         raise RuntimeError("Harvest._cancel_waiter failed")
 
 
-def _to_result(task):
+def _to_result(task: asyncio.Task[Any]):
     "Return task's result, or its exception object."
     if task.cancelled():
         return asyncio.CancelledError()
@@ -206,7 +216,7 @@ def _to_result(task):
     return task.result()
 
 
-def _consume_exceptions(tasks):
+def _consume_exceptions(tasks: Iterable[asyncio.Task[Any]]):
     "Consume exception for every done task to eliminate warning messages."
     for task in tasks:
         assert task.done()

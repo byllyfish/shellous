@@ -2,8 +2,9 @@
 
 import asyncio
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
+import shellous
 from shellous.util import decode
 
 
@@ -55,25 +56,30 @@ class PipeResult:
     cancelled: bool
 
     @staticmethod
-    def from_result(result):
+    def from_result(result: "Result"):
         "Construct a `PipeResult` from a `Result`."
         if isinstance(result, ResultError):
             result = result.result
         return PipeResult(result.exit_code, result.cancelled)
 
 
-def make_result(command, result, cancelled, timed_out=False):
+def make_result(
+    command: "shellous.Command",
+    result_list: Union[Result, list[Union[Exception, Result]]],
+    cancelled: bool,
+    timed_out: bool = False,
+):
     """Convert list of results into a single pipe result.
 
     `result` can be a list of Result, ResultError or another Exception.
     """
-    assert result is not None
+    assert result_list is not None
 
-    if isinstance(result, list):
+    if isinstance(result_list, list):
         # Check result list for other exceptions.
         other_ex = [
             ex
-            for ex in result
+            for ex in result_list
             if isinstance(ex, Exception) and not isinstance(ex, ResultError)
         ]
         if other_ex:
@@ -81,8 +87,8 @@ def make_result(command, result, cancelled, timed_out=False):
             raise other_ex[0]
 
         # Everything in result is now either a Result or ResultError.
-        key_result = _find_key_result(result)
-        last = _get_result(result[-1])
+        key_result = _find_key_result(result_list)
+        last = _get_result(result_list[-1])
         assert key_result is not None  # (pyright)
 
         result = Result(
@@ -90,8 +96,10 @@ def make_result(command, result, cancelled, timed_out=False):
             key_result.exit_code,
             cancelled,
             last.encoding,
-            tuple(PipeResult.from_result(r) for r in result),
+            tuple(PipeResult.from_result(r) for r in result_list),
         )
+    else:
+        result = result_list
 
     assert isinstance(result, Result)
 
@@ -111,9 +119,10 @@ def make_result(command, result, cancelled, timed_out=False):
     return result.output
 
 
-def _find_key_result(result_list):
+def _find_key_result(result_list: list[Union[Result, ResultError]]) -> Result:
     "Scan a result list and return the 'key' result."
     acc = None
+
     for item in result_list:
         item = _get_result(item)
         acc = _compare_result(acc, item)
@@ -121,10 +130,13 @@ def _find_key_result(result_list):
         if (not acc.cancelled, acc.exit_code != 0) == (True, True):
             return acc
 
+    if acc is None:
+        raise RuntimeError(f"empty result: {result_list!r}")
+
     return acc
 
 
-def _compare_result(acc, item):
+def _compare_result(acc: Optional[Result], item: Result) -> Result:
     if acc is None:
         return item
     acc_key = (not acc.cancelled, acc.exit_code != 0)
@@ -134,7 +146,7 @@ def _compare_result(acc, item):
     return acc
 
 
-def _get_result(item):
+def _get_result(item: Union[Result, ResultError]) -> Result:
     if isinstance(item, ResultError):
         return item.result
     return item

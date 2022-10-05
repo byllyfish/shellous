@@ -80,7 +80,7 @@ class Options:  # pylint: disable=too-many-instance-attributes
     catch_cancelled_error: bool = False
     "True if we should raise `ResultError` after clean up from cancelled task."
 
-    exit_codes: Optional[Container] = None
+    exit_codes: Optional[Container[int]] = None
     "Set of exit codes that do not raise a `ResultError`. None means {0}."
 
     timeout: Optional[float] = None
