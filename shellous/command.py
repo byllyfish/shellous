@@ -298,24 +298,36 @@ class Command:
             return f"...{name[-31:]}"
         return name
 
-    def stdin(self, input_, *, close=False) -> "Command":
+    def stdin(self, input_: Any, *, close: bool = False) -> "Command":
         "Pass `input` to command's standard input."
         new_options = self.options.set_stdin(input_, close)
         return Command(self.args, new_options)
 
-    def stdout(self, output, *, append=False, close=False) -> "Command":
+    def stdout(
+        self,
+        output: Any,
+        *,
+        append: bool = False,
+        close: bool = False,
+    ) -> "Command":
         "Redirect standard output to `output`."
         _check_args(output, append)
         new_options = self.options.set_stdout(output, append, close)
         return Command(self.args, new_options)
 
-    def stderr(self, error, *, append=False, close=False) -> "Command":
+    def stderr(
+        self,
+        error: Any,
+        *,
+        append: bool = False,
+        close: bool = False,
+    ) -> "Command":
         "Redirect standard error to `error`."
         _check_args(error, append)
         new_options = self.options.set_stderr(error, append, close)
         return Command(self.args, new_options)
 
-    def env(self, **kwds) -> "Command":
+    def env(self, **kwds: str) -> "Command":
         """Return new command with augmented environment."""
         new_options = self.options.set_env(kwds)
         return Command(self.args, new_options)
@@ -327,7 +339,7 @@ class Command:
         encoding: Unset[Optional[str]] = _UNSET,
         return_result: Unset[bool] = _UNSET,
         catch_cancelled_error: Unset[bool] = _UNSET,
-        exit_codes: Unset[Optional[Container]] = _UNSET,
+        exit_codes: Unset[Optional[Container[int]]] = _UNSET,
         timeout: Unset[Optional[float]] = _UNSET,
         cancel_timeout: Unset[float] = _UNSET,
         cancel_signal: Unset[Optional[signal.Signals]] = _UNSET,

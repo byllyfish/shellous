@@ -2,11 +2,13 @@
 .. include:: ../README.md
 """
 
+# pylint: disable=cyclic-import
+# pyright: reportUnusedImport=false
+
 __version__ = "0.19.0"
 
 import sys
 
-# pylint: disable=cyclic-import
 from .command import CmdContext, Command, Options  # noqa: F401
 from .pipeline import Pipeline  # noqa: F401
 from .pty_util import cbreak, cooked, raw  # noqa: F401

@@ -2,6 +2,7 @@
 
 import dataclasses
 from dataclasses import dataclass
+from typing import Any
 
 import shellous
 from shellous.redirect import STDIN_TYPES, STDOUT_APPEND_TYPES, STDOUT_TYPES
@@ -16,7 +17,7 @@ class Pipeline:
     commands: tuple[shellous.Command, ...] = ()
 
     @staticmethod
-    def create(*commands) -> "Pipeline":
+    def create(*commands: shellous.Command) -> "Pipeline":
         "Create a new Pipeline."
         return Pipeline(commands)
 
@@ -35,25 +36,37 @@ class Pipeline:
         "Return last command's options."
         return self.commands[-1].options
 
-    def stdin(self, input_, *, close=False) -> "Pipeline":
+    def stdin(self, input_: Any, *, close: bool = False) -> "Pipeline":
         "Set stdin on the first command of the pipeline."
         new_first = self.commands[0].stdin(input_, close=close)
         new_commands = (new_first,) + self.commands[1:]
         return dataclasses.replace(self, commands=new_commands)
 
-    def stdout(self, output, *, append=False, close=False) -> "Pipeline":
+    def stdout(
+        self,
+        output: Any,
+        *,
+        append: bool = False,
+        close: bool = False,
+    ) -> "Pipeline":
         "Set stdout on the last command of the pipeline."
         new_last = self.commands[-1].stdout(output, append=append, close=close)
         new_commands = self.commands[0:-1] + (new_last,)
         return dataclasses.replace(self, commands=new_commands)
 
-    def stderr(self, error, *, append=False, close=False) -> "Pipeline":
+    def stderr(
+        self,
+        error: Any,
+        *,
+        append: bool = False,
+        close: bool = False,
+    ) -> "Pipeline":
         "Set stderr on the last command of the pipeline."
         new_last = self.commands[-1].stderr(error, append=append, close=close)
         new_commands = self.commands[0:-1] + (new_last,)
         return dataclasses.replace(self, commands=new_commands)
 
-    def _set(self, **kwds):
+    def _set(self, **kwds: Any):
         "Set options on last command of the pipeline."
         new_last = self.commands[-1].set(**kwds)
         new_commands = self.commands[0:-1] + (new_last,)
@@ -89,7 +102,7 @@ class Pipeline:
         "Return number of commands in pipe."
         return len(self.commands)
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: int):
         "Return specified command by index."
         return self.commands[key]
 

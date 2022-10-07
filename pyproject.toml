@@ -61,9 +61,11 @@ max-attributes = 12
 [tool.pyright]
 pythonPlatform = "All"
 strict = [
+  "shellous/__init__.py",
   # "shellous/command.py",
   "shellous/harvest.py",
   # "shellous/log.py",
+  "shellous/pipeline.py",
   # "shellous/pty_util.py",
   "shellous/redirect.py",
   "shellous/result.py",
