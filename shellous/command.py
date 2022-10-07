@@ -34,7 +34,10 @@ Unset = Union[_T, _UnsetEnum]
 
 _Redirect_T = Any  # type: ignore
 _Preexec_Fn_T = Optional[Callable[[], None]]  # pylint: disable=invalid-name
-_Audit_Fn_T = Optional[Callable[[str, dict], None]]  # pylint: disable=invalid-name
+_AuditDict = dict[str, Any]  # TODO: use TypedDict?
+_Audit_Fn_T = Optional[
+    Callable[[str, _AuditDict], None]
+]  # pylint: disable=invalid-name
 
 
 @dataclass(frozen=True)

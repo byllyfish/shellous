@@ -1019,7 +1019,7 @@ class PipeRunner:
         return self._readlines()
 
     @staticmethod
-    async def run_pipeline(pipe):
+    async def run_pipeline(pipe: "shellous.Pipeline"):
         "Run a pipeline. This is the main entry point for PipeRunner."
 
         run = PipeRunner(pipe, capturing=False)

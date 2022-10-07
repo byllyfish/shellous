@@ -2,7 +2,8 @@
 
 import dataclasses
 from dataclasses import dataclass
-from typing import Any
+from types import TracebackType
+from typing import Any, Optional, Union
 
 import shellous
 from shellous.redirect import STDIN_TYPES, STDOUT_APPEND_TYPES, STDOUT_TYPES
@@ -88,15 +89,13 @@ class Pipeline:
         """
         return PipeRunner(self, capturing=True)
 
-    def _add(self, item):
+    def _add(self, item: Union["shellous.Command", "Pipeline"]):
         if isinstance(item, shellous.Command):
             return dataclasses.replace(self, commands=self.commands + (item,))
-        if isinstance(item, Pipeline):
-            return dataclasses.replace(
-                self,
-                commands=self.commands + item.commands,
-            )
-        raise TypeError("unsupported type")
+        return dataclasses.replace(
+            self,
+            commands=self.commands + item.commands,
+        )
 
     def __len__(self):
         "Return number of commands in pipe."
@@ -106,12 +105,12 @@ class Pipeline:
         "Return specified command by index."
         return self.commands[key]
 
-    def __call__(self, *args):
+    def __call__(self, *args: Any):
         if args:
             raise TypeError("Calling pipeline with 1 or more arguments.")
         return self
 
-    def __or__(self, rhs):
+    def __or__(self, rhs: Any):
         if isinstance(rhs, (shellous.Command, Pipeline)):
             return self._add(rhs)
         if isinstance(rhs, STDOUT_TYPES):
@@ -122,12 +121,12 @@ class Pipeline:
             )
         return NotImplemented
 
-    def __ror__(self, lhs):
+    def __ror__(self, lhs: Any):
         if isinstance(lhs, STDIN_TYPES):
             return self.stdin(lhs)
         return NotImplemented
 
-    def __rshift__(self, rhs):
+    def __rshift__(self, rhs: Any):
         if isinstance(rhs, STDOUT_APPEND_TYPES):
             return self.stdout(rhs, append=True)
         if isinstance(rhs, (str, bytes)):
@@ -153,7 +152,12 @@ class Pipeline:
         "Enter the async context manager."
         return await context_aenter(id(self), self.run())
 
-    async def __aexit__(self, exc_type, exc_value, exc_tb):
+    async def __aexit__(
+        self,
+        exc_type: Optional[type[BaseException]],
+        exc_value: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
+    ):
         "Exit the async context manager."
         return await context_aexit(id(self), exc_type, exc_value, exc_tb)
 
