@@ -69,6 +69,7 @@ strict = [
   # "shellous/pty_util.py",
   "shellous/redirect.py",
   "shellous/result.py",
+  "shellous/runner.py",
   "shellous/util.py",
   "shellous/watcher.py",
 ]

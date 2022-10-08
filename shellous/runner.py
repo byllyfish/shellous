@@ -5,7 +5,9 @@ import io
 import os
 import sys
 from logging import Logger
-from typing import Any
+from pathlib import Path
+from types import TracebackType
+from typing import Any, Optional, Union
 
 import shellous
 import shellous.redirect as redir
@@ -30,15 +32,15 @@ The audit event has one argument: the name of the command.
 """
 
 
-def _is_cancelled(ex):
+def _is_cancelled(ex: BaseException):
     return isinstance(ex, asyncio.CancelledError)
 
 
-def _is_cmd(cmd):
+def _is_cmd(cmd: Any):
     return isinstance(cmd, (shellous.Command, shellous.Pipeline))
 
 
-def _is_writable(cmd):
+def _is_writable(cmd: Union["shellous.Command", "shellous.Pipeline"]):
     "Return true if command/pipeline has `writable` set."
     if isinstance(cmd, shellous.Pipeline):
         # Pipelines need to check both the last/first commands.
@@ -46,7 +48,7 @@ def _is_writable(cmd):
     return cmd.options.writable
 
 
-def _enc(encoding):
+def _enc(encoding: Optional[str]):
     "Helper function to split the encoding name into codec and errors."
     if encoding is None:
         raise TypeError("when encoding is None, input must be bytes")
@@ -66,7 +68,16 @@ class _RunOptions:
     ```
     """
 
-    def __init__(self, command):
+    command: "shellous.Command"
+    encoding: Optional[str]
+    open_fds: list[Union[int, io.IOBase]]
+    input_bytes: Optional[bytes]
+    args: Optional[list[Union[str, bytes]]]
+    kwd_args: Optional[dict[str, Any]]
+    subcmds: list["shellous.Command"]
+    pty_fds: Optional[pty_util.PtyFds]
+
+    def __init__(self, command: "shellous.Command"):
         self.command = command
         self.encoding = command.options.encoding
         self.open_fds = []
@@ -92,7 +103,12 @@ class _RunOptions:
             _cleanup(self.command)
             raise
 
-    def __exit__(self, _exc_type, exc_value, _exc_tb):
+    def __exit__(
+        self,
+        _exc_type: Optional[type[BaseException]],
+        exc_value: Optional[BaseException],
+        _exc_tb: Optional[TracebackType],
+    ):
         "Make sure those file descriptors are cleaned up."
         self.close_fds()
         if exc_value:
@@ -113,8 +129,8 @@ class _RunOptions:
         if sys.platform == "win32":
             raise RuntimeError("process substitution not supported on Windows")
 
-        new_args = []
-        pass_fds = []
+        new_args: list[Union[str, bytes]] = []
+        pass_fds: list[int] = []
 
         for arg in self.command.args:
             if not _is_cmd(arg):
@@ -212,7 +228,7 @@ class _RunOptions:
 
         if isinstance(input_, (bytes, bytearray)):
             input_bytes = input_
-        elif isinstance(input_, os.PathLike):
+        elif isinstance(input_, Path):
             stdin = open(input_, "rb")  # pylint: disable=consider-using-with
             self.open_fds.append(stdin)
         elif isinstance(input_, Redirect) and input_.is_custom():

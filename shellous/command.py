@@ -276,7 +276,7 @@ class Command:
     ```
     """
 
-    args: tuple[Union[str, bytes, os.PathLike], ...]
+    args: "tuple[Union[str, bytes, Command, shellous.Pipeline], ...]"
     "Command arguments including the program name as first argument."
 
     options: Options
