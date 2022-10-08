@@ -473,7 +473,7 @@ class Command:
         del kwargs["self"]
         return Command(self.args, self.options.set(kwargs))
 
-    def _replace_args(self, new_args):
+    def _replace_args(self, new_args: list[Union[str, bytes]]):
         """Return new command with arguments replaced by `new_args`.
 
         Arguments are NOT type-checked by the context. Program name must be the

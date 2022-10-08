@@ -36,11 +36,7 @@ def _is_cancelled(ex: BaseException):
     return isinstance(ex, asyncio.CancelledError)
 
 
-def _is_cmd(cmd: Any):
-    return isinstance(cmd, (shellous.Command, shellous.Pipeline))
-
-
-def _is_writable(cmd: Union["shellous.Command", "shellous.Pipeline"]):
+def _is_writable(cmd: "Union[shellous.Command, shellous.Pipeline]"):
     "Return true if command/pipeline has `writable` set."
     if isinstance(cmd, shellous.Pipeline):
         # Pipelines need to check both the last/first commands.
@@ -74,7 +70,7 @@ class _RunOptions:
     input_bytes: Optional[bytes]
     args: Optional[list[Union[str, bytes]]]
     kwd_args: Optional[dict[str, Any]]
-    subcmds: list["shellous.Command"]
+    subcmds: "list[Union[shellous.Command, shellous.Pipeline]]"
     pty_fds: Optional[pty_util.PtyFds]
 
     def __init__(self, command: "shellous.Command"):
@@ -123,7 +119,7 @@ class _RunOptions:
 
     def _setup_proc_sub(self):
         "Set up process substitution."
-        if not any(_is_cmd(arg) for arg in self.command.args):
+        if not _is_process_substitution(self.command):
             return
 
         if sys.platform == "win32":
@@ -133,7 +129,7 @@ class _RunOptions:
         pass_fds: list[int] = []
 
         for arg in self.command.args:
-            if not _is_cmd(arg):
+            if not isinstance(arg, (shellous.Command, shellous.Pipeline)):
                 new_args.append(arg)
                 continue
 
@@ -306,7 +302,7 @@ class _RunOptions:
         # succeeds. On Linux, we close the child_fd as soon as possible.
 
         if not _BSD:
-            self.open_fds.append(self.pty_fds.child_fd)
+            self.open_fds.append(child_fd)
 
         if LOG_DETAIL:
             LOGGER.info("_setup_pty1: %r", self.pty_fds)
@@ -1042,6 +1038,13 @@ class PipeRunner:
         async with run:
             pass
         return run.result()
+
+
+def _is_process_substitution(cmd: "shellous.Command") -> bool:
+    "Return True if command uses process substitution."
+    return any(
+        isinstance(arg, (shellous.Command, shellous.Pipeline)) for arg in cmd.args
+    )
 
 
 def _is_multiple_capture(cmd):

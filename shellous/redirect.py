@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any, Optional, Union
 
 from shellous.log import LOG_DETAIL, log_method
+from shellous.pty_util import PtyAdapterOrBool
 from shellous.util import decode
 
 _CHUNK_SIZE = 8192
@@ -34,7 +35,7 @@ class Redirect(enum.IntEnum):
         }
 
     @staticmethod
-    def from_default(obj: Any, fdesc: int, pty: bool):
+    def from_default(obj: Any, fdesc: int, pty: PtyAdapterOrBool):
         "Return object with Redirect.DEFAULT replaced by actual value."
         if not isinstance(obj, Redirect) or obj != Redirect.DEFAULT:
             return obj
