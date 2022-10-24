@@ -1,1 +1,2 @@
+# Poetry (version 1.2.2) export at Mon Oct 24 13:31:32 MST 2022
 immutables==0.19 ; python_version >= "3.9" and python_version < "4.0"
