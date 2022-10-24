@@ -155,7 +155,7 @@ A `Result` object contains the command's `exit_code` in addition to its output. 
 the command's exit_code is zero. You can access the string value of the output using the `.output` property:
 
 ```python
-if result := sh("cat", "some-file").result:
+if result := await sh("cat", "some-file").result:
     output = result.output
 else:
     print(f"Command failed with exit_code={result.exit_code})
@@ -164,7 +164,8 @@ else:
 ## Redirection
 
 shellous supports the redirection operators `|` and `>>`. They work similar to how they work in 
-the unix shell.
+the unix shell. Shellous does not support use of `<` or `>` for redirection. Instead, replace these 
+with `|`.
 
 To redirect to or from a file, use a `pathlib.Path` object. Alternatively, you can redirect input/output
 to a StringIO object, an open file, a Logger, or use a special redirection constant like `sh.DEVNULL`.
@@ -241,6 +242,9 @@ Shellous supports different STDOUT behavior when using different Python types.
 | sh.DEVNULL | Write output to `/dev/null`. | TypeError
 | sh.INHERIT  | Write output to existing `sys.stdout` or `sys.stderr`. | TypeError
 | sh.STDOUT | Redirect stderr to same place as stdout. | TypeError
+
+Shellous does not support redirecting standard output/error to a plain `str` or `bytes` object. 
+If you intend to redirect output to a file, you must use a `pathlib.Path` object.
 
 ### Redirecting Standard Error
 

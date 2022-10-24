@@ -5,7 +5,9 @@ import io
 import os
 import sys
 from logging import Logger
-from typing import Any
+from pathlib import Path
+from types import TracebackType
+from typing import Any, Optional, Union
 
 import shellous
 import shellous.redirect as redir
@@ -30,15 +32,11 @@ The audit event has one argument: the name of the command.
 """
 
 
-def _is_cancelled(ex):
+def _is_cancelled(ex: BaseException):
     return isinstance(ex, asyncio.CancelledError)
 
 
-def _is_cmd(cmd):
-    return isinstance(cmd, (shellous.Command, shellous.Pipeline))
-
-
-def _is_writable(cmd):
+def _is_writable(cmd: "Union[shellous.Command, shellous.Pipeline]"):
     "Return true if command/pipeline has `writable` set."
     if isinstance(cmd, shellous.Pipeline):
         # Pipelines need to check both the last/first commands.
@@ -46,7 +44,7 @@ def _is_writable(cmd):
     return cmd.options.writable
 
 
-def _enc(encoding):
+def _enc(encoding: Optional[str]):
     "Helper function to split the encoding name into codec and errors."
     if encoding is None:
         raise TypeError("when encoding is None, input must be bytes")
@@ -66,7 +64,16 @@ class _RunOptions:
     ```
     """
 
-    def __init__(self, command):
+    command: "shellous.Command"
+    encoding: Optional[str]
+    open_fds: list[Union[int, io.IOBase]]
+    input_bytes: Optional[bytes]
+    args: Optional[list[Union[str, bytes]]]
+    kwd_args: Optional[dict[str, Any]]
+    subcmds: "list[Union[shellous.Command, shellous.Pipeline]]"
+    pty_fds: Optional[pty_util.PtyFds]
+
+    def __init__(self, command: "shellous.Command"):
         self.command = command
         self.encoding = command.options.encoding
         self.open_fds = []
@@ -92,7 +99,12 @@ class _RunOptions:
             _cleanup(self.command)
             raise
 
-    def __exit__(self, _exc_type, exc_value, _exc_tb):
+    def __exit__(
+        self,
+        _exc_type: Optional[type[BaseException]],
+        exc_value: Optional[BaseException],
+        _exc_tb: Optional[TracebackType],
+    ):
         "Make sure those file descriptors are cleaned up."
         self.close_fds()
         if exc_value:
@@ -107,17 +119,17 @@ class _RunOptions:
 
     def _setup_proc_sub(self):
         "Set up process substitution."
-        if not any(_is_cmd(arg) for arg in self.command.args):
+        if not _is_process_substitution(self.command):
             return
 
         if sys.platform == "win32":
             raise RuntimeError("process substitution not supported on Windows")
 
-        new_args = []
-        pass_fds = []
+        new_args: list[Union[str, bytes]] = []
+        pass_fds: list[int] = []
 
         for arg in self.command.args:
-            if not _is_cmd(arg):
+            if not isinstance(arg, (shellous.Command, shellous.Pipeline)):
                 new_args.append(arg)
                 continue
 
@@ -212,7 +224,7 @@ class _RunOptions:
 
         if isinstance(input_, (bytes, bytearray)):
             input_bytes = input_
-        elif isinstance(input_, os.PathLike):
+        elif isinstance(input_, Path):
             stdin = open(input_, "rb")  # pylint: disable=consider-using-with
             self.open_fds.append(stdin)
         elif isinstance(input_, Redirect) and input_.is_custom():
@@ -290,7 +302,7 @@ class _RunOptions:
         # succeeds. On Linux, we close the child_fd as soon as possible.
 
         if not _BSD:
-            self.open_fds.append(self.pty_fds.child_fd)
+            self.open_fds.append(child_fd)
 
         if LOG_DETAIL:
             LOGGER.info("_setup_pty1: %r", self.pty_fds)
@@ -734,18 +746,16 @@ class Runner:
         if self._options.pty_fds:
             self._options.pty_fds.close()
 
+        # Make sure the transport is closed (for asyncio and uvloop).
+        self._proc._transport.close()  # pyright: ignore pylint: disable=protected-access
+
         # _close can be called when unwinding exceptions. We need to handle
-        # the case that the process has not exited yet. Remember to close the
-        # transport.
+        # the case that the process has not exited yet.
         if self._proc.returncode is None:
             LOGGER.critical("Runner._close process still running %r", self._proc)
-            self._proc._transport.close()  # pylint: disable=protected-access
             return
 
         try:
-            # Make sure the transport is closed (for asyncio and uvloop).
-            self._proc._transport.close()  # pylint: disable=protected-access
-
             # Make sure that original stdin is properly closed. `wait_closed`
             # will raise a BrokenPipeError if not all input was properly written.
             if self._proc.stdin is not None:
@@ -1021,13 +1031,20 @@ class PipeRunner:
         return self._readlines()
 
     @staticmethod
-    async def run_pipeline(pipe):
+    async def run_pipeline(pipe: "shellous.Pipeline"):
         "Run a pipeline. This is the main entry point for PipeRunner."
 
         run = PipeRunner(pipe, capturing=False)
         async with run:
             pass
         return run.result()
+
+
+def _is_process_substitution(cmd: "shellous.Command") -> bool:
+    "Return True if command uses process substitution."
+    return any(
+        isinstance(arg, (shellous.Command, shellous.Pipeline)) for arg in cmd.args
+    )
 
 
 def _is_multiple_capture(cmd):

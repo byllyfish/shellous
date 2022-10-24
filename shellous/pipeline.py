@@ -2,6 +2,8 @@
 
 import dataclasses
 from dataclasses import dataclass
+from types import TracebackType
+from typing import Any, Optional, Union
 
 import shellous
 from shellous.redirect import STDIN_TYPES, STDOUT_APPEND_TYPES, STDOUT_TYPES
@@ -16,7 +18,7 @@ class Pipeline:
     commands: tuple[shellous.Command, ...] = ()
 
     @staticmethod
-    def create(*commands) -> "Pipeline":
+    def create(*commands: shellous.Command) -> "Pipeline":
         "Create a new Pipeline."
         return Pipeline(commands)
 
@@ -35,25 +37,37 @@ class Pipeline:
         "Return last command's options."
         return self.commands[-1].options
 
-    def stdin(self, input_, *, close=False) -> "Pipeline":
+    def stdin(self, input_: Any, *, close: bool = False) -> "Pipeline":
         "Set stdin on the first command of the pipeline."
         new_first = self.commands[0].stdin(input_, close=close)
         new_commands = (new_first,) + self.commands[1:]
         return dataclasses.replace(self, commands=new_commands)
 
-    def stdout(self, output, *, append=False, close=False) -> "Pipeline":
+    def stdout(
+        self,
+        output: Any,
+        *,
+        append: bool = False,
+        close: bool = False,
+    ) -> "Pipeline":
         "Set stdout on the last command of the pipeline."
         new_last = self.commands[-1].stdout(output, append=append, close=close)
         new_commands = self.commands[0:-1] + (new_last,)
         return dataclasses.replace(self, commands=new_commands)
 
-    def stderr(self, error, *, append=False, close=False) -> "Pipeline":
+    def stderr(
+        self,
+        error: Any,
+        *,
+        append: bool = False,
+        close: bool = False,
+    ) -> "Pipeline":
         "Set stderr on the last command of the pipeline."
         new_last = self.commands[-1].stderr(error, append=append, close=close)
         new_commands = self.commands[0:-1] + (new_last,)
         return dataclasses.replace(self, commands=new_commands)
 
-    def _set(self, **kwds):
+    def _set(self, **kwds: Any):
         "Set options on last command of the pipeline."
         new_last = self.commands[-1].set(**kwds)
         new_commands = self.commands[0:-1] + (new_last,)
@@ -75,44 +89,50 @@ class Pipeline:
         """
         return PipeRunner(self, capturing=True)
 
-    def _add(self, item):
+    def _add(self, item: Union["shellous.Command", "Pipeline"]):
         if isinstance(item, shellous.Command):
             return dataclasses.replace(self, commands=self.commands + (item,))
-        if isinstance(item, Pipeline):
-            return dataclasses.replace(
-                self,
-                commands=self.commands + item.commands,
-            )
-        raise TypeError("unsupported type")
+        return dataclasses.replace(
+            self,
+            commands=self.commands + item.commands,
+        )
 
     def __len__(self):
         "Return number of commands in pipe."
         return len(self.commands)
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: int):
         "Return specified command by index."
         return self.commands[key]
 
-    def __call__(self, *args):
+    def __call__(self, *args: Any):
         if args:
             raise TypeError("Calling pipeline with 1 or more arguments.")
         return self
 
-    def __or__(self, rhs):
+    def __or__(self, rhs: Any):
         if isinstance(rhs, (shellous.Command, Pipeline)):
             return self._add(rhs)
         if isinstance(rhs, STDOUT_TYPES):
             return self.stdout(rhs)
+        if isinstance(rhs, (str, bytes)):
+            raise TypeError(
+                f"{type(rhs)!r} unsupported for | output (Use 'pathlib.Path')"
+            )
         return NotImplemented
 
-    def __ror__(self, lhs):
+    def __ror__(self, lhs: Any):
         if isinstance(lhs, STDIN_TYPES):
             return self.stdin(lhs)
         return NotImplemented
 
-    def __rshift__(self, rhs):
+    def __rshift__(self, rhs: Any):
         if isinstance(rhs, STDOUT_APPEND_TYPES):
             return self.stdout(rhs, append=True)
+        if isinstance(rhs, (str, bytes)):
+            raise TypeError(
+                f"{type(rhs)!r} unsupported for >> output (Use 'pathlib.Path')"
+            )
         return NotImplemented
 
     @property
@@ -132,7 +152,12 @@ class Pipeline:
         "Enter the async context manager."
         return await context_aenter(id(self), self.run())
 
-    async def __aexit__(self, exc_type, exc_value, exc_tb):
+    async def __aexit__(
+        self,
+        exc_type: Optional[type[BaseException]],
+        exc_value: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
+    ):
         "Exit the async context manager."
         return await context_aexit(id(self), exc_type, exc_value, exc_tb)
 

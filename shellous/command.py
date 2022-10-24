@@ -17,6 +17,7 @@ from typing import Any, Callable, ClassVar, Container, Optional, TypeVar, Union
 from immutables import Map as ImmutableDict
 
 import shellous
+from shellous.pty_util import PtyAdapterOrBool
 from shellous.redirect import STDIN_TYPES, STDOUT_APPEND_TYPES, STDOUT_TYPES, Redirect
 from shellous.runner import Runner
 from shellous.util import coerce_env, context_aenter, context_aexit
@@ -33,7 +34,10 @@ Unset = Union[_T, _UnsetEnum]
 
 _Redirect_T = Any  # type: ignore
 _Preexec_Fn_T = Optional[Callable[[], None]]  # pylint: disable=invalid-name
-_Audit_Fn_T = Optional[Callable[[str, dict], None]]  # pylint: disable=invalid-name
+_AuditDict = dict[str, Any]  # TODO: use TypedDict?
+_Audit_Fn_T = Optional[
+    Callable[[str, _AuditDict], None]
+]  # pylint: disable=invalid-name
 
 
 @dataclass(frozen=True)
@@ -79,7 +83,7 @@ class Options:  # pylint: disable=too-many-instance-attributes
     catch_cancelled_error: bool = False
     "True if we should raise `ResultError` after clean up from cancelled task."
 
-    exit_codes: Optional[Container] = None
+    exit_codes: Optional[Container[int]] = None
     "Set of exit codes that do not raise a `ResultError`. None means {0}."
 
     timeout: Optional[float] = None
@@ -109,7 +113,7 @@ class Options:  # pylint: disable=too-many-instance-attributes
     _preexec_fn: _Preexec_Fn_T = None
     "Function to call in child process after fork from parent."
 
-    pty: bool = False
+    pty: PtyAdapterOrBool = False
     "True if child process should be controlled using a pseudo-terminal (pty)."
 
     close_fds: bool = False
@@ -272,7 +276,7 @@ class Command:
     ```
     """
 
-    args: tuple[Union[str, bytes, os.PathLike], ...]
+    args: "tuple[Union[str, bytes, Command, shellous.Pipeline], ...]"
     "Command arguments including the program name as first argument."
 
     options: Options
@@ -297,24 +301,36 @@ class Command:
             return f"...{name[-31:]}"
         return name
 
-    def stdin(self, input_, *, close=False) -> "Command":
+    def stdin(self, input_: Any, *, close: bool = False) -> "Command":
         "Pass `input` to command's standard input."
         new_options = self.options.set_stdin(input_, close)
         return Command(self.args, new_options)
 
-    def stdout(self, output, *, append=False, close=False) -> "Command":
+    def stdout(
+        self,
+        output: Any,
+        *,
+        append: bool = False,
+        close: bool = False,
+    ) -> "Command":
         "Redirect standard output to `output`."
         _check_args(output, append)
         new_options = self.options.set_stdout(output, append, close)
         return Command(self.args, new_options)
 
-    def stderr(self, error, *, append=False, close=False) -> "Command":
+    def stderr(
+        self,
+        error: Any,
+        *,
+        append: bool = False,
+        close: bool = False,
+    ) -> "Command":
         "Redirect standard error to `error`."
         _check_args(error, append)
         new_options = self.options.set_stderr(error, append, close)
         return Command(self.args, new_options)
 
-    def env(self, **kwds) -> "Command":
+    def env(self, **kwds: str) -> "Command":
         """Return new command with augmented environment."""
         new_options = self.options.set_env(kwds)
         return Command(self.args, new_options)
@@ -326,7 +342,7 @@ class Command:
         encoding: Unset[Optional[str]] = _UNSET,
         return_result: Unset[bool] = _UNSET,
         catch_cancelled_error: Unset[bool] = _UNSET,
-        exit_codes: Unset[Optional[Container]] = _UNSET,
+        exit_codes: Unset[Optional[Container[int]]] = _UNSET,
         timeout: Unset[Optional[float]] = _UNSET,
         cancel_timeout: Unset[float] = _UNSET,
         cancel_signal: Unset[Optional[signal.Signals]] = _UNSET,
@@ -336,7 +352,7 @@ class Command:
         writable: Unset[bool] = _UNSET,
         _start_new_session: Unset[bool] = _UNSET,
         _preexec_fn: Unset[_Preexec_Fn_T] = _UNSET,
-        pty: Unset[bool] = _UNSET,
+        pty: Unset[PtyAdapterOrBool] = _UNSET,
         close_fds: Unset[bool] = _UNSET,
         audit_callback: Unset[_Audit_Fn_T] = _UNSET,
     ) -> "Command":
@@ -457,7 +473,7 @@ class Command:
         del kwargs["self"]
         return Command(self.args, self.options.set(kwargs))
 
-    def _replace_args(self, new_args):
+    def _replace_args(self, new_args: list[Union[str, bytes]]):
         """Return new command with arguments replaced by `new_args`.
 
         Arguments are NOT type-checked by the context. Program name must be the

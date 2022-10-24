@@ -57,3 +57,19 @@ max-module-lines = 1200
 
 [tool.pylint.'DESIGN']
 max-attributes = 12
+
+[tool.pyright]
+pythonPlatform = "All"
+strict = [
+  "shellous/__init__.py",
+  # "shellous/command.py",
+  "shellous/harvest.py",
+  # "shellous/log.py",
+  "shellous/pipeline.py",
+  # "shellous/pty_util.py",
+  "shellous/redirect.py",
+  "shellous/result.py",
+  "shellous/runner.py",
+  "shellous/util.py",
+  "shellous/watcher.py",
+]

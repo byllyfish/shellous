@@ -7,12 +7,17 @@ import os
 import shutil
 from asyncio.subprocess import Process
 from collections import defaultdict
-from typing import Any, Iterable, Optional, Union
+from types import TracebackType
+from typing import (Any, AsyncContextManager, Coroutine, Iterable, Optional,
+                    Union)
 
 from .log import LOG_DETAIL, LOGGER, log_timer
 
 # Stores current stack of context managers for immutable Command objects.
-_CTXT_STACK = contextvars.ContextVar[Union[dict, None]]("ctxt_stack", default=None)
+_CTXT_STACK = contextvars.ContextVar[Optional[dict[int, list[Any]]]](
+    "ctxt_stack",
+    default=None,
+)
 
 
 def decode(data: Optional[bytes], encoding: str) -> str:
@@ -29,7 +34,7 @@ def coerce_env(env: dict[str, Any]) -> dict[str, str]:
     parent environment.
     """
 
-    def _coerce(key, value):
+    def _coerce(key: str, value: Any):
         if value is ...:
             value = os.environ[key]
         return str(value)
@@ -119,7 +124,7 @@ def poll_wait_pid(proc: Process) -> bool:
     return True
 
 
-async def uninterrupted(coro):
+async def uninterrupted(coro: Coroutine[Any, Any, Any]):
     "Run a coroutine so it completes even if the current task is cancelled."
 
     task = asyncio.create_task(coro)
@@ -132,7 +137,7 @@ async def uninterrupted(coro):
         raise
 
 
-def which(command):
+def which(command: str):
     "Given a command without a directory, return the fully qualified path."
     path = shutil.which(command)
     if path is None:
@@ -140,11 +145,11 @@ def which(command):
     return path
 
 
-async def context_aenter(scope, ctxt_manager):
+async def context_aenter(scope: int, ctxt_manager: AsyncContextManager[Any]):
     "Enter an async context manager."
     ctxt_stack = _CTXT_STACK.get()
     if ctxt_stack is None:
-        ctxt_stack = defaultdict(list)
+        ctxt_stack = defaultdict[int, list[Any]](list)
         _CTXT_STACK.set(ctxt_stack)
 
     result = await ctxt_manager.__aenter__()  # pylint: disable=unnecessary-dunder-call
@@ -154,7 +159,12 @@ async def context_aenter(scope, ctxt_manager):
     return result
 
 
-async def context_aexit(scope, exc_type, exc_value, exc_tb):
+async def context_aexit(
+    scope: int,
+    exc_type: Optional[type[BaseException]],
+    exc_value: Optional[BaseException],
+    exc_tb: Optional[TracebackType],
+):
     "Exit an async context manager."
     ctxt_stack = _CTXT_STACK.get()
     assert ctxt_stack is not None  # (pyright)

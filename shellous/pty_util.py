@@ -7,7 +7,7 @@ import errno
 import os
 import struct
 from dataclasses import dataclass
-from typing import Any, NamedTuple, Optional
+from typing import Callable, NamedTuple, Optional, Union
 
 # The following modules are not supported on Windows.
 try:
@@ -24,6 +24,9 @@ from .util import close_fds
 _STDOUT_FILENO = 1
 _LFLAG = 3
 _CC = 6
+
+# Either a function f(fd) that can set up a PTY descriptor, or a boolean.
+PtyAdapterOrBool = Union[Callable[[int], None], bool]
 
 
 @dataclass
@@ -47,8 +50,8 @@ class PtyFds(NamedTuple):
     parent_fd: int
     child_fd: ChildFd
     eof: bytes
-    reader: Any = None
-    writer: Any = None
+    reader: Optional[asyncio.StreamReader] = None
+    writer: Optional[asyncio.StreamWriter] = None
 
     @log_method(LOG_DETAIL)
     async def open_streams(self):
@@ -73,7 +76,7 @@ class PtyFds(NamedTuple):
             close_fds([self.parent_fd])
 
 
-def open_pty(pty_func):
+def open_pty(pty_func: PtyAdapterOrBool):
     "Open pseudo-terminal (pty) descriptors. Returns (PtyFds, child_fd)."
     parent_fd, child_fd = pty.openpty()
 
@@ -89,7 +92,7 @@ def open_pty(pty_func):
     )
 
 
-def set_ctty(ttypath):
+def set_ctty(ttypath: str):
     "Explicitly open the tty to make it become a controlling tty."
     # See https://github.com/python/cpython/blob/3.9/Lib/pty.py
 
@@ -103,7 +106,7 @@ class PtyStreamReaderProtocol(asyncio.StreamReaderProtocol):
 
     _pty_child_fd: Optional[ChildFd] = None
 
-    def connection_lost(self, exc):
+    def connection_lost(self, exc: Optional[Exception]):
         "Intercept EIO error and treat it as EOF."
         if LOG_DETAIL:
             LOGGER.info("PtyStreamReaderProtocol.connection_lost ex=%r", exc)
@@ -111,7 +114,7 @@ class PtyStreamReaderProtocol(asyncio.StreamReaderProtocol):
             exc = None
         super().connection_lost(exc)
 
-    def data_received(self, data):
+    def data_received(self, data: bytes):
         "Close child_fd when first data received."
         if self._pty_child_fd:
             self._pty_child_fd.close()
@@ -205,7 +208,7 @@ def cooked(rows=0, cols=0, echo=True):
     return _pty_set_canonical
 
 
-def _set_term_echo(fdesc, echo):
+def _set_term_echo(fdesc: int, echo: bool):
     "Set pseudo-terminal echo."
     attrs = termios.tcgetattr(fdesc)
     curr_echo = (attrs[_LFLAG] & termios.ECHO) != 0
@@ -246,7 +249,7 @@ def _inherit_term_size(rows, cols):
     return rows, cols
 
 
-def _get_eof(fdesc):
+def _get_eof(fdesc: int):
     "Return the End-of-file character (EOF) if tty is in canonical mode only."
 
     eof = b""
@@ -281,7 +284,7 @@ def _patch_child_watcher():
 
 
 @contextlib.contextmanager
-def set_ignore_child_watcher(ignore):
+def set_ignore_child_watcher(ignore: bool):
     "Tell the current child watcher to ignore the next `add_child_handler`."
     if ignore:
         _patch_child_watcher()

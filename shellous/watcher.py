@@ -17,12 +17,16 @@ import signal
 import sys
 import threading
 from abc import abstractmethod
-from typing import Optional, Protocol
+from typing import Any, Callable, Coroutine, Optional, Protocol
 
 from shellous.log import LOGGER, log_thread
 from shellous.util import close_fds, wait_pid
 
 assert sys.platform != "win32"
+
+
+_CallbackType = Callable[..., object]
+_CallbackArgsType = tuple[Any, ...]
 
 
 class ChildStrategy(Protocol):
@@ -33,7 +37,12 @@ class ChildStrategy(Protocol):
         """Close the watcher and clean up all resources."""
 
     @abstractmethod
-    def watch_pid(self, pid, callback, args) -> None:
+    def watch_pid(
+        self,
+        pid: int,
+        callback: _CallbackType,
+        args: _CallbackArgsType,
+    ) -> None:
         """Register a child handler.
 
         Calling this function more than once for a given process pid is not
@@ -45,8 +54,9 @@ class DefaultChildWatcher(asyncio.AbstractChildWatcher):
     "Use platform-dependent strategy to monitor for exiting child processes."
 
     _strategy: Optional[ChildStrategy]
+    _lock: threading.Lock
 
-    def __init__(self, *, thread_strategy=False):
+    def __init__(self, *, thread_strategy: bool = False):
         "Initialize child watcher."
         self._strategy = None
         self._lock = threading.Lock()
@@ -55,7 +65,12 @@ class DefaultChildWatcher(asyncio.AbstractChildWatcher):
             # Force use of ThreadStrategy for coverage test.
             self._strategy = ThreadStrategy()
 
-    def add_child_handler(self, pid, callback, *args):
+    def add_child_handler(
+        self,
+        pid: int,
+        callback: _CallbackType,
+        *args: Any,
+    ):
         """Register a new child handler.
 
         Arrange for callback(pid, returncode, *args) to be called when
@@ -71,7 +86,7 @@ class DefaultChildWatcher(asyncio.AbstractChildWatcher):
 
         self._strategy.watch_pid(pid, callback, args)  # ATOMIC: self._strategy
 
-    def remove_child_handler(self, pid):
+    def remove_child_handler(self, pid: int):
         """Removes the handler for process 'pid'.
 
         The function returns True if the handler was successfully removed,
@@ -79,7 +94,7 @@ class DefaultChildWatcher(asyncio.AbstractChildWatcher):
         """
         return False  # not supported
 
-    def attach_loop(self, loop):
+    def attach_loop(self, loop: Optional[asyncio.AbstractEventLoop]):
         """Attach the watcher to an event loop.
 
         If the watcher was previously attached to an event loop, then it is
@@ -113,7 +128,7 @@ class DefaultChildWatcher(asyncio.AbstractChildWatcher):
         """Enter the watcher's context and allow starting new processes."""
         return self
 
-    def __exit__(self, *_args):
+    def __exit__(self, *_args: Any):
         """Exit the watcher's context"""
         return None
 
@@ -137,6 +152,11 @@ class KQueueStrategy(ChildStrategy):
 
     # pylint: disable=no-member,super-init-not-called
 
+    _pids: dict[int, tuple[_CallbackType, _CallbackArgsType]]
+    _kqueue: "select.kqueue"
+    _tasks: "_TaskSet"
+    _thread: threading.Thread
+
     def __init__(self):
         "Initialize strategy variables."
         _check_sigchld()
@@ -155,7 +175,12 @@ class KQueueStrategy(ChildStrategy):
         self._add_kevent(1, select.KQ_FILTER_TIMER)  # type: ignore
         self._thread.join()
 
-    def watch_pid(self, pid, callback, args) -> None:
+    def watch_pid(
+        self,
+        pid: int,
+        callback: _CallbackType,
+        args: _CallbackArgsType,
+    ) -> None:
         "Register a PID with kqueue."
         assert pid not in self._pids
         self._pids[pid] = (callback, args)  # ATOMIC: self._pids[] = ...
@@ -166,7 +191,7 @@ class KQueueStrategy(ChildStrategy):
         except ProcessLookupError:
             self._kevent_failed(pid)
 
-    def _kevent_failed(self, pid):
+    def _kevent_failed(self, pid: int):
         "Handle case where an exiting process is no longer kqueue-able."
         callback, args = self._pids.pop(pid)  # ATOMIC: self._pids.pop()
 
@@ -195,7 +220,7 @@ class KQueueStrategy(ChildStrategy):
         finally:
             self._kqueue.close()
 
-    def _reap_pid(self, pid):
+    def _reap_pid(self, pid: int):
         """Called by event loop when a process exits."""
         callback, args = self._pids.pop(pid)  # ATOMIC: self._pids.pop()
 
@@ -207,7 +232,7 @@ class KQueueStrategy(ChildStrategy):
         else:
             LOGGER.critical("_reap_pid: process still running pid=%r", pid)
 
-    def _add_kevent(self, ident, kfilter, fflags=0):
+    def _add_kevent(self, ident: int, kfilter: int, fflags: int = 0):
         "Add specified kevent to kqueue."
         flags = select.KQ_EV_ADD | select.KQ_EV_ONESHOT
         event = select.kevent(ident, kfilter, flags, fflags)
@@ -218,6 +243,12 @@ class EPollStrategy(ChildStrategy):
     "Strategy that watches for child exit epoll event."
 
     # pylint: disable=no-member,super-init-not-called
+
+    _pidfds: dict[int, tuple[int, _CallbackType, _CallbackArgsType]]
+    _epoll: "select.epoll"
+    _selfpipe: Optional[tuple[int, int]]
+    _tasks: "_TaskSet"
+    _thread: threading.Thread
 
     def __init__(self):
         "Initialize strategy variables."
@@ -240,7 +271,12 @@ class EPollStrategy(ChildStrategy):
             os.write(self._selfpipe[1], b"\x00")
         self._thread.join()
 
-    def watch_pid(self, pid, callback, args) -> None:
+    def watch_pid(
+        self,
+        pid: int,
+        callback: _CallbackType,
+        args: _CallbackArgsType,
+    ) -> None:
         "Register a PID with epoll."
         try:
             self._add_pidfd(pid, callback, args)
@@ -251,7 +287,12 @@ class EPollStrategy(ChildStrategy):
             self._pidfd_error(pid, callback, args)
             raise
 
-    def _pidfd_process_missing(self, pid, callback, args):
+    def _pidfd_process_missing(
+        self,
+        pid: int,
+        callback: _CallbackType,
+        args: _CallbackArgsType,
+    ):
         "Handle case where pidfd_open fails with a ProcessLookupError (ESRCH)."
         LOGGER.debug("_pidfd_process_missing pid=%r", pid)
 
@@ -262,7 +303,12 @@ class EPollStrategy(ChildStrategy):
             # Process is still dying. Spawn a task to poll it.
             self._tasks.create_task(_poll_dead_pid(pid, callback, args))
 
-    def _pidfd_error(self, pid, callback, args):
+    def _pidfd_error(
+        self,
+        pid: int,
+        callback: _CallbackType,
+        args: _CallbackArgsType,
+    ):
         """Handle case where pidfd_open fails with any error.
 
         This can happen if the process runs out of file descriptors (EMFILE).
@@ -295,7 +341,7 @@ class EPollStrategy(ChildStrategy):
             close_fds(pidfds + list(self._selfpipe))
             self._selfpipe = None
 
-    def _reap_pidfd(self, pidfd):
+    def _reap_pidfd(self, pidfd: int):
         "Handle epoll pidfd event."
         pid, callback, args = self._pidfds.pop(pidfd)  # ATOMIC: self._pidfds.pop()
 
@@ -307,7 +353,12 @@ class EPollStrategy(ChildStrategy):
         else:
             LOGGER.critical("_reap_pid: process still running pid=%r", pid)
 
-    def _add_pidfd(self, pid, callback, args):
+    def _add_pidfd(
+        self,
+        pid: int,
+        callback: _CallbackType,
+        args: _CallbackArgsType,
+    ):
         "Add epoll that monitors for process exit."
         pidfd = os.pidfd_open(pid, 0)
         self._pidfds[pidfd] = (pid, callback, args)  # ATOMIC: self._pidfds[]
@@ -315,7 +366,7 @@ class EPollStrategy(ChildStrategy):
         self._epoll.register(pidfd, select.EPOLLIN)
         LOGGER.debug("_add_pidfd registered pidfd=%r pid=%r", pidfd, pid)
 
-    def _remove_pidfd(self, pidfd):
+    def _remove_pidfd(self, pidfd: int):
         "Remove epoll that monitors for process exit."
         self._epoll.unregister(pidfd)
         os.close(pidfd)
@@ -325,6 +376,8 @@ class ThreadStrategy(ChildStrategy):
     "Strategy that uses threads to watch for child exits."
 
     # pylint: disable=super-init-not-called
+
+    _pids: dict[int, threading.Thread]
 
     def __init__(self):
         "Initialize strategy."
@@ -338,7 +391,12 @@ class ThreadStrategy(ChildStrategy):
         if live_threads:
             LOGGER.warning("ThreadStrategy: Child processes exist: %r", live_threads)
 
-    def watch_pid(self, pid, callback, args) -> None:
+    def watch_pid(
+        self,
+        pid: int,
+        callback: _CallbackType,
+        args: _CallbackArgsType,
+    ) -> None:
         "Start a thread to watch the PID."
         assert pid not in self._pids
         thread = threading.Thread(
@@ -351,7 +409,12 @@ class ThreadStrategy(ChildStrategy):
         thread.start()
 
     @log_thread(True)
-    def _reap_pid(self, pid, callback, args):
+    def _reap_pid(
+        self,
+        pid: int,
+        callback: _CallbackType,
+        args: _CallbackArgsType,
+    ):
         "Call waitpid synchronously."
         status = wait_pid(pid, block=True)
         if status is not None:
@@ -373,7 +436,11 @@ def _check_sigchld():
         raise RuntimeError("SIGCHLD cannot be set to SIG_IGN")
 
 
-async def _poll_dead_pid(pid, callback, args):
+async def _poll_dead_pid(
+    pid: int,
+    callback: _CallbackType,
+    args: _CallbackArgsType,
+):
     """Poll a pid that we expect to exit and be reap-able very soon."""
     for timeout in (0.001, 0.01, 0.1, 1.0, 2.0):
         await asyncio.sleep(timeout)
@@ -386,7 +453,12 @@ async def _poll_dead_pid(pid, callback, args):
         LOGGER.critical("Pid %r is not exiting after several seconds.", pid)
 
 
-def _invoke_callback(callback, pid, status, args):
+def _invoke_callback(
+    callback: _CallbackType,
+    pid: int,
+    status: int,
+    args: _CallbackArgsType,
+):
     """Invoke callback function:  callback(pid, status, *args)
 
     ```
@@ -409,10 +481,10 @@ def _invoke_callback(callback, pid, status, args):
         )
 
 
-class _TaskSet(set):
+class _TaskSet(set[asyncio.Task[Any]]):
     "Set of owned tasks (possibly from different threads)."
 
-    def create_task(self, coro):
+    def create_task(self, coro: Coroutine[Any, Any, Any]):
         "Create a new task and maintain its ref count until it finishes."
         task = asyncio.create_task(coro)
         self.add(task)

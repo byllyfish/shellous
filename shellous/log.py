@@ -10,6 +10,7 @@ import sys
 import threading
 import time
 from contextlib import contextmanager
+from typing import Union
 
 LOGGER = logging.getLogger(__package__)
 
@@ -31,9 +32,9 @@ LOG_EXIT = _LOG_IGNORE_STEPIN
 LOG_DETAIL = False
 
 if SHELLOUS_DEBUG:
-    LOG_ENTER = True
-    LOG_EXIT = True
-    LOG_DETAIL = True
+    LOG_ENTER = True  # pyright: ignore[reportConstantRedefinition]
+    LOG_EXIT = True  # pyright: ignore[reportConstantRedefinition]
+    LOG_DETAIL = True  # pyright: ignore[reportConstantRedefinition]
 
 
 def _exc():
@@ -41,7 +42,7 @@ def _exc():
     return sys.exc_info()[1]
 
 
-def log_method(enabled, *, _info=False, **kwds):
+def log_method(enabled: Union[bool, int], *, _info: bool = False, **kwds: int):
     """`log_method` logs when an async method call is entered and exited.
 
     <method-name> stepin <self>
@@ -195,7 +196,7 @@ def _platform_info():
 
 
 @contextmanager
-def log_timer(msg, warn_limit=0.1, exc_info=True):
+def log_timer(msg: str, warn_limit: float = 0.1, exc_info: bool = True):
     """Warn if operation takes longer than `warn_limit` (wall clock time).
 
     If `warn_limit` is <= 0, always log at INFO level.
@@ -214,7 +215,7 @@ def log_timer(msg, warn_limit=0.1, exc_info=True):
             log_func("%s took %g seconds ex=%r", msg, duration, _exc())
 
 
-def log_thread(enabled):
+def log_thread(enabled: bool):
     """`log_thread` logs when thread function is entered and exited.
 
     DEBUG thread <name> starting
