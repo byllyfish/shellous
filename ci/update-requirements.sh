@@ -10,9 +10,9 @@ fi
 HEADER="# $(poetry --version) export at $(date)"
 
 echo "$HEADER" > ./ci/requirements.txt
-poetry export >> ./ci/requirements.txt
+poetry export --without-hashes >> ./ci/requirements.txt
 
 echo "$HEADER" > ./ci/requirements-dev.txt
-poetry export --with dev >> ./ci/requirements-dev.txt
+poetry export --without-hashes --with dev >> ./ci/requirements-dev.txt
 
 exit 0
