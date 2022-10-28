@@ -1684,6 +1684,7 @@ async def test_context_manager_running():
         assert sleep1.returncode == _CANCELLED_EXIT_CODE
 
 
+@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
 async def test_context_manager_running_pty():
     "Test context manager in pty mode may NOT update running status of process."
 
@@ -1692,5 +1693,8 @@ async def test_context_manager_running_pty():
         sleep1.cancel()
         await asyncio.sleep(0.1)
 
-        # Note: PTY mode disables child watcher.
-        assert sleep1.returncode is None
+        if sys.platform == "linux":
+            assert sleep1.returncode == _CANCELLED_EXIT_CODE
+        else:
+            # Note: PTY mode disables child watcher on MacOS/FreeBSD.
+            assert sleep1.returncode is None
