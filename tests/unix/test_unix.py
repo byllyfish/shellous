@@ -1669,6 +1669,28 @@ async def test_simultaneous_context_manager():
     async with sh("sleep", 3) as sleep1:
         async with sh("sleep", 2) as sleep2:
             await asyncio.sleep(0.1)
-            sleep2.cancel()
+            sleep2.send_signal(signal.SIGTERM)
         await asyncio.sleep(0.1)
         sleep1.cancel()
+
+
+async def test_context_manager_running():
+    "Test context manager updates the running status of a process."
+
+    async with sh("sleep", 3) as sleep1:
+        await asyncio.sleep(0.1)
+        sleep1.cancel()
+        await asyncio.sleep(0.1)
+        assert sleep1.returncode == _CANCELLED_EXIT_CODE
+
+
+async def test_context_manager_running_pty():
+    "Test context manager in pty mode may NOT update running status of process."
+
+    async with sh("sleep", 3).set(pty=True) as sleep1:
+        await asyncio.sleep(0.1)
+        sleep1.cancel()
+        await asyncio.sleep(0.1)
+
+        # Note: PTY mode disables child watcher.
+        assert sleep1.returncode is None
