@@ -1,6 +1,12 @@
 Shellous Change Log
 ===================
 
+0.20.0
+------
+
+- [API] Add `cancel` and `send_signal` methods to `Runner` class.
+- [LATERAL] Add some type annotations internally.
+
 0.19.0
 ------
 
