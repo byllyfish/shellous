@@ -406,6 +406,16 @@ class Runner:
         self._tasks.append(task)
         return task
 
+    def send_signal(self, sig: int):
+        "Send an arbitrary signal to the process if it is running."
+        if self.returncode is None:
+            self._signal(sig)
+
+    def cancel(self):
+        "Cancel the running process if it is running."
+        if self.returncode is None:
+            self._signal(self.command.options.cancel_signal)
+
     def _is_bsd_pty(self):
         "Return true if we're running a pty on BSD."
         return _BSD and self._options.pty_fds
@@ -456,7 +466,7 @@ class Runner:
         try:
             # If not already done, send cancel signal.
             if self._proc.returncode is None:
-                self._send_signal(cancel_signal)
+                self._signal(cancel_signal)
 
             if self._tasks:
                 await harvest(*self._tasks, timeout=cancel_timeout, trustee=self)
@@ -475,7 +485,7 @@ class Runner:
             await self._kill_wait()
             raise
 
-    def _send_signal(self, sig):
+    def _signal(self, sig: Optional[int]):
         "Send a signal to the process."
         assert self._proc is not None  # (pyright)
 
@@ -498,7 +508,7 @@ class Runner:
             return
 
         try:
-            self._send_signal(None)
+            self._signal(None)
             await harvest(self._waiter(), timeout=_KILL_TIMEOUT, trustee=self)
         except asyncio.TimeoutError as ex:
             # Manually check if the process is still running.
