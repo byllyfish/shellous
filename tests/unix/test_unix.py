@@ -1661,3 +1661,14 @@ async def test_limited_file_descriptors(report_children):
 
     # Yield time for any killed processes to be reaped.
     await asyncio.sleep(0.025)
+
+
+async def test_simultaneous_context_manager():
+    "Test multiple simultaneous context managers."
+
+    async with sh("sleep", 3) as sleep1:
+        async with sh("sleep", 2) as sleep2:
+            await asyncio.sleep(0.1)
+            sleep2.cancel()
+        await asyncio.sleep(0.1)
+        sleep1.cancel()
