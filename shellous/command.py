@@ -6,13 +6,23 @@ function to create these, rather than creating them directly.
 - A Command specifies the arguments and options used to run a program.
 """
 
+import asyncio
 import dataclasses
 import enum
 import os
 import signal
 from collections.abc import Iterable
 from dataclasses import dataclass, field
-from typing import Any, Callable, ClassVar, Container, Optional, TypeVar, Union
+from typing import (
+    Any,
+    Callable,
+    ClassVar,
+    Container,
+    Optional,
+    Sequence,
+    TypeVar,
+    Union,
+)
 
 from immutables import Map as ImmutableDict
 
@@ -44,7 +54,7 @@ _Audit_Fn_T = Optional[
 class Options:  # pylint: disable=too-many-instance-attributes
     "Concrete class for per-command options."
 
-    env: Optional[ImmutableDict] = field(default=None, repr=False)
+    env: Optional[ImmutableDict[str, str]] = field(default=None, repr=False)
     "Additional environment variables for command."
 
     inherit_env: bool = True
@@ -133,7 +143,7 @@ class Options:  # pylint: disable=too-many-instance-attributes
             return dict(self.env)  # convert ImmutableDict to dict (uvloop)
         return {}
 
-    def set_stdin(self, input_, close):
+    def set_stdin(self, input_: Any, close: bool):
         "Return new options with `input` configured."
         input_ = Redirect.from_literal(input_)
         if input_ == Redirect.STDOUT:
@@ -145,7 +155,7 @@ class Options:  # pylint: disable=too-many-instance-attributes
             input_close=close,
         )
 
-    def set_stdout(self, output, append, close):
+    def set_stdout(self, output: Any, append: bool, close: bool):
         "Return new options with `output` configured."
         output = Redirect.from_literal(output)
         if output == Redirect.STDOUT:
@@ -158,7 +168,7 @@ class Options:  # pylint: disable=too-many-instance-attributes
             output_close=close,
         )
 
-    def set_stderr(self, error, append, close):
+    def set_stderr(self, error: Any, append: bool, close: bool):
         "Return new options with `error` configured."
         error = Redirect.from_literal(error, True)
         return dataclasses.replace(
@@ -168,14 +178,14 @@ class Options:  # pylint: disable=too-many-instance-attributes
             error_close=close,
         )
 
-    def set_env(self, env):
+    def set_env(self, env: dict[str, Any]):
         "Return new options with augmented environment."
         current = self.env or ImmutableDict()
         updates = coerce_env(env)
         new_env = current.update(**updates)
         return dataclasses.replace(self, env=new_env)
 
-    def set(self, kwds):
+    def set(self, kwds: dict[str, Any]):
         """Return new options with given properties updated.
 
         See `Command.set` for option reference.
@@ -203,22 +213,26 @@ class CmdContext:
     options: Options = Options()
     "Default command options."
 
-    def stdin(self, input_, *, close=False) -> "CmdContext":
+    def stdin(self, input_: Any, *, close: bool = False) -> "CmdContext":
         "Return new context with updated `input` settings."
         new_options = self.options.set_stdin(input_, close)
         return CmdContext(new_options)
 
-    def stdout(self, output, *, append=False, close=False) -> "CmdContext":
+    def stdout(
+        self, output: Any, *, append: bool = False, close: bool = False
+    ) -> "CmdContext":
         "Return new context with updated `output` settings."
         new_options = self.options.set_stdout(output, append, close)
         return CmdContext(new_options)
 
-    def stderr(self, error, *, append=False, close=False) -> "CmdContext":
+    def stderr(
+        self, error: Any, *, append: bool = False, close: bool = False
+    ) -> "CmdContext":
         "Return new context with updated `error` settings."
         new_options = self.options.set_stderr(error, append, close)
         return CmdContext(new_options)
 
-    def env(self, **kwds) -> "CmdContext":
+    def env(self, **kwds: Any) -> "CmdContext":
         """Return new context with augmented environment."""
         new_options = self.options.set_env(kwds)
         return CmdContext(new_options)
@@ -252,7 +266,7 @@ class CmdContext:
         del kwargs["self"]
         return CmdContext(self.options.set(kwargs))
 
-    def __call__(self, *args):
+    def __call__(self, *args: Any):
         "Construct a new command."
         return Command(coerce(args), self.options)
 
@@ -483,7 +497,7 @@ class Command:
         assert new_args[0] is self.args[0]
         return Command(tuple(new_args), self.options)
 
-    def coro(self, *, _run_future=None):
+    def coro(self, *, _run_future: Optional[asyncio.Future[Runner]] = None):
         "Return coroutine object to run awaitable."
         return Runner.run_command(self, _run_future=_run_future)
 
@@ -521,7 +535,7 @@ class Command:
             async for line in run:
                 yield line
 
-    def __call__(self, *args):
+    def __call__(self, *args: Any):
         "Apply more arguments to the end of the command."
         if not args:
             return self
@@ -535,25 +549,25 @@ class Command:
         """
         return str(self.args[0])
 
-    def __or__(self, rhs):
+    def __or__(self, rhs: Any):
         "Bitwise or operator is used to build pipelines."
         if isinstance(rhs, STDOUT_TYPES):
             return self.stdout(rhs)
         return shellous.Pipeline.create(self) | rhs
 
-    def __ror__(self, lhs):
+    def __ror__(self, lhs: Any):
         "Bitwise or operator is used to build pipelines."
         if isinstance(lhs, STDIN_TYPES):
             return self.stdin(lhs)
         return NotImplemented
 
-    def __rshift__(self, rhs):
+    def __rshift__(self, rhs: Any):
         "Right shift operator is used to build pipelines."
         if isinstance(rhs, STDOUT_APPEND_TYPES):
             return self.stdout(rhs, append=True)
         return NotImplemented
 
-    def __mod__(self, rhs):
+    def __mod__(self, rhs: "Command"):
         "Modulo operator is used to concatenate commands."
         if isinstance(rhs, Command):
             return self(rhs.args)
@@ -570,14 +584,14 @@ class Command:
         return self.set(return_result=True, exit_codes=range(-255, 256))
 
 
-def _check_args(out, append):
+def _check_args(out: Any, append: bool):
     if append and not isinstance(out, STDOUT_APPEND_TYPES):
         raise TypeError(f"{type(out)} does not support append")
 
 
-def coerce(args):
+def coerce(args: Sequence[Any]) -> tuple[Any]:
     """Flatten lists and coerce arguments to string."""
-    result = []
+    result: list[Any] = []
     for arg in args:
         if isinstance(
             arg, (str, bytes, bytearray, os.PathLike, Command, shellous.Pipeline)
