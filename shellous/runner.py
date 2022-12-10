@@ -815,7 +815,11 @@ class Runner:
         return self._readlines()
 
     @staticmethod
-    async def run_command(command, *, _run_future=None):
+    async def run_command(
+        command: "shellous.Command",
+        *,
+        _run_future: Optional[asyncio.Future["Runner"]] = None,
+    ):
         "Run a command. This is the main entry point for Runner."
         if not _run_future and _is_multiple_capture(command):
             LOGGER.warning("run_command: multiple capture requires 'async with'")
