@@ -597,7 +597,7 @@ def _check_args(out: Any, append: bool):
         raise TypeError(f"{type(out)} does not support append")
 
 
-def coerce(args: Sequence[Any]) -> tuple[Any]:
+def coerce(args: Sequence[Any]) -> tuple[Any, ...]:
     """Flatten lists and coerce arguments to string."""
     result: list[Any] = []
     for arg in args:
