@@ -10,6 +10,7 @@ import signal
 import sys
 
 import pytest
+
 from shellous import PipeResult, Result, ResultError, cbreak, cooked, raw, sh
 from shellous.harvest import harvest, harvest_results
 
@@ -1562,7 +1563,10 @@ async def test_open_file_descriptors():
         run.stdin.close()
 
     if sys.platform == "linux":
-        assert result == "0u unix type=STREAM\n1w FIFO pipe\n2u CHR /dev/null\n"
+        assert result in (
+            "0u unix type=STREAM\n1w FIFO pipe\n2u CHR /dev/null\n",
+            "0r FIFO pipe\n1w FIFO pipe\n2u CHR /dev/null\n",  # py3.11/18.04
+        )
     elif sys.platform.startswith("freebsd"):
         assert result == "0u unix \n1u PIPE \n2u VCHR /dev/null\n"
     else:
@@ -1582,7 +1586,10 @@ async def test_open_file_descriptors_unclosed_fds():
         run.stdin.close()
 
     if sys.platform == "linux":
-        assert result == "0u unix type=STREAM\n1w FIFO pipe\n2u CHR /dev/null\n"
+        assert result in (
+            "0u unix type=STREAM\n1w FIFO pipe\n2u CHR /dev/null\n",
+            "0r FIFO pipe\n1w FIFO pipe\n2u CHR /dev/null\n",  # py3.11/18.04
+        )
     elif sys.platform.startswith("freebsd"):
         assert result == "0u unix \n1u PIPE \n2u VCHR /dev/null\n"
     else:
