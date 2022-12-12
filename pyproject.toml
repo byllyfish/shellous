@@ -74,3 +74,6 @@ strict = [
   "shellous/util.py",
   "shellous/watcher.py",
 ]
+
+[tool.isort]
+profile = "black"
