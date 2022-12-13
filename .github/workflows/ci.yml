@@ -38,11 +38,10 @@ jobs:
       run: |
         pip3 install -U setuptools wheel
         pip3 install -r ./ci/requirements-dev.txt
-        if [ "${{ matrix.os }}" != "windows-latest" -a "${{ matrix.python-version }}" != "3.11-dev" ]; then
+        if [ "${{ matrix.os }}" != "windows-latest" ]; then
             pip3 install uvloop
         fi
     - name: Lint
-      if: matrix.python-version != '3.11-dev'
       run: |
         # Run flake8 and pylint.
         # stop the build if there are Python syntax errors or undefined names
@@ -52,7 +51,7 @@ jobs:
         pylint -v --fail-under 9.5 shellous
         # Run pylint on tests directory with some checks disabled.
         pylint --disable=C0116,C0103,R0903,W0212,C0302,C0415 --fail-under 9.5 tests
-        if ! mypy shellous tests; then
+        if ! mypy --check-untyped-defs shellous tests; then
           echo "::warning title=Lint Warning::mypy found issues in $BUILD_NAME"
         fi
     - name: Run Tests
@@ -62,7 +61,7 @@ jobs:
           pytest -vv -s --durations=20 --log-cli-level=DEBUG --last-failed
         fi
     - name: Run Code Coverage (Linux and MacOS)
-      if: (matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11') && matrix.python-version != '3.11-dev'
+      if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11'
       run: |
         # Run coverage and upload report to codecov.
         coverage run --source shellous -m pytest
@@ -74,7 +73,7 @@ jobs:
       env:
         SHELLOUS_CODE_COVERAGE: 1
     - name: Run Tests with uvloop (Linux and MacOS)
-      if: (matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11') && matrix.python-version != '3.11-dev'
+      if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11'
       run: |
         if ! pytest -vv -s --log-cli-level=DEBUG; then
           echo "::warning title=uvloop Warning::Re-running failed tests in $BUILD_NAME"
@@ -123,7 +122,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20  # stop runaway job after 20 minutes
     container:
-      image: python:3.10-alpine
+      image: python:3.11-alpine
     env:
       SHELLOUS_DEBUG: 1
       BUILD_NAME: build (alpine)
