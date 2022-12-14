@@ -83,21 +83,28 @@ class _RunOptions:
         self.subcmds = []
         self.pty_fds = None
 
-    def close_fds(self):
-        "Close all open file descriptors in `open_fds`."
-        close_fds(self.open_fds)
-
     def __enter__(self):
         "Set up I/O redirections."
         try:
-            self._setup_proc_sub()
+            if _uses_process_substitution(self.command):
+                self.pos_args = self._setup_process_substitution()
+            else:
+                self.pos_args = list(self.command.args)
+
             self._setup_redirects()
-            return self
+
+            # If executable does not include an absolute/relative directory,
+            # resolve it using PATH.
+            if not os.path.dirname(self.pos_args[0]):
+                self.pos_args[0] = which(self.pos_args[0])
+
         except Exception as ex:
             if LOG_DETAIL:
                 LOGGER.debug("_RunOptions.enter %r ex=%r", self.command.name, ex)
             _cleanup(self.command)
             raise
+
+        return self
 
     def __exit__(
         self,
@@ -106,7 +113,7 @@ class _RunOptions:
         _exc_tb: Optional[TracebackType],
     ):
         "Make sure those file descriptors are cleaned up."
-        self.close_fds()
+        close_fds(self.open_fds)
         if exc_value:
             if LOG_DETAIL:
                 LOGGER.debug(
@@ -117,16 +124,16 @@ class _RunOptions:
             for subcmd in self.subcmds:
                 _cleanup(subcmd)
 
-    def _setup_proc_sub(self):
-        "Set up process substitution."
-        if not _is_process_substitution(self.command):
-            return
+    def _setup_process_substitution(self) -> list[Union[str, bytes]]:
+        """Set up process substitution.
 
+        Returns new command line arguments with /dev/fd paths substituted.
+        """
         if sys.platform == "win32":
             raise RuntimeError("process substitution not supported on Windows")
 
         new_args: list[Union[str, bytes]] = []
-        pass_fds: list[int] = []
+        new_fds: list[int] = []
 
         for arg in self.command.args:
             if not isinstance(arg, (shellous.Command, shellous.Pipeline)):
@@ -136,23 +143,25 @@ class _RunOptions:
             (read_fd, write_fd) = os.pipe()
             if _is_writable(arg):
                 new_args.append(f"/dev/fd/{write_fd}")
-                pass_fds.append(write_fd)
+                new_fds.append(write_fd)
                 subcmd = arg.stdin(read_fd, close=True)
             else:
                 new_args.append(f"/dev/fd/{read_fd}")
-                pass_fds.append(read_fd)
+                new_fds.append(read_fd)
                 subcmd = arg.stdout(write_fd, close=True)
 
             self.subcmds.append(subcmd)
 
         # pylint: disable=protected-access
-        self.command = self.command._replace_args(new_args).set(
-            pass_fds=pass_fds,
+        self.command = self.command.set(
+            pass_fds=new_fds,
             pass_fds_close=True,
         )
 
         if _BSD:
-            verify_dev_fd(pass_fds[0])
+            verify_dev_fd(new_fds[0])
+
+        return new_args
 
     def _setup_redirects(self):
         "Set up I/O redirections."
@@ -206,13 +215,11 @@ class _RunOptions:
         )
 
         if options.pass_fds:
+            # Setting pass_fds causes close_fds to be True. Set close_fds to
+            # True manually to avoid a RuntimeWarning.
             self.kwd_args.update(close_fds=True, pass_fds=options.pass_fds)
             if options.pass_fds_close:
                 self.open_fds.extend(options.pass_fds)
-
-        self.pos_args = list(self.command.args)
-        if not os.path.dirname(self.pos_args[0]):
-            self.pos_args[0] = which(self.pos_args[0])
 
     def _setup_input(self, input_, close, encoding):
         "Set up process input."
@@ -1053,7 +1060,7 @@ class PipeRunner:
         return run.result()
 
 
-def _is_process_substitution(cmd: "shellous.Command") -> bool:
+def _uses_process_substitution(cmd: "shellous.Command") -> bool:
     "Return True if command uses process substitution."
     return any(
         isinstance(arg, (shellous.Command, shellous.Pipeline)) for arg in cmd.args
