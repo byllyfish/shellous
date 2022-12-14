@@ -59,7 +59,7 @@ class _RunOptions:
 
     ```
     with _RunOptions(cmd) as options:
-        proc = await create_subprocess_exec(*options.args, **options.kwd_args)
+        proc = await create_subprocess_exec(*options.pos_args, **options.kwd_args)
         # etc.
     ```
     """
@@ -68,8 +68,8 @@ class _RunOptions:
     encoding: Optional[str]
     open_fds: list[Union[int, io.IOBase]]
     input_bytes: Optional[bytes]
-    args: Optional[list[Union[str, bytes]]]
-    kwd_args: Optional[dict[str, Any]]
+    pos_args: list[Union[str, bytes]]
+    kwd_args: dict[str, Any]
     subcmds: "list[Union[shellous.Command, shellous.Pipeline]]"
     pty_fds: Optional[pty_util.PtyFds]
 
@@ -78,8 +78,8 @@ class _RunOptions:
         self.encoding = command.options.encoding
         self.open_fds = []
         self.input_bytes = None
-        self.args = None
-        self.kwd_args = None
+        self.pos_args = []
+        self.kwd_args = {}
         self.subcmds = []
         self.pty_fds = None
 
@@ -195,25 +195,24 @@ class _RunOptions:
         assert not preexec_fn or callable(preexec_fn)
 
         self.input_bytes = input_bytes
-        self.kwd_args = {
-            "stdin": stdin,
-            "stdout": stdout,
-            "stderr": stderr,
-            "env": options.merge_env(),
-            "start_new_session": start_session,
-            "preexec_fn": preexec_fn,
-            "close_fds": options.close_fds,
-        }
+        self.kwd_args.update(
+            stdin=stdin,
+            stdout=stdout,
+            stderr=stderr,
+            env=options.merge_env(),
+            start_new_session=start_session,
+            preexec_fn=preexec_fn,
+            close_fds=options.close_fds,
+        )
 
         if options.pass_fds:
-            self.kwd_args["close_fds"] = True
-            self.kwd_args["pass_fds"] = options.pass_fds
+            self.kwd_args.update(close_fds=True, pass_fds=options.pass_fds)
             if options.pass_fds_close:
                 self.open_fds.extend(options.pass_fds)
 
-        self.args = list(self.command.args)
-        if not os.path.dirname(self.args[0]):
-            self.args[0] = which(self.args[0])
+        self.pos_args = list(self.command.args)
+        if not os.path.dirname(self.pos_args[0]):
+            self.pos_args[0] = which(self.pos_args[0])
 
     def _setup_input(self, input_, close, encoding):
         "Set up process input."
@@ -612,13 +611,13 @@ class Runner:
             self.add_task(cmd.coro(), "procsub")
 
     @log_method(LOG_DETAIL)
-    async def _subprocess_exec(self, opts):
+    async def _subprocess_exec(self, opts: _RunOptions):
         "Start the subprocess and assign to `self.proc`."
         with log_timer("asyncio.create_subprocess_exec"):
-            sys.audit(AUDIT_EVENT_SUBPROCESS_SPAWN, opts.args[0])
+            sys.audit(AUDIT_EVENT_SUBPROCESS_SPAWN, opts.pos_args[0])
             with pty_util.set_ignore_child_watcher(opts.pty_fds and _BSD):
                 self._proc = await asyncio.create_subprocess_exec(
-                    *opts.args,
+                    *opts.pos_args,
                     **opts.kwd_args,
                 )
 
