@@ -85,6 +85,8 @@ class _RunOptions:
 
     def __enter__(self):
         "Set up I/O redirections."
+        _cmd = self.command
+
         try:
             if _uses_process_substitution(self.command):
                 self.pos_args = self._setup_process_substitution()
@@ -92,6 +94,7 @@ class _RunOptions:
                 self.pos_args = list(self.command.args)
 
             self._setup_redirects()
+            self._setup_pass_fds()
 
             # If executable does not include an absolute/relative directory,
             # resolve it using PATH.
@@ -104,6 +107,7 @@ class _RunOptions:
             _cleanup(self.command)
             raise
 
+        assert _cmd is self.command, "self.command should remain unchanged"
         return self
 
     def __exit__(
@@ -127,7 +131,7 @@ class _RunOptions:
     def _setup_process_substitution(self) -> list[Union[str, bytes]]:
         """Set up process substitution.
 
-        Returns new command line arguments with /dev/fd paths substituted.
+        Returns new command line arguments with /dev/fd path substitutions.
         """
         if sys.platform == "win32":
             raise RuntimeError("process substitution not supported on Windows")
@@ -152,11 +156,11 @@ class _RunOptions:
 
             self.subcmds.append(subcmd)
 
-        # pylint: disable=protected-access
-        self.command = self.command.set(
-            pass_fds=new_fds,
-            pass_fds_close=True,
-        )
+        # We need to include `new_fds` in our `pass_fds` list. We also need
+        # to close them after process launch.
+        self.kwd_args["pass_fds"] = new_fds
+        self.kwd_args["close_fds"] = True
+        self.open_fds.extend(new_fds)
 
         if _BSD:
             verify_dev_fd(new_fds[0])
@@ -211,15 +215,22 @@ class _RunOptions:
             env=options.merge_env(),
             start_new_session=start_session,
             preexec_fn=preexec_fn,
-            close_fds=options.close_fds,
         )
+
+    def _setup_pass_fds(self):
+        "Set up `pass_fds` and `close_fds` if pass_fds is configured."
+        options = self.command.options
 
         if options.pass_fds:
             # Setting pass_fds causes close_fds to be True. Set close_fds to
             # True manually to avoid a RuntimeWarning.
-            self.kwd_args.update(close_fds=True, pass_fds=options.pass_fds)
+            self.kwd_args["close_fds"] = True
+            self.kwd_args.setdefault("pass_fds", []).extend(options.pass_fds)
             if options.pass_fds_close:
                 self.open_fds.extend(options.pass_fds)
+        elif "close_fds" not in self.kwd_args:
+            # Only set close_fds if it is not already set.
+            self.kwd_args["close_fds"] = options.close_fds
 
     def _setup_input(self, input_, close, encoding):
         "Set up process input."
