@@ -7,7 +7,7 @@ import sys
 from logging import Logger
 from pathlib import Path
 from types import TracebackType
-from typing import Any, Optional, Union
+from typing import Any, Optional, Union, cast
 
 import shellous
 import shellous.redirect as redir
@@ -91,7 +91,7 @@ class _RunOptions:
             if _uses_process_substitution(self.command):
                 self.pos_args = self._setup_process_substitution()
             else:
-                self.pos_args = list(self.command.args)
+                self.pos_args = cast(list[Union[str, bytes]], list(self.command.args))
 
             self._setup_redirects()
             self._setup_pass_fds()
@@ -633,7 +633,7 @@ class Runner:
         "Start the subprocess and assign to `self.proc`."
         with log_timer("asyncio.create_subprocess_exec"):
             sys.audit(AUDIT_EVENT_SUBPROCESS_SPAWN, opts.pos_args[0])
-            with pty_util.set_ignore_child_watcher(opts.pty_fds and _BSD):
+            with pty_util.set_ignore_child_watcher(_BSD and opts.pty_fds is not None):
                 self._proc = await asyncio.create_subprocess_exec(
                     *opts.pos_args,
                     **opts.kwd_args,

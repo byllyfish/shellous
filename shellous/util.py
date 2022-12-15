@@ -8,8 +8,7 @@ import shutil
 from asyncio.subprocess import Process
 from collections import defaultdict
 from types import TracebackType
-from typing import (Any, AsyncContextManager, Coroutine, Iterable, Optional,
-                    Union)
+from typing import Any, AsyncContextManager, Coroutine, Iterable, Optional, Union
 
 from .log import LOG_DETAIL, LOGGER, log_timer
 
