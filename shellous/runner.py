@@ -7,7 +7,7 @@ import sys
 from logging import Logger
 from pathlib import Path
 from types import TracebackType
-from typing import Any, Optional, Union
+from typing import Any, Optional, Union, cast
 
 import shellous
 import shellous.redirect as redir
@@ -59,7 +59,7 @@ class _RunOptions:
 
     ```
     with _RunOptions(cmd) as options:
-        proc = await create_subprocess_exec(*options.args, **options.kwd_args)
+        proc = await create_subprocess_exec(*options.pos_args, **options.kwd_args)
         # etc.
     ```
     """
@@ -68,8 +68,8 @@ class _RunOptions:
     encoding: Optional[str]
     open_fds: list[Union[int, io.IOBase]]
     input_bytes: Optional[bytes]
-    args: Optional[list[Union[str, bytes]]]
-    kwd_args: Optional[dict[str, Any]]
+    pos_args: list[Union[str, bytes]]
+    kwd_args: dict[str, Any]
     subcmds: "list[Union[shellous.Command, shellous.Pipeline]]"
     pty_fds: Optional[pty_util.PtyFds]
 
@@ -78,26 +78,37 @@ class _RunOptions:
         self.encoding = command.options.encoding
         self.open_fds = []
         self.input_bytes = None
-        self.args = None
-        self.kwd_args = None
+        self.pos_args = []
+        self.kwd_args = {}
         self.subcmds = []
         self.pty_fds = None
 
-    def close_fds(self):
-        "Close all open file descriptors in `open_fds`."
-        close_fds(self.open_fds)
-
     def __enter__(self):
         "Set up I/O redirections."
+        _cmd = self.command
+
         try:
-            self._setup_proc_sub()
+            if _uses_process_substitution(self.command):
+                self.pos_args = self._setup_process_substitution()
+            else:
+                self.pos_args = cast(list[Union[str, bytes]], list(self.command.args))
+
             self._setup_redirects()
-            return self
+            self._setup_pass_fds()
+
+            # If executable does not include an absolute/relative directory,
+            # resolve it using PATH.
+            if not os.path.dirname(self.pos_args[0]):
+                self.pos_args[0] = which(self.pos_args[0])
+
         except Exception as ex:
             if LOG_DETAIL:
                 LOGGER.debug("_RunOptions.enter %r ex=%r", self.command.name, ex)
             _cleanup(self.command)
             raise
+
+        assert _cmd is self.command, "self.command should remain unchanged"
+        return self
 
     def __exit__(
         self,
@@ -106,7 +117,7 @@ class _RunOptions:
         _exc_tb: Optional[TracebackType],
     ):
         "Make sure those file descriptors are cleaned up."
-        self.close_fds()
+        close_fds(self.open_fds)
         if exc_value:
             if LOG_DETAIL:
                 LOGGER.debug(
@@ -117,16 +128,16 @@ class _RunOptions:
             for subcmd in self.subcmds:
                 _cleanup(subcmd)
 
-    def _setup_proc_sub(self):
-        "Set up process substitution."
-        if not _is_process_substitution(self.command):
-            return
+    def _setup_process_substitution(self) -> list[Union[str, bytes]]:
+        """Set up process substitution.
 
+        Returns new command line arguments with /dev/fd path substitutions.
+        """
         if sys.platform == "win32":
             raise RuntimeError("process substitution not supported on Windows")
 
         new_args: list[Union[str, bytes]] = []
-        pass_fds: list[int] = []
+        new_fds: list[int] = []
 
         for arg in self.command.args:
             if not isinstance(arg, (shellous.Command, shellous.Pipeline)):
@@ -136,23 +147,25 @@ class _RunOptions:
             (read_fd, write_fd) = os.pipe()
             if _is_writable(arg):
                 new_args.append(f"/dev/fd/{write_fd}")
-                pass_fds.append(write_fd)
+                new_fds.append(write_fd)
                 subcmd = arg.stdin(read_fd, close=True)
             else:
                 new_args.append(f"/dev/fd/{read_fd}")
-                pass_fds.append(read_fd)
+                new_fds.append(read_fd)
                 subcmd = arg.stdout(write_fd, close=True)
 
             self.subcmds.append(subcmd)
 
-        # pylint: disable=protected-access
-        self.command = self.command._replace_args(new_args).set(
-            pass_fds=pass_fds,
-            pass_fds_close=True,
-        )
+        # We need to include `new_fds` in our `pass_fds` list. We also need
+        # to close them after process launch.
+        self.kwd_args["pass_fds"] = new_fds
+        self.kwd_args["close_fds"] = True
+        self.open_fds.extend(new_fds)
 
         if _BSD:
-            verify_dev_fd(pass_fds[0])
+            verify_dev_fd(new_fds[0])
+
+        return new_args
 
     def _setup_redirects(self):
         "Set up I/O redirections."
@@ -195,25 +208,29 @@ class _RunOptions:
         assert not preexec_fn or callable(preexec_fn)
 
         self.input_bytes = input_bytes
-        self.kwd_args = {
-            "stdin": stdin,
-            "stdout": stdout,
-            "stderr": stderr,
-            "env": options.merge_env(),
-            "start_new_session": start_session,
-            "preexec_fn": preexec_fn,
-            "close_fds": options.close_fds,
-        }
+        self.kwd_args.update(
+            stdin=stdin,
+            stdout=stdout,
+            stderr=stderr,
+            env=options.merge_env(),
+            start_new_session=start_session,
+            preexec_fn=preexec_fn,
+        )
+
+    def _setup_pass_fds(self):
+        "Set up `pass_fds` and `close_fds` if pass_fds is configured."
+        options = self.command.options
 
         if options.pass_fds:
+            # Setting pass_fds causes close_fds to be True. Set close_fds to
+            # True manually to avoid a RuntimeWarning.
             self.kwd_args["close_fds"] = True
-            self.kwd_args["pass_fds"] = options.pass_fds
+            self.kwd_args.setdefault("pass_fds", []).extend(options.pass_fds)
             if options.pass_fds_close:
                 self.open_fds.extend(options.pass_fds)
-
-        self.args = list(self.command.args)
-        if not os.path.dirname(self.args[0]):
-            self.args[0] = which(self.args[0])
+        elif "close_fds" not in self.kwd_args:
+            # Only set close_fds if it is not already set.
+            self.kwd_args["close_fds"] = options.close_fds
 
     def _setup_input(self, input_, close, encoding):
         "Set up process input."
@@ -612,13 +629,13 @@ class Runner:
             self.add_task(cmd.coro(), "procsub")
 
     @log_method(LOG_DETAIL)
-    async def _subprocess_exec(self, opts):
+    async def _subprocess_exec(self, opts: _RunOptions):
         "Start the subprocess and assign to `self.proc`."
         with log_timer("asyncio.create_subprocess_exec"):
-            sys.audit(AUDIT_EVENT_SUBPROCESS_SPAWN, opts.args[0])
-            with pty_util.set_ignore_child_watcher(opts.pty_fds and _BSD):
+            sys.audit(AUDIT_EVENT_SUBPROCESS_SPAWN, opts.pos_args[0])
+            with pty_util.set_ignore_child_watcher(_BSD and opts.pty_fds is not None):
                 self._proc = await asyncio.create_subprocess_exec(
-                    *opts.args,
+                    *opts.pos_args,
                     **opts.kwd_args,
                 )
 
@@ -1054,7 +1071,7 @@ class PipeRunner:
         return run.result()
 
 
-def _is_process_substitution(cmd: "shellous.Command") -> bool:
+def _uses_process_substitution(cmd: "shellous.Command") -> bool:
     "Return True if command uses process substitution."
     return any(
         isinstance(arg, (shellous.Command, shellous.Pipeline)) for arg in cmd.args
