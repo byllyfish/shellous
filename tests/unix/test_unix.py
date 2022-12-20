@@ -91,6 +91,17 @@ async def test_echo_with_result():
     assert result.output == "foo"
 
 
+async def test_gh_100133():
+    "Specific test for https://github.com/python/cpython/issues/100133"
+
+    async def _run(cmd, *args):
+        return (await sh(cmd, *args)).strip()
+
+    outputs = {f"foo{i}" for i in range(10)}
+    res = await asyncio.gather(*[_run("echo", out) for out in outputs])
+    assert set(res) == outputs
+
+
 async def test_which():
     "Test running the `which` command."
     result = await sh("which", "cat")
