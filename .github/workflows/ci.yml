@@ -21,8 +21,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-latest, macos-11, windows-latest, ubuntu-18.04, macos-12 ]
-        python-version: [ '3.9', '3.10', '3.11' ]
+        os: [ ubuntu-22.04, ubuntu-20.04, ubuntu-18.04, macos-12, macos-11, windows-2022 ]
+        python-version: [ '3.9', '3.10.8', '3.11.0' ]
 
     env:
       SHELLOUS_DEBUG: 1
@@ -31,14 +31,14 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v3
+      uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
         pip3 install -U setuptools wheel
         pip3 install -r ./ci/requirements-dev.txt
-        if [ "${{ matrix.os }}" != "windows-latest" ]; then
+        if [ "${{ matrix.os }}" != "windows-2022" ]; then
             pip3 install uvloop
         fi
     - name: Lint
@@ -159,7 +159,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    - uses: actions/setup-python@v3
+    - uses: actions/setup-python@v4
       with:
         python-version: 'pypy-3.9'
     - name: Install dependencies

@@ -8,7 +8,10 @@ import pytest
 PIPE_MAX_SIZE = 4 * 1024 * 1024 + 1
 
 
-@pytest.mark.xfail(sys.platform == "win32", reason="bpo-45074")
+@pytest.mark.xfail(
+    sys.platform == "win32" and sys.version_info < (3, 11, 1),
+    reason="bpo-45074",
+)
 async def test_bug():
     # t=0: Start the process and begin writing PIPE_MAX_SIZE bytes.
     # t=1: Cancel drain() and close stdin.
