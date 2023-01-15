@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="generator" content="pdoc 12.3.0"/>
+    <meta name="generator" content="pdoc 12.3.1"/>
     <title>shellous API documentation</title>
 
     <style>/*! * Bootstrap Reboot v5.0.0 (https://getbootstrap.com/) * Copyright 2011-2021 The Bootstrap Authors * Copyright 2011-2021 Twitter, Inc. * Licensed under MIT (https://github.com/twbs/bootstrap/blob/main/LICENSE) * Forked from Normalize.css, licensed MIT (https://github.com/necolas/normalize.css/blob/master/LICENSE.md) */*,::after,::before{box-sizing:border-box}@media (prefers-reduced-motion:no-preference){:root{scroll-behavior:smooth}}body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans","Liberation Sans",sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji";font-size:1rem;font-weight:400;line-height:1.5;color:#212529;background-color:#fff;-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}hr{margin:1rem 0;color:inherit;background-color:currentColor;border:0;opacity:.25}hr:not([size]){height:1px}h1,h2,h3,h4,h5,h6{margin-top:0;margin-bottom:.5rem;font-weight:500;line-height:1.2}h1{font-size:calc(1.375rem + 1.5vw)}@media (min-width:1200px){h1{font-size:2.5rem}}h2{font-size:calc(1.325rem + .9vw)}@media (min-width:1200px){h2{font-size:2rem}}h3{font-size:calc(1.3rem + .6vw)}@media (min-width:1200px){h3{font-size:1.75rem}}h4{font-size:calc(1.275rem + .3vw)}@media (min-width:1200px){h4{font-size:1.5rem}}h5{font-size:1.25rem}h6{font-size:1rem}p{margin-top:0;margin-bottom:1rem}abbr[data-bs-original-title],abbr[title]{-webkit-text-decoration:underline dotted;text-decoration:underline dotted;cursor:help;-webkit-text-decoration-skip-ink:none;text-decoration-skip-ink:none}address{margin-bottom:1rem;font-style:normal;line-height:inherit}ol,ul{padding-left:2rem}dl,ol,ul{margin-top:0;margin-bottom:1rem}ol ol,ol ul,ul ol,ul ul{margin-bottom:0}dt{font-weight:700}dd{margin-bottom:.5rem;margin-left:0}blockquote{margin:0 0 1rem}b,strong{font-weight:bolder}small{font-size:.875em}mark{padding:.2em;background-color:#fcf8e3}sub,sup{position:relative;font-size:.75em;line-height:0;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}a{color:#0d6efd;text-decoration:underline}a:hover{color:#0a58ca}a:not([href]):not([class]),a:not([href]):not([class]):hover{color:inherit;text-decoration:none}code,kbd,pre,samp{font-family:SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;font-size:1em;direction:ltr;unicode-bidi:bidi-override}pre{display:block;margin-top:0;margin-bottom:1rem;overflow:auto;font-size:.875em}pre code{font-size:inherit;color:inherit;word-break:normal}code{font-size:.875em;color:#d63384;word-wrap:break-word}a>code{color:inherit}kbd{padding:.2rem .4rem;font-size:.875em;color:#fff;background-color:#212529;border-radius:.2rem}kbd kbd{padding:0;font-size:1em;font-weight:700}figure{margin:0 0 1rem}img,svg{vertical-align:middle}table{caption-side:bottom;border-collapse:collapse}caption{padding-top:.5rem;padding-bottom:.5rem;color:#6c757d;text-align:left}th{text-align:inherit;text-align:-webkit-match-parent}tbody,td,tfoot,th,thead,tr{border-color:inherit;border-style:solid;border-width:0}label{display:inline-block}button{border-radius:0}button:focus:not(:focus-visible){outline:0}button,input,optgroup,select,textarea{margin:0;font-family:inherit;font-size:inherit;line-height:inherit}button,select{text-transform:none}[role=button]{cursor:pointer}select{word-wrap:normal}select:disabled{opacity:1}[list]::-webkit-calendar-picker-indicator{display:none}[type=button],[type=reset],[type=submit],button{-webkit-appearance:button}[type=button]:not(:disabled),[type=reset]:not(:disabled),[type=submit]:not(:disabled),button:not(:disabled){cursor:pointer}::-moz-focus-inner{padding:0;border-style:none}textarea{resize:vertical}fieldset{min-width:0;padding:0;margin:0;border:0}legend{float:left;width:100%;padding:0;margin-bottom:.5rem;font-size:calc(1.275rem + .3vw);line-height:inherit}@media (min-width:1200px){legend{font-size:1.5rem}}legend+*{clear:left}::-webkit-datetime-edit-day-field,::-webkit-datetime-edit-fields-wrapper,::-webkit-datetime-edit-hour-field,::-webkit-datetime-edit-minute,::-webkit-datetime-edit-month-field,::-webkit-datetime-edit-text,::-webkit-datetime-edit-year-field{padding:0}::-webkit-inner-spin-button{height:auto}[type=search]{outline-offset:-2px;-webkit-appearance:textfield}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-color-swatch-wrapper{padding:0}::file-selector-button{font:inherit}::-webkit-file-upload-button{font:inherit;-webkit-appearance:button}output{display:inline-block}iframe{border:0}summary{display:list-item;cursor:pointer}progress{vertical-align:baseline}[hidden]{display:none!important}</style>
@@ -471,7 +471,7 @@ deadlock. The streams on the <code>run</code> object are <code>asyncio.StreamRea
 <div class="pdoc-code codehilite">
 <pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;cat&quot;</span><span class="p">,</span> <span class="s2">&quot;does_not_exist&quot;</span><span class="p">)</span>
 <span class="gt">Traceback (most recent call last):</span>
-  <span class="c">...</span>
+<span class="w">  </span><span class="c">...</span>
 <span class="gr"><a href="#ResultError">shellous.ResultError</a></span>: <span class="n">Result(output_bytes=b&#39;&#39;, exit_code=1, cancelled=False, encoding=&#39;utf-8&#39;, extra=None)</span>
 </code></pre>
 </div>
@@ -704,7 +704,7 @@ option.</p>
 <span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">cmd</span>
 <span class="go">cat: does_not_exist: No such file or directory</span>
 <span class="gt">Traceback (most recent call last):</span>
-  <span class="c">...</span>
+<span class="w">  </span><span class="c">...</span>
 <span class="gr"><a href="#ResultError">shellous.ResultError</a></span>: <span class="n">Result(output_bytes=b&#39;&#39;, exit_code=1, cancelled=False, encoding=&#39;utf-8&#39;, extra=None)</span>
 </code></pre>
 </div>
@@ -769,7 +769,7 @@ a <code>TimeoutError</code>.</p>
 <div class="pdoc-code codehilite">
 <pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;sleep&quot;</span><span class="p">,</span> <span class="mi">60</span><span class="p">)</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
 <span class="gt">Traceback (most recent call last):</span>
-  <span class="c">...</span>
+<span class="w">  </span><span class="c">...</span>
 <span class="gr">TimeoutError</span>
 </code></pre>
 </div>
@@ -783,7 +783,7 @@ the running process and raises a <code>CancelledError</code>.</p>
 <span class="go">True</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">t</span>
 <span class="gt">Traceback (most recent call last):</span>
-  <span class="c">...</span>
+<span class="w">  </span><span class="c">...</span>
 <span class="gr">CancelledError</span>
 </code></pre>
 </div>
@@ -917,7 +917,7 @@ context object, specify your changes to the default context <strong>sh</strong>:
     <a class="headerlink" href="#CmdContext"></a>
             <div class="pdoc-code codehilite"><pre><span></span><span id="CmdContext-205"><a href="#CmdContext-205"><span class="linenos">205</span></a><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </span><span id="CmdContext-206"><a href="#CmdContext-206"><span class="linenos">206</span></a><span class="k">class</span> <span class="nc">CmdContext</span><span class="p">:</span>
-</span><span id="CmdContext-207"><a href="#CmdContext-207"><span class="linenos">207</span></a>    <span class="sd">&quot;&quot;&quot;Concrete class for an immutable execution context.&quot;&quot;&quot;</span>
+</span><span id="CmdContext-207"><a href="#CmdContext-207"><span class="linenos">207</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Concrete class for an immutable execution context.&quot;&quot;&quot;</span>
 </span><span id="CmdContext-208"><a href="#CmdContext-208"><span class="linenos">208</span></a>
 </span><span id="CmdContext-209"><a href="#CmdContext-209"><span class="linenos">209</span></a>    <span class="n">CAPTURE</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="n">Redirect</span><span class="p">]</span> <span class="o">=</span> <span class="n">Redirect</span><span class="o">.</span><span class="n">CAPTURE</span>
 </span><span id="CmdContext-210"><a href="#CmdContext-210"><span class="linenos">210</span></a>    <span class="s2">&quot;Capture and read/write stream manually.&quot;</span>
@@ -950,7 +950,7 @@ context object, specify your changes to the default context <strong>sh</strong>:
 </span><span id="CmdContext-237"><a href="#CmdContext-237"><span class="linenos">237</span></a>        <span class="k">return</span> <span class="n">CmdContext</span><span class="p">(</span><span class="n">new_options</span><span class="p">)</span>
 </span><span id="CmdContext-238"><a href="#CmdContext-238"><span class="linenos">238</span></a>
 </span><span id="CmdContext-239"><a href="#CmdContext-239"><span class="linenos">239</span></a>    <span class="k">def</span> <span class="nf">env</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
-</span><span id="CmdContext-240"><a href="#CmdContext-240"><span class="linenos">240</span></a>        <span class="sd">&quot;&quot;&quot;Return new context with augmented environment.&quot;&quot;&quot;</span>
+</span><span id="CmdContext-240"><a href="#CmdContext-240"><span class="linenos">240</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Return new context with augmented environment.&quot;&quot;&quot;</span>
 </span><span id="CmdContext-241"><a href="#CmdContext-241"><span class="linenos">241</span></a>        <span class="n">new_options</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">set_env</span><span class="p">(</span><span class="n">kwds</span><span class="p">)</span>
 </span><span id="CmdContext-242"><a href="#CmdContext-242"><span class="linenos">242</span></a>        <span class="k">return</span> <span class="n">CmdContext</span><span class="p">(</span><span class="n">new_options</span><span class="p">)</span>
 </span><span id="CmdContext-243"><a href="#CmdContext-243"><span class="linenos">243</span></a>
@@ -975,7 +975,7 @@ context object, specify your changes to the default context <strong>sh</strong>:
 </span><span id="CmdContext-262"><a href="#CmdContext-262"><span class="linenos">262</span></a>        <span class="n">close_fds</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
 </span><span id="CmdContext-263"><a href="#CmdContext-263"><span class="linenos">263</span></a>        <span class="n">audit_callback</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">_Audit_Fn_T</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
 </span><span id="CmdContext-264"><a href="#CmdContext-264"><span class="linenos">264</span></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
-</span><span id="CmdContext-265"><a href="#CmdContext-265"><span class="linenos">265</span></a>        <span class="sd">&quot;&quot;&quot;Return new context with custom options set.</span>
+</span><span id="CmdContext-265"><a href="#CmdContext-265"><span class="linenos">265</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Return new context with custom options set.</span>
 </span><span id="CmdContext-266"><a href="#CmdContext-266"><span class="linenos">266</span></a>
 </span><span id="CmdContext-267"><a href="#CmdContext-267"><span class="linenos">267</span></a><span class="sd">        See `Command.set` for option reference.</span>
 </span><span id="CmdContext-268"><a href="#CmdContext-268"><span class="linenos">268</span></a><span class="sd">        &quot;&quot;&quot;</span>
@@ -1151,7 +1151,7 @@ context object, specify your changes to the default context <strong>sh</strong>:
     </div>
     <a class="headerlink" href="#CmdContext.env"></a>
             <div class="pdoc-code codehilite"><pre><span></span><span id="CmdContext.env-239"><a href="#CmdContext.env-239"><span class="linenos">239</span></a>    <span class="k">def</span> <span class="nf">env</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
-</span><span id="CmdContext.env-240"><a href="#CmdContext.env-240"><span class="linenos">240</span></a>        <span class="sd">&quot;&quot;&quot;Return new context with augmented environment.&quot;&quot;&quot;</span>
+</span><span id="CmdContext.env-240"><a href="#CmdContext.env-240"><span class="linenos">240</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Return new context with augmented environment.&quot;&quot;&quot;</span>
 </span><span id="CmdContext.env-241"><a href="#CmdContext.env-241"><span class="linenos">241</span></a>        <span class="n">new_options</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">set_env</span><span class="p">(</span><span class="n">kwds</span><span class="p">)</span>
 </span><span id="CmdContext.env-242"><a href="#CmdContext.env-242"><span class="linenos">242</span></a>        <span class="k">return</span> <span class="n">CmdContext</span><span class="p">(</span><span class="n">new_options</span><span class="p">)</span>
 </span></pre></div>
@@ -1194,7 +1194,7 @@ context object, specify your changes to the default context <strong>sh</strong>:
 </span><span id="CmdContext.set-262"><a href="#CmdContext.set-262"><span class="linenos">262</span></a>        <span class="n">close_fds</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
 </span><span id="CmdContext.set-263"><a href="#CmdContext.set-263"><span class="linenos">263</span></a>        <span class="n">audit_callback</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">_Audit_Fn_T</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
 </span><span id="CmdContext.set-264"><a href="#CmdContext.set-264"><span class="linenos">264</span></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
-</span><span id="CmdContext.set-265"><a href="#CmdContext.set-265"><span class="linenos">265</span></a>        <span class="sd">&quot;&quot;&quot;Return new context with custom options set.</span>
+</span><span id="CmdContext.set-265"><a href="#CmdContext.set-265"><span class="linenos">265</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Return new context with custom options set.</span>
 </span><span id="CmdContext.set-266"><a href="#CmdContext.set-266"><span class="linenos">266</span></a>
 </span><span id="CmdContext.set-267"><a href="#CmdContext.set-267"><span class="linenos">267</span></a><span class="sd">        See `Command.set` for option reference.</span>
 </span><span id="CmdContext.set-268"><a href="#CmdContext.set-268"><span class="linenos">268</span></a><span class="sd">        &quot;&quot;&quot;</span>
@@ -1226,7 +1226,7 @@ context object, specify your changes to the default context <strong>sh</strong>:
     <a class="headerlink" href="#Command"></a>
             <div class="pdoc-code codehilite"><pre><span></span><span id="Command-278"><a href="#Command-278"><span class="linenos">278</span></a><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </span><span id="Command-279"><a href="#Command-279"><span class="linenos">279</span></a><span class="k">class</span> <span class="nc">Command</span><span class="p">:</span>
-</span><span id="Command-280"><a href="#Command-280"><span class="linenos">280</span></a>    <span class="sd">&quot;&quot;&quot;A Command instance is lightweight and immutable object that specifies the</span>
+</span><span id="Command-280"><a href="#Command-280"><span class="linenos">280</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;A Command instance is lightweight and immutable object that specifies the</span>
 </span><span id="Command-281"><a href="#Command-281"><span class="linenos">281</span></a><span class="sd">    arguments and options used to run a program. Commands do not do anything</span>
 </span><span id="Command-282"><a href="#Command-282"><span class="linenos">282</span></a><span class="sd">    until they are awaited.</span>
 </span><span id="Command-283"><a href="#Command-283"><span class="linenos">283</span></a>
@@ -1256,7 +1256,7 @@ context object, specify your changes to the default context <strong>sh</strong>:
 </span><span id="Command-307"><a href="#Command-307"><span class="linenos">307</span></a>
 </span><span id="Command-308"><a href="#Command-308"><span class="linenos">308</span></a>    <span class="nd">@property</span>
 </span><span id="Command-309"><a href="#Command-309"><span class="linenos">309</span></a>    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-</span><span id="Command-310"><a href="#Command-310"><span class="linenos">310</span></a>        <span class="sd">&quot;&quot;&quot;Returns the name of the program being run.</span>
+</span><span id="Command-310"><a href="#Command-310"><span class="linenos">310</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the name of the program being run.</span>
 </span><span id="Command-311"><a href="#Command-311"><span class="linenos">311</span></a>
 </span><span id="Command-312"><a href="#Command-312"><span class="linenos">312</span></a><span class="sd">        Names longer than 31 characters are truncated. If `alt_name` option</span>
 </span><span id="Command-313"><a href="#Command-313"><span class="linenos">313</span></a><span class="sd">        is set, return that instead.</span>
@@ -1298,7 +1298,7 @@ context object, specify your changes to the default context <strong>sh</strong>:
 </span><span id="Command-349"><a href="#Command-349"><span class="linenos">349</span></a>        <span class="k">return</span> <span class="n">Command</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">,</span> <span class="n">new_options</span><span class="p">)</span>
 </span><span id="Command-350"><a href="#Command-350"><span class="linenos">350</span></a>
 </span><span id="Command-351"><a href="#Command-351"><span class="linenos">351</span></a>    <span class="k">def</span> <span class="nf">env</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
-</span><span id="Command-352"><a href="#Command-352"><span class="linenos">352</span></a>        <span class="sd">&quot;&quot;&quot;Return new command with augmented environment.&quot;&quot;&quot;</span>
+</span><span id="Command-352"><a href="#Command-352"><span class="linenos">352</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Return new command with augmented environment.&quot;&quot;&quot;</span>
 </span><span id="Command-353"><a href="#Command-353"><span class="linenos">353</span></a>        <span class="n">new_options</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">set_env</span><span class="p">(</span><span class="n">kwds</span><span class="p">)</span>
 </span><span id="Command-354"><a href="#Command-354"><span class="linenos">354</span></a>        <span class="k">return</span> <span class="n">Command</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">,</span> <span class="n">new_options</span><span class="p">)</span>
 </span><span id="Command-355"><a href="#Command-355"><span class="linenos">355</span></a>
@@ -1323,7 +1323,7 @@ context object, specify your changes to the default context <strong>sh</strong>:
 </span><span id="Command-374"><a href="#Command-374"><span class="linenos">374</span></a>        <span class="n">close_fds</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
 </span><span id="Command-375"><a href="#Command-375"><span class="linenos">375</span></a>        <span class="n">audit_callback</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">_Audit_Fn_T</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
 </span><span id="Command-376"><a href="#Command-376"><span class="linenos">376</span></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
-</span><span id="Command-377"><a href="#Command-377"><span class="linenos">377</span></a>        <span class="sd">&quot;&quot;&quot;Return new command with custom options set.</span>
+</span><span id="Command-377"><a href="#Command-377"><span class="linenos">377</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Return new command with custom options set.</span>
 </span><span id="Command-378"><a href="#Command-378"><span class="linenos">378</span></a>
 </span><span id="Command-379"><a href="#Command-379"><span class="linenos">379</span></a><span class="sd">        **inherit_env** (bool) default=True&lt;br&gt;</span>
 </span><span id="Command-380"><a href="#Command-380"><span class="linenos">380</span></a><span class="sd">        Subprocess should inherit the parent process environment. If this is</span>
@@ -1441,7 +1441,7 @@ context object, specify your changes to the default context <strong>sh</strong>:
 </span><span id="Command-492"><a href="#Command-492"><span class="linenos">492</span></a>        <span class="k">return</span> <span class="n">Command</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">kwargs</span><span class="p">))</span>
 </span><span id="Command-493"><a href="#Command-493"><span class="linenos">493</span></a>
 </span><span id="Command-494"><a href="#Command-494"><span class="linenos">494</span></a>    <span class="k">def</span> <span class="nf">_replace_args</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_args</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
-</span><span id="Command-495"><a href="#Command-495"><span class="linenos">495</span></a>        <span class="sd">&quot;&quot;&quot;Return new command with arguments replaced by `new_args`.</span>
+</span><span id="Command-495"><a href="#Command-495"><span class="linenos">495</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Return new command with arguments replaced by `new_args`.</span>
 </span><span id="Command-496"><a href="#Command-496"><span class="linenos">496</span></a>
 </span><span id="Command-497"><a href="#Command-497"><span class="linenos">497</span></a><span class="sd">        Arguments are NOT type-checked by the context. Program name must be the</span>
 </span><span id="Command-498"><a href="#Command-498"><span class="linenos">498</span></a><span class="sd">        exact same object.</span>
@@ -1455,7 +1455,7 @@ context object, specify your changes to the default context <strong>sh</strong>:
 </span><span id="Command-506"><a href="#Command-506"><span class="linenos">506</span></a>        <span class="k">return</span> <span class="n">Runner</span><span class="o">.</span><span class="n">run_command</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_run_future</span><span class="o">=</span><span class="n">_run_future</span><span class="p">)</span>
 </span><span id="Command-507"><a href="#Command-507"><span class="linenos">507</span></a>
 </span><span id="Command-508"><a href="#Command-508"><span class="linenos">508</span></a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Runner</span><span class="p">:</span>
-</span><span id="Command-509"><a href="#Command-509"><span class="linenos">509</span></a>        <span class="sd">&quot;&quot;&quot;Return a `Runner` to run the process incrementally.</span>
+</span><span id="Command-509"><a href="#Command-509"><span class="linenos">509</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a `Runner` to run the process incrementally.</span>
 </span><span id="Command-510"><a href="#Command-510"><span class="linenos">510</span></a>
 </span><span id="Command-511"><a href="#Command-511"><span class="linenos">511</span></a><span class="sd">        ```</span>
 </span><span id="Command-512"><a href="#Command-512"><span class="linenos">512</span></a><span class="sd">        async with cmd.run() as run:</span>
@@ -1500,7 +1500,7 @@ context object, specify your changes to the default context <strong>sh</strong>:
 </span><span id="Command-551"><a href="#Command-551"><span class="linenos">551</span></a>        <span class="k">return</span> <span class="n">Command</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span> <span class="o">+</span> <span class="n">coerce</span><span class="p">(</span><span class="n">args</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="p">)</span>
 </span><span id="Command-552"><a href="#Command-552"><span class="linenos">552</span></a>
 </span><span id="Command-553"><a href="#Command-553"><span class="linenos">553</span></a>    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-</span><span id="Command-554"><a href="#Command-554"><span class="linenos">554</span></a>        <span class="sd">&quot;&quot;&quot;Return string representation for command.</span>
+</span><span id="Command-554"><a href="#Command-554"><span class="linenos">554</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Return string representation for command.</span>
 </span><span id="Command-555"><a href="#Command-555"><span class="linenos">555</span></a>
 </span><span id="Command-556"><a href="#Command-556"><span class="linenos">556</span></a><span class="sd">        Display the full name of the command only. Don&#39;t include arguments or</span>
 </span><span id="Command-557"><a href="#Command-557"><span class="linenos">557</span></a><span class="sd">        environment variables.</span>
@@ -1709,7 +1709,7 @@ is set, return that instead.</p>
     </div>
     <a class="headerlink" href="#Command.env"></a>
             <div class="pdoc-code codehilite"><pre><span></span><span id="Command.env-351"><a href="#Command.env-351"><span class="linenos">351</span></a>    <span class="k">def</span> <span class="nf">env</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
-</span><span id="Command.env-352"><a href="#Command.env-352"><span class="linenos">352</span></a>        <span class="sd">&quot;&quot;&quot;Return new command with augmented environment.&quot;&quot;&quot;</span>
+</span><span id="Command.env-352"><a href="#Command.env-352"><span class="linenos">352</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Return new command with augmented environment.&quot;&quot;&quot;</span>
 </span><span id="Command.env-353"><a href="#Command.env-353"><span class="linenos">353</span></a>        <span class="n">new_options</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">set_env</span><span class="p">(</span><span class="n">kwds</span><span class="p">)</span>
 </span><span id="Command.env-354"><a href="#Command.env-354"><span class="linenos">354</span></a>        <span class="k">return</span> <span class="n">Command</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">,</span> <span class="n">new_options</span><span class="p">)</span>
 </span></pre></div>
@@ -1752,7 +1752,7 @@ is set, return that instead.</p>
 </span><span id="Command.set-374"><a href="#Command.set-374"><span class="linenos">374</span></a>        <span class="n">close_fds</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
 </span><span id="Command.set-375"><a href="#Command.set-375"><span class="linenos">375</span></a>        <span class="n">audit_callback</span><span class="p">:</span> <span class="n">Unset</span><span class="p">[</span><span class="n">_Audit_Fn_T</span><span class="p">]</span> <span class="o">=</span> <span class="n">_UNSET</span><span class="p">,</span>
 </span><span id="Command.set-376"><a href="#Command.set-376"><span class="linenos">376</span></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
-</span><span id="Command.set-377"><a href="#Command.set-377"><span class="linenos">377</span></a>        <span class="sd">&quot;&quot;&quot;Return new command with custom options set.</span>
+</span><span id="Command.set-377"><a href="#Command.set-377"><span class="linenos">377</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Return new command with custom options set.</span>
 </span><span id="Command.set-378"><a href="#Command.set-378"><span class="linenos">378</span></a>
 </span><span id="Command.set-379"><a href="#Command.set-379"><span class="linenos">379</span></a><span class="sd">        **inherit_env** (bool) default=True&lt;br&gt;</span>
 </span><span id="Command.set-380"><a href="#Command.set-380"><span class="linenos">380</span></a><span class="sd">        Subprocess should inherit the parent process environment. If this is</span>
@@ -2022,7 +2022,7 @@ framework like Prometheus.</p>
     </div>
     <a class="headerlink" href="#Command.run"></a>
             <div class="pdoc-code codehilite"><pre><span></span><span id="Command.run-508"><a href="#Command.run-508"><span class="linenos">508</span></a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Runner</span><span class="p">:</span>
-</span><span id="Command.run-509"><a href="#Command.run-509"><span class="linenos">509</span></a>        <span class="sd">&quot;&quot;&quot;Return a `Runner` to run the process incrementally.</span>
+</span><span id="Command.run-509"><a href="#Command.run-509"><span class="linenos">509</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a `Runner` to run the process incrementally.</span>
 </span><span id="Command.run-510"><a href="#Command.run-510"><span class="linenos">510</span></a>
 </span><span id="Command.run-511"><a href="#Command.run-511"><span class="linenos">511</span></a><span class="sd">        ```</span>
 </span><span id="Command.run-512"><a href="#Command.run-512"><span class="linenos">512</span></a><span class="sd">        async with cmd.run() as run:</span>
@@ -2152,7 +2152,7 @@ result = run.result()
 </span><span id="Pipeline-79"><a href="#Pipeline-79"><span class="linenos"> 79</span></a>        <span class="k">return</span> <span class="n">PipeRunner</span><span class="o">.</span><span class="n">run_pipeline</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 </span><span id="Pipeline-80"><a href="#Pipeline-80"><span class="linenos"> 80</span></a>
 </span><span id="Pipeline-81"><a href="#Pipeline-81"><span class="linenos"> 81</span></a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;PipeRunner&quot;</span><span class="p">:</span>
-</span><span id="Pipeline-82"><a href="#Pipeline-82"><span class="linenos"> 82</span></a>        <span class="sd">&quot;&quot;&quot;Return a `Runner` to help run the pipeline incrementally.</span>
+</span><span id="Pipeline-82"><a href="#Pipeline-82"><span class="linenos"> 82</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a `Runner` to help run the pipeline incrementally.</span>
 </span><span id="Pipeline-83"><a href="#Pipeline-83"><span class="linenos"> 83</span></a>
 </span><span id="Pipeline-84"><a href="#Pipeline-84"><span class="linenos"> 84</span></a><span class="sd">        ```</span>
 </span><span id="Pipeline-85"><a href="#Pipeline-85"><span class="linenos"> 85</span></a><span class="sd">        async with pipe.run() as run:</span>
@@ -2431,7 +2431,7 @@ result = run.result()
     </div>
     <a class="headerlink" href="#Pipeline.run"></a>
             <div class="pdoc-code codehilite"><pre><span></span><span id="Pipeline.run-81"><a href="#Pipeline.run-81"><span class="linenos">81</span></a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;PipeRunner&quot;</span><span class="p">:</span>
-</span><span id="Pipeline.run-82"><a href="#Pipeline.run-82"><span class="linenos">82</span></a>        <span class="sd">&quot;&quot;&quot;Return a `Runner` to help run the pipeline incrementally.</span>
+</span><span id="Pipeline.run-82"><a href="#Pipeline.run-82"><span class="linenos">82</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a `Runner` to help run the pipeline incrementally.</span>
 </span><span id="Pipeline.run-83"><a href="#Pipeline.run-83"><span class="linenos">83</span></a>
 </span><span id="Pipeline.run-84"><a href="#Pipeline.run-84"><span class="linenos">84</span></a><span class="sd">        ```</span>
 </span><span id="Pipeline.run-85"><a href="#Pipeline.run-85"><span class="linenos">85</span></a><span class="sd">        async with pipe.run() as run:</span>
@@ -2782,7 +2782,7 @@ result = run.result()
     </div>
     <a class="headerlink" href="#Runner"></a>
             <div class="pdoc-code codehilite"><pre><span></span><span id="Runner-341"><a href="#Runner-341"><span class="linenos">341</span></a><span class="k">class</span> <span class="nc">Runner</span><span class="p">:</span>
-</span><span id="Runner-342"><a href="#Runner-342"><span class="linenos">342</span></a>    <span class="sd">&quot;&quot;&quot;Runner is an asynchronous context manager that runs a command.</span>
+</span><span id="Runner-342"><a href="#Runner-342"><span class="linenos">342</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Runner is an asynchronous context manager that runs a command.</span>
 </span><span id="Runner-343"><a href="#Runner-343"><span class="linenos">343</span></a>
 </span><span id="Runner-344"><a href="#Runner-344"><span class="linenos">344</span></a><span class="sd">    ```</span>
 </span><span id="Runner-345"><a href="#Runner-345"><span class="linenos">345</span></a><span class="sd">    async with cmd.run() as run:</span>
@@ -3603,7 +3603,7 @@ result = run.result()
     </div>
     <a class="headerlink" href="#PipeRunner"></a>
             <div class="pdoc-code codehilite"><pre><span></span><span id="PipeRunner-863"><a href="#PipeRunner-863"><span class="linenos"> 863</span></a><span class="k">class</span> <span class="nc">PipeRunner</span><span class="p">:</span>
-</span><span id="PipeRunner-864"><a href="#PipeRunner-864"><span class="linenos"> 864</span></a>    <span class="sd">&quot;&quot;&quot;PipeRunner is an asynchronous context manager that runs a pipeline.</span>
+</span><span id="PipeRunner-864"><a href="#PipeRunner-864"><span class="linenos"> 864</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;PipeRunner is an asynchronous context manager that runs a pipeline.</span>
 </span><span id="PipeRunner-865"><a href="#PipeRunner-865"><span class="linenos"> 865</span></a>
 </span><span id="PipeRunner-866"><a href="#PipeRunner-866"><span class="linenos"> 866</span></a><span class="sd">    ```</span>
 </span><span id="PipeRunner-867"><a href="#PipeRunner-867"><span class="linenos"> 867</span></a><span class="sd">    async with pipe.run() as run:</span>
@@ -3622,7 +3622,7 @@ result = run.result()
 </span><span id="PipeRunner-880"><a href="#PipeRunner-880"><span class="linenos"> 880</span></a>    <span class="s2">&quot;Pipeline standard error.&quot;</span>
 </span><span id="PipeRunner-881"><a href="#PipeRunner-881"><span class="linenos"> 881</span></a>
 </span><span id="PipeRunner-882"><a href="#PipeRunner-882"><span class="linenos"> 882</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pipe</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">capturing</span><span class="p">):</span>
-</span><span id="PipeRunner-883"><a href="#PipeRunner-883"><span class="linenos"> 883</span></a>        <span class="sd">&quot;&quot;&quot;`capturing=True` indicates we are within an `async with` block and</span>
+</span><span id="PipeRunner-883"><a href="#PipeRunner-883"><span class="linenos"> 883</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;`capturing=True` indicates we are within an `async with` block and</span>
 </span><span id="PipeRunner-884"><a href="#PipeRunner-884"><span class="linenos"> 884</span></a><span class="sd">        client needs to access `stdin` and `stderr` streams.</span>
 </span><span id="PipeRunner-885"><a href="#PipeRunner-885"><span class="linenos"> 885</span></a><span class="sd">        &quot;&quot;&quot;</span>
 </span><span id="PipeRunner-886"><a href="#PipeRunner-886"><span class="linenos"> 886</span></a>        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">pipe</span><span class="o">.</span><span class="n">commands</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span>
@@ -3730,7 +3730,7 @@ result = run.result()
 </span><span id="PipeRunner-988"><a href="#PipeRunner-988"><span class="linenos"> 988</span></a>            <span class="k">raise</span>
 </span><span id="PipeRunner-989"><a href="#PipeRunner-989"><span class="linenos"> 989</span></a>
 </span><span id="PipeRunner-990"><a href="#PipeRunner-990"><span class="linenos"> 990</span></a>    <span class="k">def</span> <span class="nf">_setup_pipeline</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">open_fds</span><span class="p">):</span>
-</span><span id="PipeRunner-991"><a href="#PipeRunner-991"><span class="linenos"> 991</span></a>        <span class="sd">&quot;&quot;&quot;Return the pipeline stitched together with pipe fd&#39;s.</span>
+</span><span id="PipeRunner-991"><a href="#PipeRunner-991"><span class="linenos"> 991</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the pipeline stitched together with pipe fd&#39;s.</span>
 </span><span id="PipeRunner-992"><a href="#PipeRunner-992"><span class="linenos"> 992</span></a>
 </span><span id="PipeRunner-993"><a href="#PipeRunner-993"><span class="linenos"> 993</span></a><span class="sd">        Each created open file descriptor is added to `open_fds` so it can</span>
 </span><span id="PipeRunner-994"><a href="#PipeRunner-994"><span class="linenos"> 994</span></a><span class="sd">        be closed if there&#39;s an exception later.</span>
@@ -3752,7 +3752,7 @@ result = run.result()
 </span><span id="PipeRunner-1010"><a href="#PipeRunner-1010"><span class="linenos">1010</span></a>
 </span><span id="PipeRunner-1011"><a href="#PipeRunner-1011"><span class="linenos">1011</span></a>    <span class="nd">@log_method</span><span class="p">(</span><span class="n">LOG_DETAIL</span><span class="p">)</span>
 </span><span id="PipeRunner-1012"><a href="#PipeRunner-1012"><span class="linenos">1012</span></a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">_setup_capturing</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cmds</span><span class="p">):</span>
-</span><span id="PipeRunner-1013"><a href="#PipeRunner-1013"><span class="linenos">1013</span></a>        <span class="sd">&quot;&quot;&quot;Set up capturing and return (stdin, stdout, stderr) streams.&quot;&quot;&quot;</span>
+</span><span id="PipeRunner-1013"><a href="#PipeRunner-1013"><span class="linenos">1013</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Set up capturing and return (stdin, stdout, stderr) streams.&quot;&quot;&quot;</span>
 </span><span id="PipeRunner-1014"><a href="#PipeRunner-1014"><span class="linenos">1014</span></a>
 </span><span id="PipeRunner-1015"><a href="#PipeRunner-1015"><span class="linenos">1015</span></a>        <span class="n">loop</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">get_event_loop</span><span class="p">()</span>
 </span><span id="PipeRunner-1016"><a href="#PipeRunner-1016"><span class="linenos">1016</span></a>        <span class="n">first_fut</span> <span class="o">=</span> <span class="n">loop</span><span class="o">.</span><span class="n">create_future</span><span class="p">()</span>
@@ -3835,7 +3835,7 @@ result = run.result()
     </div>
     <a class="headerlink" href="#PipeRunner.__init__"></a>
             <div class="pdoc-code codehilite"><pre><span></span><span id="PipeRunner.__init__-882"><a href="#PipeRunner.__init__-882"><span class="linenos">882</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pipe</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">capturing</span><span class="p">):</span>
-</span><span id="PipeRunner.__init__-883"><a href="#PipeRunner.__init__-883"><span class="linenos">883</span></a>        <span class="sd">&quot;&quot;&quot;`capturing=True` indicates we are within an `async with` block and</span>
+</span><span id="PipeRunner.__init__-883"><a href="#PipeRunner.__init__-883"><span class="linenos">883</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;`capturing=True` indicates we are within an `async with` block and</span>
 </span><span id="PipeRunner.__init__-884"><a href="#PipeRunner.__init__-884"><span class="linenos">884</span></a><span class="sd">        client needs to access `stdin` and `stderr` streams.</span>
 </span><span id="PipeRunner.__init__-885"><a href="#PipeRunner.__init__-885"><span class="linenos">885</span></a><span class="sd">        &quot;&quot;&quot;</span>
 </span><span id="PipeRunner.__init__-886"><a href="#PipeRunner.__init__-886"><span class="linenos">886</span></a>        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">pipe</span><span class="o">.</span><span class="n">commands</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span>
@@ -4026,7 +4026,7 @@ client needs to access <code><a href="#PipeRunner.stdin">stdin</a></code> and <c
 </span><span id="DefaultChildWatcher-72"><a href="#DefaultChildWatcher-72"><span class="linenos"> 72</span></a>        <span class="n">callback</span><span class="p">:</span> <span class="n">_CallbackType</span><span class="p">,</span>
 </span><span id="DefaultChildWatcher-73"><a href="#DefaultChildWatcher-73"><span class="linenos"> 73</span></a>        <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
 </span><span id="DefaultChildWatcher-74"><a href="#DefaultChildWatcher-74"><span class="linenos"> 74</span></a>    <span class="p">):</span>
-</span><span id="DefaultChildWatcher-75"><a href="#DefaultChildWatcher-75"><span class="linenos"> 75</span></a>        <span class="sd">&quot;&quot;&quot;Register a new child handler.</span>
+</span><span id="DefaultChildWatcher-75"><a href="#DefaultChildWatcher-75"><span class="linenos"> 75</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Register a new child handler.</span>
 </span><span id="DefaultChildWatcher-76"><a href="#DefaultChildWatcher-76"><span class="linenos"> 76</span></a>
 </span><span id="DefaultChildWatcher-77"><a href="#DefaultChildWatcher-77"><span class="linenos"> 77</span></a><span class="sd">        Arrange for callback(pid, returncode, *args) to be called when</span>
 </span><span id="DefaultChildWatcher-78"><a href="#DefaultChildWatcher-78"><span class="linenos"> 78</span></a><span class="sd">        process &#39;pid&#39; terminates. Specifying another callback for the same</span>
@@ -4042,7 +4042,7 @@ client needs to access <code><a href="#PipeRunner.stdin">stdin</a></code> and <c
 </span><span id="DefaultChildWatcher-88"><a href="#DefaultChildWatcher-88"><span class="linenos"> 88</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_strategy</span><span class="o">.</span><span class="n">watch_pid</span><span class="p">(</span><span class="n">pid</span><span class="p">,</span> <span class="n">callback</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span>  <span class="c1"># ATOMIC: self._strategy</span>
 </span><span id="DefaultChildWatcher-89"><a href="#DefaultChildWatcher-89"><span class="linenos"> 89</span></a>
 </span><span id="DefaultChildWatcher-90"><a href="#DefaultChildWatcher-90"><span class="linenos"> 90</span></a>    <span class="k">def</span> <span class="nf">remove_child_handler</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pid</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
-</span><span id="DefaultChildWatcher-91"><a href="#DefaultChildWatcher-91"><span class="linenos"> 91</span></a>        <span class="sd">&quot;&quot;&quot;Removes the handler for process &#39;pid&#39;.</span>
+</span><span id="DefaultChildWatcher-91"><a href="#DefaultChildWatcher-91"><span class="linenos"> 91</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Removes the handler for process &#39;pid&#39;.</span>
 </span><span id="DefaultChildWatcher-92"><a href="#DefaultChildWatcher-92"><span class="linenos"> 92</span></a>
 </span><span id="DefaultChildWatcher-93"><a href="#DefaultChildWatcher-93"><span class="linenos"> 93</span></a><span class="sd">        The function returns True if the handler was successfully removed,</span>
 </span><span id="DefaultChildWatcher-94"><a href="#DefaultChildWatcher-94"><span class="linenos"> 94</span></a><span class="sd">        False if there was nothing to remove.</span>
@@ -4050,7 +4050,7 @@ client needs to access <code><a href="#PipeRunner.stdin">stdin</a></code> and <c
 </span><span id="DefaultChildWatcher-96"><a href="#DefaultChildWatcher-96"><span class="linenos"> 96</span></a>        <span class="k">return</span> <span class="kc">False</span>  <span class="c1"># not supported</span>
 </span><span id="DefaultChildWatcher-97"><a href="#DefaultChildWatcher-97"><span class="linenos"> 97</span></a>
 </span><span id="DefaultChildWatcher-98"><a href="#DefaultChildWatcher-98"><span class="linenos"> 98</span></a>    <span class="k">def</span> <span class="nf">attach_loop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">loop</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">asyncio</span><span class="o">.</span><span class="n">AbstractEventLoop</span><span class="p">]):</span>
-</span><span id="DefaultChildWatcher-99"><a href="#DefaultChildWatcher-99"><span class="linenos"> 99</span></a>        <span class="sd">&quot;&quot;&quot;Attach the watcher to an event loop.</span>
+</span><span id="DefaultChildWatcher-99"><a href="#DefaultChildWatcher-99"><span class="linenos"> 99</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Attach the watcher to an event loop.</span>
 </span><span id="DefaultChildWatcher-100"><a href="#DefaultChildWatcher-100"><span class="linenos">100</span></a>
 </span><span id="DefaultChildWatcher-101"><a href="#DefaultChildWatcher-101"><span class="linenos">101</span></a><span class="sd">        If the watcher was previously attached to an event loop, then it is</span>
 </span><span id="DefaultChildWatcher-102"><a href="#DefaultChildWatcher-102"><span class="linenos">102</span></a><span class="sd">        first detached before attaching to the new loop.</span>
@@ -4060,7 +4060,7 @@ client needs to access <code><a href="#PipeRunner.stdin">stdin</a></code> and <c
 </span><span id="DefaultChildWatcher-106"><a href="#DefaultChildWatcher-106"><span class="linenos">106</span></a>        <span class="c1"># no op</span>
 </span><span id="DefaultChildWatcher-107"><a href="#DefaultChildWatcher-107"><span class="linenos">107</span></a>
 </span><span id="DefaultChildWatcher-108"><a href="#DefaultChildWatcher-108"><span class="linenos">108</span></a>    <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="DefaultChildWatcher-109"><a href="#DefaultChildWatcher-109"><span class="linenos">109</span></a>        <span class="sd">&quot;&quot;&quot;Close the watcher.</span>
+</span><span id="DefaultChildWatcher-109"><a href="#DefaultChildWatcher-109"><span class="linenos">109</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Close the watcher.</span>
 </span><span id="DefaultChildWatcher-110"><a href="#DefaultChildWatcher-110"><span class="linenos">110</span></a>
 </span><span id="DefaultChildWatcher-111"><a href="#DefaultChildWatcher-111"><span class="linenos">111</span></a><span class="sd">        This must be called to make sure that any underlying resource is freed.</span>
 </span><span id="DefaultChildWatcher-112"><a href="#DefaultChildWatcher-112"><span class="linenos">112</span></a><span class="sd">        &quot;&quot;&quot;</span>
@@ -4072,7 +4072,7 @@ client needs to access <code><a href="#PipeRunner.stdin">stdin</a></code> and <c
 </span><span id="DefaultChildWatcher-118"><a href="#DefaultChildWatcher-118"><span class="linenos">118</span></a>            <span class="n">strategy</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 </span><span id="DefaultChildWatcher-119"><a href="#DefaultChildWatcher-119"><span class="linenos">119</span></a>
 </span><span id="DefaultChildWatcher-120"><a href="#DefaultChildWatcher-120"><span class="linenos">120</span></a>    <span class="k">def</span> <span class="nf">is_active</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="DefaultChildWatcher-121"><a href="#DefaultChildWatcher-121"><span class="linenos">121</span></a>        <span class="sd">&quot;&quot;&quot;Return ``True`` if the watcher is active and is used by the event loop.</span>
+</span><span id="DefaultChildWatcher-121"><a href="#DefaultChildWatcher-121"><span class="linenos">121</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Return ``True`` if the watcher is active and is used by the event loop.</span>
 </span><span id="DefaultChildWatcher-122"><a href="#DefaultChildWatcher-122"><span class="linenos">122</span></a>
 </span><span id="DefaultChildWatcher-123"><a href="#DefaultChildWatcher-123"><span class="linenos">123</span></a><span class="sd">        Return True if the watcher is installed and ready to handle process exit</span>
 </span><span id="DefaultChildWatcher-124"><a href="#DefaultChildWatcher-124"><span class="linenos">124</span></a><span class="sd">        notifications.</span>
@@ -4080,11 +4080,11 @@ client needs to access <code><a href="#PipeRunner.stdin">stdin</a></code> and <c
 </span><span id="DefaultChildWatcher-126"><a href="#DefaultChildWatcher-126"><span class="linenos">126</span></a>        <span class="k">return</span> <span class="kc">True</span>
 </span><span id="DefaultChildWatcher-127"><a href="#DefaultChildWatcher-127"><span class="linenos">127</span></a>
 </span><span id="DefaultChildWatcher-128"><a href="#DefaultChildWatcher-128"><span class="linenos">128</span></a>    <span class="k">def</span> <span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="DefaultChildWatcher-129"><a href="#DefaultChildWatcher-129"><span class="linenos">129</span></a>        <span class="sd">&quot;&quot;&quot;Enter the watcher&#39;s context and allow starting new processes.&quot;&quot;&quot;</span>
+</span><span id="DefaultChildWatcher-129"><a href="#DefaultChildWatcher-129"><span class="linenos">129</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Enter the watcher&#39;s context and allow starting new processes.&quot;&quot;&quot;</span>
 </span><span id="DefaultChildWatcher-130"><a href="#DefaultChildWatcher-130"><span class="linenos">130</span></a>        <span class="k">return</span> <span class="bp">self</span>
 </span><span id="DefaultChildWatcher-131"><a href="#DefaultChildWatcher-131"><span class="linenos">131</span></a>
 </span><span id="DefaultChildWatcher-132"><a href="#DefaultChildWatcher-132"><span class="linenos">132</span></a>    <span class="k">def</span> <span class="fm">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">_args</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
-</span><span id="DefaultChildWatcher-133"><a href="#DefaultChildWatcher-133"><span class="linenos">133</span></a>        <span class="sd">&quot;&quot;&quot;Exit the watcher&#39;s context&quot;&quot;&quot;</span>
+</span><span id="DefaultChildWatcher-133"><a href="#DefaultChildWatcher-133"><span class="linenos">133</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Exit the watcher&#39;s context&quot;&quot;&quot;</span>
 </span><span id="DefaultChildWatcher-134"><a href="#DefaultChildWatcher-134"><span class="linenos">134</span></a>        <span class="k">return</span> <span class="kc">None</span>
 </span><span id="DefaultChildWatcher-135"><a href="#DefaultChildWatcher-135"><span class="linenos">135</span></a>
 </span><span id="DefaultChildWatcher-136"><a href="#DefaultChildWatcher-136"><span class="linenos">136</span></a>    <span class="k">def</span> <span class="nf">_init_strategy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -4150,7 +4150,7 @@ client needs to access <code><a href="#PipeRunner.stdin">stdin</a></code> and <c
 </span><span id="DefaultChildWatcher.add_child_handler-72"><a href="#DefaultChildWatcher.add_child_handler-72"><span class="linenos">72</span></a>        <span class="n">callback</span><span class="p">:</span> <span class="n">_CallbackType</span><span class="p">,</span>
 </span><span id="DefaultChildWatcher.add_child_handler-73"><a href="#DefaultChildWatcher.add_child_handler-73"><span class="linenos">73</span></a>        <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
 </span><span id="DefaultChildWatcher.add_child_handler-74"><a href="#DefaultChildWatcher.add_child_handler-74"><span class="linenos">74</span></a>    <span class="p">):</span>
-</span><span id="DefaultChildWatcher.add_child_handler-75"><a href="#DefaultChildWatcher.add_child_handler-75"><span class="linenos">75</span></a>        <span class="sd">&quot;&quot;&quot;Register a new child handler.</span>
+</span><span id="DefaultChildWatcher.add_child_handler-75"><a href="#DefaultChildWatcher.add_child_handler-75"><span class="linenos">75</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Register a new child handler.</span>
 </span><span id="DefaultChildWatcher.add_child_handler-76"><a href="#DefaultChildWatcher.add_child_handler-76"><span class="linenos">76</span></a>
 </span><span id="DefaultChildWatcher.add_child_handler-77"><a href="#DefaultChildWatcher.add_child_handler-77"><span class="linenos">77</span></a><span class="sd">        Arrange for callback(pid, returncode, *args) to be called when</span>
 </span><span id="DefaultChildWatcher.add_child_handler-78"><a href="#DefaultChildWatcher.add_child_handler-78"><span class="linenos">78</span></a><span class="sd">        process &#39;pid&#39; terminates. Specifying another callback for the same</span>
@@ -4190,7 +4190,7 @@ process replaces the previous handler.</p>
     </div>
     <a class="headerlink" href="#DefaultChildWatcher.remove_child_handler"></a>
             <div class="pdoc-code codehilite"><pre><span></span><span id="DefaultChildWatcher.remove_child_handler-90"><a href="#DefaultChildWatcher.remove_child_handler-90"><span class="linenos">90</span></a>    <span class="k">def</span> <span class="nf">remove_child_handler</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pid</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
-</span><span id="DefaultChildWatcher.remove_child_handler-91"><a href="#DefaultChildWatcher.remove_child_handler-91"><span class="linenos">91</span></a>        <span class="sd">&quot;&quot;&quot;Removes the handler for process &#39;pid&#39;.</span>
+</span><span id="DefaultChildWatcher.remove_child_handler-91"><a href="#DefaultChildWatcher.remove_child_handler-91"><span class="linenos">91</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Removes the handler for process &#39;pid&#39;.</span>
 </span><span id="DefaultChildWatcher.remove_child_handler-92"><a href="#DefaultChildWatcher.remove_child_handler-92"><span class="linenos">92</span></a>
 </span><span id="DefaultChildWatcher.remove_child_handler-93"><a href="#DefaultChildWatcher.remove_child_handler-93"><span class="linenos">93</span></a><span class="sd">        The function returns True if the handler was successfully removed,</span>
 </span><span id="DefaultChildWatcher.remove_child_handler-94"><a href="#DefaultChildWatcher.remove_child_handler-94"><span class="linenos">94</span></a><span class="sd">        False if there was nothing to remove.</span>
@@ -4219,7 +4219,7 @@ False if there was nothing to remove.</p>
     </div>
     <a class="headerlink" href="#DefaultChildWatcher.attach_loop"></a>
             <div class="pdoc-code codehilite"><pre><span></span><span id="DefaultChildWatcher.attach_loop-98"><a href="#DefaultChildWatcher.attach_loop-98"><span class="linenos"> 98</span></a>    <span class="k">def</span> <span class="nf">attach_loop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">loop</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">asyncio</span><span class="o">.</span><span class="n">AbstractEventLoop</span><span class="p">]):</span>
-</span><span id="DefaultChildWatcher.attach_loop-99"><a href="#DefaultChildWatcher.attach_loop-99"><span class="linenos"> 99</span></a>        <span class="sd">&quot;&quot;&quot;Attach the watcher to an event loop.</span>
+</span><span id="DefaultChildWatcher.attach_loop-99"><a href="#DefaultChildWatcher.attach_loop-99"><span class="linenos"> 99</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Attach the watcher to an event loop.</span>
 </span><span id="DefaultChildWatcher.attach_loop-100"><a href="#DefaultChildWatcher.attach_loop-100"><span class="linenos">100</span></a>
 </span><span id="DefaultChildWatcher.attach_loop-101"><a href="#DefaultChildWatcher.attach_loop-101"><span class="linenos">101</span></a><span class="sd">        If the watcher was previously attached to an event loop, then it is</span>
 </span><span id="DefaultChildWatcher.attach_loop-102"><a href="#DefaultChildWatcher.attach_loop-102"><span class="linenos">102</span></a><span class="sd">        first detached before attaching to the new loop.</span>
@@ -4252,7 +4252,7 @@ first detached before attaching to the new loop.</p>
     </div>
     <a class="headerlink" href="#DefaultChildWatcher.close"></a>
             <div class="pdoc-code codehilite"><pre><span></span><span id="DefaultChildWatcher.close-108"><a href="#DefaultChildWatcher.close-108"><span class="linenos">108</span></a>    <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="DefaultChildWatcher.close-109"><a href="#DefaultChildWatcher.close-109"><span class="linenos">109</span></a>        <span class="sd">&quot;&quot;&quot;Close the watcher.</span>
+</span><span id="DefaultChildWatcher.close-109"><a href="#DefaultChildWatcher.close-109"><span class="linenos">109</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Close the watcher.</span>
 </span><span id="DefaultChildWatcher.close-110"><a href="#DefaultChildWatcher.close-110"><span class="linenos">110</span></a>
 </span><span id="DefaultChildWatcher.close-111"><a href="#DefaultChildWatcher.close-111"><span class="linenos">111</span></a><span class="sd">        This must be called to make sure that any underlying resource is freed.</span>
 </span><span id="DefaultChildWatcher.close-112"><a href="#DefaultChildWatcher.close-112"><span class="linenos">112</span></a><span class="sd">        &quot;&quot;&quot;</span>
@@ -4284,7 +4284,7 @@ first detached before attaching to the new loop.</p>
     </div>
     <a class="headerlink" href="#DefaultChildWatcher.is_active"></a>
             <div class="pdoc-code codehilite"><pre><span></span><span id="DefaultChildWatcher.is_active-120"><a href="#DefaultChildWatcher.is_active-120"><span class="linenos">120</span></a>    <span class="k">def</span> <span class="nf">is_active</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="DefaultChildWatcher.is_active-121"><a href="#DefaultChildWatcher.is_active-121"><span class="linenos">121</span></a>        <span class="sd">&quot;&quot;&quot;Return ``True`` if the watcher is active and is used by the event loop.</span>
+</span><span id="DefaultChildWatcher.is_active-121"><a href="#DefaultChildWatcher.is_active-121"><span class="linenos">121</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Return ``True`` if the watcher is active and is used by the event loop.</span>
 </span><span id="DefaultChildWatcher.is_active-122"><a href="#DefaultChildWatcher.is_active-122"><span class="linenos">122</span></a>
 </span><span id="DefaultChildWatcher.is_active-123"><a href="#DefaultChildWatcher.is_active-123"><span class="linenos">123</span></a><span class="sd">        Return True if the watcher is installed and ready to handle process exit</span>
 </span><span id="DefaultChildWatcher.is_active-124"><a href="#DefaultChildWatcher.is_active-124"><span class="linenos">124</span></a><span class="sd">        notifications.</span>
