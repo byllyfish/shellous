@@ -61,6 +61,9 @@ max-attributes = 12
 
 [tool.pyright]
 pythonPlatform = "All"
+ignore = [
+  "tests/**/*.py"
+]
 strict = [
   "shellous/__init__.py",
   "shellous/command.py",
