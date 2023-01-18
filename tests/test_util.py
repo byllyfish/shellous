@@ -99,6 +99,8 @@ def test_environment_dict():
     assert len(d1) == 1
     assert d1["a"] == "1"
     assert {(k, v) for k, v in d1.items()} == {("a", "1")}
+    assert list(d1.keys()) == ["a"]
+    assert list(d1.values()) == ["1"]
     assert repr(d1) == "{'a': '1'}"
 
     d2 = EnvironmentDict(None, {"b": 2})
@@ -114,3 +116,7 @@ def test_environment_dict():
     d4 = EnvironmentDict(d1, {"c": 3})
     assert d1 == {"a": "1"}
     assert d4 == {"a": "1", "c": "3"}
+
+    # EnvironmentDict is immutable.
+    with pytest.raises(TypeError):
+        d1["b"] = "2"
