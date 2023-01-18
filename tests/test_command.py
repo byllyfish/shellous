@@ -7,7 +7,7 @@ import pickle
 from pathlib import Path
 
 import pytest
-from immutables import Map as ImmutableDict
+
 from shellous import sh
 from shellous.command import Options
 
@@ -172,10 +172,10 @@ def test_command_env_init():
 
     ash = sh.env(A=1)
     cmd2 = ash("echo")
-    assert cmd2.options.env == ImmutableDict(A="1")
+    assert cmd2.options.env == dict(A="1")
 
     cmd3 = cmd2.env(B=2)
-    assert cmd3.options.env == ImmutableDict(A="1", B="2")
+    assert cmd3.options.env == dict(A="1", B="2")
 
 
 def test_options_merge_env():
@@ -198,7 +198,7 @@ def test_options_merge_env():
 
     sh2 = sh.env(B=2)
     assert sh2 is not sh
-    assert sh2.options.env == ImmutableDict(B="2")
+    assert sh2.options.env == dict(B="2")
 
 
 def test_options_hash_eq():

@@ -25,14 +25,13 @@ from typing import (
     Union,
 )
 
-from immutables import Map as ImmutableDict
 from typing_extensions import Self
 
 import shellous
 from shellous.pty_util import PtyAdapterOrBool
 from shellous.redirect import STDIN_TYPES, STDOUT_APPEND_TYPES, STDOUT_TYPES, Redirect
 from shellous.runner import Runner
-from shellous.util import coerce_env, context_aenter, context_aexit
+from shellous.util import EnvironmentDict, context_aenter, context_aexit
 
 
 # Sentinel used in "mergable" keyword arguments to indicate that a value
@@ -61,7 +60,7 @@ _Audit_Fn_T = Optional[
 class Options:  # pylint: disable=too-many-instance-attributes
     "Concrete class for per-command options."
 
-    env: Optional[ImmutableDict[str, str]] = field(default=None, repr=False)
+    env: Optional[EnvironmentDict] = field(default=None, repr=False)
     "Additional environment variables for command."
 
     inherit_env: bool = True
@@ -147,7 +146,7 @@ class Options:  # pylint: disable=too-many-instance-attributes
             return os.environ | self.env
 
         if self.env:
-            return dict(self.env)  # convert ImmutableDict to dict (uvloop)
+            return dict(self.env)  # make copy of dict
         return {}
 
     def set_stdin(self, input_: Any, close: bool) -> Self:
@@ -185,11 +184,9 @@ class Options:  # pylint: disable=too-many-instance-attributes
             error_close=close,
         )
 
-    def set_env(self, env: dict[str, Any]) -> Self:
+    def set_env(self, updates: dict[str, Any]) -> Self:
         "Return new options with augmented environment."
-        current = self.env or ImmutableDict()
-        updates = coerce_env(env)
-        new_env = current.update(**updates)
+        new_env = EnvironmentDict(self.env, updates)
         return dataclasses.replace(self, env=new_env)
 
     def set(self, kwds: dict[str, Any]) -> Self:

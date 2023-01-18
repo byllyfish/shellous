@@ -6,7 +6,7 @@ import io
 import os
 import shutil
 from asyncio.subprocess import Process
-from collections import defaultdict
+from collections import abc, defaultdict
 from types import TracebackType
 from typing import Any, AsyncContextManager, Coroutine, Iterable, Optional, Union
 
@@ -176,3 +176,38 @@ async def context_aexit(
         _CTXT_STACK.set(None)
 
     return await ctxt_manager.__aexit__(exc_type, exc_value, exc_tb)
+
+
+class EnvironmentDict(abc.Mapping[str, str]):
+    "Read-only, hashable dictionary that stores environment variables."
+
+    _data: dict[str, str]
+
+    def __init__(self, base: Optional["EnvironmentDict"], updates: dict[str, Any]):
+        if base is None:
+            self._data = {}
+        else:
+            self._data = base._data.copy()
+        self._data.update(**coerce_env(updates))
+
+    def __getitem__(self, key: str) -> str:
+        return self._data[key]
+
+    def __len__(self) -> int:
+        return len(self._data)
+
+    def __iter__(self):
+        return iter(self._data)
+
+    def __hash__(self) -> int:
+        return hash(tuple((key, value) for key, value in self._data.items()))
+
+    def __eq__(self, rhs: object) -> bool:
+        if isinstance(rhs, dict):
+            return self._data == rhs
+        if not isinstance(rhs, EnvironmentDict):
+            return False
+        return self._data == rhs._data
+
+    def __repr__(self) -> str:
+        return repr(self._data)

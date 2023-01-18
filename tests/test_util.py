@@ -4,7 +4,15 @@ import asyncio
 import os
 
 import pytest
-from shellous.util import close_fds, coerce_env, decode, uninterrupted, verify_dev_fd
+
+from shellous.util import (
+    EnvironmentDict,
+    close_fds,
+    coerce_env,
+    decode,
+    uninterrupted,
+    verify_dev_fd,
+)
 
 
 def test_decode():
@@ -82,3 +90,33 @@ def test_verify_dev_fd():
 
     with pytest.raises(RuntimeError, match="fdescfs"):
         verify_dev_fd(999)
+
+
+def test_environment_dict():
+    "Test the EnvironmentDict class."
+
+    d1 = EnvironmentDict(None, {"a": 1})
+    assert len(d1) == 1
+    assert d1["a"] == "1"
+    assert {(k, v) for k, v in d1.items()} == {("a", "1")}
+    assert list(d1.keys()) == ["a"]
+    assert list(d1.values()) == ["1"]
+    assert repr(d1) == "{'a': '1'}"
+
+    d2 = EnvironmentDict(None, {"b": 2})
+    d3 = EnvironmentDict(None, {"a": 1})
+
+    assert d1 != d2
+    assert d1 == d3
+    assert d1 == {"a": "1"}
+
+    assert hash(d1) == hash(d3)
+    assert hash(d1) != hash(d2)
+
+    d4 = EnvironmentDict(d1, {"c": 3})
+    assert d1 == {"a": "1"}
+    assert d4 == {"a": "1", "c": "3"}
+
+    # EnvironmentDict is immutable.
+    with pytest.raises(TypeError):
+        d1["b"] = "2"
