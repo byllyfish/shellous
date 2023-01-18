@@ -51,7 +51,7 @@ def close_fds(open_fds: Iterable[Union[io.IOBase, int]]) -> None:
                         try:
                             os.close(obj)
                         except OSError as ex:
-                            LOGGER.warning("os.close ex=%r", ex)
+                            LOGGER.warning("os.close ex=%r", ex, exc_info=True)
                 else:
                     obj.close()
         finally:
