@@ -16,14 +16,20 @@ from shellous.harvest import harvest, harvest_results
 from shellous.log import LOG_DETAIL, LOG_ENTER, LOG_EXIT, LOGGER, log_method, log_timer
 from shellous.redirect import Redirect
 from shellous.result import Result, make_result
-from shellous.util import close_fds, poll_wait_pid, uninterrupted, verify_dev_fd, which
+from shellous.util import (
+    BSD_DERIVED,
+    SupportsClose,
+    close_fds,
+    poll_wait_pid,
+    uninterrupted,
+    verify_dev_fd,
+    which,
+)
 
 _KILL_TIMEOUT = 3.0
 _CLOSE_TIMEOUT = 0.25
 _UNKNOWN_EXIT_CODE = 255
 _UNLAUNCHED_EXIT_CODE = -255
-
-_BSD = sys.platform.startswith("freebsd") or sys.platform == "darwin"
 
 AUDIT_EVENT_SUBPROCESS_SPAWN = "byllyfish/shellous.subprocess_spawn"
 """Audit event raised by sys.audit() when shellous runs a subprocess.
@@ -66,7 +72,7 @@ class _RunOptions:
 
     command: "shellous.Command"
     encoding: Optional[str]
-    open_fds: list[Union[int, io.IOBase]]
+    open_fds: list[Union[int, SupportsClose]]
     input_bytes: Optional[bytes]
     pos_args: list[Union[str, bytes]]
     kwd_args: dict[str, Any]
@@ -162,7 +168,7 @@ class _RunOptions:
         self.kwd_args["close_fds"] = True
         self.open_fds.extend(new_fds)
 
-        if _BSD:
+        if BSD_DERIVED:
             verify_dev_fd(new_fds[0])
 
         return new_args
@@ -312,17 +318,18 @@ class _RunOptions:
         """
 
         self.pty_fds = pty_util.open_pty(pty)
-        child_fd = int(self.pty_fds.child_fd)
 
         # On BSD-derived systems like FreeBSD and Darwin, we delay closing the
         # pty's child_fd in the parent process until after the first read
         # succeeds. On Linux, we close the child_fd as soon as possible.
 
-        if not _BSD:
-            self.open_fds.append(child_fd)
+        if not BSD_DERIVED:
+            self.open_fds.append(self.pty_fds.child_fd)
 
         if LOG_DETAIL:
             LOGGER.info("_setup_pty1: %r", self.pty_fds)
+
+        child_fd = int(self.pty_fds.child_fd)
 
         if stdin == asyncio.subprocess.PIPE:
             stdin = child_fd
@@ -435,7 +442,7 @@ class Runner:
 
     def _is_bsd_pty(self):
         "Return true if we're running a pty on BSD."
-        return _BSD and self._options.pty_fds
+        return BSD_DERIVED and self._options.pty_fds
 
     @log_method(LOG_DETAIL)
     async def _wait(self):
@@ -633,7 +640,9 @@ class Runner:
         "Start the subprocess and assign to `self.proc`."
         with log_timer("asyncio.create_subprocess_exec"):
             sys.audit(AUDIT_EVENT_SUBPROCESS_SPAWN, opts.pos_args[0])
-            with pty_util.set_ignore_child_watcher(_BSD and opts.pty_fds is not None):
+            with pty_util.set_ignore_child_watcher(
+                BSD_DERIVED and opts.pty_fds is not None
+            ):
                 self._proc = await asyncio.create_subprocess_exec(
                     *opts.pos_args,
                     **opts.kwd_args,
