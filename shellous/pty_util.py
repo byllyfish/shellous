@@ -19,7 +19,7 @@ except ImportError:  # pragma: no cover
     pass
 
 from .log import LOG_DETAIL, LOGGER, log_method
-from .util import close_fds
+from .util import BSD_DERIVED, close_fds
 
 _STDOUT_FILENO = 1
 _LFLAG = 3
@@ -114,12 +114,14 @@ class PtyStreamReaderProtocol(asyncio.StreamReaderProtocol):
             exc = None
         super().connection_lost(exc)
 
-    def data_received(self, data: bytes):
-        "Close child_fd when first data received."
-        if self._pty_child_fd:
-            self._pty_child_fd.close()
-            self._pty_child_fd = None
-        return super().data_received(data)
+    if BSD_DERIVED:
+        # BSD only: On Linux, use the default behavior.
+        def data_received(self, data: bytes):
+            "Close child_fd when first data received."
+            if self._pty_child_fd:
+                self._pty_child_fd.close()
+                self._pty_child_fd = None
+            return super().data_received(data)
 
     def eof_received(self):
         "Log when EOF received."

@@ -2,13 +2,21 @@
 
 import asyncio
 import contextvars
-import io
 import os
 import shutil
+import sys
 from asyncio.subprocess import Process
 from collections import abc, defaultdict
 from types import TracebackType
-from typing import Any, AsyncContextManager, Coroutine, Iterable, Optional, Union
+from typing import (
+    Any,
+    AsyncContextManager,
+    Coroutine,
+    Iterable,
+    Optional,
+    Protocol,
+    Union,
+)
 
 from .log import LOG_DETAIL, LOGGER, log_timer
 
@@ -17,6 +25,9 @@ _CTXT_STACK = contextvars.ContextVar[Optional[dict[int, list[Any]]]](
     "ctxt_stack",
     default=None,
 )
+
+# True if OS is derived from BSD.
+BSD_DERIVED = sys.platform.startswith("freebsd") or sys.platform == "darwin"
 
 
 def decode(data: Optional[bytes], encoding: str) -> str:
@@ -41,7 +52,14 @@ def coerce_env(env: dict[str, Any]) -> dict[str, str]:
     return {str(key): _coerce(key, value) for key, value in env.items()}
 
 
-def close_fds(open_fds: Iterable[Union[io.IOBase, int]]) -> None:
+class SupportsClose(Protocol):
+    "Protocol for objects with a close() method."
+
+    def close(self) -> None:
+        ...
+
+
+def close_fds(open_fds: Iterable[Union[SupportsClose, int]]) -> None:
     "Close open file descriptors or file objects."
     with log_timer("close_fds"):
         try:
@@ -51,7 +69,7 @@ def close_fds(open_fds: Iterable[Union[io.IOBase, int]]) -> None:
                         try:
                             os.close(obj)
                         except OSError as ex:
-                            LOGGER.warning("os.close ex=%r", ex)
+                            LOGGER.warning("os.close ex=%r", ex, stack_info=True)
                 else:
                     obj.close()
         finally:
