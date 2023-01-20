@@ -1,6 +1,14 @@
 Shellous Change Log
 ===================
 
+0.21.0
+------
+
+- [BUGFIX] Fix an issue with pty support on Linux. The bug led to closing a file descriptor that was already closed.
+- [LATERAL] Add stronger typing support internally.
+- [LATERAL] Refactor _RunOptions internal class.
+- [LATERAL] Remove dependency on immutables module.
+
 0.20.0
 ------
 
