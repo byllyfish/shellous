@@ -592,8 +592,8 @@ async def test_pipeline_async_context_manager():
     assert run.name == "tr|cat"
     assert (
         repr(run) == "<PipeRunner 'tr|cat' results=["
-        "Result(output_bytes=b'', exit_code=0, cancelled=False, encoding='utf-8', extra=None), "
-        "Result(output_bytes=b'', exit_code=0, cancelled=False, encoding='utf-8', extra=None)]>"
+        "Result(output_bytes=b'', exit_code=0, cancelled=False, encoding='utf-8', extra=None, error_bytes=b''), "
+        "Result(output_bytes=b'', exit_code=0, cancelled=False, encoding='utf-8', extra=None, error_bytes=b'')]>"
     )
 
 
@@ -869,6 +869,7 @@ async def test_process_substitution_error_exit_1():
         cancelled=False,
         encoding="utf-8",
         extra=None,  # FIXME: This should indicate that "sleep" failed...
+        error_bytes=b"usage: sleep seconds\n",
     )
 
 
@@ -1566,7 +1567,7 @@ $4 ~ /^[0-9]+/ { sub(/[0-9]+/, "N", $9); print $4, $5, $9 }
 async def test_open_file_descriptors():
     "Test what file descriptors are open in the subprocess."
 
-    cmd = sh("cat").stdin(sh.CAPTURE)
+    cmd = sh("cat").stdin(sh.CAPTURE).stderr(sh.DEVNULL)
     lsof = sh("lsof", "-n", "-P", "-p").stderr(sh.STDOUT)
     awk = sh("awk", _AWK_SCRIPT).stderr(sh.STDOUT)
 
@@ -1589,7 +1590,7 @@ async def test_open_file_descriptors():
 async def test_open_file_descriptors_unclosed_fds():
     "Test what file descriptors are open in the subprocess (close_fds=False)."
 
-    cmd = sh("cat").stdin(sh.CAPTURE)
+    cmd = sh("cat").stdin(sh.CAPTURE).stderr(sh.DEVNULL)
     lsof = sh("lsof", "-n", "-P", "-p").stderr(sh.STDOUT)
     awk = sh("awk", _AWK_SCRIPT).stderr(sh.STDOUT)
 
@@ -1670,7 +1671,7 @@ def _limited_descriptors(limit):
 @pytest.mark.skipif(_is_uvloop() or _IS_PY3_11, reason="uvloop")
 async def test_limited_file_descriptors(report_children):
     "Test running out of file descriptors."
-    cmds = [sh("sleep", "1")] * 2
+    cmds = [sh("sleep", "1").stderr(sh.DEVNULL)] * 2
 
     with _limited_descriptors(13):
         with pytest.raises(

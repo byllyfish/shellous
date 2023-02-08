@@ -24,6 +24,7 @@ class Redirect(enum.IntEnum):
     DEVNULL = asyncio.subprocess.DEVNULL  # -3
     CAPTURE = -10
     INHERIT = -11
+    RESULT = -12
     DEFAULT = -20
 
     def is_custom(self):
@@ -31,6 +32,7 @@ class Redirect(enum.IntEnum):
         return self in {
             Redirect.CAPTURE,
             Redirect.INHERIT,
+            Redirect.RESULT,
             Redirect.DEFAULT,
         }
 
@@ -69,7 +71,7 @@ _DEFAULT_REDIRECTION: dict[tuple[int, bool], Union[bytes, Redirect]] = {
     (_STDIN, True): Redirect.CAPTURE,
     (_STDOUT, False): Redirect.CAPTURE,
     (_STDOUT, True): Redirect.CAPTURE,
-    (_STDERR, False): Redirect.DEVNULL,
+    (_STDERR, False): Redirect.RESULT,
     (_STDERR, True): Redirect.STDOUT,
 }
 

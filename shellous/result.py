@@ -36,6 +36,9 @@ class Result:
     extra: Any = None
     "Used for pipeline results (see `PipeResult`)."
 
+    error_bytes: bytes = b""
+    "Limited standard error from command if not redirected."
+
     @property
     def output(self) -> str:
         "Output of command as a string."

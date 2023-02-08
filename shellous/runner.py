@@ -78,6 +78,7 @@ class _RunOptions:
     kwd_args: dict[str, Any]
     subcmds: "list[Union[shellous.Command, shellous.Pipeline]]"
     pty_fds: Optional[pty_util.PtyFds]
+    error_bytes: Optional[bytearray]
 
     def __init__(self, command: "shellous.Command"):
         self.command = command
@@ -88,6 +89,7 @@ class _RunOptions:
         self.kwd_args = {}
         self.subcmds = []
         self.pty_fds = None
+        self.error_bytes = None
 
     def __enter__(self):
         "Set up I/O redirections."
@@ -287,7 +289,10 @@ class _RunOptions:
             self.open_fds.append(stdout)
         elif isinstance(output, Redirect) and output.is_custom():
             # Custom support for Redirect constants.
-            if output == Redirect.INHERIT:
+            if output == Redirect.RESULT:
+                assert stdout == asyncio.subprocess.PIPE
+                self.error_bytes = bytearray()
+            elif output == Redirect.INHERIT:
                 stdout = sys_stream
             else:
                 # CAPTURE uses stdout == PIPE.
@@ -419,6 +424,7 @@ class Runner:
             code,
             self._cancelled,
             self._options.encoding,
+            error_bytes=bytes(self._options.error_bytes or b""),
         )
 
         return make_result(self.command, result, self._cancelled, self._timed_out)
@@ -579,7 +585,10 @@ class Runner:
                 stdin, stdout = opts.pty_fds.writer, opts.pty_fds.reader
 
             if stderr is not None:
-                error = opts.command.options.error
+                if opts.error_bytes is not None:
+                    error = opts.error_bytes
+                else:
+                    error = opts.command.options.error
                 stderr = self._setup_output_sink(stderr, error, opts.encoding, "stderr")
 
             if stdout is not None:
