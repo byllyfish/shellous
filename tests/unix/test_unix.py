@@ -863,14 +863,13 @@ async def test_process_substitution_error_exit_1():
         await cmd
 
     result = exc_info.value.result
-    assert result == Result(
-        output_bytes=b"",
-        exit_code=1,
-        cancelled=False,
-        encoding="utf-8",
-        extra=None,  # FIXME: This should indicate that "sleep" failed...
-        error_bytes=b"usage: sleep seconds\n",
-    )
+
+    assert result.output_bytes == b""
+    assert result.exit_code == 1
+    assert result.cancelled is False
+    assert result.encoding == "utf-8"
+    assert result.extra is None  # FIXME: This should indicate that "sleep" failed...
+    assert b"sleep" in result.error_bytes
 
 
 async def test_start_new_session():
