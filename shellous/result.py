@@ -7,6 +7,9 @@ from typing import Any, Optional, Union
 import shellous
 from shellous.util import decode
 
+# Limit number of bytes of stderr to store in Result object.
+RESULT_STDERR_LIMIT = 1024
+
 
 class ResultError(Exception):
     "Represents a non-zero exit status."
@@ -45,6 +48,13 @@ class Result:
         if self.encoding is None:
             raise TypeError("use output_bytes instead; encoding is None")
         return decode(self.output_bytes, self.encoding)
+
+    @property
+    def error(self) -> str:
+        "Error from command as a string (if it is not redirected)."
+        if self.encoding is None:
+            raise TypeError("use error_bytes instead; encoding is None")
+        return decode(self.error_bytes, self.encoding)
 
     def __bool__(self) -> bool:
         "Return true if exit_code is 0."

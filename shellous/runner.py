@@ -15,7 +15,7 @@ from shellous import pty_util
 from shellous.harvest import harvest, harvest_results
 from shellous.log import LOG_DETAIL, LOG_ENTER, LOG_EXIT, LOGGER, log_method, log_timer
 from shellous.redirect import Redirect
-from shellous.result import Result, make_result
+from shellous.result import RESULT_STDERR_LIMIT, Result, make_result
 from shellous.util import (
     BSD_DERIVED,
     SupportsClose,
@@ -585,11 +585,15 @@ class Runner:
                 stdin, stdout = opts.pty_fds.writer, opts.pty_fds.reader
 
             if stderr is not None:
+                limit = -1
                 if opts.error_bytes is not None:
                     error = opts.error_bytes
+                    limit = RESULT_STDERR_LIMIT
                 else:
                     error = opts.command.options.error
-                stderr = self._setup_output_sink(stderr, error, opts.encoding, "stderr")
+                stderr = self._setup_output_sink(
+                    stderr, error, opts.encoding, "stderr", limit
+                )
 
             if stdout is not None:
                 output = opts.command.options.output
@@ -723,7 +727,7 @@ class Runner:
 
         return stream
 
-    def _setup_output_sink(self, stream, sink, encoding, tag):
+    def _setup_output_sink(self, stream, sink, encoding, tag, limit=-1):
         "Set up a task to write to custom output sink."
         if isinstance(sink, io.StringIO):
             if encoding is None:
@@ -734,7 +738,11 @@ class Runner:
             self.add_task(redir.copy_bytesio(stream, sink), tag)
             stream = None
         elif isinstance(sink, bytearray):
-            self.add_task(redir.copy_bytearray(stream, sink), tag)
+            # N.B. `limit` is only supported for bytearray.
+            if limit >= 0:
+                self.add_task(redir.copy_bytearray_limit(stream, sink, limit), tag)
+            else:
+                self.add_task(redir.copy_bytearray(stream, sink), tag)
             stream = None
         elif isinstance(sink, Logger):
             self.add_task(redir.copy_logger(stream, sink, encoding), tag)

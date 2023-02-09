@@ -238,6 +238,23 @@ async def copy_bytearray(source: asyncio.StreamReader, dest: bytearray):
 
 
 @log_method(LOG_DETAIL)
+async def copy_bytearray_limit(
+    source: asyncio.StreamReader,
+    dest: bytearray,
+    limit: int,
+):
+    "Copy limited number of bytes from source stream to dest bytearray."
+    while True:
+        data = await source.read(_CHUNK_SIZE)
+        if not data:
+            break
+        dest.extend(data)
+        if len(dest) > limit:
+            del dest[limit:]
+            break
+
+
+@log_method(LOG_DETAIL)
 async def copy_streamwriter(source: asyncio.StreamReader, dest: asyncio.StreamWriter):
     "Copy bytes from source stream to dest StreamWriter."
     while True:

@@ -12,6 +12,7 @@ from pathlib import Path
 
 import asyncstdlib as asl
 import pytest
+
 from shellous import PipeResult, Result, ResultError, sh
 from shellous.harvest import harvest_results
 
@@ -88,6 +89,11 @@ def count_cmd(python_script):
     return python_script.env(SHELLOUS_CMD="count").set(alt_name="count")
 
 
+@pytest.fixture
+def error_cmd(python_script):
+    return python_script.env(SHELLOUS_CMD="error").set(alt_name="error")
+
+
 async def test_echo(echo_cmd):
     result = await echo_cmd("abc", "def")
     assert result == "abc def"
@@ -123,6 +129,16 @@ async def test_bulk(bulk_cmd):
 async def test_count(count_cmd):
     result = await count_cmd(5)
     assert result == "1\n2\n3\n4\n5\n"
+
+
+async def test_error(error_cmd):
+    result = await error_cmd.stderr(sh.RESULT).result
+
+    assert result.exit_code == 0
+    assert result.output_bytes == b""
+    assert result.error_bytes == b"1" * 1024
+    assert result.output == ""
+    assert result.error == "1" * 1024
 
 
 async def test_nonexistant_cmd():
