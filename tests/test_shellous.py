@@ -421,6 +421,12 @@ async def test_redirect_stdout_logger(echo_cmd, caplog):
     ]
 
 
+async def test_redirect_stdout_result(echo_cmd):
+    "Test redirecting stdout to RESULT."
+    with pytest.raises(TypeError, match="unsupported output type"):
+        await echo_cmd("abc").stdout(sh.RESULT)
+
+
 async def test_redirect_stdin_bytearray(cat_cmd):
     "Test reading stdin from bytearray."
     buf = bytearray("123", "utf-8")
@@ -458,6 +464,12 @@ async def test_redirect_stdin_inherit(echo_cmd):
     except io.UnsupportedOperation:
         # Raises UnsupportedOperation under code coverage.
         pass
+
+
+async def test_redirect_stdin_result(echo_cmd):
+    "Test reading stdin from RESULT."
+    with pytest.raises(TypeError, match="unsupported input type"):
+        await echo_cmd("abc").stdin(sh.RESULT)
 
 
 async def test_redirect_stdin_unsupported_type(cat_cmd):

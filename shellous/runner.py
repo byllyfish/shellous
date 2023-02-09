@@ -256,6 +256,8 @@ class _RunOptions:
             # Custom support for Redirect constants.
             if input_ == Redirect.INHERIT:
                 stdin = sys.stdin
+            elif input_ == Redirect.RESULT:
+                raise TypeError(f"unsupported input type: {input_!r}")
             else:
                 # CAPTURE uses stdin == PIPE.
                 assert input_ == Redirect.CAPTURE
@@ -290,6 +292,9 @@ class _RunOptions:
         elif isinstance(output, Redirect) and output.is_custom():
             # Custom support for Redirect constants.
             if output == Redirect.RESULT:
+                # We do not support redirecting stdout to RESULT (only stderr).
+                if sys_stream == sys.stdout:
+                    raise TypeError(f"unsupported output type: {output!r}")
                 assert stdout == asyncio.subprocess.PIPE
                 self.error_bytes = bytearray()
             elif output == Redirect.INHERIT:
