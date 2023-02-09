@@ -253,6 +253,12 @@ async def copy_bytearray_limit(
             del dest[limit:]
             break
 
+    if data:
+        # After reaching the limit, continue to read and discard bytes from
+        # source to avoid possible blocking/deadlock inside the source program.
+        while await source.read(_CHUNK_SIZE):
+            pass
+
 
 @log_method(LOG_DETAIL)
 async def copy_streamwriter(source: asyncio.StreamReader, dest: asyncio.StreamWriter):

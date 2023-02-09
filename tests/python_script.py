@@ -62,6 +62,10 @@ elif SHELLOUS_CMD == "error":
     sys.stderr.buffer.write(b"2" * 1024)
     sys.stderr.buffer.write(b"3" * 1024)
     sys.stderr.buffer.write(b"4" * 1024)
+
+    if len(sys.argv) > 1:
+        sys.stderr.buffer.write(b"1234" * (1024 * 1024 + 1))
+
     sys.stderr.buffer.flush()
 
 else:

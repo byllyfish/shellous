@@ -141,6 +141,16 @@ async def test_error(error_cmd):
     assert result.error == "1" * 1024
 
 
+async def test_error_bulk(error_cmd):
+    result = await error_cmd("1").env(SHELLOUS_EXIT_CODE="13").stderr(sh.RESULT).result
+
+    assert result.exit_code == 13
+    assert result.output_bytes == b""
+    assert result.error_bytes == b"1" * 1024
+    assert result.output == ""
+    assert result.error == "1" * 1024
+
+
 async def test_nonexistant_cmd():
     with pytest.raises(FileNotFoundError):
         await sh("non_existant_command").set(return_result=True)
