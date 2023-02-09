@@ -1,13 +1,14 @@
 "Implements support for Results."
 
 import asyncio
+import sys
 from dataclasses import dataclass
 from typing import Any, Optional, Union
 
 import shellous
 from shellous.util import decode
 
-# Limit number of bytes of stderr to store in Result object.
+# Limit number of bytes of stderr stored in Result object.
 RESULT_STDERR_LIMIT = 1024
 
 
@@ -20,7 +21,10 @@ class ResultError(Exception):
         return self.args[0]
 
 
-@dataclass(frozen=True, kw_only=True)
+_KW_ONLY = {"kw_only": True} if sys.version_info >= (3, 10) else {}
+
+
+@dataclass(frozen=True, **_KW_ONLY)
 class Result:
     "Concrete class for the result of a Command."
 
