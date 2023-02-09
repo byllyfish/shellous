@@ -194,8 +194,9 @@ async def test_echo_cancel_incomplete(echo_cmd):
 
     assert exc_info.type is ResultError
     assert exc_info.value.result == Result(
-        output_bytes=b"abc",
         exit_code=CANCELLED_EXIT_CODE,
+        output_bytes=b"abc",
+        error_bytes=b"",
         cancelled=True,
         encoding="utf-8",
         extra=None,
@@ -229,8 +230,9 @@ async def test_echo_cancel_stringio_incomplete(echo_cmd):
     assert buf.getvalue() == "abc"
     assert exc_info.type is ResultError
     assert exc_info.value.result == Result(
-        output_bytes=b"",
         exit_code=CANCELLED_EXIT_CODE,
+        output_bytes=b"",
+        error_bytes=b"",
         cancelled=True,
         encoding="utf-8",
         extra=None,
@@ -304,8 +306,9 @@ async def test_pipe_cancel_incomplete(echo_cmd, cat_cmd):
 
     assert exc_info.type is ResultError
     assert exc_info.value.result == Result(
-        output_bytes=b"abc",
         exit_code=0,
+        output_bytes=b"abc",
+        error_bytes=b"",
         cancelled=True,
         encoding="utf-8",
         extra=(
@@ -329,8 +332,9 @@ async def test_pipe_error_cmd1(echo_cmd, tr_cmd):
 
     assert exc_info.value.result in (
         Result(
-            output_bytes=b"ABC",
             exit_code=3,
+            output_bytes=b"ABC",
+            error_bytes=b"",
             cancelled=False,
             encoding="utf-8",
             extra=(
@@ -339,8 +343,9 @@ async def test_pipe_error_cmd1(echo_cmd, tr_cmd):
             ),
         ),
         Result(
-            output_bytes=b"",  # only difference
             exit_code=3,
+            output_bytes=b"",  # only difference
+            error_bytes=b"",
             cancelled=False,
             encoding="utf-8",
             extra=(
@@ -362,8 +367,9 @@ async def test_pipe_error_cmd2(echo_cmd, tr_cmd):
 
     assert exc_info.value.result in (
         Result(
-            output_bytes=b"ABC",
             exit_code=5,
+            output_bytes=b"ABC",
+            error_bytes=b"",
             cancelled=False,
             encoding="utf-8",
             extra=(
@@ -372,8 +378,9 @@ async def test_pipe_error_cmd2(echo_cmd, tr_cmd):
             ),
         ),
         Result(
-            output_bytes=b"ABC",
             exit_code=5,
+            output_bytes=b"ABC",
+            error_bytes=b"",
             cancelled=False,
             encoding="utf-8",
             extra=(
@@ -524,8 +531,9 @@ async def test_broken_pipe_in_failed_pipeline(cat_cmd, echo_cmd):
     if exc_info.type == ResultError:
         assert exc_info.value.result in [
             Result(
-                output_bytes=b"abc",
                 exit_code=7,
+                output_bytes=b"abc",
+                error_bytes=b"",
                 cancelled=False,
                 encoding="utf-8",
                 extra=(
@@ -534,8 +542,9 @@ async def test_broken_pipe_in_failed_pipeline(cat_cmd, echo_cmd):
                 ),
             ),
             Result(
-                output_bytes=b"abc",
                 exit_code=7,
+                output_bytes=b"abc",
+                error_bytes=b"",
                 cancelled=False,
                 encoding="utf-8",
                 extra=(
@@ -825,8 +834,9 @@ async def test_quick_cancel(echo_cmd):
         await task
 
     assert exc_info.value.result == Result(
-        output_bytes=b"",
         exit_code=UNLAUNCHED_EXIT_CODE,
+        output_bytes=b"",
+        error_bytes=b"",
         cancelled=True,
         encoding="utf-8",
         extra=None,
@@ -1155,8 +1165,9 @@ async def test_command_with_timeout_incomplete_result(sleep_cmd):
     result = await sleep(10).set(timeout=0.1)
 
     assert result == Result(
-        output_bytes=b"",
         exit_code=CANCELLED_EXIT_CODE,
+        output_bytes=b"",
+        error_bytes=b"",
         cancelled=True,
         encoding="utf-8",
         extra=None,
@@ -1171,8 +1182,9 @@ async def test_command_with_timeout_incomplete_resulterror(sleep_cmd):
         await sleep(10).set(timeout=0.1)
 
     assert exc_info.value.result == Result(
-        output_bytes=b"",
         exit_code=CANCELLED_EXIT_CODE,
+        output_bytes=b"",
+        error_bytes=b"",
         cancelled=True,
         encoding="utf-8",
         extra=None,
@@ -1257,8 +1269,9 @@ async def test_command_timeout_incomplete_result(echo_cmd):
         await cmd
 
     assert exc_info.value.result == Result(
-        output_bytes=b"abc",
         exit_code=CANCELLED_EXIT_CODE,
+        output_bytes=b"abc",
+        error_bytes=b"",
         cancelled=True,
         encoding="utf-8",
         extra=None,
@@ -1280,8 +1293,9 @@ async def test_command_timeout_incomplete_result_exit_code(echo_cmd):
         await cmd
 
     assert exc_info.value.result == Result(
-        output_bytes=b"abc",
         exit_code=CANCELLED_EXIT_CODE,
+        output_bytes=b"abc",
+        error_bytes=b"",
         cancelled=True,
         encoding="utf-8",
         extra=None,
@@ -1438,8 +1452,9 @@ async def test_process_pool_executor(echo_cmd, report_children):
         result = await fut
 
     assert result == Result(
-        output_bytes=b"abc",
         exit_code=0,
+        output_bytes=b"abc",
+        error_bytes=b"",
         cancelled=False,
         encoding="utf-8",
         extra=None,

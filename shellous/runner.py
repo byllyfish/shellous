@@ -425,11 +425,11 @@ class Runner:
         assert code is not None
 
         result = Result(
-            output_bytes,
-            code,
-            self._cancelled,
-            self._options.encoding,
+            exit_code=code,
+            output_bytes=output_bytes,
             error_bytes=bytes(self._options.error_bytes or b""),
+            cancelled=self._cancelled,
+            encoding=self._options.encoding,
         )
 
         return make_result(self.command, result, self._cancelled, self._timed_out)

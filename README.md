@@ -127,7 +127,7 @@ When a command fails, it raises a `ResultError` exception:
 >>> await sh("cat", "does_not_exist")
 Traceback (most recent call last):
   ...
-shellous.result.ResultError: Result(output_bytes=b'', exit_code=1, cancelled=False, encoding='utf-8', extra=None, error_bytes=b'cat: does_not_exist: No such file or directory\n')
+shellous.result.ResultError: Result(exit_code=1, output_bytes=b'', error_bytes=b'cat: does_not_exist: No such file or directory\n', cancelled=False, encoding='utf-8', extra=None)
 ```
 
 The `ResultError` exception contains a `Result` object with the exit_code.
@@ -148,7 +148,7 @@ When a command completes successfully, it returns the standard output (unless it
 
 ```pycon
 >>> await echo("abc").result
-Result(output_bytes=b'abc', exit_code=0, cancelled=False, encoding='utf-8', extra=None, error_bytes=b'')
+Result(exit_code=0, output_bytes=b'abc', error_bytes=b'', cancelled=False, encoding='utf-8', extra=None)
 ```
 
 A `Result` object contains the command's `exit_code` in addition to its output. A `Result` is True if 
@@ -267,7 +267,7 @@ option.
 cat: does_not_exist: No such file or directory
 Traceback (most recent call last):
   ...
-shellous.result.ResultError: Result(output_bytes=b'', exit_code=1, cancelled=False, encoding='utf-8', extra=None, error_bytes=b'')
+shellous.result.ResultError: Result(exit_code=1, output_bytes=b'', error_bytes=b'', cancelled=False, encoding='utf-8', extra=None)
 ```
 
 ### Default Redirections

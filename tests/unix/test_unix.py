@@ -82,8 +82,9 @@ async def test_echo_with_result():
     "Test running the echo command using the Result object."
     result = await sh("echo", "-n", "foo").set(return_result=True)
     assert result == Result(
-        output_bytes=b"foo",
         exit_code=0,
+        output_bytes=b"foo",
+        error_bytes=b"",
         cancelled=False,
         encoding="utf-8",
         extra=None,
@@ -214,8 +215,9 @@ async def test_timeout_fail():
 
     assert exc_info.type is ResultError
     assert exc_info.value.result == Result(
-        output_bytes=b"",
         exit_code=_CANCELLED_EXIT_CODE,
+        output_bytes=b"",
+        error_bytes=b"",
         cancelled=True,
         encoding="utf-8",
         extra=None,
@@ -235,8 +237,9 @@ async def test_timeout_fail_no_capturing():
         await asyncio.wait_for(cmd, 0.25)
 
     assert exc_info.value.result == Result(
-        output_bytes=b"",
         exit_code=_CANCELLED_EXIT_CODE,
+        output_bytes=b"",
+        error_bytes=b"",
         cancelled=True,
         encoding="utf-8",
         extra=None,
@@ -284,8 +287,9 @@ async def test_exit_code_error():
         await sh("false")
 
     assert exc_info.value.result == Result(
-        output_bytes=b"",
         exit_code=1,
+        output_bytes=b"",
+        error_bytes=b"",
         cancelled=False,
         encoding="utf-8",
         extra=None,
@@ -518,8 +522,9 @@ async def test_pipeline_with_result():
     tr = sh("tr", "[:lower:]", "[:upper:]").set(return_result=True)
     result = await (echo | tr)
     assert result == Result(
-        output_bytes=b"XYZ",
         exit_code=0,
+        output_bytes=b"XYZ",
+        error_bytes=b"",
         cancelled=False,
         encoding="utf-8",
         extra=(
@@ -592,8 +597,8 @@ async def test_pipeline_async_context_manager():
     assert run.name == "tr|cat"
     assert (
         repr(run) == "<PipeRunner 'tr|cat' results=["
-        "Result(output_bytes=b'', exit_code=0, cancelled=False, encoding='utf-8', extra=None, error_bytes=b''), "
-        "Result(output_bytes=b'', exit_code=0, cancelled=False, encoding='utf-8', extra=None, error_bytes=b'')]>"
+        "Result(exit_code=0, output_bytes=b'', error_bytes=b'', cancelled=False, encoding='utf-8', extra=None), "
+        "Result(exit_code=0, output_bytes=b'', error_bytes=b'', cancelled=False, encoding='utf-8', extra=None)]>"
     )
 
 
@@ -723,8 +728,9 @@ async def test_shell_cmd():
 
     assert exc_info.type is ResultError
     assert exc_info.value.result == Result(
-        output_bytes=b"",
         exit_code=_CANCELLED_EXIT_CODE,
+        output_bytes=b"",
+        error_bytes=b"",
         cancelled=True,
         encoding="utf-8",
         extra=None,
@@ -1327,8 +1333,9 @@ async def test_pty_timeout_fail():
 
     assert exc_info.type is ResultError
     assert exc_info.value.result == Result(
-        output_bytes=b"",
         exit_code=_CANCELLED_EXIT_CODE,
+        output_bytes=b"",
+        error_bytes=b"",
         cancelled=True,
         encoding="utf-8",
         extra=None,

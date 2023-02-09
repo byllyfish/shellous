@@ -20,15 +20,18 @@ class ResultError(Exception):
         return self.args[0]
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, kw_only=True)
 class Result:
     "Concrete class for the result of a Command."
+
+    exit_code: int
+    "Command's exit code."
 
     output_bytes: Optional[bytes]
     "Output of command as bytes. May be None if there is no output."
 
-    exit_code: int
-    "Command's exit code."
+    error_bytes: bytes
+    "Limited standard error from command if not redirected."
 
     cancelled: bool
     "Command was cancelled."
@@ -38,9 +41,6 @@ class Result:
 
     extra: Any = None
     "Used for pipeline results (see `PipeResult`)."
-
-    error_bytes: bytes = b""
-    "Limited standard error from command if not redirected."
 
     @property
     def output(self) -> str:
@@ -106,11 +106,12 @@ def make_result(
         assert key_result is not None  # (pyright)
 
         result = Result(
-            last.output_bytes,
-            key_result.exit_code,
-            cancelled,
-            last.encoding,
-            tuple(PipeResult.from_result(r) for r in result_list),
+            exit_code=key_result.exit_code,
+            output_bytes=last.output_bytes,
+            error_bytes=last.error_bytes,
+            cancelled=cancelled,
+            encoding=last.encoding,
+            extra=tuple(PipeResult.from_result(r) for r in result_list),
         )
     else:
         result = result_list
