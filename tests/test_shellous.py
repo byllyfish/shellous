@@ -12,6 +12,7 @@ from pathlib import Path
 
 import asyncstdlib as asl
 import pytest
+
 from shellous import PipeResult, Result, ResultError, sh
 from shellous.harvest import harvest_results
 
@@ -88,6 +89,11 @@ def count_cmd(python_script):
     return python_script.env(SHELLOUS_CMD="count").set(alt_name="count")
 
 
+@pytest.fixture
+def error_cmd(python_script):
+    return python_script.env(SHELLOUS_CMD="error").set(alt_name="error")
+
+
 async def test_echo(echo_cmd):
     result = await echo_cmd("abc", "def")
     assert result == "abc def"
@@ -123,6 +129,26 @@ async def test_bulk(bulk_cmd):
 async def test_count(count_cmd):
     result = await count_cmd(5)
     assert result == "1\n2\n3\n4\n5\n"
+
+
+async def test_error(error_cmd):
+    result = await error_cmd.stderr(sh.RESULT).result
+
+    assert result.exit_code == 0
+    assert result.output_bytes == b""
+    assert result.error_bytes == b"1" * 1024
+    assert result.output == ""
+    assert result.error == "1" * 1024
+
+
+async def test_error_bulk(error_cmd):
+    result = await error_cmd("1").env(SHELLOUS_EXIT_CODE="13").stderr(sh.RESULT).result
+
+    assert result.exit_code == 13
+    assert result.output_bytes == b""
+    assert result.error_bytes == b"1" * 1024
+    assert result.output == ""
+    assert result.error == "1" * 1024
 
 
 async def test_nonexistant_cmd():
@@ -168,8 +194,9 @@ async def test_echo_cancel_incomplete(echo_cmd):
 
     assert exc_info.type is ResultError
     assert exc_info.value.result == Result(
-        output_bytes=b"abc",
         exit_code=CANCELLED_EXIT_CODE,
+        output_bytes=b"abc",
+        error_bytes=b"",
         cancelled=True,
         encoding="utf-8",
         extra=None,
@@ -203,8 +230,9 @@ async def test_echo_cancel_stringio_incomplete(echo_cmd):
     assert buf.getvalue() == "abc"
     assert exc_info.type is ResultError
     assert exc_info.value.result == Result(
-        output_bytes=b"",
         exit_code=CANCELLED_EXIT_CODE,
+        output_bytes=b"",
+        error_bytes=b"",
         cancelled=True,
         encoding="utf-8",
         extra=None,
@@ -278,8 +306,9 @@ async def test_pipe_cancel_incomplete(echo_cmd, cat_cmd):
 
     assert exc_info.type is ResultError
     assert exc_info.value.result == Result(
-        output_bytes=b"abc",
         exit_code=0,
+        output_bytes=b"abc",
+        error_bytes=b"",
         cancelled=True,
         encoding="utf-8",
         extra=(
@@ -303,8 +332,9 @@ async def test_pipe_error_cmd1(echo_cmd, tr_cmd):
 
     assert exc_info.value.result in (
         Result(
-            output_bytes=b"ABC",
             exit_code=3,
+            output_bytes=b"ABC",
+            error_bytes=b"",
             cancelled=False,
             encoding="utf-8",
             extra=(
@@ -313,8 +343,9 @@ async def test_pipe_error_cmd1(echo_cmd, tr_cmd):
             ),
         ),
         Result(
-            output_bytes=b"",  # only difference
             exit_code=3,
+            output_bytes=b"",  # only difference
+            error_bytes=b"",
             cancelled=False,
             encoding="utf-8",
             extra=(
@@ -336,8 +367,9 @@ async def test_pipe_error_cmd2(echo_cmd, tr_cmd):
 
     assert exc_info.value.result in (
         Result(
-            output_bytes=b"ABC",
             exit_code=5,
+            output_bytes=b"ABC",
+            error_bytes=b"",
             cancelled=False,
             encoding="utf-8",
             extra=(
@@ -346,8 +378,9 @@ async def test_pipe_error_cmd2(echo_cmd, tr_cmd):
             ),
         ),
         Result(
-            output_bytes=b"ABC",
             exit_code=5,
+            output_bytes=b"ABC",
+            error_bytes=b"",
             cancelled=False,
             encoding="utf-8",
             extra=(
@@ -395,6 +428,12 @@ async def test_redirect_stdout_logger(echo_cmd, caplog):
     ]
 
 
+async def test_redirect_stdout_result(echo_cmd):
+    "Test redirecting stdout to RESULT."
+    with pytest.raises(TypeError, match="unsupported output type"):
+        await echo_cmd("abc").stdout(sh.RESULT)
+
+
 async def test_redirect_stdin_bytearray(cat_cmd):
     "Test reading stdin from bytearray."
     buf = bytearray("123", "utf-8")
@@ -432,6 +471,12 @@ async def test_redirect_stdin_inherit(echo_cmd):
     except io.UnsupportedOperation:
         # Raises UnsupportedOperation under code coverage.
         pass
+
+
+async def test_redirect_stdin_result(echo_cmd):
+    "Test reading stdin from RESULT."
+    with pytest.raises(TypeError, match="unsupported input type"):
+        await echo_cmd("abc").stdin(sh.RESULT)
 
 
 async def test_redirect_stdin_unsupported_type(cat_cmd):
@@ -486,8 +531,9 @@ async def test_broken_pipe_in_failed_pipeline(cat_cmd, echo_cmd):
     if exc_info.type == ResultError:
         assert exc_info.value.result in [
             Result(
-                output_bytes=b"abc",
                 exit_code=7,
+                output_bytes=b"abc",
+                error_bytes=b"",
                 cancelled=False,
                 encoding="utf-8",
                 extra=(
@@ -496,8 +542,9 @@ async def test_broken_pipe_in_failed_pipeline(cat_cmd, echo_cmd):
                 ),
             ),
             Result(
-                output_bytes=b"abc",
                 exit_code=7,
+                output_bytes=b"abc",
+                error_bytes=b"",
                 cancelled=False,
                 encoding="utf-8",
                 extra=(
@@ -787,8 +834,9 @@ async def test_quick_cancel(echo_cmd):
         await task
 
     assert exc_info.value.result == Result(
-        output_bytes=b"",
         exit_code=UNLAUNCHED_EXIT_CODE,
+        output_bytes=b"",
+        error_bytes=b"",
         cancelled=True,
         encoding="utf-8",
         extra=None,
@@ -1117,8 +1165,9 @@ async def test_command_with_timeout_incomplete_result(sleep_cmd):
     result = await sleep(10).set(timeout=0.1)
 
     assert result == Result(
-        output_bytes=b"",
         exit_code=CANCELLED_EXIT_CODE,
+        output_bytes=b"",
+        error_bytes=b"",
         cancelled=True,
         encoding="utf-8",
         extra=None,
@@ -1133,8 +1182,9 @@ async def test_command_with_timeout_incomplete_resulterror(sleep_cmd):
         await sleep(10).set(timeout=0.1)
 
     assert exc_info.value.result == Result(
-        output_bytes=b"",
         exit_code=CANCELLED_EXIT_CODE,
+        output_bytes=b"",
+        error_bytes=b"",
         cancelled=True,
         encoding="utf-8",
         extra=None,
@@ -1219,8 +1269,9 @@ async def test_command_timeout_incomplete_result(echo_cmd):
         await cmd
 
     assert exc_info.value.result == Result(
-        output_bytes=b"abc",
         exit_code=CANCELLED_EXIT_CODE,
+        output_bytes=b"abc",
+        error_bytes=b"",
         cancelled=True,
         encoding="utf-8",
         extra=None,
@@ -1242,8 +1293,9 @@ async def test_command_timeout_incomplete_result_exit_code(echo_cmd):
         await cmd
 
     assert exc_info.value.result == Result(
-        output_bytes=b"abc",
         exit_code=CANCELLED_EXIT_CODE,
+        output_bytes=b"abc",
+        error_bytes=b"",
         cancelled=True,
         encoding="utf-8",
         extra=None,
@@ -1400,8 +1452,9 @@ async def test_process_pool_executor(echo_cmd, report_children):
         result = await fut
 
     assert result == Result(
-        output_bytes=b"abc",
         exit_code=0,
+        output_bytes=b"abc",
+        error_bytes=b"",
         cancelled=False,
         encoding="utf-8",
         extra=None,

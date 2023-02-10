@@ -24,6 +24,7 @@ class Redirect(enum.IntEnum):
     DEVNULL = asyncio.subprocess.DEVNULL  # -3
     CAPTURE = -10
     INHERIT = -11
+    RESULT = -12
     DEFAULT = -20
 
     def is_custom(self):
@@ -31,6 +32,7 @@ class Redirect(enum.IntEnum):
         return self in {
             Redirect.CAPTURE,
             Redirect.INHERIT,
+            Redirect.RESULT,
             Redirect.DEFAULT,
         }
 
@@ -69,7 +71,7 @@ _DEFAULT_REDIRECTION: dict[tuple[int, bool], Union[bytes, Redirect]] = {
     (_STDIN, True): Redirect.CAPTURE,
     (_STDOUT, False): Redirect.CAPTURE,
     (_STDOUT, True): Redirect.CAPTURE,
-    (_STDERR, False): Redirect.DEVNULL,
+    (_STDERR, False): Redirect.RESULT,
     (_STDERR, True): Redirect.STDOUT,
 }
 
@@ -233,6 +235,29 @@ async def copy_bytearray(source: asyncio.StreamReader, dest: bytearray):
         if not data:
             break
         dest.extend(data)
+
+
+@log_method(LOG_DETAIL)
+async def copy_bytearray_limit(
+    source: asyncio.StreamReader,
+    dest: bytearray,
+    limit: int,
+):
+    "Copy limited number of bytes from source stream to dest bytearray."
+    while True:
+        data = await source.read(_CHUNK_SIZE)
+        if not data:
+            break
+        dest.extend(data)
+        if len(dest) > limit:
+            del dest[limit:]
+            break
+
+    if data:
+        # After reaching the limit, continue to read and discard bytes from
+        # source to avoid possible blocking/deadlock inside the source program.
+        while await source.read(_CHUNK_SIZE):
+            pass
 
 
 @log_method(LOG_DETAIL)

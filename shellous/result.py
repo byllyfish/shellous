@@ -1,11 +1,15 @@
 "Implements support for Results."
 
 import asyncio
+import sys
 from dataclasses import dataclass
 from typing import Any, Optional, Union
 
 import shellous
 from shellous.util import decode
+
+# Limit number of bytes of stderr stored in Result object.
+RESULT_STDERR_LIMIT = 1024
 
 
 class ResultError(Exception):
@@ -17,15 +21,21 @@ class ResultError(Exception):
         return self.args[0]
 
 
-@dataclass(frozen=True)
+_KW_ONLY = {"kw_only": True} if sys.version_info >= (3, 10) else {}
+
+
+@dataclass(frozen=True, **_KW_ONLY)
 class Result:
     "Concrete class for the result of a Command."
+
+    exit_code: int
+    "Command's exit code."
 
     output_bytes: Optional[bytes]
     "Output of command as bytes. May be None if there is no output."
 
-    exit_code: int
-    "Command's exit code."
+    error_bytes: bytes
+    "Limited standard error from command if not redirected."
 
     cancelled: bool
     "Command was cancelled."
@@ -42,6 +52,13 @@ class Result:
         if self.encoding is None:
             raise TypeError("use output_bytes instead; encoding is None")
         return decode(self.output_bytes, self.encoding)
+
+    @property
+    def error(self) -> str:
+        "Error from command as a string (if it is not redirected)."
+        if self.encoding is None:
+            raise TypeError("use error_bytes instead; encoding is None")
+        return decode(self.error_bytes, self.encoding)
 
     def __bool__(self) -> bool:
         "Return true if exit_code is 0."
@@ -93,11 +110,12 @@ def make_result(
         assert key_result is not None  # (pyright)
 
         result = Result(
-            last.output_bytes,
-            key_result.exit_code,
-            cancelled,
-            last.encoding,
-            tuple(PipeResult.from_result(r) for r in result_list),
+            exit_code=key_result.exit_code,
+            output_bytes=last.output_bytes,
+            error_bytes=last.error_bytes,
+            cancelled=cancelled,
+            encoding=last.encoding,
+            extra=tuple(PipeResult.from_result(r) for r in result_list),
         )
     else:
         result = result_list

@@ -56,6 +56,18 @@ elif SHELLOUS_CMD == "count":
     for i in range(arg):
         _write(f"{i+1}\n".encode("utf-8"))
 
+elif SHELLOUS_CMD == "error":
+    # Write 4KB data to stderr.
+    sys.stderr.buffer.write(b"1" * 1024)
+    sys.stderr.buffer.write(b"2" * 1024)
+    sys.stderr.buffer.write(b"3" * 1024)
+    sys.stderr.buffer.write(b"4" * 1024)
+
+    if len(sys.argv) > 1:
+        sys.stderr.buffer.write(b"1234" * (1024 * 1024 + 1))
+
+    sys.stderr.buffer.flush()
+
 else:
     raise NotImplementedError
 

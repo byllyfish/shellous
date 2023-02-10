@@ -82,8 +82,9 @@ async def test_echo_with_result():
     "Test running the echo command using the Result object."
     result = await sh("echo", "-n", "foo").set(return_result=True)
     assert result == Result(
-        output_bytes=b"foo",
         exit_code=0,
+        output_bytes=b"foo",
+        error_bytes=b"",
         cancelled=False,
         encoding="utf-8",
         extra=None,
@@ -214,8 +215,9 @@ async def test_timeout_fail():
 
     assert exc_info.type is ResultError
     assert exc_info.value.result == Result(
-        output_bytes=b"",
         exit_code=_CANCELLED_EXIT_CODE,
+        output_bytes=b"",
+        error_bytes=b"",
         cancelled=True,
         encoding="utf-8",
         extra=None,
@@ -235,8 +237,9 @@ async def test_timeout_fail_no_capturing():
         await asyncio.wait_for(cmd, 0.25)
 
     assert exc_info.value.result == Result(
-        output_bytes=b"",
         exit_code=_CANCELLED_EXIT_CODE,
+        output_bytes=b"",
+        error_bytes=b"",
         cancelled=True,
         encoding="utf-8",
         extra=None,
@@ -284,8 +287,9 @@ async def test_exit_code_error():
         await sh("false")
 
     assert exc_info.value.result == Result(
-        output_bytes=b"",
         exit_code=1,
+        output_bytes=b"",
+        error_bytes=b"",
         cancelled=False,
         encoding="utf-8",
         extra=None,
@@ -518,8 +522,9 @@ async def test_pipeline_with_result():
     tr = sh("tr", "[:lower:]", "[:upper:]").set(return_result=True)
     result = await (echo | tr)
     assert result == Result(
-        output_bytes=b"XYZ",
         exit_code=0,
+        output_bytes=b"XYZ",
+        error_bytes=b"",
         cancelled=False,
         encoding="utf-8",
         extra=(
@@ -592,8 +597,8 @@ async def test_pipeline_async_context_manager():
     assert run.name == "tr|cat"
     assert (
         repr(run) == "<PipeRunner 'tr|cat' results=["
-        "Result(output_bytes=b'', exit_code=0, cancelled=False, encoding='utf-8', extra=None), "
-        "Result(output_bytes=b'', exit_code=0, cancelled=False, encoding='utf-8', extra=None)]>"
+        "Result(exit_code=0, output_bytes=b'', error_bytes=b'', cancelled=False, encoding='utf-8', extra=None), "
+        "Result(exit_code=0, output_bytes=b'', error_bytes=b'', cancelled=False, encoding='utf-8', extra=None)]>"
     )
 
 
@@ -723,8 +728,9 @@ async def test_shell_cmd():
 
     assert exc_info.type is ResultError
     assert exc_info.value.result == Result(
-        output_bytes=b"",
         exit_code=_CANCELLED_EXIT_CODE,
+        output_bytes=b"",
+        error_bytes=b"",
         cancelled=True,
         encoding="utf-8",
         extra=None,
@@ -863,13 +869,13 @@ async def test_process_substitution_error_exit_1():
         await cmd
 
     result = exc_info.value.result
-    assert result == Result(
-        output_bytes=b"",
-        exit_code=1,
-        cancelled=False,
-        encoding="utf-8",
-        extra=None,  # FIXME: This should indicate that "sleep" failed...
-    )
+
+    assert result.output_bytes == b""
+    assert result.exit_code == 1
+    assert result.cancelled is False
+    assert result.encoding == "utf-8"
+    assert result.extra is None  # FIXME: This should indicate that "sleep" failed...
+    assert b"sleep" in result.error_bytes
 
 
 async def test_start_new_session():
@@ -1327,8 +1333,9 @@ async def test_pty_timeout_fail():
 
     assert exc_info.type is ResultError
     assert exc_info.value.result == Result(
-        output_bytes=b"",
         exit_code=_CANCELLED_EXIT_CODE,
+        output_bytes=b"",
+        error_bytes=b"",
         cancelled=True,
         encoding="utf-8",
         extra=None,
@@ -1566,7 +1573,7 @@ $4 ~ /^[0-9]+/ { sub(/[0-9]+/, "N", $9); print $4, $5, $9 }
 async def test_open_file_descriptors():
     "Test what file descriptors are open in the subprocess."
 
-    cmd = sh("cat").stdin(sh.CAPTURE)
+    cmd = sh("cat").stdin(sh.CAPTURE).stderr(sh.DEVNULL)
     lsof = sh("lsof", "-n", "-P", "-p").stderr(sh.STDOUT)
     awk = sh("awk", _AWK_SCRIPT).stderr(sh.STDOUT)
 
@@ -1589,7 +1596,7 @@ async def test_open_file_descriptors():
 async def test_open_file_descriptors_unclosed_fds():
     "Test what file descriptors are open in the subprocess (close_fds=False)."
 
-    cmd = sh("cat").stdin(sh.CAPTURE)
+    cmd = sh("cat").stdin(sh.CAPTURE).stderr(sh.DEVNULL)
     lsof = sh("lsof", "-n", "-P", "-p").stderr(sh.STDOUT)
     awk = sh("awk", _AWK_SCRIPT).stderr(sh.STDOUT)
 
@@ -1670,7 +1677,7 @@ def _limited_descriptors(limit):
 @pytest.mark.skipif(_is_uvloop() or _IS_PY3_11, reason="uvloop")
 async def test_limited_file_descriptors(report_children):
     "Test running out of file descriptors."
-    cmds = [sh("sleep", "1")] * 2
+    cmds = [sh("sleep", "1").stderr(sh.DEVNULL)] * 2
 
     with _limited_descriptors(13):
         with pytest.raises(

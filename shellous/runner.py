@@ -15,7 +15,7 @@ from shellous import pty_util
 from shellous.harvest import harvest, harvest_results
 from shellous.log import LOG_DETAIL, LOG_ENTER, LOG_EXIT, LOGGER, log_method, log_timer
 from shellous.redirect import Redirect
-from shellous.result import Result, make_result
+from shellous.result import RESULT_STDERR_LIMIT, Result, make_result
 from shellous.util import (
     BSD_DERIVED,
     SupportsClose,
@@ -78,6 +78,7 @@ class _RunOptions:
     kwd_args: dict[str, Any]
     subcmds: "list[Union[shellous.Command, shellous.Pipeline]]"
     pty_fds: Optional[pty_util.PtyFds]
+    error_bytes: Optional[bytearray]
 
     def __init__(self, command: "shellous.Command"):
         self.command = command
@@ -88,6 +89,7 @@ class _RunOptions:
         self.kwd_args = {}
         self.subcmds = []
         self.pty_fds = None
+        self.error_bytes = None
 
     def __enter__(self):
         "Set up I/O redirections."
@@ -254,6 +256,8 @@ class _RunOptions:
             # Custom support for Redirect constants.
             if input_ == Redirect.INHERIT:
                 stdin = sys.stdin
+            elif input_ == Redirect.RESULT:
+                raise TypeError(f"unsupported input type: {input_!r}")
             else:
                 # CAPTURE uses stdin == PIPE.
                 assert input_ == Redirect.CAPTURE
@@ -287,7 +291,13 @@ class _RunOptions:
             self.open_fds.append(stdout)
         elif isinstance(output, Redirect) and output.is_custom():
             # Custom support for Redirect constants.
-            if output == Redirect.INHERIT:
+            if output == Redirect.RESULT:
+                # We do not support redirecting stdout to RESULT (only stderr).
+                if sys_stream == sys.stdout:
+                    raise TypeError(f"unsupported output type: {output!r}")
+                assert stdout == asyncio.subprocess.PIPE
+                self.error_bytes = bytearray()
+            elif output == Redirect.INHERIT:
                 stdout = sys_stream
             else:
                 # CAPTURE uses stdout == PIPE.
@@ -415,10 +425,11 @@ class Runner:
         assert code is not None
 
         result = Result(
-            output_bytes,
-            code,
-            self._cancelled,
-            self._options.encoding,
+            exit_code=code,
+            output_bytes=output_bytes,
+            error_bytes=bytes(self._options.error_bytes or b""),
+            cancelled=self._cancelled,
+            encoding=self._options.encoding,
         )
 
         return make_result(self.command, result, self._cancelled, self._timed_out)
@@ -579,8 +590,15 @@ class Runner:
                 stdin, stdout = opts.pty_fds.writer, opts.pty_fds.reader
 
             if stderr is not None:
-                error = opts.command.options.error
-                stderr = self._setup_output_sink(stderr, error, opts.encoding, "stderr")
+                limit = -1
+                if opts.error_bytes is not None:
+                    error = opts.error_bytes
+                    limit = RESULT_STDERR_LIMIT
+                else:
+                    error = opts.command.options.error
+                stderr = self._setup_output_sink(
+                    stderr, error, opts.encoding, "stderr", limit
+                )
 
             if stdout is not None:
                 output = opts.command.options.output
@@ -714,7 +732,7 @@ class Runner:
 
         return stream
 
-    def _setup_output_sink(self, stream, sink, encoding, tag):
+    def _setup_output_sink(self, stream, sink, encoding, tag, limit=-1):
         "Set up a task to write to custom output sink."
         if isinstance(sink, io.StringIO):
             if encoding is None:
@@ -725,7 +743,11 @@ class Runner:
             self.add_task(redir.copy_bytesio(stream, sink), tag)
             stream = None
         elif isinstance(sink, bytearray):
-            self.add_task(redir.copy_bytearray(stream, sink), tag)
+            # N.B. `limit` is only supported for bytearray.
+            if limit >= 0:
+                self.add_task(redir.copy_bytearray_limit(stream, sink, limit), tag)
+            else:
+                self.add_task(redir.copy_bytearray(stream, sink), tag)
             stream = None
         elif isinstance(sink, Logger):
             self.add_task(redir.copy_logger(stream, sink, encoding), tag)
