@@ -22,7 +22,7 @@ _CANCELLED_EXIT_CODE = -15
 _IS_ALPINE = os.path.exists("/etc/alpine-release")
 
 # True if we're running on Python 3.10.9 or later.
-_IS_PY3_NO_FD_COUNT = sys.version_info[0:2] >= (3, 10, 9)
+_IS_PY3_NO_FD_COUNT = sys.version_info[:3] >= (3, 10, 9)
 
 
 def _is_uvloop():
@@ -1589,7 +1589,10 @@ async def test_open_file_descriptors():
     elif sys.platform.startswith("freebsd"):
         assert result == "0u unix \n1u PIPE \n2u VCHR /dev/null\n"
     else:
-        assert result == "0u unix \n1 PIPE \n2u CHR /dev/null\n"
+        assert result in (
+            "0u unix \n1 PIPE \n2u CHR /dev/null\n",
+            "0 PIPE \n1 PIPE \n2u CHR /dev/null\n",
+        )
 
 
 @pytest.mark.skipif(_is_lsof_unsupported(), reason="uvloop,codecov,alpine")
@@ -1612,7 +1615,10 @@ async def test_open_file_descriptors_unclosed_fds():
     elif sys.platform.startswith("freebsd"):
         assert result == "0u unix \n1u PIPE \n2u VCHR /dev/null\n"
     else:
-        assert result == "0u unix \n1 PIPE \n2u CHR /dev/null\n"
+        assert result in (
+            "0u unix \n1 PIPE \n2u CHR /dev/null\n",
+            "0 PIPE \n1 PIPE \n2u CHR /dev/null\n",
+        )
 
 
 @pytest.mark.skipif(_is_lsof_unsupported(), reason="uvloop,codecov,alpine")
