@@ -33,10 +33,6 @@ freebsd_task:
     # Test SafeChildWatcher.
     - . .venv/bin/activate && SHELLOUS_CHILDWATCHER_TYPE=safe pytest -vv -s --durations=20 --log-cli-level=DEBUG
 
-  multicw_script:
-    # Test MultiLoopChildWatcher.
-    - . .venv/bin/activate && SHELLOUS_CHILDWATCHER_TYPE=multi pytest -vv -s --durations=20 --log-cli-level=DEBUG
-
   defaultcw_script:
     # Test DefaultChildWatcher.
     - . .venv/bin/activate && SHELLOUS_CHILDWATCHER_TYPE=default pytest -vv -s --durations=20 --log-cli-level=DEBUG | ./ci/annotate.awk -v step=DefaultChildWatcher

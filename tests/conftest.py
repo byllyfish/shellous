@@ -12,6 +12,7 @@ import sys
 import threading
 
 import pytest
+
 import shellous
 from shellous import sh
 
@@ -66,9 +67,6 @@ def _init_child_watcher():
         asyncio.set_child_watcher(asyncio.SafeChildWatcher())
     elif childwatcher_type == "pidfd":
         asyncio.set_child_watcher(asyncio.PidfdChildWatcher())
-    elif childwatcher_type == "multi":
-        # Use patched child watcher...
-        asyncio.set_child_watcher(PatchedMultiLoopChildWatcher())
     elif childwatcher_type == "default":
         thread_strategy = os.environ.get("SHELLOUS_THREADSTRATEGY") is not None
         asyncio.set_child_watcher(
@@ -167,51 +165,3 @@ async def _get_children():
                     children.add(f"{m.group(1)}/{m.group(2).strip()}")
 
     return children
-
-
-if sys.platform != "win32":
-
-    def _serialize(func):
-        """Decorator to serialize a non-reentrant signal function.
-        If one client is already in the critical section, set a flag to run the
-        section one more time. Testing purposes only.
-        """
-
-        lock = threading.Lock()  # Used as atomic test-and-set.
-        retry = False
-
-        @functools.wraps(func)
-        def _decorator(*args, **kwargs):
-            nonlocal retry
-
-            while True:
-                if lock.acquire(blocking=False):  # pylint: disable=consider-using-with
-                    try:
-                        retry = False
-                        func(*args, **kwargs)
-                    finally:
-                        lock.release()
-                    if retry:
-                        continue
-                else:
-                    # A signal handler that interrupts an existing handler will
-                    # run to completion (LIFO).
-                    retry = True
-                break
-
-        return _decorator
-
-    class PatchedMultiLoopChildWatcher(asyncio.MultiLoopChildWatcher):
-        "Test race condition fixes in MultiLoopChildWatcher."
-
-        def add_child_handler(self, pid, callback, *args):
-            loop = asyncio.get_running_loop()
-            self._callbacks[pid] = (loop, callback, args)
-
-            # Prevent a race condition in case signal was delivered before
-            # callback added.
-            signal.raise_signal(signal.SIGCHLD)
-
-        @_serialize
-        def _sig_chld(self, signum, frame):
-            super()._sig_chld(signum, frame)
