@@ -6,6 +6,7 @@ import subprocess
 import sys
 
 import pytest
+
 from shellous import AUDIT_EVENT_SUBPROCESS_SPAWN, sh
 
 # pylint: disable=global-statement
