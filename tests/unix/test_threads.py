@@ -8,12 +8,12 @@ import threading
 import time
 
 import pytest
+
 from shellous import sh
 from shellous.log import log_method
 
 if sys.platform != "win32":
     from shellous import DefaultChildWatcher
-    from tests.conftest import PatchedMultiLoopChildWatcher
 
 pytestmark = pytest.mark.skipif(sys.platform == "win32", reason="Unix")
 
@@ -89,19 +89,11 @@ def run_in_thread(child_watcher_name="ThreadedChildWatcher"):
     def _decorator(coro):
         @functools.wraps(coro)
         def _wrap(*args, **kwargs):
-            if child_watcher_name == "MultiLoopChildWatcher":
-                child_watcher = PatchedMultiLoopChildWatcher()
-            elif child_watcher_name == "DefaultChildWatcher":
+            if child_watcher_name == "DefaultChildWatcher":
                 child_watcher = DefaultChildWatcher()
             else:
                 child_watcher = getattr(asyncio, child_watcher_name)()
             asyncio.set_child_watcher(child_watcher)
-
-            # MultiLoopChildWatcher: call attach_loop to prepare for action.
-            # `attach_loop` must be called from MainThread. The loop argument
-            # is not used.
-            if child_watcher_name == "MultiLoopChildWatcher":
-                child_watcher.attach_loop(None)
 
             if child_watcher_name in ("FastChildWatcher", "SafeChildWatcher"):
                 # SafeChildWatcher and FastChildWatcher require a viable
@@ -134,7 +126,6 @@ _CHILD_WATCHER_MAP = {
     "fast": "FastChildWatcher",
     "safe": "SafeChildWatcher",
     "pidfd": "PidfdChildWatcher",
-    "multi": "MultiLoopChildWatcher",
     "default": "DefaultChildWatcher",
 }
 
@@ -144,7 +135,6 @@ CHILD_WATCHER = _CHILD_WATCHER_MAP.get(_CW_TYPE, "ThreadedChildWatcher")
 XFAIL_CHILDWATCHER = CHILD_WATCHER in (
     "SafeChildWatcher",
     "FastChildWatcher",
-    "MultiLoopChildWatcher",
 )
 
 

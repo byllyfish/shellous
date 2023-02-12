@@ -100,15 +100,6 @@ jobs:
         fi
       env:
         SHELLOUS_CHILDWATCHER_TYPE: "safe"
-    - name: Run Tests with MultiLoopChildWatcher (Linux and MacOS)
-      if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11'
-      run: |
-        if ! pytest -vv -s --log-cli-level=DEBUG; then
-          echo "::warning title=MultiLoopChildWatcher Warning::Re-running failed tests in $BUILD_NAME"
-          pytest -vv -s --log-cli-level=DEBUG --last-failed
-        fi
-      env:
-        SHELLOUS_CHILDWATCHER_TYPE: "multi"
     - name: Run Tests with DefaultChildWatcher (Linux and MacOS)
       if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11' || matrix.os == 'ubuntu-18.04'
       run: |
