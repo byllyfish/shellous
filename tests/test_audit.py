@@ -6,6 +6,7 @@ import subprocess
 import sys
 
 import pytest
+
 from shellous import AUDIT_EVENT_SUBPROCESS_SPAWN, sh
 
 # pylint: disable=global-statement
@@ -141,7 +142,6 @@ async def test_audit_block_subprocess_spawn():
 
         cmd = sh(sys.executable, "-c", "print('hello')")
         with pytest.raises(RuntimeError, match="subprocess_spawn"):
-
             if sys.platform == "win32":
                 # Process substitution doesn't work on Windows.
                 await cmd

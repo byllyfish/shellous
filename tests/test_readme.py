@@ -6,6 +6,7 @@ import re
 import sys
 
 import pytest
+
 from shellous import sh
 from shellous.harvest import harvest_results
 from shellous.log import LOGGER
