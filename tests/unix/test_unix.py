@@ -73,9 +73,10 @@ async def test_echo():
 
 
 async def test_echo_bytes():
-    "Test running the echo command with bytes output."
-    result = await sh("echo", "-n", "foo").set(encoding=None)
-    assert result == b"foo"
+    "Test running the echo command with bytes output (deprecated)."
+    with pytest.warns(DeprecationWarning):
+        result = await sh("echo", "-n", "foo").set(encoding=None)
+        assert result == b"foo"
 
 
 async def test_echo_with_result():
@@ -268,17 +269,19 @@ async def test_input_bytes():
 
 async def test_input_wrong_encoding():
     "Test calling a command with input string, but bytes encoding expected."
-    xsh = sh.set(encoding=None)
-    tr = xsh("tr", "[:lower:]", "[:upper:]")
-    with pytest.raises(TypeError, match="input must be bytes"):
-        await tr.stdin("some input")
+    with pytest.warns(DeprecationWarning):
+        xsh = sh.set(encoding=None)
+        tr = xsh("tr", "[:lower:]", "[:upper:]")
+        with pytest.raises(TypeError, match="input must be bytes"):
+            await tr.stdin("some input")
 
 
 async def test_input_none_encoding():
     "Test calling a command with input string, but bytes encoding expected."
-    tr = sh("tr", "[:lower:]", "[:upper:]").set(encoding=None)
-    result = await tr.stdin(b"here be bytes")
-    assert result == b"HERE BE BYTES"
+    with pytest.warns(DeprecationWarning):
+        tr = sh("tr", "[:lower:]", "[:upper:]").set(encoding=None)
+        result = await tr.stdin(b"here be bytes")
+        assert result == b"HERE BE BYTES"
 
 
 async def test_exit_code_error():
@@ -740,10 +743,10 @@ async def test_shell_cmd():
 async def test_large_cat():
     "Test cat with some decent sized data."
     data = b"x" * (4 * 1024 * 1024 + 1)
-    cat = sh("cat").set(encoding=None)
-    result = await (data | cat)
-    assert len(result) == (4 * 1024 * 1024 + 1)
-    assert result == data
+    cat = sh("cat")
+    result = await (data | cat).result
+    assert len(result.output_bytes) == len(data)
+    assert result.output_bytes == data
 
 
 async def test_env_ellipsis_unix():

@@ -24,6 +24,7 @@ from typing import (
     TypeVar,
     Union,
 )
+from warnings import warn
 
 from typing_extensions import Self
 
@@ -267,6 +268,11 @@ class CmdContext:
         """
         kwargs = locals()
         del kwargs["self"]
+        if encoding is None:
+            warn(
+                "encoding=None is deprecated; use encoding='latin1' instead",
+                DeprecationWarning,
+            )
         return CmdContext(self.options.set(kwargs))
 
     def __call__(self, *args: Any) -> "Command":
@@ -383,8 +389,8 @@ class Command:
         `Command.env`.
 
         **encoding** (str | None) default="utf-8"<br>
-        String encoding to use for subprocess input/output. If `encoding` is
-        None, use raw bytes. To specify `errors`, append it after a space. For
+        String encoding to use for subprocess input/output. `encoding` of None
+        is deprecated. To specify `errors`, append it after a space. For
         example, use "utf-8 replace" to specify "utf-8" with errors "replace".
 
         **return_result** (bool) default=False<br>
@@ -488,6 +494,11 @@ class Command:
         """
         kwargs = locals()
         del kwargs["self"]
+        if encoding is None:
+            warn(
+                "encoding=None is deprecated; use encoding='latin1' instead",
+                DeprecationWarning,
+            )
         return Command(self.args, self.options.set(kwargs))
 
     def _replace_args(self, new_args: list[Union[str, bytes]]) -> Self:

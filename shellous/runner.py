@@ -432,6 +432,7 @@ class Runner:
             encoding=self._options.encoding,
         )
 
+        # TODO: This method should return a Result object... (not str|bytes)
         return make_result(self.command, result, self._cancelled, self._timed_out)
 
     def add_task(self, coro, tag=""):
