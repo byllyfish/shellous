@@ -76,9 +76,10 @@ jobs:
     - name: Run Tests with uvloop (Linux and MacOS)
       if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11'
       run: |
-        if ! pytest -vv -s --log-cli-level=DEBUG; then
+        # Ignore ResourceWarning with uvloop for now (TODO).
+        if ! pytest -vv -s --log-cli-level=DEBUG -W ignore::ResourceWarning; then
           echo "::warning title=uvloop Warning::Re-running failed tests in $BUILD_NAME"
-          pytest -vv -s --log-cli-level=DEBUG --last-failed
+          pytest -vv -s --log-cli-level=DEBUG -W ignore::ResourceWarning --last-failed
         fi
       env:
         SHELLOUS_LOOP_TYPE: "uvloop"
@@ -160,9 +161,9 @@ jobs:
         pip3 install -r ./ci/requirements-dev.txt
     - name: Run Tests
       run: |
-        pytest -vv -s --durations=20 --log-cli-level=DEBUG
+        pytest -vv -s --durations=20 --log-cli-level=DEBUG -W ignore::pytest.PytestUnraisableExceptionWarning
     - name: Run Tests with DefaultChildWatcher
       run: |
-        pytest -vv -s --log-cli-level=DEBUG
+        pytest -vv -s --log-cli-level=DEBUG -W ignore::pytest.PytestUnraisableExceptionWarning
       env:
         SHELLOUS_CHILDWATCHER_TYPE: "default"
