@@ -161,9 +161,9 @@ jobs:
         pip3 install -r ./ci/requirements-dev.txt
     - name: Run Tests
       run: |
-        pytest -vv -s --durations=20 --log-cli-level=DEBUG
+        pytest -vv -s --durations=20 --log-cli-level=DEBUG -W ignore::pytest.PytestUnraisableExceptionWarning
     - name: Run Tests with DefaultChildWatcher
       run: |
-        pytest -vv -s --log-cli-level=DEBUG
+        pytest -vv -s --log-cli-level=DEBUG -W ignore::pytest.PytestUnraisableExceptionWarning
       env:
         SHELLOUS_CHILDWATCHER_TYPE: "default"
