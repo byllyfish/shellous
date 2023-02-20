@@ -1348,6 +1348,10 @@ async def test_asl_map(count_cmd):
     assert await asl.anext(stream, "DONE") == "DONE"
 
 
+# Warning seen only on pypy.
+@pytest.mark.filterwarnings(
+    "ignore:coroutine 'StreamWriter.wait_closed' was never awaited:RuntimeWarning"
+)
 async def test_asl_zip(count_cmd):
     "Test compatibility with async itertools like `asyncstdlib.zip`."
 
