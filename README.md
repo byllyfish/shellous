@@ -73,14 +73,15 @@ Commands are **immutable** objects that represent a program invocation: program 
 variables, redirection operators and other settings. When you use a method to modify a `Command`, you are
 returning a new `Command` object. The original object is unchanged.
 
-In this example, we use the `set()` modifier to change the output encoding. The new command `echob`
-will return standard output as bytes (encoding=None).
-
+It is often convenient to wrap your commands in a function. This idiom provides better type
+safety for the command arguments.
 
 ```pycon
->>> echob = echo.set(encoding=None)
->>> await echob("def")
-b'def'
+>>> async def exclaim(word):
+...   return await sh("echo", "-n", f"{word}!!")
+... 
+>>> await exclaim("Oh")
+'Oh!!'
 ```
 
 ### Async For
@@ -130,7 +131,7 @@ Traceback (most recent call last):
 shellous.result.ResultError: Result(exit_code=1, output_bytes=b'', error_bytes=b'cat: does_not_exist: No such file or directory\n', cancelled=False, encoding='utf-8', extra=None)
 ```
 
-The `ResultError` exception contains a `Result` object with the exit_code.
+The `ResultError` exception contains a `Result` object with the exit_code and the first 1024 bytes of standard error.
 
 In some cases, you want to ignore certain exit code values. That is, you want to treat them as if they are normal.
 To do this, you can set the `exit_codes` option:
@@ -172,7 +173,7 @@ to a StringIO object, an open file, a Logger, or use a special redirection const
 
 ### Redirecting Standard Input
 
-To redirect standard input, use the pipe operator `|` with the argument on the left-side.
+To redirect standard input, use the pipe operator `|` with the argument on the **left-side**.
 Here is an example that passes the string "abc" as standard input.
 
 ```pycon
@@ -206,8 +207,8 @@ Shellous supports different STDIN behavior when using different Python types.
 
 ### Redirecting Standard Output
 
-To redirect standard output, use the pipe operator `|` with the argument on the right-side. Here is an example
-that writes to a temporary file.
+To redirect standard output, use the pipe operator `|` with the argument on the **right-side**. Here is an 
+example that writes to a temporary file.
 
 ```pycon
 >>> output_file = Path("/tmp/output_file")
@@ -248,6 +249,8 @@ If you intend to redirect output to a file, you must use a `pathlib.Path` object
 
 ### Redirecting Standard Error
 
+By default, the first 1024 bytes of standard error is collected into the Result object.
+
 To redirect standard error, use the `stderr` method. Standard error supports the
 same Python types as standard output. To redirect stderr to the same place as stdout, 
 use the `sh.STDOUT` constant.
@@ -270,13 +273,15 @@ Traceback (most recent call last):
 shellous.result.ResultError: Result(exit_code=1, output_bytes=b'', error_bytes=b'', cancelled=False, encoding='utf-8', extra=None)
 ```
 
+If you redirect stderr, it will no longer be stored in the Result object.
+
 ### Default Redirections
 
 For regular commands, the default redirections are:
 
 - Standard input is read from the empty string ("").
 - Standard out is captured by the program and returned (CAPTURE).
-- Standard error is discarded (DEVNULL).
+- Standard error is captured and stored in the Result object (RESULT).
 
 However, the default redirections are adjusted when using a pseudo-terminal (pty):
 
