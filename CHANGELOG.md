@@ -1,6 +1,14 @@
 Shellous Change Log
 ===================
 
+0.22.0
+------
+
+- [FEATURE] The default for standard error is to write to `error_bytes` in the Result object (saving the first 1024 bytes only). If a command fails, this makes it easier to see what went wrong.
+- [FEATURE] Issue a warning when using Python '3.10.9' and '3.11.1'. These specific releases have a known race condition bug that affects asyncio subprocess output.
+- [API] Setting the output encoding to `None` issues a DeprecationWarning. If you want the bytes output, use the `Result` object.
+- [LATERAL] Reorder the fields in the `Result` object to improve readability.
+
 0.21.0
 ------
 
