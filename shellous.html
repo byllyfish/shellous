@@ -425,13 +425,15 @@ converted to a string. If an argument is a list or tuple, it is flattened recurs
 variables, redirection operators and other settings. When you use a method to modify a <code><a href="#Command">Command</a></code>, you are
 returning a new <code><a href="#Command">Command</a></code> object. The original object is unchanged.</p>
 
-<p>In this example, we use the <code>set()</code> modifier to change the output encoding. The new command <code>echob</code>
-will return standard output as bytes (encoding=None).</p>
+<p>It is often convenient to wrap your commands in a function. This idiom provides better type
+safety for the command arguments.</p>
 
 <div class="pdoc-code codehilite">
-<pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">echob</span> <span class="o">=</span> <span class="n">echo</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">encoding</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">echob</span><span class="p">(</span><span class="s2">&quot;def&quot;</span><span class="p">)</span>
-<span class="go">b&#39;def&#39;</span>
+<pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="k">async</span> <span class="k">def</span> <span class="nf">exclaim</span><span class="p">(</span><span class="n">word</span><span class="p">):</span>
+<span class="gp">... </span>  <span class="k">return</span> <span class="k">await</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;echo&quot;</span><span class="p">,</span> <span class="s2">&quot;-n&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">word</span><span class="si">}</span><span class="s2">!!&quot;</span><span class="p">)</span>
+<span class="gp">... </span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">await</span> <span class="n">exclaim</span><span class="p">(</span><span class="s2">&quot;Oh&quot;</span><span class="p">)</span>
+<span class="go">&#39;Oh!!&#39;</span>
 </code></pre>
 </div>
 
@@ -485,7 +487,7 @@ deadlock. The streams on the <code>run</code> object are <code>asyncio.StreamRea
 </code></pre>
 </div>
 
-<p>The <code><a href="#ResultError">ResultError</a></code> exception contains a <code><a href="#Result">Result</a></code> object with the exit_code.</p>
+<p>The <code><a href="#ResultError">ResultError</a></code> exception contains a <code><a href="#Result">Result</a></code> object with the exit_code and the first 1024 bytes of standard error.</p>
 
 <p>In some cases, you want to ignore certain exit code values. That is, you want to treat them as if they are normal.
 To do this, you can set the <code>exit_codes</code> option:</p>
@@ -530,7 +532,7 @@ to a StringIO object, an open file, a Logger, or use a special redirection const
 
 <h3 id="redirecting-standard-input">Redirecting Standard Input</h3>
 
-<p>To redirect standard input, use the pipe operator <code>|</code> with the argument on the left-side.
+<p>To redirect standard input, use the pipe operator <code>|</code> with the argument on the <strong>left-side</strong>.
 Here is an example that passes the string "abc" as standard input.</p>
 
 <div class="pdoc-code codehilite">
@@ -601,8 +603,8 @@ Here is an example that passes the string "abc" as standard input.</p>
 
 <h3 id="redirecting-standard-output">Redirecting Standard Output</h3>
 
-<p>To redirect standard output, use the pipe operator <code>|</code> with the argument on the right-side. Here is an example
-that writes to a temporary file.</p>
+<p>To redirect standard output, use the pipe operator <code>|</code> with the argument on the <strong>right-side</strong>. Here is an 
+example that writes to a temporary file.</p>
 
 <div class="pdoc-code codehilite">
 <pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">output_file</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">&quot;/tmp/output_file&quot;</span><span class="p">)</span>
@@ -694,6 +696,8 @@ If you intend to redirect output to a file, you must use a <code>pathlib.Path</c
 
 <h3 id="redirecting-standard-error">Redirecting Standard Error</h3>
 
+<p>By default, the first 1024 bytes of standard error is collected into the Result object.</p>
+
 <p>To redirect standard error, use the <code>stderr</code> method. Standard error supports the
 same Python types as standard output. To redirect stderr to the same place as stdout, 
 use the <code>sh.STDOUT</code> constant.</p>
@@ -718,6 +722,8 @@ option.</p>
 </code></pre>
 </div>
 
+<p>If you redirect stderr, it will no longer be stored in the Result object.</p>
+
 <h3 id="default-redirections">Default Redirections</h3>
 
 <p>For regular commands, the default redirections are:</p>
@@ -725,7 +731,7 @@ option.</p>
 <ul>
 <li>Standard input is read from the empty string ("").</li>
 <li>Standard out is captured by the program and returned (CAPTURE).</li>
-<li>Standard error is discarded (DEVNULL).</li>
+<li>Standard error is captured and stored in the Result object (RESULT).</li>
 </ul>
 
 <p>However, the default redirections are adjusted when using a pseudo-terminal (pty):</p>
