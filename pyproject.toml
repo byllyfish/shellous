@@ -27,7 +27,7 @@ python = "^3.9"
 [tool.poetry.dev-dependencies]
 pytest = "^7.2.1"
 pytest-asyncio = "^0.20.3"
-pylint = "^2.16.2"
+pylint = "^2.16.3"
 mypy = "^1.0.1"
 black = "^23.1.0"
 codecov = "^2.1.12"
