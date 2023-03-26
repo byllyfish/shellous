@@ -36,7 +36,7 @@ pytest-dotenv = "^0.5.2"
 pytest-randomly = "^3.12.0"
 pytest-timeout = "^2.1.0"
 pdoc = "^13.0.0"
-asyncstdlib = "^3.10.5"
+asyncstdlib = "3.10.5"
 pyright = "^1.1.294"
 
 [build-system]
