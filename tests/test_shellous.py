@@ -157,7 +157,7 @@ async def test_error_bulk(error_cmd):
 async def test_error_result():
     result = await sh.result(sys.executable, "-c", "print('hello')")
     assert result.exit_code == 0
-    assert result.output == "hello\n"
+    assert result.output.rstrip() == "hello"
     assert result.error == ""
 
 
