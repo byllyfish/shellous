@@ -154,6 +154,13 @@ async def test_error_bulk(error_cmd):
     assert result.error == "1" * 1024
 
 
+async def test_error_result():
+    result = await sh.result(sys.executable, "-c", "print('hello')")
+    assert result.exit_code == 0
+    assert result.output == "hello\n"
+    assert result.error == ""
+
+
 async def test_nonexistant_cmd():
     with pytest.raises(FileNotFoundError):
         await sh("non_existant_command").set(return_result=True)
@@ -246,10 +253,15 @@ async def test_echo_result(echo_cmd):
     "Test the .result modifier with a single command."
     echo = echo_cmd.env(SHELLOUS_EXIT_CODE=17)
 
-    result = await echo("def").result
-    assert result.exit_code == 17
-    assert result.output == "def"
-    assert not result
+    result1 = await echo("def").result
+    assert result1.exit_code == 17
+    assert result1.output == "def"
+    assert not result1
+
+    result2 = await echo.result("xyz")  # preferred syntax
+    assert result2.exit_code == 17
+    assert result2.output == "xyz"
+    assert not result2
 
 
 async def test_pipe_result_1(echo_cmd, tr_cmd):

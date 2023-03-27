@@ -279,6 +279,11 @@ class CmdContext:
         "Construct a new command."
         return Command(coerce(args), self.options)
 
+    @property
+    def result(self) -> Self:
+        "Set `return_result` and `exit_codes`."
+        return self.set(return_result=True, exit_codes=range(-255, 256))
+
 
 @dataclass(frozen=True)
 class Command:

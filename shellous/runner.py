@@ -364,43 +364,44 @@ class Runner:
     ```
     """
 
-    stdin = None
+    stdin: Optional[asyncio.StreamWriter] = None
     "Process standard input."
 
-    stdout = None
+    stdout: Optional[asyncio.StreamReader] = None
     "Process standard output."
 
-    stderr = None
+    stderr: Optional[asyncio.StreamReader] = None
     "Process standard error."
+
+    _proc: Optional[asyncio.subprocess.Process] = None
 
     def __init__(self, command):
         self._options = _RunOptions(command)
         self._cancelled = False
-        self._proc = None
         self._tasks = []
         self._timer = None  # asyncio.TimerHandle
         self._timed_out = False  # True if runner timeout expired
         self._last_signal = None
 
     @property
-    def name(self):
+    def name(self) -> str:
         "Return name of process being run."
         return self.command.name
 
     @property
-    def command(self):
+    def command(self) -> "shellous.Command":
         "Return the command being run."
         return self._options.command
 
     @property
-    def pid(self):
+    def pid(self) -> Optional[int]:
         "Return the command's process ID."
         if not self._proc:
             return None
         return self._proc.pid
 
     @property
-    def returncode(self):
+    def returncode(self) -> Optional[int]:
         "Process's exit code."
         if not self._proc:
             if self._cancelled:
@@ -415,7 +416,7 @@ class Runner:
         return code
 
     @property
-    def cancelled(self):
+    def cancelled(self) -> bool:
         "Return True if the command was cancelled."
         return self._cancelled
 
