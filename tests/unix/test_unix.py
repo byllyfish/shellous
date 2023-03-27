@@ -74,9 +74,8 @@ async def test_echo():
 
 async def test_echo_bytes():
     "Test running the echo command with bytes output (deprecated)."
-    with pytest.warns(DeprecationWarning):
-        result = await sh("echo", "-n", "foo").set(encoding=None)
-        assert result == b"foo"
+    with pytest.raises(TypeError, match="encoding cannot be None"):
+        await sh("echo", "-n", "foo").set(encoding=None)
 
 
 async def test_echo_with_result():
@@ -267,21 +266,10 @@ async def test_input_bytes():
     assert result == "SOME INPUT"
 
 
-async def test_input_wrong_encoding():
-    "Test calling a command with input string, but bytes encoding expected."
-    with pytest.warns(DeprecationWarning):
-        xsh = sh.set(encoding=None)
-        tr = xsh("tr", "[:lower:]", "[:upper:]")
-        with pytest.raises(TypeError, match="input must be bytes"):
-            await tr.stdin("some input")
-
-
 async def test_input_none_encoding():
     "Test calling a command with input string, but bytes encoding expected."
-    with pytest.warns(DeprecationWarning):
-        tr = sh("tr", "[:lower:]", "[:upper:]").set(encoding=None)
-        result = await tr.stdin(b"here be bytes")
-        assert result == b"HERE BE BYTES"
+    with pytest.raises(TypeError, match="encoding cannot be None"):
+        sh("tr", "[:lower:]", "[:upper:]").set(encoding=None)
 
 
 async def test_exit_code_error():

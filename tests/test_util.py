@@ -34,7 +34,7 @@ def test_decode_encoding_none():
     # Invalid but allowed.
     assert decode(None, None) == ""
 
-    with pytest.raises(AttributeError):
+    with pytest.raises(AssertionError):
         decode(b"abc", None)
 
 

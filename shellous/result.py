@@ -40,8 +40,8 @@ class Result:
     cancelled: bool
     "Command was cancelled."
 
-    encoding: Optional[str]
-    "Output encoding. None indicates no encoding."
+    encoding: str
+    "Output encoding."
 
     extra: Any = None
     "Used for pipeline results (see `PipeResult`)."
@@ -49,15 +49,11 @@ class Result:
     @property
     def output(self) -> str:
         "Output of command as a string."
-        if self.encoding is None:
-            raise TypeError("use output_bytes instead; encoding is None")
         return decode(self.output_bytes, self.encoding)
 
     @property
     def error(self) -> str:
         "Error from command as a string (if it is not redirected)."
-        if self.encoding is None:
-            raise TypeError("use error_bytes instead; encoding is None")
         return decode(self.error_bytes, self.encoding)
 
     def __bool__(self) -> bool:
@@ -86,7 +82,7 @@ def make_result(
     result_list: Union[Result, list[Union[Exception, Result]]],
     cancelled: bool,
     timed_out: bool = False,
-):
+) -> Union[str, Result]:
     """Convert list of results into a single pipe result.
 
     `result` can be a list of Result, ResultError or another Exception.
@@ -131,9 +127,6 @@ def make_result(
 
     if command.options.return_result:
         return result
-
-    if result.encoding is None:
-        return result.output_bytes
 
     return result.output
 

@@ -34,6 +34,7 @@ def decode(data: Optional[bytes], encoding: str) -> str:
     "Utility function to decode optional byte strings."
     if not data:
         return ""
+    assert isinstance(encoding, str)
     return data.decode(*encoding.split(maxsplit=1))
 
 

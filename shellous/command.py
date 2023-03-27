@@ -91,8 +91,8 @@ class Options:  # pylint: disable=too-many-instance-attributes
     error_close: bool = False
     "True if error object should be closed after subprocess launch."
 
-    encoding: Optional[str] = "utf-8"
-    "Specifies encoding of input/ouput. None means binary."
+    encoding: str = "utf-8"
+    "Specifies encoding of input/ouput."
 
     return_result: bool = False
     "True if we should return `Result` object instead of the output text/bytes."
@@ -245,7 +245,7 @@ class CmdContext:
         self,
         *,
         inherit_env: Unset[bool] = _UNSET,
-        encoding: Unset[Optional[str]] = _UNSET,
+        encoding: Unset[str] = _UNSET,
         return_result: Unset[bool] = _UNSET,
         catch_cancelled_error: Unset[bool] = _UNSET,
         exit_codes: Unset[Optional[Container[int]]] = _UNSET,
@@ -269,10 +269,7 @@ class CmdContext:
         kwargs = locals()
         del kwargs["self"]
         if encoding is None:
-            warn(
-                "encoding=None is deprecated; use encoding='latin1' instead",
-                DeprecationWarning,
-            )
+            raise TypeError("encoding cannot be None")
         return CmdContext(self.options.set(kwargs))
 
     def __call__(self, *args: Any) -> "Command":
@@ -367,7 +364,7 @@ class Command:
         self,
         *,
         inherit_env: Unset[bool] = _UNSET,
-        encoding: Unset[Optional[str]] = _UNSET,
+        encoding: Unset[str] = _UNSET,
         return_result: Unset[bool] = _UNSET,
         catch_cancelled_error: Unset[bool] = _UNSET,
         exit_codes: Unset[Optional[Container[int]]] = _UNSET,
@@ -500,10 +497,7 @@ class Command:
         kwargs = locals()
         del kwargs["self"]
         if encoding is None:
-            warn(
-                "encoding=None is deprecated; use encoding='latin1' instead",
-                DeprecationWarning,
-            )
+            raise TypeError("encoding cannot be None")
         return Command(self.args, self.options.set(kwargs))
 
     def _replace_args(self, new_args: list[Union[str, bytes]]) -> Self:
