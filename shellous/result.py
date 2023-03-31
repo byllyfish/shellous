@@ -69,7 +69,7 @@ class PipeResult:
     cancelled: bool
 
     @staticmethod
-    def from_result(result: Union[Exception, Result]):
+    def from_result(result: Union[BaseException, Result]):
         "Construct a `PipeResult` from a `Result`."
         if isinstance(result, ResultError):
             result = result.result
@@ -78,7 +78,7 @@ class PipeResult:
 
 
 def convert_result_list(
-    result_list: list[Union[Exception, Result]],
+    result_list: list[Union[BaseException, Result]],
     cancelled: bool,
 ):
     "Convert list of results into a single pipe result."
@@ -126,7 +126,7 @@ def check_result(
     return result
 
 
-def _find_key_result(result_list: list[Union[Result, Exception]]) -> Result:
+def _find_key_result(result_list: list[Union[Result, BaseException]]) -> Result:
     "Scan a result list and return the 'key' result."
     acc = None
 
@@ -153,7 +153,7 @@ def _compare_result(acc: Optional[Result], item: Result) -> Result:
     return acc
 
 
-def _get_result(item: Union[Result, Exception]) -> Result:
+def _get_result(item: Union[Result, BaseException]) -> Result:
     if isinstance(item, ResultError):
         return item.result
     assert isinstance(item, Result)

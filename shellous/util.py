@@ -155,7 +155,7 @@ async def uninterrupted(coro: Coroutine[Any, Any, Any]):
         raise
 
 
-def which(command: str):
+def which(command: Union[str, bytes]):
     "Given a command without a directory, return the fully qualified path."
     path = shutil.which(command)
     if path is None:

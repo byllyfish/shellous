@@ -76,7 +76,7 @@ class _RunOptions:
     """
 
     command: "shellous.Command"
-    encoding: Optional[str]
+    encoding: str
     open_fds: list[Union[int, SupportsClose]]
     input_bytes: Optional[bytes]
     pos_args: list[Union[str, bytes]]
@@ -111,7 +111,7 @@ class _RunOptions:
 
             # If executable does not include an absolute/relative directory,
             # resolve it using PATH.
-            if not os.path.dirname(self.pos_args[0]):
+            if not os.path.dirname(self.pos_args[0]):  # type: ignore (path)
                 self.pos_args[0] = which(self.pos_args[0])
 
         except Exception as ex:
@@ -923,6 +923,8 @@ class PipeRunner:
     stderr = None
     "Pipeline standard error."
 
+    _results: Optional[list[Union[BaseException, Result]]] = None
+
     def __init__(self, pipe, *, capturing):
         """`capturing=True` indicates we are within an `async with` block and
         client needs to access `stdin` and `stderr` streams.
@@ -932,7 +934,6 @@ class PipeRunner:
         self._pipe = pipe
         self._cancelled = False
         self._tasks = []
-        self._results = None
         self._capturing = capturing
         self._encoding = pipe.options.encoding
 
