@@ -15,7 +15,12 @@ from shellous import pty_util
 from shellous.harvest import harvest, harvest_results
 from shellous.log import LOG_DETAIL, LOG_ENTER, LOG_EXIT, LOGGER, log_method, log_timer
 from shellous.redirect import Redirect
-from shellous.result import RESULT_STDERR_LIMIT, Result, make_result
+from shellous.result import (
+    RESULT_STDERR_LIMIT,
+    Result,
+    check_result,
+    convert_result_list,
+)
 from shellous.util import (
     BSD_DERIVED,
     SupportsClose,
@@ -433,8 +438,12 @@ class Runner:
             encoding=self._options.encoding,
         )
 
-        # TODO: This method should return a Result object... (not str|bytes)
-        return make_result(self.command, result, self._cancelled, self._timed_out)
+        return check_result(
+            result,
+            self.command.options,
+            self._cancelled,
+            self._timed_out,
+        )
 
     def add_task(self, coro, tag=""):
         "Add a background task."
@@ -934,7 +943,13 @@ class PipeRunner:
 
     def result(self):
         "Return `Result` object for PipeRunner."
-        return make_result(self._pipe, self._results, self._cancelled)
+        assert self._results is not None
+
+        return check_result(
+            convert_result_list(self._results, self._cancelled),
+            self._pipe.options,
+            self._cancelled,
+        )
 
     def add_task(self, coro, tag=""):
         "Add a background task."

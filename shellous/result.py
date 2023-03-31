@@ -77,51 +77,49 @@ class PipeResult:
         return PipeResult(result.exit_code, result.cancelled)
 
 
-def make_result(
-    command: "shellous.Command",
-    result_list: Union[Result, list[Union[Exception, Result]]],
+def convert_result_list(
+    result_list: list[Union[Exception, Result]],
+    cancelled: bool,
+):
+    "Convert list of results into a single pipe result."
+    assert result_list is not None
+
+    # Check result list for other exceptions.
+    other_ex = [
+        ex
+        for ex in result_list
+        if isinstance(ex, Exception) and not isinstance(ex, ResultError)
+    ]
+    if other_ex:
+        # Re-raise other exception here.
+        raise other_ex[0]
+
+    # Everything in result is now either a Result or ResultError.
+    key_result = _find_key_result(result_list)
+    last = _get_result(result_list[-1])
+    assert key_result is not None  # (pyright)
+
+    return Result(
+        exit_code=key_result.exit_code,
+        output_bytes=last.output_bytes,
+        error_bytes=last.error_bytes,
+        cancelled=cancelled,
+        encoding=last.encoding,
+        extra=tuple(PipeResult.from_result(r) for r in result_list),
+    )
+
+
+def check_result(
+    result: Result,
+    options: "shellous.Options",
     cancelled: bool,
     timed_out: bool = False,
 ) -> Result:
-    """Convert list of results into a single pipe result.
-
-    `result` can be a list of Result, ResultError or another Exception.
-    """
-    assert result_list is not None
-
-    if isinstance(result_list, list):
-        # Check result list for other exceptions.
-        other_ex = [
-            ex
-            for ex in result_list
-            if isinstance(ex, Exception) and not isinstance(ex, ResultError)
-        ]
-        if other_ex:
-            # Re-raise other exception here.
-            raise other_ex[0]
-
-        # Everything in result is now either a Result or ResultError.
-        key_result = _find_key_result(result_list)
-        last = _get_result(result_list[-1])
-        assert key_result is not None  # (pyright)
-
-        result = Result(
-            exit_code=key_result.exit_code,
-            output_bytes=last.output_bytes,
-            error_bytes=last.error_bytes,
-            cancelled=cancelled,
-            encoding=last.encoding,
-            extra=tuple(PipeResult.from_result(r) for r in result_list),
-        )
-    else:
-        result = result_list
-
-    assert isinstance(result, Result)
-
-    if cancelled and not command.options.catch_cancelled_error:
+    """Check result and raise exception if necessary."""
+    if cancelled and not options.catch_cancelled_error:
         raise asyncio.CancelledError()
 
-    exit_codes = command.options.exit_codes or {0}
+    exit_codes = options.exit_codes or {0}
     if (cancelled and not timed_out) or result.exit_code not in exit_codes:
         raise ResultError(result)
 
