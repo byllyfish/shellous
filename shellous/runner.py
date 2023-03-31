@@ -889,7 +889,10 @@ class Runner:
                 if stream:
                     await redir.copy_bytearray(stream, output_bytes)
 
-        return run.result(bytes(output_bytes))
+        result = run.result(bytes(output_bytes))
+        if command.options.return_result:
+            return result
+        return result.output
 
 
 class PipeRunner:
@@ -1101,7 +1104,11 @@ class PipeRunner:
         run = PipeRunner(pipe, capturing=False)
         async with run:
             pass
-        return run.result()
+
+        result = run.result()
+        if pipe.options.return_result:
+            return result
+        return result.output
 
 
 def _uses_process_substitution(cmd: "shellous.Command") -> bool:

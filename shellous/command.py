@@ -24,7 +24,6 @@ from typing import (
     TypeVar,
     Union,
 )
-from warnings import warn
 
 from typing_extensions import Self
 
@@ -268,7 +267,7 @@ class CmdContext:
         """
         kwargs = locals()
         del kwargs["self"]
-        if encoding is None:
+        if encoding is None:  # pyright: ignore[reportUnnecessaryComparison]
             raise TypeError("encoding cannot be None")
         return CmdContext(self.options.set(kwargs))
 
@@ -496,7 +495,7 @@ class Command:
         """
         kwargs = locals()
         del kwargs["self"]
-        if encoding is None:
+        if encoding is None:  # pyright: ignore[reportUnnecessaryComparison]
             raise TypeError("encoding cannot be None")
         return Command(self.args, self.options.set(kwargs))
 

@@ -683,7 +683,14 @@ async def test_multiple_capture():
         run.stdin.close()
 
     result = run.result(output)
-    assert result == "abc\n"
+    assert result == Result(
+        exit_code=0,
+        output_bytes=b"abc\n",
+        error_bytes=b"",
+        cancelled=False,
+        encoding="utf-8",
+        extra=None,
+    )
 
 
 async def test_multiple_capture_alpine():

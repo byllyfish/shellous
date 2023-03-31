@@ -82,7 +82,7 @@ def make_result(
     result_list: Union[Result, list[Union[Exception, Result]]],
     cancelled: bool,
     timed_out: bool = False,
-) -> Union[str, Result]:
+) -> Result:
     """Convert list of results into a single pipe result.
 
     `result` can be a list of Result, ResultError or another Exception.
@@ -125,10 +125,7 @@ def make_result(
     if (cancelled and not timed_out) or result.exit_code not in exit_codes:
         raise ResultError(result)
 
-    if command.options.return_result:
-        return result
-
-    return result.output
+    return result
 
 
 def _find_key_result(result_list: list[Union[Result, Exception]]) -> Result:
