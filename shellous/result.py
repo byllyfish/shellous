@@ -40,8 +40,8 @@ class Result:
     cancelled: bool
     "Command was cancelled."
 
-    encoding: Optional[str]
-    "Output encoding. None indicates no encoding."
+    encoding: str
+    "Output encoding."
 
     extra: Any = None
     "Used for pipeline results (see `PipeResult`)."
@@ -49,15 +49,11 @@ class Result:
     @property
     def output(self) -> str:
         "Output of command as a string."
-        if self.encoding is None:
-            raise TypeError("use output_bytes instead; encoding is None")
         return decode(self.output_bytes, self.encoding)
 
     @property
     def error(self) -> str:
         "Error from command as a string (if it is not redirected)."
-        if self.encoding is None:
-            raise TypeError("use error_bytes instead; encoding is None")
         return decode(self.error_bytes, self.encoding)
 
     def __bool__(self) -> bool:
@@ -73,7 +69,7 @@ class PipeResult:
     cancelled: bool
 
     @staticmethod
-    def from_result(result: Union[Exception, Result]):
+    def from_result(result: Union[BaseException, Result]):
         "Construct a `PipeResult` from a `Result`."
         if isinstance(result, ResultError):
             result = result.result
@@ -81,64 +77,56 @@ class PipeResult:
         return PipeResult(result.exit_code, result.cancelled)
 
 
-def make_result(
-    command: "shellous.Command",
-    result_list: Union[Result, list[Union[Exception, Result]]],
+def convert_result_list(
+    result_list: list[Union[BaseException, Result]],
     cancelled: bool,
-    timed_out: bool = False,
 ):
-    """Convert list of results into a single pipe result.
-
-    `result` can be a list of Result, ResultError or another Exception.
-    """
+    "Convert list of results into a single pipe result."
     assert result_list is not None
 
-    if isinstance(result_list, list):
-        # Check result list for other exceptions.
-        other_ex = [
-            ex
-            for ex in result_list
-            if isinstance(ex, Exception) and not isinstance(ex, ResultError)
-        ]
-        if other_ex:
-            # Re-raise other exception here.
-            raise other_ex[0]
+    # Check result list for other exceptions.
+    other_ex = [
+        ex
+        for ex in result_list
+        if isinstance(ex, Exception) and not isinstance(ex, ResultError)
+    ]
+    if other_ex:
+        # Re-raise other exception here.
+        raise other_ex[0]
 
-        # Everything in result is now either a Result or ResultError.
-        key_result = _find_key_result(result_list)
-        last = _get_result(result_list[-1])
-        assert key_result is not None  # (pyright)
+    # Everything in result is now either a Result or ResultError.
+    key_result = _find_key_result(result_list)
+    last = _get_result(result_list[-1])
+    assert key_result is not None  # (pyright)
 
-        result = Result(
-            exit_code=key_result.exit_code,
-            output_bytes=last.output_bytes,
-            error_bytes=last.error_bytes,
-            cancelled=cancelled,
-            encoding=last.encoding,
-            extra=tuple(PipeResult.from_result(r) for r in result_list),
-        )
-    else:
-        result = result_list
+    return Result(
+        exit_code=key_result.exit_code,
+        output_bytes=last.output_bytes,
+        error_bytes=last.error_bytes,
+        cancelled=cancelled,
+        encoding=last.encoding,
+        extra=tuple(PipeResult.from_result(r) for r in result_list),
+    )
 
-    assert isinstance(result, Result)
 
-    if cancelled and not command.options.catch_cancelled_error:
+def check_result(
+    result: Result,
+    options: "shellous.Options",
+    cancelled: bool,
+    timed_out: bool = False,
+) -> Result:
+    """Check result and raise exception if necessary."""
+    if cancelled and not options.catch_cancelled_error:
         raise asyncio.CancelledError()
 
-    exit_codes = command.options.exit_codes or {0}
+    exit_codes = options.exit_codes or {0}
     if (cancelled and not timed_out) or result.exit_code not in exit_codes:
         raise ResultError(result)
 
-    if command.options.return_result:
-        return result
-
-    if result.encoding is None:
-        return result.output_bytes
-
-    return result.output
+    return result
 
 
-def _find_key_result(result_list: list[Union[Result, Exception]]) -> Result:
+def _find_key_result(result_list: list[Union[Result, BaseException]]) -> Result:
     "Scan a result list and return the 'key' result."
     acc = None
 
@@ -165,7 +153,7 @@ def _compare_result(acc: Optional[Result], item: Result) -> Result:
     return acc
 
 
-def _get_result(item: Union[Result, Exception]) -> Result:
+def _get_result(item: Union[Result, BaseException]) -> Result:
     if isinstance(item, ResultError):
         return item.result
     assert isinstance(item, Result)

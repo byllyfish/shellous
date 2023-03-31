@@ -120,13 +120,10 @@ async def test_tr(tr_cmd):
 
 
 async def test_bulk(bulk_cmd):
-    with pytest.warns(DeprecationWarning):
-        result = await bulk_cmd().set(encoding=None)
-        assert len(result) == 4 * (1024 * 1024 + 1)
-        value = hashlib.sha256(result).hexdigest()
-        assert (
-            value == "462d6c497b393d2c9e1584a7b4636592da837ef66cf4ff871dc937f3fe309459"
-        )
+    result = await bulk_cmd().set(encoding="latin1")
+    assert len(result) == 4 * (1024 * 1024 + 1)
+    value = hashlib.sha256(result.encode("latin1")).hexdigest()
+    assert value == "462d6c497b393d2c9e1584a7b4636592da837ef66cf4ff871dc937f3fe309459"
 
 
 async def test_count(count_cmd):
@@ -152,6 +149,13 @@ async def test_error_bulk(error_cmd):
     assert result.error_bytes == b"1" * 1024
     assert result.output == ""
     assert result.error == "1" * 1024
+
+
+async def test_error_result():
+    result = await sh.result(sys.executable, "-c", "print('hello')")
+    assert result.exit_code == 0
+    assert result.output.rstrip() == "hello"
+    assert result.error == ""
 
 
 async def test_nonexistant_cmd():
@@ -246,10 +250,15 @@ async def test_echo_result(echo_cmd):
     "Test the .result modifier with a single command."
     echo = echo_cmd.env(SHELLOUS_EXIT_CODE=17)
 
-    result = await echo("def").result
-    assert result.exit_code == 17
-    assert result.output == "def"
-    assert not result
+    result1 = await echo("def").result
+    assert result1.exit_code == 17
+    assert result1.output == "def"
+    assert not result1
+
+    result2 = await echo.result("xyz")  # preferred syntax
+    assert result2.exit_code == 17
+    assert result2.output == "xyz"
+    assert not result2
 
 
 async def test_pipe_result_1(echo_cmd, tr_cmd):
@@ -461,9 +470,8 @@ async def test_redirect_stdin_stringio(cat_cmd):
 async def test_redirect_stdin_stringio_no_encoding(cat_cmd):
     "Test reading stdin from StringIO with encoding=None"
     buf = io.StringIO("123")
-    with pytest.warns(DeprecationWarning):
-        with pytest.raises(TypeError, match="input must be bytes"):
-            await cat_cmd().stdin(buf).set(encoding=None)
+    with pytest.raises(TypeError, match="encoding cannot be None"):
+        await cat_cmd().stdin(buf).set(encoding=None)
 
 
 async def test_redirect_stdin_inherit(echo_cmd):
@@ -803,27 +811,23 @@ async def test_process_substitution(echo_cmd, cat_cmd):
         assert result == "abc"
 
 
-async def test_async_iter_with_bytes_encoding(cat_cmd):
+async def test_async_iter_with_latin1_encoding(cat_cmd):
     "Test async iteration with encoding=None."
 
-    with pytest.warns(DeprecationWarning):
-        cmd = b"a\nb\nc\nd" | cat_cmd.set(encoding=None)
-
+    cmd = b"a\nb\nc\nd" | cat_cmd.set(encoding="latin1")
     async with cmd.run() as run:
         lines = [line async for line in run]
 
-    assert lines == [b"a\n", b"b\n", b"c\n", b"d"]
+    assert lines == ["a\n", "b\n", "c\n", "d"]
 
 
 async def test_stringio_redirect_with_bytes_encoding(echo_cmd):
     "Can't use StringIO redirect output buffer with encoding=None."
-
     buf = io.StringIO()
     cmd = echo_cmd | buf
 
-    with pytest.warns(DeprecationWarning):
-        with pytest.raises(TypeError, match="StringIO"):
-            await cmd("abc").set(encoding=None)
+    with pytest.raises(TypeError, match="encoding cannot be None"):
+        await cmd("abc").set(encoding=None)
 
 
 async def test_quick_cancel(echo_cmd):

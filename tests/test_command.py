@@ -360,3 +360,10 @@ def test_context_enums():
     assert sh.DEVNULL.name == "DEVNULL"
     assert sh.INHERIT.name == "INHERIT"
     assert sh.STDOUT.name == "STDOUT"
+
+
+def test_context_result():
+    "Test that `sh` supports the .result modifier."
+    ctxt = sh.result
+    assert ctxt.options.return_result
+    assert ctxt.options.exit_codes == range(-255, 256)

@@ -15,7 +15,12 @@ from shellous import pty_util
 from shellous.harvest import harvest, harvest_results
 from shellous.log import LOG_DETAIL, LOG_ENTER, LOG_EXIT, LOGGER, log_method, log_timer
 from shellous.redirect import Redirect
-from shellous.result import RESULT_STDERR_LIMIT, Result, make_result
+from shellous.result import (
+    RESULT_STDERR_LIMIT,
+    Result,
+    check_result,
+    convert_result_list,
+)
 from shellous.util import (
     BSD_DERIVED,
     SupportsClose,
@@ -71,7 +76,7 @@ class _RunOptions:
     """
 
     command: "shellous.Command"
-    encoding: Optional[str]
+    encoding: str
     open_fds: list[Union[int, SupportsClose]]
     input_bytes: Optional[bytes]
     pos_args: list[Union[str, bytes]]
@@ -106,7 +111,7 @@ class _RunOptions:
 
             # If executable does not include an absolute/relative directory,
             # resolve it using PATH.
-            if not os.path.dirname(self.pos_args[0]):
+            if not os.path.dirname(self.pos_args[0]):  # type: ignore (path)
                 self.pos_args[0] = which(self.pos_args[0])
 
         except Exception as ex:
@@ -364,43 +369,44 @@ class Runner:
     ```
     """
 
-    stdin = None
+    stdin: Optional[asyncio.StreamWriter] = None
     "Process standard input."
 
-    stdout = None
+    stdout: Optional[asyncio.StreamReader] = None
     "Process standard output."
 
-    stderr = None
+    stderr: Optional[asyncio.StreamReader] = None
     "Process standard error."
+
+    _proc: Optional[asyncio.subprocess.Process] = None
 
     def __init__(self, command):
         self._options = _RunOptions(command)
         self._cancelled = False
-        self._proc = None
         self._tasks = []
         self._timer = None  # asyncio.TimerHandle
         self._timed_out = False  # True if runner timeout expired
         self._last_signal = None
 
     @property
-    def name(self):
+    def name(self) -> str:
         "Return name of process being run."
         return self.command.name
 
     @property
-    def command(self):
+    def command(self) -> "shellous.Command":
         "Return the command being run."
         return self._options.command
 
     @property
-    def pid(self):
+    def pid(self) -> Optional[int]:
         "Return the command's process ID."
         if not self._proc:
             return None
         return self._proc.pid
 
     @property
-    def returncode(self):
+    def returncode(self) -> Optional[int]:
         "Process's exit code."
         if not self._proc:
             if self._cancelled:
@@ -415,7 +421,7 @@ class Runner:
         return code
 
     @property
-    def cancelled(self):
+    def cancelled(self) -> bool:
         "Return True if the command was cancelled."
         return self._cancelled
 
@@ -432,8 +438,12 @@ class Runner:
             encoding=self._options.encoding,
         )
 
-        # TODO: This method should return a Result object... (not str|bytes)
-        return make_result(self.command, result, self._cancelled, self._timed_out)
+        return check_result(
+            result,
+            self.command.options,
+            self._cancelled,
+            self._timed_out,
+        )
 
     def add_task(self, coro, tag=""):
         "Add a background task."
@@ -888,7 +898,10 @@ class Runner:
                 if stream:
                     await redir.copy_bytearray(stream, output_bytes)
 
-        return run.result(bytes(output_bytes))
+        result = run.result(bytes(output_bytes))
+        if command.options.return_result:
+            return result
+        return result.output
 
 
 class PipeRunner:
@@ -910,6 +923,8 @@ class PipeRunner:
     stderr = None
     "Pipeline standard error."
 
+    _results: Optional[list[Union[BaseException, Result]]] = None
+
     def __init__(self, pipe, *, capturing):
         """`capturing=True` indicates we are within an `async with` block and
         client needs to access `stdin` and `stderr` streams.
@@ -919,7 +934,6 @@ class PipeRunner:
         self._pipe = pipe
         self._cancelled = False
         self._tasks = []
-        self._results = None
         self._capturing = capturing
         self._encoding = pipe.options.encoding
 
@@ -930,7 +944,13 @@ class PipeRunner:
 
     def result(self):
         "Return `Result` object for PipeRunner."
-        return make_result(self._pipe, self._results, self._cancelled)
+        assert self._results is not None
+
+        return check_result(
+            convert_result_list(self._results, self._cancelled),
+            self._pipe.options,
+            self._cancelled,
+        )
 
     def add_task(self, coro, tag=""):
         "Add a background task."
@@ -1100,7 +1120,11 @@ class PipeRunner:
         run = PipeRunner(pipe, capturing=False)
         async with run:
             pass
-        return run.result()
+
+        result = run.result()
+        if pipe.options.return_result:
+            return result
+        return result.output
 
 
 def _uses_process_substitution(cmd: "shellous.Command") -> bool:
