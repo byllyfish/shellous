@@ -6,7 +6,7 @@ from types import TracebackType
 from typing import Any, Optional, Union
 
 import shellous
-from shellous.redirect import STDIN_TYPES, STDOUT_APPEND_TYPES, STDOUT_TYPES
+from shellous.redirect import STDIN_TYPES, STDOUT_APPEND_TYPES, STDOUT_TYPES, Redirect
 from shellous.runner import PipeRunner
 from shellous.util import context_aenter, context_aexit
 
@@ -167,6 +167,11 @@ class Pipeline:
 
     async def _readlines(self):
         "Async generator to iterate over lines."
-        async with self.run() as run:
+        if self.options.output == Redirect.DEFAULT:
+            cmd = self.stdout(Redirect.CAPTURE)
+        else:
+            cmd = self
+
+        async with cmd.run() as run:
             async for line in run:
                 yield line

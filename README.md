@@ -108,7 +108,8 @@ You can use a command as an asynchronous context manager. Use `async with` when 
 tell shellous to "capture" standard input (For more on this, see [Redirection](#redirection).)
 
 ```python
-async with sh("cat").stdin(sh.CAPTURE) as run:
+cmd = sh("cat").stdin(sh.CAPTURE).stdout(sh.CAPTURE)
+async with cmd as run:
     run.stdin.write(b"abc")
     run.stdin.close()
     print(await run.stdout.readline())

@@ -548,7 +548,12 @@ class Command:
 
     async def _readlines(self):
         "Async generator to iterate over lines."
-        async with self.run() as run:
+        if self.options.output == Redirect.DEFAULT:
+            cmd = self.stdout(Redirect.CAPTURE)
+        else:
+            cmd = self
+
+        async with cmd.run() as run:
             async for line in run:
                 yield line
 

@@ -83,6 +83,7 @@ class _RunOptions:
     kwd_args: dict[str, Any]
     subcmds: "list[Union[shellous.Command, shellous.Pipeline]]"
     pty_fds: Optional[pty_util.PtyFds]
+    output_bytes: Optional[bytearray]
     error_bytes: Optional[bytearray]
 
     def __init__(self, command: "shellous.Command"):
@@ -94,6 +95,7 @@ class _RunOptions:
         self.kwd_args = {}
         self.subcmds = []
         self.pty_fds = None
+        self.output_bytes = None
         self.error_bytes = None
 
     def __enter__(self):
@@ -297,11 +299,11 @@ class _RunOptions:
         elif isinstance(output, Redirect) and output.is_custom():
             # Custom support for Redirect constants.
             if output == Redirect.RESULT:
-                # We do not support redirecting stdout to RESULT (only stderr).
                 if sys_stream == sys.stdout:
-                    raise TypeError(f"unsupported output type: {output!r}")
+                    self.output_bytes = bytearray()
+                else:
+                    self.error_bytes = bytearray()
                 assert stdout == asyncio.subprocess.PIPE
-                self.error_bytes = bytearray()
             elif output == Redirect.INHERIT:
                 stdout = sys_stream
             else:
@@ -425,14 +427,14 @@ class Runner:
         "Return True if the command was cancelled."
         return self._cancelled
 
-    def result(self, output_bytes=b""):
+    def result(self):
         "Check process exit code and raise a ResultError if necessary."
         code = self.returncode
         assert code is not None
 
         result = Result(
             exit_code=code,
-            output_bytes=output_bytes,
+            output_bytes=bytes(self._options.output_bytes or b""),
             error_bytes=bytes(self._options.error_bytes or b""),
             cancelled=self._cancelled,
             encoding=self._options.encoding,
@@ -612,9 +614,13 @@ class Runner:
                 )
 
             if stdout is not None:
-                output = opts.command.options.output
+                limit = -1
+                if opts.output_bytes is not None:
+                    output = opts.output_bytes
+                else:
+                    output = opts.command.options.output
                 stdout = self._setup_output_sink(
-                    stdout, output, opts.encoding, "stdout"
+                    stdout, output, opts.encoding, "stdout", limit
                 )
 
             if stdin is not None:
@@ -885,20 +891,12 @@ class Runner:
             _cleanup(command)
             raise ValueError("multiple capture requires 'async with'")
 
-        output_bytes = bytearray()
-
         async with command.run() as run:
             if _run_future is not None:
                 # Return streams to caller in another task.
                 _run_future.set_result(run)
 
-            else:
-                # Read the output here and return it.
-                stream = run.stdout or run.stderr
-                if stream:
-                    await redir.copy_bytearray(stream, output_bytes)
-
-        result = run.result(bytes(output_bytes))
+        result = run.result()
         if command.options.return_result:
             return result
         return result.output
