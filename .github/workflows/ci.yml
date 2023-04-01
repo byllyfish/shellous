@@ -62,7 +62,7 @@ jobs:
           pytest -vv -s --durations=20 --log-cli-level=DEBUG --last-failed
         fi
     - name: Run Code Coverage (Linux and MacOS)
-      if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11'
+      if: matrix.os == 'ubuntu-22.04' || matrix.os == 'macos-12'
       run: |
         # Run coverage and upload report to codecov.
         coverage run --source shellous -m pytest
@@ -74,7 +74,7 @@ jobs:
       env:
         SHELLOUS_CODE_COVERAGE: 1
     - name: Run Tests with uvloop (Linux and MacOS)
-      if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11'
+      if: matrix.os == 'ubuntu-22.04' || matrix.os == 'macos-12'
       run: |
         # Ignore ResourceWarning with uvloop for now (TODO).
         if ! pytest -vv -s --log-cli-level=DEBUG -W ignore::ResourceWarning; then
@@ -84,7 +84,7 @@ jobs:
       env:
         SHELLOUS_LOOP_TYPE: "uvloop"
     - name: Run Tests with PidfdWatcher (Linux)
-      if: matrix.os == 'ubuntu-latest'
+      if: matrix.os == 'ubuntu-22.04'
       run: |
         if ! pytest -vv -s --log-cli-level=DEBUG; then
           echo "::warning title=PidfdChildWatcher Warning::Re-running failed tests in $BUILD_NAME"
@@ -93,7 +93,7 @@ jobs:
       env:
         SHELLOUS_CHILDWATCHER_TYPE: "pidfd"
     - name: Run Tests with SafeChildWatcher (Linux and MacOS)
-      if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11'
+      if: matrix.os == 'ubuntu-22.04' || matrix.os == 'macos-12'
       run: |
         if ! pytest -vv -s --log-cli-level=DEBUG; then
           echo "::warning title=SafeChildWatcher Warning::Re-running failed tests in $BUILD_NAME"
@@ -102,7 +102,7 @@ jobs:
       env:
         SHELLOUS_CHILDWATCHER_TYPE: "safe"
     - name: Run Tests with DefaultChildWatcher (Linux and MacOS)
-      if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-11' || matrix.os == 'ubuntu-18.04'
+      if: matrix.os == 'ubuntu-22.04' || matrix.os == 'macos-12' || matrix.os == 'ubuntu-18.04'
       run: |
         if ! pytest -vv -s --log-cli-level=DEBUG | ./ci/annotate.awk -v step=DefaultChildWatcher; then
           echo "::warning title=DefaultChildWatcher Warning::Re-running failed tests in $BUILD_NAME"
