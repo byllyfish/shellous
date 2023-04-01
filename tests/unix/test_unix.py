@@ -1724,7 +1724,7 @@ async def test_context_manager_running():
 async def test_context_manager_running_pty():
     "Test context manager in pty mode may NOT update running status of process."
 
-    async with sh("sleep", 3).set(pty=True) as sleep1:
+    async with sh("sleep", 3).stdout(sh.CAPTURE).set(pty=True) as sleep1:
         await asyncio.sleep(0.1)
         sleep1.cancel()
         await asyncio.sleep(0.1)
