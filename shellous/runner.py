@@ -147,7 +147,7 @@ class _RunOptions:
         Returns new command line arguments with /dev/fd path substitutions.
         """
         if sys.platform == "win32":
-            raise RuntimeError("process substitution not supported on Windows")
+            raise RuntimeError("process substitution not supported")  # pragma: no cover
 
         new_args: list[Union[str, bytes]] = []
         new_fds: list[int] = []
