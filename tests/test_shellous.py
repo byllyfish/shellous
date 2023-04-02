@@ -802,7 +802,7 @@ async def test_process_substitution(echo_cmd, cat_cmd):
     if sys.platform == "win32":
         with pytest.raises(
             RuntimeError,
-            match="process substitution not supported on Windows",
+            match="process substitution not supported",
         ):
             await cmd
 
