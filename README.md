@@ -84,6 +84,51 @@ safety for the command arguments.
 'Oh!!'
 ```
 
+### Results
+
+When a command completes successfully, it returns the standard output (or "" if stdout is redirected). For a more detailed response, you can specify that the command should return a `Result` object by using the `.result` modifier:
+
+```pycon
+>>> await echo.result("abc")
+Result(exit_code=0, output_bytes=b'abc', error_bytes=b'', cancelled=False, encoding='utf-8', extra=None)
+```
+
+A `Result` object contains the command's `exit_code` in addition to its output. A `Result` is True if 
+the command's exit_code is zero. You can access the string value of the output using the `.output` property:
+
+```python
+if result := await sh.result("cat", "some-file"):
+    output = result.output
+else:
+    print(f"Command failed with exit_code={result.exit_code})
+```
+
+You can retrieve the string value of the standard error using the `.error` property. (By default, only the 
+first 1024 bytes of standard error is stored.)
+
+### ResultError
+
+When a command fails, it raises a `ResultError` exception:
+
+```pycon
+>>> await sh("cat", "does_not_exist")
+Traceback (most recent call last):
+  ...
+shellous.result.ResultError: Result(exit_code=1, output_bytes=b'', error_bytes=b'cat: does_not_exist: No such file or directory\n', cancelled=False, encoding='utf-8', extra=None)
+```
+
+The `ResultError` exception contains a `Result` object with the exit_code and the first 1024 bytes of standard error.
+
+In some cases, you want to ignore certain exit code values. That is, you want to treat them as if they are 
+normal. To do this, you can set the `exit_codes` option:
+
+```pycon
+>>> await sh("cat", "does_not_exist").set(exit_codes={0,1})
+''
+```
+
+If there is a problem launching a process, shellous can also raise a separate `FileNotFoundError` or  `PermissionError`.
+
 ### Async For
 
 Using `await` to run a command collects the entire output of the command in memory before returning it. You 
@@ -134,55 +179,10 @@ to stop; the context manager normally waits for standard output to close.
 
 ```python
 async with sh("some-server") as run:
-    # send commands to server here...
-    # Now manually tell the server to stop (sends SIGTERM).
+    # Send commands to the server here...
+    # Manually signal the server to stop.
     run.cancel()
 ```
-
-### ResultError
-
-When a command fails, it raises a `ResultError` exception:
-
-```pycon
->>> await sh("cat", "does_not_exist")
-Traceback (most recent call last):
-  ...
-shellous.result.ResultError: Result(exit_code=1, output_bytes=b'', error_bytes=b'cat: does_not_exist: No such file or directory\n', cancelled=False, encoding='utf-8', extra=None)
-```
-
-The `ResultError` exception contains a `Result` object with the exit_code and the first 1024 bytes of standard error.
-
-In some cases, you want to ignore certain exit code values. That is, you want to treat them as if they are 
-normal. To do this, you can set the `exit_codes` option:
-
-```pycon
->>> await sh("cat", "does_not_exist").set(exit_codes={0,1})
-''
-```
-
-If there is a problem launching a process, shellous can also raise a separate `FileNotFoundError` or  `PermissionError`.
-
-### Results
-
-When a command completes successfully, it returns the standard output (or "" if stdout is redirected). For a more detailed response, you can specify that the command should return a `Result` object by using the `.result` modifier:
-
-```pycon
->>> await echo.result("abc")
-Result(exit_code=0, output_bytes=b'abc', error_bytes=b'', cancelled=False, encoding='utf-8', extra=None)
-```
-
-A `Result` object contains the command's `exit_code` in addition to its output. A `Result` is True if 
-the command's exit_code is zero. You can access the string value of the output using the `.output` property:
-
-```python
-if result := await sh.result("cat", "some-file"):
-    output = result.output
-else:
-    print(f"Command failed with exit_code={result.exit_code})
-```
-
-You can retrieve the string value of the standard error using the `.error` property. (By default, only the 
-first 1024 bytes of standard error is stored.)
 
 ## Redirection
 
