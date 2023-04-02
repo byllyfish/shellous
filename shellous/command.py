@@ -221,7 +221,7 @@ class CmdContext:
     "Redirect stderr to same place as stdout."
 
     BUFFER: ClassVar[Redirect] = Redirect.BUFFER
-    "Redirect stderr to a buffer in the Result object."
+    "Redirect output to a buffer in the Result object. This is the default for stdout/stderr."
 
     options: Options = Options()
     "Default command options."

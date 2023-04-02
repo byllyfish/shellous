@@ -142,6 +142,7 @@ async def test_error(error_cmd):
 
 
 async def test_error_bulk(error_cmd):
+    # sh.BUFFER is used to override stderr(sh.INHERIT).
     result = await error_cmd("1").env(SHELLOUS_EXIT_CODE="13").stderr(sh.BUFFER).result
 
     assert result.exit_code == 13
@@ -156,6 +157,27 @@ async def test_error_result():
     assert result.exit_code == 0
     assert result.output.rstrip() == "hello"
     assert result.error == ""
+
+
+async def test_error_only():
+    "Test standard error output only (STDOUT + DEVNULL)."
+    cmd = (
+        sh(sys.executable, "-c", "import sys; print(sys.stderr, 'abc')")
+        .stdout(sh.DEVNULL)
+        .stderr(sh.STDOUT)
+    )
+
+    assert await cmd.result() == Result(
+        exit_code=0,
+        output_bytes=b"",  # FIXME: should be "abc"
+        error_bytes=b"",
+        cancelled=False,
+        encoding="utf-8",
+        extra=None,
+    )
+
+    out = [line async for line in cmd]
+    assert out == []  # FIXME: should be "abc"
 
 
 async def test_nonexistant_cmd():
