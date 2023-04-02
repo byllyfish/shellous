@@ -69,8 +69,8 @@ _DEFAULT_REDIRECTION: dict[tuple[int, bool], Union[bytes, Redirect]] = {
     # (FD, PTY)
     (_STDIN, False): b"",
     (_STDIN, True): Redirect.CAPTURE,
-    (_STDOUT, False): Redirect.CAPTURE,
-    (_STDOUT, True): Redirect.CAPTURE,
+    (_STDOUT, False): Redirect.RESULT,
+    (_STDOUT, True): Redirect.RESULT,
     (_STDERR, False): Redirect.RESULT,
     (_STDERR, True): Redirect.STDOUT,
 }

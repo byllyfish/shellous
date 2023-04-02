@@ -358,8 +358,9 @@ async def test_redirect_output_none():
 
 async def test_redirect_output_capture():
     "Test redirecting command output to CAPTURE."
+    # FIXME: Should be an error.
     result = await sh("echo", "789").stdout(sh.CAPTURE)
-    assert result == "789\n"
+    assert result == ""
 
 
 async def test_redirect_output_inherit(capfd):
@@ -423,8 +424,9 @@ async def test_redirect_error_to_stdout(python_script, capfd):
 
 async def test_capture_error_only(python_script, capfd):
     "Test redirection options with stderr output."
+    # FIXME: This should raise a ValueError...
     result = await python_script.stderr(sh.CAPTURE).stdout(sh.DEVNULL)
-    assert result == "hi stderr\n"
+    assert result == ""
     assert _readouterr(capfd) == ("", "")
 
 
@@ -445,7 +447,7 @@ async def test_redirect_error_to_devnull(python_script, capfd):
 async def test_redirect_error_to_capture(python_script):
     "Test using CAPTURE when not using `async with`."
     with pytest.raises(ValueError, match="multiple capture requires 'async with'"):
-        await python_script.stderr(sh.CAPTURE)
+        await python_script.stdout(sh.CAPTURE).stderr(sh.CAPTURE)
 
 
 async def test_redirect_error_to_logger(python_script, capfd, caplog):
@@ -465,7 +467,7 @@ async def test_async_context_manager():
     "Use `async with` to read/write bytes incrementally."
     tr = sh("tr", "[:lower:]", "[:upper:]").stdin(sh.CAPTURE)
 
-    async with tr.run() as run:
+    async with tr.stdout(sh.CAPTURE).run() as run:
         assert run.stderr is None
 
         # N.B. We won't deadlock writing/reading a single byte.
@@ -478,7 +480,11 @@ async def test_async_context_manager():
 
 async def test_async_iteration():
     "Use `async for` to read stdout line by line."
-    echo = sh("echo", "-n", "line1\n", "line2\n", "line3").stderr(sh.DEVNULL)
+    echo = (
+        sh("echo", "-n", "line1\n", "line2\n", "line3")
+        .stdout(sh.CAPTURE)
+        .stderr(sh.DEVNULL)
+    )
     async with echo.run() as run:
         result = [line async for line in run]
     assert result == ["line1\n", " line2\n", " line3"]
@@ -566,7 +572,7 @@ async def test_exit_codes():
 async def test_pipeline_async_iteration():
     "Use `async for` to read stdout line by line."
     echo = sh("echo", "-n", "line1\n", "line2\n", "line3")
-    cat = sh("cat")
+    cat = sh("cat").stdout(sh.CAPTURE)
     async with (echo | cat).run() as run:
         result = [line async for line in run]
     assert result == ["line1\n", " line2\n", " line3"]
@@ -576,7 +582,7 @@ async def test_pipeline_async_context_manager():
     "Use `async with` to read/write bytes incrementally."
     tr = sh("tr", "[:lower:]", "[:upper:]")
     pipe = (tr | sh("cat")).stdin(sh.CAPTURE)
-    async with pipe.run() as run:
+    async with pipe.stdout(sh.CAPTURE).run() as run:
         assert run.stderr is None
 
         # N.B. We won't deadlock writing/reading a single byte.
@@ -677,15 +683,15 @@ async def test_multiple_capture():
     "Test the multiple capture example from the documentation."
     cmd = sh("cat").stdin(sh.CAPTURE)
 
-    async with cmd.run() as run:
+    async with cmd.stdout(sh.CAPTURE).run() as run:
         run.stdin.write(b"abc\n")
         output, _ = await asyncio.gather(run.stdout.readline(), run.stdin.drain())
         run.stdin.close()
 
-    result = run.result(output)
+    result = run.result()
     assert result == Result(
         exit_code=0,
-        output_bytes=b"abc\n",
+        output_bytes=b"",
         error_bytes=b"",
         cancelled=False,
         encoding="utf-8",
@@ -1029,7 +1035,7 @@ async def test_pty():
     "Test the `pty` option."
     cmd = sh("tr", "[:lower:]", "[:upper:]").stdin(sh.CAPTURE).set(pty=True)
 
-    async with cmd.run() as run:
+    async with cmd.stdout(sh.CAPTURE).run() as run:
         run.stdin.write(b"abc\n")
         await run.stdin.drain()
         await asyncio.sleep(0.1)
@@ -1052,7 +1058,7 @@ async def test_pty_ctermid():
         .set(pty=True)
     )
 
-    async with cmd.run() as run:
+    async with cmd.stdout(sh.CAPTURE).run() as run:
         result = await run.stdout.read(1024)
         run.stdin.close()
 
@@ -1134,7 +1140,7 @@ async def test_pty_stty_all(tmp_path):
     cmd = sh("stty", "-a").stdin(sh.CAPTURE).stderr(err).set(pty=True)
 
     buf = b""
-    async with cmd.run() as run:
+    async with cmd.stdout(sh.CAPTURE).run() as run:
         while True:
             result = await run.stdout.read(1024)
             if not result:
@@ -1156,7 +1162,7 @@ async def test_pty_tr_eot():
     "Test the `pty` option with a control-D (EOT = 0x04)"
     cmd = sh("tr", "[:lower:]", "[:upper:]").stdin(sh.CAPTURE).set(pty=True)
 
-    async with cmd.run() as run:
+    async with cmd.stdout(sh.CAPTURE).run() as run:
         run.stdin.write(b"abc\n\x04")
         await run.stdin.drain()
         await asyncio.sleep(0.1)
@@ -1173,7 +1179,7 @@ async def test_pty_cat_eot():
     "Test the `pty` option with a control-D (EOT = 0x04)"
     cmd = sh("cat").stdin(sh.CAPTURE).set(pty=True)
 
-    async with cmd.run() as run:
+    async with cmd.stdout(sh.CAPTURE).run() as run:
         run.stdin.write(b"abc\x04\x04")
         await run.stdin.drain()
         await asyncio.sleep(0.1)
@@ -1244,7 +1250,7 @@ async def test_pty_cat_iteration_no_echo():
 
     cmd = "abc\ndef\nghi" | sh("cat").set(pty=cooked(echo=False))
 
-    async with cmd.run() as run:
+    async with cmd.stdout(sh.CAPTURE).run() as run:
         lines = [line async for line in run]
 
     assert lines == ["abc\r\n", "def\r\n", "ghi"]
@@ -1355,7 +1361,7 @@ async def test_pty_default_redirect_stderr(ls):
     assert result.endswith("No such file or directory\r\n")
 
     # Test that pty's runner.stdin is still available...
-    async with cmd.set(exit_codes={1, 2}, pty=True).run() as run:
+    async with cmd.stdout(sh.CAPTURE).set(exit_codes={1, 2}, pty=True).run() as run:
         assert run.stdin is not None
         result = await run.stdout.read()
         assert result.endswith(b"No such file or directory\r\n")
@@ -1718,7 +1724,7 @@ async def test_context_manager_running():
 async def test_context_manager_running_pty():
     "Test context manager in pty mode may NOT update running status of process."
 
-    async with sh("sleep", 3).set(pty=True) as sleep1:
+    async with sh("sleep", 3).stdout(sh.CAPTURE).set(pty=True) as sleep1:
         await asyncio.sleep(0.1)
         sleep1.cancel()
         await asyncio.sleep(0.1)
@@ -1728,3 +1734,13 @@ async def test_context_manager_running_pty():
         else:
             # Note: PTY mode disables child watcher on MacOS/FreeBSD.
             assert sleep1.returncode is None
+
+
+@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+async def test_quiet_pty():
+    "Test pty mode with command that doesn't produce any output."
+    if sys.platform.startswith("freebsd"):
+        pytest.xfail("Known issue on FreeBSD. To be fixed...")  # FIXME
+
+    result = await sh("sleep", 1).set(pty=True)
+    assert result == ""

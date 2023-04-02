@@ -60,6 +60,7 @@ async def run_asyncio_repl(cmds, logfile=None):
     repl = (
         sh(sys.executable, "-m", "asyncio")
         .stdin(sh.CAPTURE)
+        .stdout(sh.CAPTURE)
         .stderr(errbuf)
         .set(return_result=True, inherit_env=False)
         .env(**_current_env())
@@ -120,12 +121,12 @@ def test_parse_readme():
         'await sh("echo", 1, 2, [3, 4, (5, 6)])',
         'echo = sh("echo", "-n")',
         'await echo("abc")',
-        'async def exclaim(word):\n  return await sh("echo", "-n", f"{word}!!")\n',
+        'async def exclaim(word: str) -> str:\n  return await sh("echo", "-n", f"{word}!!")\n',
         'await exclaim("Oh")',
         '[line async for line in echo("hi\\n", "there")]',
         'await sh("cat", "does_not_exist")',
         'await sh("cat", "does_not_exist").set(exit_codes={0,1})',
-        'await echo("abc").result',
+        'await echo.result("abc")',
         'cmd = "abc" | sh("wc", "-c")',
         "await cmd",
         "from pathlib import Path",
@@ -154,11 +155,14 @@ def test_parse_readme():
         't = asyncio.create_task(sh("sleep", 60).coro())',
         "t.cancel()",
         "await t",
+        'await sh("echo", "in a pty").set(pty=True)',
         'ls = sh("ls").set(pty=shellous.cooked(cols=40, rows=10, echo=False))',
         'await ls("README.md", "CHANGELOG.md")',
         'auditor = lambda phase, info: print(phase, info["runner"].name)',
         "sh_audit = sh.set(audit_callback=auditor)",
         'await sh_audit("echo", "goodbye")',
+        "rsh = sh.result",
+        'await rsh("echo", "whatever")',
     ]
 
 

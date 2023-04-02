@@ -442,8 +442,8 @@ async def test_redirect_stdout_logger(echo_cmd, caplog):
 
 async def test_redirect_stdout_result(echo_cmd):
     "Test redirecting stdout to RESULT."
-    with pytest.raises(TypeError, match="unsupported output type"):
-        await echo_cmd("abc").stdout(sh.RESULT)
+    result = await echo_cmd("abc").stdout(sh.RESULT)
+    assert result == "abc"
 
 
 async def test_redirect_stdin_bytearray(cat_cmd):
@@ -592,7 +592,7 @@ async def test_stdout_deadlock_antipattern(bulk_cmd):
     "Use async-with but don't read from stdout."
 
     async def _antipattern():
-        async with bulk_cmd.set(timeout=3.0).run() as run:
+        async with bulk_cmd.set(timeout=3.0).stdout(sh.CAPTURE).run() as run:
             assert run.stdin is None
             assert run.stderr is None
             assert run.stdout
@@ -758,7 +758,7 @@ async def test_breaking_out_of_async_iter(env_cmd):
 async def test_exception_in_async_iter(env_cmd):
     "Test breaking out of an async iterator."
     with pytest.raises(ValueError):
-        async with env_cmd.run() as run:
+        async with env_cmd.stdout(sh.CAPTURE).run() as run:
             async for _ in run:
                 raise ValueError(1)
     # report_orphan_tasks
@@ -779,7 +779,7 @@ async def test_pipe_exception_in_async_iter(env_cmd, tr_cmd):
     cmd = env_cmd | tr_cmd
 
     with pytest.raises(ValueError):
-        async with cmd.run() as run:
+        async with cmd.stdout(sh.CAPTURE).run() as run:
             async for _ in run:
                 raise ValueError(1)
     # report_orphan_tasks
@@ -814,7 +814,7 @@ async def test_process_substitution(echo_cmd, cat_cmd):
 async def test_async_iter_with_latin1_encoding(cat_cmd):
     "Test async iteration with encoding=None."
 
-    cmd = b"a\nb\nc\nd" | cat_cmd.set(encoding="latin1")
+    cmd = b"a\nb\nc\nd" | cat_cmd.set(encoding="latin1") | sh.CAPTURE
     async with cmd.run() as run:
         lines = [line async for line in run]
 
@@ -869,10 +869,22 @@ async def test_redirect_to_arbitrary_tuple():
         await (sh("echo") | (1, 2))
 
 
-async def test_command_context_manager_api():
+async def test_command_context_manager_default():
     "Test running a command using its context manager."
 
     async with sh("echo", "hello") as run:
+        # By default, context manager does not capture any streams.
+        assert run.stdin is None
+        assert run.stdout is None
+        assert run.stderr is None
+
+    assert run.result().output == "hello\n"
+
+
+async def test_command_context_manager_api():
+    "Test running a command using its context manager."
+
+    async with sh("echo", "hello").stdout(sh.CAPTURE) as run:
         out = await run.stdout.read()
 
     assert out == b"hello\n"
@@ -881,7 +893,7 @@ async def test_command_context_manager_api():
 async def test_command_context_manager_api_reentrant():
     "Test running a command using its context manager."
 
-    cmd = sh("echo", "hello")
+    cmd = sh("echo", "hello").stdout(sh.CAPTURE)
     async with cmd as run1:
         out1 = await run1.stdout.read()
 
@@ -895,7 +907,7 @@ async def test_command_context_manager_api_reentrant():
 async def test_pipe_context_manager_api():
     "Test running a pipeline using its context manager."
 
-    async with sh("echo", "hello") | sh("cat") as run:
+    async with sh("echo", "hello") | sh("cat").stdout(sh.CAPTURE) as run:
         out = await run.stdout.read()
 
     assert out == b"hello\n"
@@ -904,7 +916,7 @@ async def test_pipe_context_manager_api():
 async def test_pipe_context_manager_api_reentrant():
     "Test running a pipeline using its context manager."
 
-    cmd = sh("echo", "hello") | sh("cat")
+    cmd = sh("echo", "hello") | sh("cat").stdout(sh.CAPTURE)
     async with cmd as run1:
         out1 = await run1.stdout.read()
 
@@ -1142,7 +1154,7 @@ async def test_command_with_timeout_ignored(sleep_cmd):
 async def test_command_with_timeout_expiring_context(sleep_cmd):
     "Test a command with a timeout option."
 
-    sleep = sleep_cmd(10).set(timeout=0.1)
+    sleep = sleep_cmd(10).set(timeout=0.1).stdout(sh.CAPTURE)
 
     with pytest.raises(asyncio.TimeoutError):
         async with sleep as run:
@@ -1331,8 +1343,8 @@ async def test_as_completed(echo_cmd):
 async def test_multiple_context_manager(echo_cmd):
     "Test use of multiple context managers at the same time."
 
-    echo1 = echo_cmd(1)
-    echo2 = echo_cmd(2)
+    echo1 = echo_cmd(1).stdout(sh.CAPTURE)
+    echo2 = echo_cmd(2).stdout(sh.CAPTURE)
 
     async with echo1 as run1, echo2 as run2:
         line1 = await run1.stdout.read()
