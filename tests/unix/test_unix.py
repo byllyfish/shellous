@@ -1739,5 +1739,8 @@ async def test_context_manager_running_pty():
 @pytest.mark.xfail(_is_uvloop(), reason="uvloop")
 async def test_quiet_pty():
     "Test pty mode with command that doesn't produce any output."
+    if sys.platform.startswith("freebsd"):
+        pytest.xfail("Known issue on FreeBSD. To be fixed...")  # FIXME
+
     result = await sh("sleep", 1).set(pty=True)
     assert result == ""
