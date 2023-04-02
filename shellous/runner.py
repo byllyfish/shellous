@@ -55,10 +55,8 @@ def _is_writable(cmd: "Union[shellous.Command, shellous.Pipeline]"):
     return cmd.options.writable
 
 
-def _enc(encoding: Optional[str]):
+def _enc(encoding: str) -> list[str]:
     "Helper function to split the encoding name into codec and errors."
-    if encoding is None:
-        raise TypeError("when encoding is None, input must be bytes")
     return encoding.split(maxsplit=1)
 
 
@@ -752,8 +750,6 @@ class Runner:
     def _setup_output_sink(self, stream, sink, encoding, tag, limit=-1):
         "Set up a task to write to custom output sink."
         if isinstance(sink, io.StringIO):
-            if encoding is None:
-                raise TypeError("StringIO not supported when encoding=None")
             self.add_task(redir.copy_stringio(stream, sink, encoding), tag)
             stream = None
         elif isinstance(sink, io.BytesIO):

@@ -367,3 +367,12 @@ def test_context_result():
     ctxt = sh.result
     assert ctxt.options.return_result
     assert ctxt.options.exit_codes == range(-255, 256)
+
+
+def test_command_invalid_encoding():
+    "Test the empty encoding is invalid."
+    with pytest.raises(TypeError, match="invalid encoding"):
+        sh("echo").set(encoding="")
+
+    with pytest.raises(TypeError, match="invalid encoding"):
+        sh("echo").set(encoding=None)

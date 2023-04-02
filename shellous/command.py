@@ -267,8 +267,8 @@ class CmdContext:
         """
         kwargs = locals()
         del kwargs["self"]
-        if encoding is None:  # pyright: ignore[reportUnnecessaryComparison]
-            raise TypeError("encoding cannot be None")
+        if not encoding:
+            raise TypeError("invalid encoding")
         return CmdContext(self.options.set(kwargs))
 
     def __call__(self, *args: Any) -> "Command":
@@ -495,8 +495,8 @@ class Command:
         """
         kwargs = locals()
         del kwargs["self"]
-        if encoding is None:  # pyright: ignore[reportUnnecessaryComparison]
-            raise TypeError("encoding cannot be None")
+        if not encoding:
+            raise TypeError("invalid encoding")
         return Command(self.args, self.options.set(kwargs))
 
     def _replace_args(self, new_args: list[Union[str, bytes]]) -> Self:

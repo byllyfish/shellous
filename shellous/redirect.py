@@ -275,12 +275,7 @@ async def copy_streamwriter(source: asyncio.StreamReader, dest: asyncio.StreamWr
 
 
 @log_method(LOG_DETAIL)
-async def read_lines(source: asyncio.StreamReader, encoding: Optional[str]):
+async def read_lines(source: asyncio.StreamReader, encoding: str):
     "Async iterator over lines in stream."
-    if encoding is None:
-        async for line in source:
-            yield line
-
-    else:
-        async for line in source:
-            yield decode(line, encoding)
+    async for line in source:
+        yield decode(line, encoding)

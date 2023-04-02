@@ -470,7 +470,7 @@ async def test_redirect_stdin_stringio(cat_cmd):
 async def test_redirect_stdin_stringio_no_encoding(cat_cmd):
     "Test reading stdin from StringIO with encoding=None"
     buf = io.StringIO("123")
-    with pytest.raises(TypeError, match="encoding cannot be None"):
+    with pytest.raises(TypeError, match="invalid encoding"):
         await cat_cmd().stdin(buf).set(encoding=None)
 
 
@@ -826,7 +826,7 @@ async def test_stringio_redirect_with_bytes_encoding(echo_cmd):
     buf = io.StringIO()
     cmd = echo_cmd | buf
 
-    with pytest.raises(TypeError, match="encoding cannot be None"):
+    with pytest.raises(TypeError, match="invalid encoding"):
         await cmd("abc").set(encoding=None)
 
 
