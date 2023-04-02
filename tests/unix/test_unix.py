@@ -352,7 +352,7 @@ async def test_redirect_output_stdout():
 
 async def test_redirect_output_none():
     "Test redirecting command output to None."
-    with pytest.raises(TypeError, match="None"):
+    with pytest.raises(TypeError, match="invalid stdout"):
         await sh("echo", "789").stdout(None)
 
 

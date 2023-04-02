@@ -45,23 +45,6 @@ class Redirect(enum.IntEnum):
         assert obj == Redirect.DEFAULT
         return _DEFAULT_REDIRECTION[(fdesc, bool(pty))]
 
-    @staticmethod
-    def from_literal(literal: Any, is_stderr: bool = False):
-        "Return object with literal values replaced by Redirect constant."
-
-        if isinstance(literal, (tuple, type(...), type(None))):
-            raise TypeError(f"literal {literal!r} is unsupported")
-
-        # For stderr, the literal `1` indicates that stderr is redirected to
-        # the same place as STDOUT.
-        if is_stderr and isinstance(literal, int) and literal == 1:
-            raise TypeError(f"stderr literal {literal!r} is unupported")
-
-        try:
-            return _LITERAL_REDIRECT.get(literal, literal)
-        except TypeError:
-            return literal
-
 
 # This table has the default redirections for (src, pty).
 # Sources are stdin, stdout, stderr. Used by Redirect.from_default().
@@ -73,12 +56,6 @@ _DEFAULT_REDIRECTION: dict[tuple[int, bool], Union[bytes, Redirect]] = {
     (_STDOUT, True): Redirect.RESULT,
     (_STDERR, False): Redirect.RESULT,
     (_STDERR, True): Redirect.STDOUT,
-}
-
-_LITERAL_REDIRECT: dict[Any, Redirect] = {
-    None: Redirect.DEVNULL,
-    ...: Redirect.INHERIT,
-    (): Redirect.CAPTURE,
 }
 
 # Used in Command and Pipeline to implement operator overloading.

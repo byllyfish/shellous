@@ -151,7 +151,9 @@ class Options:  # pylint: disable=too-many-instance-attributes
 
     def set_stdin(self, input_: Any, close: bool) -> Self:
         "Return new options with `input` configured."
-        input_ = Redirect.from_literal(input_)
+        if input_ is None:
+            raise TypeError("invalid stdin")
+
         if input_ == Redirect.STDOUT:
             raise ValueError("STDOUT is only supported by stderr")
 
@@ -163,7 +165,9 @@ class Options:  # pylint: disable=too-many-instance-attributes
 
     def set_stdout(self, output: Any, append: bool, close: bool) -> Self:
         "Return new options with `output` configured."
-        output = Redirect.from_literal(output)
+        if output is None:
+            raise TypeError("invalid stdout")
+
         if output == Redirect.STDOUT:
             raise ValueError("STDOUT is only supported by stderr")
 
@@ -176,7 +180,9 @@ class Options:  # pylint: disable=too-many-instance-attributes
 
     def set_stderr(self, error: Any, append: bool, close: bool) -> Self:
         "Return new options with `error` configured."
-        error = Redirect.from_literal(error, True)
+        if error is None:
+            raise TypeError("invalid stderr")
+
         return dataclasses.replace(
             self,
             error=error,
