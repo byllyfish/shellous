@@ -261,7 +261,7 @@ class _RunOptions:
             # Custom support for Redirect constants.
             if input_ == Redirect.INHERIT:
                 stdin = sys.stdin
-            elif input_ == Redirect.RESULT:
+            elif input_ == Redirect.BUFFER:
                 raise TypeError(f"unsupported input type: {input_!r}")
             else:
                 # CAPTURE uses stdin == PIPE.
@@ -296,7 +296,7 @@ class _RunOptions:
             self.open_fds.append(stdout)
         elif isinstance(output, Redirect) and output.is_custom():
             # Custom support for Redirect constants.
-            if output == Redirect.RESULT:
+            if output == Redirect.BUFFER:
                 if sys_stream == sys.stdout:
                     self.output_bytes = bytearray()
                 else:

@@ -132,7 +132,7 @@ async def test_count(count_cmd):
 
 
 async def test_error(error_cmd):
-    result = await error_cmd.stderr(sh.RESULT).result
+    result = await error_cmd.stderr(sh.BUFFER).result
 
     assert result.exit_code == 0
     assert result.output_bytes == b""
@@ -142,7 +142,7 @@ async def test_error(error_cmd):
 
 
 async def test_error_bulk(error_cmd):
-    result = await error_cmd("1").env(SHELLOUS_EXIT_CODE="13").stderr(sh.RESULT).result
+    result = await error_cmd("1").env(SHELLOUS_EXIT_CODE="13").stderr(sh.BUFFER).result
 
     assert result.exit_code == 13
     assert result.output_bytes == b""
@@ -442,7 +442,7 @@ async def test_redirect_stdout_logger(echo_cmd, caplog):
 
 async def test_redirect_stdout_result(echo_cmd):
     "Test redirecting stdout to RESULT."
-    result = await echo_cmd("abc").stdout(sh.RESULT)
+    result = await echo_cmd("abc").stdout(sh.BUFFER)
     assert result == "abc"
 
 
@@ -488,7 +488,7 @@ async def test_redirect_stdin_inherit(echo_cmd):
 async def test_redirect_stdin_result(echo_cmd):
     "Test reading stdin from RESULT."
     with pytest.raises(TypeError, match="unsupported input type"):
-        await echo_cmd("abc").stdin(sh.RESULT)
+        await echo_cmd("abc").stdin(sh.BUFFER)
 
 
 async def test_redirect_stdin_unsupported_type(cat_cmd):

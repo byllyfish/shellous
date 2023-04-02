@@ -220,7 +220,7 @@ class CmdContext:
     STDOUT: ClassVar[Redirect] = Redirect.STDOUT
     "Redirect stderr to same place as stdout."
 
-    RESULT: ClassVar[Redirect] = Redirect.RESULT
+    BUFFER: ClassVar[Redirect] = Redirect.BUFFER
     "Redirect stderr to a buffer in the Result object."
 
     options: Options = Options()
