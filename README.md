@@ -77,7 +77,7 @@ It is often convenient to wrap your commands in a function. This idiom provides 
 safety for the command arguments.
 
 ```pycon
->>> async def exclaim(word):
+>>> async def exclaim(word: str) -> str:
 ...   return await sh("echo", "-n", f"{word}!!")
 ... 
 >>> await exclaim("Oh")
@@ -86,8 +86,8 @@ safety for the command arguments.
 
 ### Async For
 
-Using `await` to run a command collects the entire output of the command before returning it. You can also
-iterate over the output lines as they arrive using `async for`.
+Using `await` to run a command collects the entire output of the command in memory before returning it. You 
+can also iterate over the output lines as they arrive using `async for`.
 
 ```pycon
 >>> [line async for line in echo("hi\n", "there")]
@@ -104,8 +104,9 @@ async for line in sh("tail", "-f", "/var/log/syslog"):
 
 ### Async With
 
-You can use a command as an asynchronous context manager. Use `async with` when you need byte-by-byte control over the individual process streams: stdin, stdout and stderr. To control standard input, we need to explicitly
-tell shellous to "capture" standard input (For more on this, see [Redirection](#redirection).)
+You can use a command as an asynchronous context manager. Use `async with` when you need byte-by-byte
+control over the individual process streams: stdin, stdout and stderr. To control a standard stream, you
+must tell shellous to "capture" it (For more on this, see [Redirection](#redirection).)
 
 ```python
 cmd = sh("cat").stdin(sh.CAPTURE).stdout(sh.CAPTURE)
@@ -117,9 +118,26 @@ async with cmd as run:
 result = run.result()
 ```
 
-When reading or writing individual streams, you are responsible for managing reads and writes so they don't
-deadlock. The streams on the `run` object are `asyncio.StreamReader` and `asyncio.StreamWriter` objects.
+If we didn't specify that stdin/stdout are `sh.CAPTURE`, the streams `run.stdin` and `run.stdout` would be 
+`None`.
 
+The return value of `run.result()` is always a `Result` object. Depending on the command settings, this 
+function may raise a `ResultError` on a non-zero exit code. If you don't call `run.result()`, the result
+is ignored.  
+
+When reading or writing individual streams, you are responsible for managing reads and writes so they don't
+deadlock. The above example is contrived. All streams on the `run` object are `asyncio.StreamReader` and 
+`asyncio.StreamWriter` objects.
+
+You can also use `async with` to run a server. When you do so, you must tell the server
+to stop; the context manager normally waits for standard output to close.
+
+```python
+async with sh("some-server") as run:
+    # send commands to server here...
+    # Now manually tell the server to stop (sends SIGTERM).
+    run.cancel()
+```
 
 ### ResultError
 
@@ -134,8 +152,8 @@ shellous.result.ResultError: Result(exit_code=1, output_bytes=b'', error_bytes=b
 
 The `ResultError` exception contains a `Result` object with the exit_code and the first 1024 bytes of standard error.
 
-In some cases, you want to ignore certain exit code values. That is, you want to treat them as if they are normal.
-To do this, you can set the `exit_codes` option:
+In some cases, you want to ignore certain exit code values. That is, you want to treat them as if they are 
+normal. To do this, you can set the `exit_codes` option:
 
 ```pycon
 >>> await sh("cat", "does_not_exist").set(exit_codes={0,1})
@@ -144,12 +162,12 @@ To do this, you can set the `exit_codes` option:
 
 If there is a problem launching a process, shellous can also raise a separate `FileNotFoundError` or  `PermissionError`.
 
-## Results
+### Results
 
-When a command completes successfully, it returns the standard output (unless it is redirected). For a more detailed response, you can specify that the command should return a `Result` object by using the `.result` modifier:
+When a command completes successfully, it returns the standard output (or "" if stdout is redirected). For a more detailed response, you can specify that the command should return a `Result` object by using the `.result` modifier:
 
 ```pycon
->>> await echo("abc").result
+>>> await echo.result("abc")
 Result(exit_code=0, output_bytes=b'abc', error_bytes=b'', cancelled=False, encoding='utf-8', extra=None)
 ```
 
@@ -157,11 +175,14 @@ A `Result` object contains the command's `exit_code` in addition to its output. 
 the command's exit_code is zero. You can access the string value of the output using the `.output` property:
 
 ```python
-if result := await sh("cat", "some-file").result:
+if result := await sh.result("cat", "some-file"):
     output = result.output
 else:
     print(f"Command failed with exit_code={result.exit_code})
 ```
+
+You can retrieve the string value of the standard error using the `.error` property. (By default, only the 
+first 1024 bytes of standard error is stored.)
 
 ## Redirection
 
@@ -303,7 +324,8 @@ You can create a pipeline by combining commands using the `|` operator.
 
 ## Process Substitution (Unix Only)
 
-You can pass a shell command as an argument to another.
+You can pass a shell command as an argument to another. Here is the shellous equivalent to the bash
+command: `grep README <(ls)`.
 
 ```pycon
 >>> cmd = sh("grep", "README", sh("ls"))
@@ -322,6 +344,7 @@ Use `.writable` to write to a command instead.
 bytearray(b'README.md\n')
 ```
 
+The above example is equivalent to `ls | tee >(grep README > buf) > /dev/null`.
 ## Timeouts
 
 You can specify a timeout using the `timeout` option. If the timeout expires, shellous will raise
@@ -354,14 +377,22 @@ process exits.
 
 ## Pseudo-Terminal Support (Unix Only)
 
-To run a command through a pseudo-terminal, set the `pty` option to True. Alternatively, you can pass
-a function to configure the tty mode and size.
+To run a command through a pseudo-terminal, set the `pty` option to True. 
+
+```pycon
+>>> await sh("echo", "in a pty").set(pty=True)
+'in a pty\r\n'
+```
+
+Alternatively, you can pass a `pty` function to configure the tty mode and size.
 
 ```pycon
 >>> ls = sh("ls").set(pty=shellous.cooked(cols=40, rows=10, echo=False))
 >>> await ls("README.md", "CHANGELOG.md")
 'CHANGELOG.md\tREADME.md\r\n'
 ```
+
+Shellous provides three built-in helper functions: `shellous.cooked()`, `shellous.raw()` and `shellous.cbreak()`.
 
 ## Context Objects
 
@@ -380,4 +411,12 @@ Now all commands created with `sh_audit` will log their progress using the audit
 start echo
 stop echo
 'goodbye\n'
+```
+
+You can also create a context object that specifies all return values are `Result` objects.
+
+```pycon
+>>> rsh = sh.result
+>>> await rsh("echo", "whatever")
+Result(exit_code=0, output_bytes=b'whatever\n', error_bytes=b'', cancelled=False, encoding='utf-8', extra=None)
 ```
