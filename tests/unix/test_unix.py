@@ -1734,3 +1734,10 @@ async def test_context_manager_running_pty():
         else:
             # Note: PTY mode disables child watcher on MacOS/FreeBSD.
             assert sleep1.returncode is None
+
+
+@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+async def test_quiet_pty():
+    "Test pty mode with command that doesn't produce any output."
+    result = await sh("sleep", 1).set(pty=True)
+    assert result == ""
