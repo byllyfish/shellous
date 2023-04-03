@@ -395,10 +395,10 @@ class Command:
         environment is augmented/overriden by any variables specified in
         `Command.env`.
 
-        **encoding** (str | None) default="utf-8"<br>
-        String encoding to use for subprocess input/output. `encoding` of None
-        is deprecated. To specify `errors`, append it after a space. For
-        example, use "utf-8 replace" to specify "utf-8" with errors "replace".
+        **encoding** (str) default="utf-8"<br>
+        String encoding to use for subprocess input/output. To specify `errors`,
+        append it after a space. For example, use "utf-8 replace" to specify
+        "utf-8" with errors "replace".
 
         **return_result** (bool) default=False<br>
         When True, return a `Result` object instead of the standard output.

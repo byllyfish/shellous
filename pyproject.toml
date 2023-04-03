@@ -44,7 +44,10 @@ requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.pytest.ini_options]
-filterwarnings = ["error"]
+filterwarnings = [
+  "error",
+  'ignore:.*(ChildWatcher|get_child_watcher|set_child_watcher):DeprecationWarning',  # 3.12-dev
+]
 env_files = ["tests/tests.env"]
 addopts = '--timeout=20 --color=yes --log-cli-format="%(created).03f %(levelname)s %(name)s %(message)s" --log-level=INFO --log-file-format="%(created).03f %(levelname)s %(name)s %(message)s"'
 asyncio_mode = "auto"
