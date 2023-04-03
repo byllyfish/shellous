@@ -77,7 +77,7 @@ class Pipeline:
         "Return coroutine object for pipeline."
         return PipeRunner.run_pipeline(self)
 
-    def run(self) -> "PipeRunner":
+    def _run_(self) -> "PipeRunner":
         """Return a `Runner` to help run the pipeline incrementally.
 
         ```
@@ -150,7 +150,7 @@ class Pipeline:
 
     async def __aenter__(self):
         "Enter the async context manager."
-        return await context_aenter(id(self), self.run())
+        return await context_aenter(id(self), self._run_())
 
     async def __aexit__(
         self,
@@ -172,6 +172,6 @@ class Pipeline:
         else:
             cmd = self
 
-        async with cmd.run() as run:
+        async with cmd._run_() as run:
             async for line in run:
                 yield line

@@ -519,7 +519,7 @@ class Command:
         "Return coroutine object to run awaitable."
         return Runner.run_command(self, _run_future=_run_future)
 
-    def run(self) -> Runner:
+    def _run_(self) -> Runner:
         """Return a `Runner` to run the process incrementally.
 
         ```
@@ -537,7 +537,7 @@ class Command:
 
     async def __aenter__(self):
         "Enter the async context manager."
-        return await context_aenter(id(self), self.run())
+        return await context_aenter(id(self), self._run_())
 
     async def __aexit__(
         self,
@@ -559,7 +559,7 @@ class Command:
         else:
             cmd = self
 
-        async with cmd.run() as run:
+        async with cmd._run_() as run:
             async for line in run:
                 yield line
 
