@@ -1,6 +1,15 @@
 Shellous Change Log
 ===================
 
+0.23.0
+------
+
+[API] When using `async with`, you MUST tag the desired input/output streams with `sh.CAPTURE`. The new default is to capture nothing; the previous default was `stdout(sh.CAPTURE)`.
+[API] In Runner/PipeRunner, the `result()` method will always return a `Result` object. Previously, it could return `str`.
+[API] Setting the encoding to `None` is no longer allowed. If you want `bytes` output, use the `Result` object. This was previously a DeprecationWarning.
+[API] The `sh.RESULT` constant has been renamed to `sh.BUFFER` to avoid confusion with the `sh.result` modifier.
+[FEATURE] Added the `.result` modifier to CmdContext. You can now request a `Result` using the syntax `await sh.result("echo")`.
+
 0.22.0
 ------
 
