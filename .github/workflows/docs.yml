@@ -4,30 +4,40 @@ on:
   push:
     branches: [ "main" ]
 
-jobs:
-  publish-docs:
+permissions:
+  contents: read
 
+jobs:
+  build:
     runs-on: ubuntu-latest
-    env:
-      POETRY_RUN: python -m poetry run
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
     - name: Set up Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
       with:
-        python-version: 3.9
+        python-version: "3.10"
     - name: Install dependencies
       run: |
-        # Install poetry and use it to install dependencies.
-        python -m pip install poetry
-        python -m poetry install --no-root --no-interaction
+        pip install -r ci/requirements-dev.txt
     - name: Build Docs
       run: |
-        $POETRY_RUN pdoc -o html shellous
-    - name: Publish Docs to Github Pages
-      uses: peaceiris/actions-gh-pages@v3
+        pdoc -t ci/custom-template -o html/ shellous
+    - name: Upload Docs
+      uses: actions/upload-pages-artifact@v1
       with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./html
+        path: html/
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v1

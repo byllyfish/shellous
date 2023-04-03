@@ -21,7 +21,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-22.04, ubuntu-20.04, ubuntu-18.04, macos-12, macos-11, windows-2022 ]
+        os: [ ubuntu-22.04, ubuntu-20.04, macos-12, macos-11, windows-2022 ]
         python-version: [ '3.9', '3.10', '3.11']
 
     env:
@@ -102,7 +102,7 @@ jobs:
       env:
         SHELLOUS_CHILDWATCHER_TYPE: "safe"
     - name: Run Tests with DefaultChildWatcher (Linux and MacOS)
-      if: matrix.os == 'ubuntu-22.04' || matrix.os == 'macos-12' || matrix.os == 'ubuntu-18.04'
+      if: matrix.os == 'ubuntu-22.04' || matrix.os == 'macos-12'
       run: |
         if ! pytest -vv -s --log-cli-level=DEBUG | ./ci/annotate.awk -v step=DefaultChildWatcher; then
           echo "::warning title=DefaultChildWatcher Warning::Re-running failed tests in $BUILD_NAME"

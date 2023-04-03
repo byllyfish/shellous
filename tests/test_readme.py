@@ -66,7 +66,7 @@ async def run_asyncio_repl(cmds, logfile=None):
         .env(**_current_env())
     )
 
-    async with repl.run() as run:
+    async with repl._run_() as run:
         p = Prompt(run.stdin, run.stdout, errbuf)
         await p.prompt()
 

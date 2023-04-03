@@ -1,0 +1,14 @@
+{% extends "default/module.html.jinja2" %}
+
+{#
+    Document certain dunder methods by overriding the is_public macro.
+    Returning no text is interpreted as false, returning any other text is iterpreted as true.
+#}
+
+{% macro is_public(doc) %}
+    {% if doc.name in ["__len__", "__getitem__", "__contains__", "__aenter__", "__iter__", "__aiter__", "__await__"] %}
+        true
+    {% else %}
+        {{ default_is_public(doc) }}
+    {% endif %}
+{% endmacro %}
