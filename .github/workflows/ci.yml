@@ -39,10 +39,8 @@ jobs:
       run: |
         pip3 install -U setuptools wheel
         pip3 install -r ./ci/requirements-dev.txt
-        if [ "${{ matrix.os }}" != "windows-2022" ]; then
-            pip3 install uvloop
-        fi
     - name: Lint
+      if: matrix.python-version != '3.12-dev'
       run: |
         # Run flake8 and pylint.
         # stop the build if there are Python syntax errors or undefined names
@@ -62,7 +60,7 @@ jobs:
           pytest -vv -s --durations=20 --log-cli-level=DEBUG --last-failed
         fi
     - name: Run Code Coverage (Linux and MacOS)
-      if: matrix.os == 'ubuntu-22.04' || matrix.os == 'macos-12'
+      if: (matrix.os == 'ubuntu-22.04' || matrix.os == 'macos-12') && matrix.python-version != '3.12-dev'
       run: |
         # Run coverage and upload report to codecov.
         coverage run --source shellous -m pytest
@@ -74,8 +72,9 @@ jobs:
       env:
         SHELLOUS_CODE_COVERAGE: 1
     - name: Run Tests with uvloop (Linux and MacOS)
-      if: matrix.os == 'ubuntu-22.04' || matrix.os == 'macos-12'
+      if: (matrix.os == 'ubuntu-22.04' || matrix.os == 'macos-12') && matrix.python-version != '3.12-dev'
       run: |
+        pip3 install uvloop
         # Ignore ResourceWarning with uvloop for now (TODO).
         if ! pytest -vv -s --log-cli-level=DEBUG -W ignore::ResourceWarning; then
           echo "::warning title=uvloop Warning::Re-running failed tests in $BUILD_NAME"
