@@ -55,10 +55,8 @@ def _is_writable(cmd: "Union[shellous.Command, shellous.Pipeline]"):
     return cmd.options.writable
 
 
-def _enc(encoding: Optional[str]):
+def _enc(encoding: str) -> list[str]:
     "Helper function to split the encoding name into codec and errors."
-    if encoding is None:
-        raise TypeError("when encoding is None, input must be bytes")
     return encoding.split(maxsplit=1)
 
 
@@ -149,7 +147,7 @@ class _RunOptions:
         Returns new command line arguments with /dev/fd path substitutions.
         """
         if sys.platform == "win32":
-            raise RuntimeError("process substitution not supported on Windows")
+            raise RuntimeError("process substitution not supported")  # pragma: no cover
 
         new_args: list[Union[str, bytes]] = []
         new_fds: list[int] = []
@@ -263,7 +261,7 @@ class _RunOptions:
             # Custom support for Redirect constants.
             if input_ == Redirect.INHERIT:
                 stdin = sys.stdin
-            elif input_ == Redirect.RESULT:
+            elif input_ == Redirect.BUFFER:
                 raise TypeError(f"unsupported input type: {input_!r}")
             else:
                 # CAPTURE uses stdin == PIPE.
@@ -298,7 +296,7 @@ class _RunOptions:
             self.open_fds.append(stdout)
         elif isinstance(output, Redirect) and output.is_custom():
             # Custom support for Redirect constants.
-            if output == Redirect.RESULT:
+            if output == Redirect.BUFFER:
                 if sys_stream == sys.stdout:
                     self.output_bytes = bytearray()
                 else:
@@ -752,8 +750,6 @@ class Runner:
     def _setup_output_sink(self, stream, sink, encoding, tag, limit=-1):
         "Set up a task to write to custom output sink."
         if isinstance(sink, io.StringIO):
-            if encoding is None:
-                raise TypeError("StringIO not supported when encoding=None")
             self.add_task(redir.copy_stringio(stream, sink, encoding), tag)
             stream = None
         elif isinstance(sink, io.BytesIO):

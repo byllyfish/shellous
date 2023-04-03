@@ -132,7 +132,7 @@ async def test_count(count_cmd):
 
 
 async def test_error(error_cmd):
-    result = await error_cmd.stderr(sh.RESULT).result
+    result = await error_cmd.stderr(sh.BUFFER).result
 
     assert result.exit_code == 0
     assert result.output_bytes == b""
@@ -142,7 +142,8 @@ async def test_error(error_cmd):
 
 
 async def test_error_bulk(error_cmd):
-    result = await error_cmd("1").env(SHELLOUS_EXIT_CODE="13").stderr(sh.RESULT).result
+    # sh.BUFFER is used to override stderr(sh.INHERIT).
+    result = await error_cmd("1").env(SHELLOUS_EXIT_CODE="13").stderr(sh.BUFFER).result
 
     assert result.exit_code == 13
     assert result.output_bytes == b""
@@ -156,6 +157,27 @@ async def test_error_result():
     assert result.exit_code == 0
     assert result.output.rstrip() == "hello"
     assert result.error == ""
+
+
+async def test_error_only():
+    "Test standard error output only (STDOUT + DEVNULL)."
+    cmd = (
+        sh(sys.executable, "-c", "import sys; print(sys.stderr, 'abc')")
+        .stdout(sh.DEVNULL)
+        .stderr(sh.STDOUT)
+    )
+
+    assert await cmd.result() == Result(
+        exit_code=0,
+        output_bytes=b"",  # FIXME: should be "abc"
+        error_bytes=b"",
+        cancelled=False,
+        encoding="utf-8",
+        extra=None,
+    )
+
+    out = [line async for line in cmd]
+    assert out == []  # FIXME: should be "abc"
 
 
 async def test_nonexistant_cmd():
@@ -442,7 +464,7 @@ async def test_redirect_stdout_logger(echo_cmd, caplog):
 
 async def test_redirect_stdout_result(echo_cmd):
     "Test redirecting stdout to RESULT."
-    result = await echo_cmd("abc").stdout(sh.RESULT)
+    result = await echo_cmd("abc").stdout(sh.BUFFER)
     assert result == "abc"
 
 
@@ -470,7 +492,7 @@ async def test_redirect_stdin_stringio(cat_cmd):
 async def test_redirect_stdin_stringio_no_encoding(cat_cmd):
     "Test reading stdin from StringIO with encoding=None"
     buf = io.StringIO("123")
-    with pytest.raises(TypeError, match="encoding cannot be None"):
+    with pytest.raises(TypeError, match="invalid encoding"):
         await cat_cmd().stdin(buf).set(encoding=None)
 
 
@@ -488,7 +510,7 @@ async def test_redirect_stdin_inherit(echo_cmd):
 async def test_redirect_stdin_result(echo_cmd):
     "Test reading stdin from RESULT."
     with pytest.raises(TypeError, match="unsupported input type"):
-        await echo_cmd("abc").stdin(sh.RESULT)
+        await echo_cmd("abc").stdin(sh.BUFFER)
 
 
 async def test_redirect_stdin_unsupported_type(cat_cmd):
@@ -802,7 +824,7 @@ async def test_process_substitution(echo_cmd, cat_cmd):
     if sys.platform == "win32":
         with pytest.raises(
             RuntimeError,
-            match="process substitution not supported on Windows",
+            match="process substitution not supported",
         ):
             await cmd
 
@@ -826,7 +848,7 @@ async def test_stringio_redirect_with_bytes_encoding(echo_cmd):
     buf = io.StringIO()
     cmd = echo_cmd | buf
 
-    with pytest.raises(TypeError, match="encoding cannot be None"):
+    with pytest.raises(TypeError, match="invalid encoding"):
         await cmd("abc").set(encoding=None)
 
 
@@ -865,6 +887,9 @@ async def test_pty_echo_exit_code(echo_cmd):
 
 async def test_redirect_to_arbitrary_tuple():
     "Test redirection to an arbitrary tuple."
+    with pytest.raises(TypeError, match="unsupported"):
+        await sh("echo").stdout((1, 2))
+
     with pytest.raises(TypeError, match="unsupported"):
         await (sh("echo") | (1, 2))
 

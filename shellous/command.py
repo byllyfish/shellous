@@ -151,7 +151,9 @@ class Options:  # pylint: disable=too-many-instance-attributes
 
     def set_stdin(self, input_: Any, close: bool) -> Self:
         "Return new options with `input` configured."
-        input_ = Redirect.from_literal(input_)
+        if input_ is None:
+            raise TypeError("invalid stdin")
+
         if input_ == Redirect.STDOUT:
             raise ValueError("STDOUT is only supported by stderr")
 
@@ -163,7 +165,9 @@ class Options:  # pylint: disable=too-many-instance-attributes
 
     def set_stdout(self, output: Any, append: bool, close: bool) -> Self:
         "Return new options with `output` configured."
-        output = Redirect.from_literal(output)
+        if output is None:
+            raise TypeError("invalid stdout")
+
         if output == Redirect.STDOUT:
             raise ValueError("STDOUT is only supported by stderr")
 
@@ -176,7 +180,9 @@ class Options:  # pylint: disable=too-many-instance-attributes
 
     def set_stderr(self, error: Any, append: bool, close: bool) -> Self:
         "Return new options with `error` configured."
-        error = Redirect.from_literal(error, True)
+        if error is None:
+            raise TypeError("invalid stderr")
+
         return dataclasses.replace(
             self,
             error=error,
@@ -214,8 +220,8 @@ class CmdContext:
     STDOUT: ClassVar[Redirect] = Redirect.STDOUT
     "Redirect stderr to same place as stdout."
 
-    RESULT: ClassVar[Redirect] = Redirect.RESULT
-    "Redirect stderr to a buffer in the Result object."
+    BUFFER: ClassVar[Redirect] = Redirect.BUFFER
+    "Redirect output to a buffer in the Result object. This is the default for stdout/stderr."
 
     options: Options = Options()
     "Default command options."
@@ -267,8 +273,8 @@ class CmdContext:
         """
         kwargs = locals()
         del kwargs["self"]
-        if encoding is None:  # pyright: ignore[reportUnnecessaryComparison]
-            raise TypeError("encoding cannot be None")
+        if not encoding:
+            raise TypeError("invalid encoding")
         return CmdContext(self.options.set(kwargs))
 
     def __call__(self, *args: Any) -> "Command":
@@ -495,8 +501,8 @@ class Command:
         """
         kwargs = locals()
         del kwargs["self"]
-        if encoding is None:  # pyright: ignore[reportUnnecessaryComparison]
-            raise TypeError("encoding cannot be None")
+        if not encoding:
+            raise TypeError("invalid encoding")
         return Command(self.args, self.options.set(kwargs))
 
     def _replace_args(self, new_args: list[Union[str, bytes]]) -> Self:

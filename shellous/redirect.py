@@ -24,7 +24,7 @@ class Redirect(enum.IntEnum):
     DEVNULL = asyncio.subprocess.DEVNULL  # -3
     CAPTURE = -10
     INHERIT = -11
-    RESULT = -12
+    BUFFER = -12
     DEFAULT = -20
 
     def is_custom(self):
@@ -32,7 +32,7 @@ class Redirect(enum.IntEnum):
         return self in {
             Redirect.CAPTURE,
             Redirect.INHERIT,
-            Redirect.RESULT,
+            Redirect.BUFFER,
             Redirect.DEFAULT,
         }
 
@@ -45,23 +45,6 @@ class Redirect(enum.IntEnum):
         assert obj == Redirect.DEFAULT
         return _DEFAULT_REDIRECTION[(fdesc, bool(pty))]
 
-    @staticmethod
-    def from_literal(literal: Any, is_stderr: bool = False):
-        "Return object with literal values replaced by Redirect constant."
-
-        if isinstance(literal, (tuple, type(...), type(None))):
-            raise TypeError(f"literal {literal!r} is unsupported")
-
-        # For stderr, the literal `1` indicates that stderr is redirected to
-        # the same place as STDOUT.
-        if is_stderr and isinstance(literal, int) and literal == 1:
-            raise TypeError(f"stderr literal {literal!r} is unupported")
-
-        try:
-            return _LITERAL_REDIRECT.get(literal, literal)
-        except TypeError:
-            return literal
-
 
 # This table has the default redirections for (src, pty).
 # Sources are stdin, stdout, stderr. Used by Redirect.from_default().
@@ -69,16 +52,10 @@ _DEFAULT_REDIRECTION: dict[tuple[int, bool], Union[bytes, Redirect]] = {
     # (FD, PTY)
     (_STDIN, False): b"",
     (_STDIN, True): Redirect.CAPTURE,
-    (_STDOUT, False): Redirect.RESULT,
-    (_STDOUT, True): Redirect.RESULT,
-    (_STDERR, False): Redirect.RESULT,
+    (_STDOUT, False): Redirect.BUFFER,
+    (_STDOUT, True): Redirect.BUFFER,
+    (_STDERR, False): Redirect.BUFFER,
     (_STDERR, True): Redirect.STDOUT,
-}
-
-_LITERAL_REDIRECT: dict[Any, Redirect] = {
-    None: Redirect.DEVNULL,
-    ...: Redirect.INHERIT,
-    (): Redirect.CAPTURE,
 }
 
 # Used in Command and Pipeline to implement operator overloading.
@@ -275,12 +252,7 @@ async def copy_streamwriter(source: asyncio.StreamReader, dest: asyncio.StreamWr
 
 
 @log_method(LOG_DETAIL)
-async def read_lines(source: asyncio.StreamReader, encoding: Optional[str]):
+async def read_lines(source: asyncio.StreamReader, encoding: str):
     "Async iterator over lines in stream."
-    if encoding is None:
-        async for line in source:
-            yield line
-
-    else:
-        async for line in source:
-            yield decode(line, encoding)
+    async for line in source:
+        yield decode(line, encoding)
