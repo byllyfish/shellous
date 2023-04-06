@@ -1723,8 +1723,7 @@ async def test_context_manager_running():
 @pytest.mark.xfail(_is_uvloop(), reason="uvloop")
 async def test_context_manager_running_pty():
     "Test context manager in pty mode may NOT update running status of process."
-
-    async with sh("sleep", 3).stdout(sh.CAPTURE).set(pty=True) as sleep1:
+    async with sh("sleep", 3).set(pty=True) as sleep1:
         await asyncio.sleep(0.1)
         sleep1.cancel()
         await asyncio.sleep(0.1)
@@ -1738,9 +1737,6 @@ async def test_context_manager_running_pty():
 
 @pytest.mark.xfail(_is_uvloop(), reason="uvloop")
 async def test_quiet_pty():
-    "Test pty mode with command that doesn't produce any output."
-    if sys.platform.startswith("freebsd"):
-        pytest.xfail("Known issue on FreeBSD. To be fixed...")  # FIXME
-
+    "Test pty mode with command that doesn't produce any output (#378)."
     result = await sh("sleep", 1).set(pty=True)
     assert result == ""
