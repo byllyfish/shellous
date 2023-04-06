@@ -105,22 +105,36 @@ class PtyStreamReaderProtocol(asyncio.StreamReaderProtocol):
     "Custom subclass of StreamReaderProtocol for pty's."
 
     _pty_child_fd: Optional[ChildFd] = None
+    _pty_timer: Optional[asyncio.TimerHandle] = None  # Issue #378
 
     def connection_lost(self, exc: Optional[Exception]):
         "Intercept EIO error and treat it as EOF."
         if LOG_DETAIL:
             LOGGER.info("PtyStreamReaderProtocol.connection_lost ex=%r", exc)
+        if BSD_DERIVED and self._pty_timer is not None:
+            self._pty_timer.cancel()
         if isinstance(exc, OSError) and exc.errno == errno.EIO:
             exc = None
         super().connection_lost(exc)
 
     if BSD_DERIVED:
         # BSD only: On Linux, use the default behavior.
-        def data_received(self, data: bytes):
-            "Close child_fd when first data received."
+
+        def _close_child_fd(self):
             if self._pty_child_fd:
                 self._pty_child_fd.close()
                 self._pty_child_fd = None
+
+        def connection_made(self, transport):
+            # Set up timer to close child fd when no data is received.
+            super().connection_made(transport)
+            if LOG_DETAIL:
+                LOGGER.info("PtyStreamReaderProtocol.connection_made")
+            self._pty_timer = self._loop.call_later(2.5, self._close_child_fd)
+
+        def data_received(self, data: bytes):
+            "Close child_fd when first data received."
+            self._close_child_fd()
             return super().data_received(data)
 
     def eof_received(self):
