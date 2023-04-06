@@ -19,7 +19,7 @@ except ImportError:  # pragma: no cover
     pass
 
 from .log import LOG_DETAIL, LOGGER, log_method
-from .util import BSD_DERIVED, close_fds
+from .util import BSD_DERIVED, BSD_FREEBSD, close_fds
 
 _STDOUT_FILENO = 1
 _LFLAG = 3
@@ -125,12 +125,14 @@ class PtyStreamReaderProtocol(asyncio.StreamReaderProtocol):
                 self._pty_child_fd.close()
                 self._pty_child_fd = None
 
-        def connection_made(self, transport):
-            # Set up timer to close child fd when no data is received.
-            super().connection_made(transport)
-            if LOG_DETAIL:
-                LOGGER.info("PtyStreamReaderProtocol.connection_made")
-            self._pty_timer = self._loop.call_later(2.5, self._close_child_fd)
+        if BSD_FREEBSD:
+            # Timer is only necessary on FreeBSD, not MacOS.
+            def connection_made(self, transport):
+                # Set up timer to close child fd when no data is received.
+                super().connection_made(transport)
+                if LOG_DETAIL:
+                    LOGGER.info("PtyStreamReaderProtocol.connection_made")
+                self._pty_timer = self._loop.call_later(2.0, self._close_child_fd)
 
         def data_received(self, data: bytes):
             "Close child_fd when first data received."

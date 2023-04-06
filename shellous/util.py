@@ -27,7 +27,8 @@ _CTXT_STACK = contextvars.ContextVar[Optional[dict[int, list[Any]]]](
 )
 
 # True if OS is derived from BSD.
-BSD_DERIVED = sys.platform.startswith("freebsd") or sys.platform == "darwin"
+BSD_FREEBSD = sys.platform.startswith("freebsd")
+BSD_DERIVED = BSD_FREEBSD or sys.platform == "darwin"
 
 
 def decode(data: Optional[bytes], encoding: str) -> str:
