@@ -898,7 +898,7 @@ async def test_start_new_session():
     assert result == "True\n"
 
 
-@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+@pytest.mark.skipif(_is_uvloop(), reason="uvloop")
 async def test_pty_manual():
     """Test setting up a pty manually."""
 
@@ -923,7 +923,7 @@ async def test_pty_manual():
     assert result == b"abc\r\nABC\r\n"
 
 
-@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+@pytest.mark.skipif(_is_uvloop(), reason="uvloop")
 async def test_pty_manual_ls(ls):
     """Test setting up a pty manually."""
 
@@ -1003,7 +1003,7 @@ async def _get_streams(fd):
     return reader, writer
 
 
-@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+@pytest.mark.skipif(_is_uvloop(), reason="uvloop")
 async def test_pty_manual_streams():
     """Test setting up a pty manually."""
 
@@ -1030,7 +1030,7 @@ async def test_pty_manual_streams():
     assert result == b"abc\r\nABC\r\n"
 
 
-@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+@pytest.mark.skipif(_is_uvloop(), reason="uvloop")
 async def test_pty():
     "Test the `pty` option."
     cmd = sh("tr", "[:lower:]", "[:upper:]").stdin(sh.CAPTURE).set(pty=True)
@@ -1045,7 +1045,7 @@ async def test_pty():
     assert result == b"abc\r\nABC\r\n"
 
 
-@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+@pytest.mark.skipif(_is_uvloop(), reason="uvloop")
 async def test_pty_ctermid():
     "Test the `pty` option and print out the ctermid, ttyname for stdin/stdout."
     cmd = (
@@ -1132,7 +1132,7 @@ _STTY_FREEBSD_13 = (
 )
 
 
-@pytest.mark.xfail(_is_uvloop() or _IS_ALPINE, reason="uvloop,alpine")
+@pytest.mark.skipif(_is_uvloop() or _IS_ALPINE, reason="uvloop,alpine")
 async def test_pty_stty_all(tmp_path):
     "Test the `pty` option and print out the result of stty -a"
 
@@ -1157,7 +1157,7 @@ async def test_pty_stty_all(tmp_path):
         assert buf == _STTY_DARWIN
 
 
-@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+@pytest.mark.skipif(_is_uvloop(), reason="uvloop")
 async def test_pty_tr_eot():
     "Test the `pty` option with a control-D (EOT = 0x04)"
     cmd = sh("tr", "[:lower:]", "[:upper:]").stdin(sh.CAPTURE).set(pty=True)
@@ -1174,7 +1174,7 @@ async def test_pty_tr_eot():
         assert result == b"abc\r\n^D\x08\x08ABC\r\n"
 
 
-@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+@pytest.mark.skipif(_is_uvloop(), reason="uvloop")
 async def test_pty_cat_eot():
     "Test the `pty` option with a control-D (EOT = 0x04)"
     cmd = sh("cat").stdin(sh.CAPTURE).set(pty=True)
@@ -1191,7 +1191,7 @@ async def test_pty_cat_eot():
         assert result == b"abc^D\x08\x08^D\x08\x08abc"
 
 
-@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+@pytest.mark.skipif(_is_uvloop(), reason="uvloop")
 async def test_pty_raw_size():
     "Test the `pty` option in raw mode."
 
@@ -1200,7 +1200,7 @@ async def test_pty_raw_size():
     assert result == "17 41\n"
 
 
-@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+@pytest.mark.skipif(_is_uvloop(), reason="uvloop")
 async def test_pty_cbreak_size():
     "Test the `pty` option in cbreak mode."
 
@@ -1209,7 +1209,7 @@ async def test_pty_cbreak_size():
     assert result == "19 43\r\n"
 
 
-@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+@pytest.mark.skipif(_is_uvloop(), reason="uvloop")
 async def test_pty_raw_ls(ls):
     "Test the `pty` option in raw mode."
 
@@ -1221,7 +1221,7 @@ async def test_pty_raw_ls(ls):
         assert len(line.rstrip()) <= 40
 
 
-@pytest.mark.xfail(_is_uvloop() or _IS_ALPINE, reason="uvloop,alpine")
+@pytest.mark.skipif(_is_uvloop() or _IS_ALPINE, reason="uvloop,alpine")
 async def test_pty_raw_size_inherited():
     "Test the `pty` option in raw mode."
 
@@ -1232,7 +1232,7 @@ async def test_pty_raw_size_inherited():
     assert rows >= 0 and cols >= 0
 
 
-@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+@pytest.mark.skipif(_is_uvloop(), reason="uvloop")
 async def test_pty_cat_auto_eof():
     "Test the `pty` option with string input and auto-EOF."
     cmd = "abc" | sh("cat").set(pty=True)
@@ -1244,7 +1244,7 @@ async def test_pty_cat_auto_eof():
         assert result == "abc^D\x08\x08^D\x08\x08abc"
 
 
-@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+@pytest.mark.skipif(_is_uvloop(), reason="uvloop")
 async def test_pty_cat_iteration_no_echo():
     "Test the `pty` option with string input, iteration, and echo=False."
 
@@ -1256,7 +1256,7 @@ async def test_pty_cat_iteration_no_echo():
     assert lines == ["abc\r\n", "def\r\n", "ghi"]
 
 
-@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+@pytest.mark.skipif(_is_uvloop(), reason="uvloop")
 async def test_pty_canonical_ls(ls):
     "Test canonical ls output through pty is in columns."
     cmd = ls("README.md", "CHANGELOG.md").set(pty=cooked(cols=20, rows=10, echo=False))
@@ -1290,7 +1290,7 @@ async def test_pty_compare_huge_ls_output(ls):
     assert pty_result == regular_result
 
 
-@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+@pytest.mark.skipif(_is_uvloop(), reason="uvloop")
 async def test_pty_compare_small_ls_output(ls):
     "Compare pty output to non-pty output."
     cmd = ls("README.md")
@@ -1302,7 +1302,7 @@ async def test_pty_compare_small_ls_output(ls):
     assert pty_result == regular_result
 
 
-@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+@pytest.mark.skipif(_is_uvloop(), reason="uvloop")
 async def test_stress_pty_canonical_ls_parallel(ls, report_children):
     "Test canonical ls output through pty is in columns (parallel stress test)."
     pty = cooked(cols=20, rows=10, echo=False)
@@ -1316,7 +1316,7 @@ async def test_stress_pty_canonical_ls_parallel(ls, report_children):
         assert result == "CHANGELOG.md\r\nREADME.md\r\n"
 
 
-@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+@pytest.mark.skipif(_is_uvloop(), reason="uvloop")
 async def test_stress_pty_canonical_ls_sequence(ls, report_children):
     "Test canonical ls output through pty is in columns (sequence stress test)."
     pty = cooked(cols=20, rows=10, echo=False)
@@ -1328,7 +1328,7 @@ async def test_stress_pty_canonical_ls_sequence(ls, report_children):
         assert result == "CHANGELOG.md\r\nREADME.md\r\n"
 
 
-@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+@pytest.mark.skipif(_is_uvloop(), reason="uvloop")
 async def test_pty_timeout_fail():
     "Test that a pty command can be called with a timeout."
     cmd = sh("sleep", "5").set(catch_cancelled_error=True, pty=True)
@@ -1346,7 +1346,7 @@ async def test_pty_timeout_fail():
     )
 
 
-@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+@pytest.mark.skipif(_is_uvloop(), reason="uvloop")
 async def test_pty_default_redirect_stderr(ls):
     "Test that pty redirects stderr to stdout."
 
@@ -1367,7 +1367,7 @@ async def test_pty_default_redirect_stderr(ls):
         assert result.endswith(b"No such file or directory\r\n")
 
 
-@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+@pytest.mark.skipif(_is_uvloop(), reason="uvloop")
 async def test_pty_cat_hangs():
     "Test that cat under pty hangs because we don't send EOF."
 
@@ -1382,7 +1382,7 @@ async def test_pty_cat_hangs():
         await asyncio.wait_for(cmd.set(pty=True), 2.0)
 
 
-@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+@pytest.mark.skipif(_is_uvloop(), reason="uvloop")
 async def test_pty_separate_stderr(caplog):
     "Test that stderr can be separately redirected from stdout with pty."
 
@@ -1426,7 +1426,7 @@ async def test_redirect_stdin_streamreader():
         await server.wait_closed()
 
 
-@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+@pytest.mark.skipif(_is_uvloop(), reason="uvloop")
 async def test_pty_redirect_stdin_streamreader():
     "Test reading stdin from StreamReader."
 
@@ -1472,7 +1472,7 @@ async def test_redirect_stdout_streamwriter():
         await server.wait_closed()
 
 
-@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+@pytest.mark.skipif(_is_uvloop(), reason="uvloop")
 async def test_pty_redirect_stdout_streamwriter():
     "Test writing stdout to a StreamWriter."
 
@@ -1720,7 +1720,7 @@ async def test_context_manager_running():
         assert sleep1.returncode == _CANCELLED_EXIT_CODE
 
 
-@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+@pytest.mark.skipif(_is_uvloop(), reason="uvloop")
 async def test_context_manager_running_pty():
     "Test context manager in pty mode may NOT update running status of process."
     async with sh("sleep", 3).set(pty=True) as sleep1:
@@ -1735,14 +1735,14 @@ async def test_context_manager_running_pty():
             assert sleep1.returncode is None
 
 
-@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+@pytest.mark.skipif(_is_uvloop(), reason="uvloop")
 async def test_quiet_pty():
     "Test pty mode with command that doesn't produce any output (#378)."
     result = await sh("sleep", 1).set(pty=True)
     assert result == ""
 
 
-@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+@pytest.mark.skipif(_is_uvloop(), reason="uvloop")
 async def test_iter_pty():
     "Test pty mode with async for."
     cmd = sh("echo", "1\n", "2")
@@ -1750,7 +1750,7 @@ async def test_iter_pty():
     assert output == {"1\r\n", " 2\r\n"}
 
 
-@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
+@pytest.mark.skipif(_is_uvloop(), reason="uvloop")
 async def test_pipe_iter_pty():
     "Test pipe pty mode with async for."
     cmd = sh("echo", "1\n", "2") | sh("cat").set(pty=True)
