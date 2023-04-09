@@ -21,6 +21,7 @@ from typing import (
     Container,
     Optional,
     Sequence,
+    TypedDict,
     TypeVar,
     Union,
 )
@@ -41,7 +42,6 @@ class _UnsetEnum(enum.Enum):
     UNSET = enum.auto()
 
 
-# _UnsetEnum = enum.Enum("UNSET", "UNSET")
 _UNSET = _UnsetEnum.UNSET
 
 # Use Unset[T] for unset variable types.
@@ -50,8 +50,22 @@ Unset = Union[_T, _UnsetEnum]
 
 _RedirectT = Any  # type: ignore
 _PreexecFnT = Optional[Callable[[], None]]
-_AuditDictT = dict[str, Any]  # TODO: use TypedDict?
-_AuditFnT = Optional[Callable[[str, _AuditDictT], None]]
+
+
+class AuditEventInfo(TypedDict):
+    "Info attached to each Audit Event."
+
+    runner: Runner
+    "Reference to the Runner object."
+
+    failure: str
+    "When phase is 'stop', the name of the exception from starting the process."
+
+    signal: str
+    "When phase is 'signal', the signal name/number sent to the process."
+
+
+_AuditFnT = Optional[Callable[[str, AuditEventInfo], None]]
 
 
 @dataclass(frozen=True)

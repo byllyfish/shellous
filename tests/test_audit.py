@@ -167,7 +167,7 @@ async def test_audit_block_pipe_specific_cmd():
 
     def _callback(phase, info):
         runner = info["runner"]
-        failure = info.get("failure")
+        failure = info["failure"] or None
         exit_code = runner.returncode
         if exit_code is not None:
             exit_code = "Zero" if exit_code == 0 else "NonZero"

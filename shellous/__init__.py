@@ -10,7 +10,7 @@ __version__ = "0.23.0"
 import sys
 import warnings
 
-from .command import CmdContext, Command, Options  # noqa: F401
+from .command import AuditEventInfo, CmdContext, Command, Options  # noqa: F401
 from .pipeline import Pipeline  # noqa: F401
 from .pty_util import cbreak, cooked, raw  # noqa: F401
 from .result import PipeResult, Result, ResultError  # noqa: F401
@@ -44,6 +44,7 @@ __all__ = [
     "sh",
     "CmdContext",
     "Command",
+    "Options",
     "Pipeline",
     "cbreak",
     "cooked",
@@ -52,6 +53,7 @@ __all__ = [
     "ResultError",
     "Runner",
     "PipeRunner",
-    "AUDIT_EVENT_SUBPROCESS_SPAWN",
     "DefaultChildWatcher",
+    "AUDIT_EVENT_SUBPROCESS_SPAWN",
+    "AuditEventInfo",
 ]

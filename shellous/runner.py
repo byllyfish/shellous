@@ -841,15 +841,16 @@ class Runner:
         except asyncio.TimeoutError:
             LOGGER.critical("Runner._close %r timeout stdin=%r", self, self._proc.stdin)
 
-    def _audit_callback(self, phase, *, failure=None, signal=None):
+    def _audit_callback(self, phase: str, *, failure: str = "", signal=None):
         "Call `audit_callback` if there is one."
         callback = self.command.options.audit_callback
         if callback:
-            info: dict[str, Any] = {"runner": self}
-            if failure:
-                info["failure"] = failure
-            if phase == "signal":
-                info["signal"] = _signame(signal)
+            sig = _signame(signal) if phase == "signal" else ""
+            info: shellous.AuditEventInfo = {
+                "runner": self,
+                "failure": failure,
+                "signal": sig,
+            }
             callback(phase, info)
 
     def __repr__(self):
@@ -1149,7 +1150,7 @@ def _cleanup(command):
     close_fds(open_fds)
 
 
-def _signame(signal):
+def _signame(signal) -> str:
     "Return string name of signal."
     if signal is None:
         return "SIGKILL"  # SIGKILL (even on win32)

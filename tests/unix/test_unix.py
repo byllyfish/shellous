@@ -1504,7 +1504,7 @@ async def test_audit_cancel_nohup():
 
     def _audit(phase, info):
         runner = info["runner"]
-        signal = info.get("signal")
+        signal = info["signal"] or None
         calls.append((phase, runner.name, runner.returncode, runner.cancelled, signal))
 
     xsh = sh.set(
@@ -1531,7 +1531,7 @@ async def test_set_cancel_signal_invalid():
 
     def _audit(phase, info):
         runner = info["runner"]
-        signal = info.get("signal")
+        signal = info["signal"] or None
         calls.append((phase, runner.name, runner.returncode, runner.cancelled, signal))
 
     xsh = sh.set(

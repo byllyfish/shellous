@@ -1078,7 +1078,7 @@ async def test_audit_callback(echo_cmd):
 
     def _audit(phase, info):
         runner = info["runner"]
-        failure = info.get("failure")
+        failure = info["failure"] or None
         calls.append((phase, runner.name, runner.returncode, failure))
 
     echo = echo_cmd.set(audit_callback=_audit)
@@ -1098,7 +1098,8 @@ async def test_audit_callback_launch_failure():
 
     def _audit(phase, info):
         runner = info["runner"]
-        failure = info.get("failure")
+        failure = info["failure"] or None
+        assert not info["signal"]
         calls.append((phase, runner.name, runner.pid, runner.returncode, failure))
 
     malformed = sh("__does_not_exist__").set(audit_callback=_audit)
@@ -1131,7 +1132,7 @@ async def test_audit_pipe_cancel(echo_cmd, tr_cmd):
 
     def _audit(phase, info):
         runner = info["runner"]
-        signal = info.get("signal")
+        signal = info["signal"]
         calls.append((phase, runner.name, runner.returncode, signal))
 
     echo_cmd = echo_cmd("abc").set(audit_callback=_audit)
@@ -1142,11 +1143,11 @@ async def test_audit_pipe_cancel(echo_cmd, tr_cmd):
         await asyncio.wait_for(cmd, timeout=0.75)
 
     assert calls == [
-        ("start", "echo", None, None),
-        ("start", "tr", None, None),
-        ("stop", "echo", 0, None),
+        ("start", "echo", None, ""),
+        ("start", "tr", None, ""),
+        ("stop", "echo", 0, ""),
         ("signal", "tr", None, "SIGTERM"),
-        ("stop", "tr", CANCELLED_EXIT_CODE, None),
+        ("stop", "tr", CANCELLED_EXIT_CODE, ""),
     ]
 
 
