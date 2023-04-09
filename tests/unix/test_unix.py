@@ -1742,6 +1742,7 @@ async def test_quiet_pty():
     assert result == ""
 
 
+@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
 async def test_iter_pty():
     "Test pty mode with async for."
     cmd = sh("echo", "1\n", "2")
@@ -1749,6 +1750,7 @@ async def test_iter_pty():
     assert output == {"1\r\n", " 2\r\n"}
 
 
+@pytest.mark.xfail(_is_uvloop(), reason="uvloop")
 async def test_pipe_iter_pty():
     "Test pipe pty mode with async for."
     cmd = sh("echo", "1\n", "2") | sh("cat").set(pty=True)
