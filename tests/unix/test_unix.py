@@ -1740,3 +1740,17 @@ async def test_quiet_pty():
     "Test pty mode with command that doesn't produce any output (#378)."
     result = await sh("sleep", 1).set(pty=True)
     assert result == ""
+
+
+async def test_iter_pty():
+    "Test pty mode with async for."
+    cmd = sh("echo", "1\n", "2")
+    output = {line async for line in cmd.set(pty=True)}
+    assert output == {"1\r\n", " 2\r\n"}
+
+
+async def test_pipe_iter_pty():
+    "Test pipe pty mode with async for."
+    cmd = sh("echo", "1\n", "2") | sh("cat").set(pty=True)
+    output = {line async for line in cmd}
+    assert output == {"1\r\n", " 2\r\n"}

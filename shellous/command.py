@@ -554,12 +554,14 @@ class Command:
 
     async def _readlines(self):
         "Async generator to iterate over lines."
-        if self.options.output == Redirect.DEFAULT:
-            cmd = self.stdout(Redirect.CAPTURE)
-        else:
-            cmd = self
+        cmd = self
+        if cmd.options.output == Redirect.DEFAULT:
+            cmd = cmd.stdout(Redirect.CAPTURE)
 
         async with cmd._run_() as run:
+            if run.stdout is not None and run.stderr is not None:
+                raise RuntimeError("multiple capture not supported in iterator")
+
             async for line in run:
                 yield line
 

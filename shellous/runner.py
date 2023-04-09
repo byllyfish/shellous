@@ -863,9 +863,6 @@ class Runner:
 
     async def _readlines(self):
         "Iterate over lines in stdout/stderr"
-        if self.stdin or (self.stdout and self.stderr):
-            raise RuntimeError("multiple capture not supported in iterator")
-
         stream = self.stdout or self.stderr
         if stream:
             async for line in redir.read_lines(stream, self._options.encoding):
@@ -1095,9 +1092,6 @@ class PipeRunner:
 
     async def _readlines(self):
         "Iterate over lines in stdout/stderr"
-        if self.stdin or (self.stdout and self.stderr):
-            raise RuntimeError("multiple capture not supported in iterator")
-
         stream = self.stdout or self.stderr
         if stream:
             async for line in redir.read_lines(stream, self._encoding):
