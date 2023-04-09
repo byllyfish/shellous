@@ -1,7 +1,6 @@
 """Implements the CmdContext and Command classes.
 
-- A CmdContext creates new command objects. You should use the `context`
-function to create these, rather than creating them directly.
+- A CmdContext creates new command objects.
 
 - A Command specifies the arguments and options used to run a program.
 """

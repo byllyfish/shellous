@@ -307,7 +307,7 @@ async def test_redirect_output_str(tmp_path):
     out = tmp_path / "test_redirect_output_str"
 
     # Erase and write to file.
-    with pytest.raises(TypeError, match="output file"):
+    with pytest.raises(TypeError, match="output type"):
         await sh("echo", "test", 4, 5, 6).stdout(str(out))
 
 
@@ -315,7 +315,7 @@ async def test_redirect_output_bytes(tmp_path):
     "Test redirecting command output to a filename string."
     out = tmp_path / "test_redirect_output_str"
 
-    with pytest.raises(TypeError, match="output file"):
+    with pytest.raises(TypeError, match="output type"):
         await sh("echo", "test", 4, 5, 6).stdout(bytes(out))
 
 

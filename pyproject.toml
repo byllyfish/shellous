@@ -59,6 +59,7 @@ extension-pkg-allow-list = ["termios,fcntl"]
 max-module-lines = 1200
 
 [tool.pylint.design]
+max-args = 7
 max-attributes = 12
 min-public-methods = 1
 
