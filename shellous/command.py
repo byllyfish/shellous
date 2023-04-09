@@ -48,12 +48,10 @@ _UNSET = _UnsetEnum.UNSET
 _T = TypeVar("_T")
 Unset = Union[_T, _UnsetEnum]
 
-_Redirect_T = Any  # type: ignore
-_Preexec_Fn_T = Optional[Callable[[], None]]  # pylint: disable=invalid-name
-_AuditDict = dict[str, Any]  # TODO: use TypedDict?
-_Audit_Fn_T = Optional[
-    Callable[[str, _AuditDict], None]
-]  # pylint: disable=invalid-name
+_RedirectT = Any  # type: ignore
+_PreexecFnT = Optional[Callable[[], None]]
+_AuditDictT = dict[str, Any]  # TODO: use TypedDict?
+_AuditFnT = Optional[Callable[[str, _AuditDictT], None]]
 
 
 @dataclass(frozen=True)
@@ -66,13 +64,13 @@ class Options:  # pylint: disable=too-many-instance-attributes
     inherit_env: bool = True
     "True if subprocess should inherit the current environment variables."
 
-    input: _Redirect_T = Redirect.DEFAULT
+    input: _RedirectT = Redirect.DEFAULT
     "Input object to bind to stdin."
 
     input_close: bool = False
     "True if input object should be closed after subprocess launch."
 
-    output: _Redirect_T = Redirect.DEFAULT
+    output: _RedirectT = Redirect.DEFAULT
     "Output object to bind to stdout."
 
     output_append: bool = False
@@ -81,7 +79,7 @@ class Options:  # pylint: disable=too-many-instance-attributes
     output_close: bool = False
     "True if output object should be closed after subprocess launch."
 
-    error: _Redirect_T = Redirect.DEFAULT
+    error: _RedirectT = Redirect.DEFAULT
     "Error object to bind to stderr."
 
     error_append: bool = False
@@ -126,7 +124,7 @@ class Options:  # pylint: disable=too-many-instance-attributes
     _start_new_session: bool = False
     "True if child process should start a new session with setsid()."
 
-    _preexec_fn: _Preexec_Fn_T = None
+    _preexec_fn: _PreexecFnT = None
     "Function to call in child process after fork from parent."
 
     pty: PtyAdapterOrBool = False
@@ -135,7 +133,7 @@ class Options:  # pylint: disable=too-many-instance-attributes
     close_fds: bool = False
     "True if child process should close all file descriptors."
 
-    audit_callback: _Audit_Fn_T = None
+    audit_callback: _AuditFnT = None
     "Function called to audit stages of process execution."
 
     def merge_env(self) -> Optional[dict[str, str]]:
@@ -262,10 +260,10 @@ class CmdContext:
         pass_fds_close: Unset[bool] = _UNSET,
         writable: Unset[bool] = _UNSET,
         _start_new_session: Unset[bool] = _UNSET,
-        _preexec_fn: Unset[_Preexec_Fn_T] = _UNSET,
+        _preexec_fn: Unset[_PreexecFnT] = _UNSET,
         pty: Unset[PtyAdapterOrBool] = _UNSET,
         close_fds: Unset[bool] = _UNSET,
-        audit_callback: Unset[_Audit_Fn_T] = _UNSET,
+        audit_callback: Unset[_AuditFnT] = _UNSET,
     ) -> Self:
         """Return new context with custom options set.
 
@@ -381,10 +379,10 @@ class Command:
         pass_fds_close: Unset[bool] = _UNSET,
         writable: Unset[bool] = _UNSET,
         _start_new_session: Unset[bool] = _UNSET,
-        _preexec_fn: Unset[_Preexec_Fn_T] = _UNSET,
+        _preexec_fn: Unset[_PreexecFnT] = _UNSET,
         pty: Unset[PtyAdapterOrBool] = _UNSET,
         close_fds: Unset[bool] = _UNSET,
-        audit_callback: Unset[_Audit_Fn_T] = _UNSET,
+        audit_callback: Unset[_AuditFnT] = _UNSET,
     ) -> Self:
         """Return new command with custom options set.
 

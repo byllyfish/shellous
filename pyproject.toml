@@ -52,14 +52,18 @@ env_files = ["tests/tests.env"]
 addopts = '--timeout=20 --color=yes --log-cli-format="%(created).03f %(levelname)s %(name)s %(message)s" --log-level=INFO --log-file-format="%(created).03f %(levelname)s %(name)s %(message)s"'
 asyncio_mode = "auto"
 
-[tool.pylint.'FORMAT']
+[tool.pylint.format]
 extension-pkg-allow-list = ["termios,fcntl"]
 
-[tool.pylint.'TYPECHECK']
+[tool.pylint.typecheck]
 max-module-lines = 1200
 
-[tool.pylint.'DESIGN']
+[tool.pylint.design]
 max-attributes = 12
+min-public-methods = 1
+
+[tool.pylint.classes]
+exclude-protected = ["_run_"]
 
 [tool.pyright]
 pythonPlatform = "All"

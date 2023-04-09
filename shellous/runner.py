@@ -378,7 +378,7 @@ class Runner:
     stderr: Optional[asyncio.StreamReader] = None
     "Process standard error."
 
-    _proc: Optional[asyncio.subprocess.Process] = None
+    _proc: Optional["asyncio.subprocess.Process"] = None
 
     def __init__(self, command):
         self._options = _RunOptions(command)
