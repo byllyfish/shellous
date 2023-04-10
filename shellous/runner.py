@@ -288,9 +288,7 @@ class _RunOptions:
 
         stdout = asyncio.subprocess.PIPE
 
-        if isinstance(output, (str, bytes, os.PathLike)):
-            if isinstance(output, (str, bytes)):  # TODO: remove this check...
-                raise TypeError("Using str|bytes as output file is unsupported")
+        if isinstance(output, os.PathLike):
             mode = "ab" if append else "wb"
             stdout = open(output, mode=mode)  # pylint: disable=consider-using-with
             self.open_fds.append(stdout)
@@ -378,7 +376,7 @@ class Runner:
     stderr: Optional[asyncio.StreamReader] = None
     "Process standard error."
 
-    _proc: Optional[asyncio.subprocess.Process] = None
+    _proc: Optional["asyncio.subprocess.Process"] = None
 
     def __init__(self, command):
         self._options = _RunOptions(command)
@@ -841,15 +839,16 @@ class Runner:
         except asyncio.TimeoutError:
             LOGGER.critical("Runner._close %r timeout stdin=%r", self, self._proc.stdin)
 
-    def _audit_callback(self, phase, *, failure=None, signal=None):
+    def _audit_callback(self, phase: str, *, failure: str = "", signal=None):
         "Call `audit_callback` if there is one."
         callback = self.command.options.audit_callback
         if callback:
-            info: dict[str, Any] = {"runner": self}
-            if failure:
-                info["failure"] = failure
-            if phase == "signal":
-                info["signal"] = _signame(signal)
+            sig = _signame(signal) if phase == "signal" else ""
+            info: shellous.AuditEventInfo = {
+                "runner": self,
+                "failure": failure,
+                "signal": sig,
+            }
             callback(phase, info)
 
     def __repr__(self):
@@ -863,9 +862,6 @@ class Runner:
 
     async def _readlines(self):
         "Iterate over lines in stdout/stderr"
-        if self.stdin or (self.stdout and self.stderr):
-            raise RuntimeError("multiple capture not supported in iterator")
-
         stream = self.stdout or self.stderr
         if stream:
             async for line in redir.read_lines(stream, self._options.encoding):
@@ -1095,9 +1091,6 @@ class PipeRunner:
 
     async def _readlines(self):
         "Iterate over lines in stdout/stderr"
-        if self.stdin or (self.stdout and self.stderr):
-            raise RuntimeError("multiple capture not supported in iterator")
-
         stream = self.stdout or self.stderr
         if stream:
             async for line in redir.read_lines(stream, self._encoding):
@@ -1155,7 +1148,7 @@ def _cleanup(command):
     close_fds(open_fds)
 
 
-def _signame(signal):
+def _signame(signal) -> str:
     "Return string name of signal."
     if signal is None:
         return "SIGKILL"  # SIGKILL (even on win32)

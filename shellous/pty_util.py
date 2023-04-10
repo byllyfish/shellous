@@ -132,7 +132,7 @@ class PtyStreamReaderProtocol(asyncio.StreamReaderProtocol):
                 super().connection_made(transport)
                 if LOG_DETAIL:
                     LOGGER.info("PtyStreamReaderProtocol.connection_made")
-                self._pty_timer = self._loop.call_later(2.0, self._close_child_fd)
+                self._pty_timer = self._loop.call_later(2.0, self._close_child_fd)  # type: ignore
 
         def data_received(self, data: bytes):
             "Close child_fd when first data received."

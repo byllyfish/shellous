@@ -261,7 +261,7 @@ Shellous supports different STDOUT behavior when using different Python types.
 | int | Write output to existing file descriptor. | TypeError
 | logging.Logger | Log each line of output. | TypeError
 | asyncio.StreamWriter | Write output to `StreamWriter`. | TypeError
-| sh.CAPTURE | Return standard output or error. See *Multiple Capture*. | TypeError
+| sh.CAPTURE | Capture output for `async with`. | TypeError
 | sh.DEVNULL | Write output to `/dev/null`. | TypeError
 | sh.INHERIT  | Write output to existing `sys.stdout` or `sys.stderr`. | TypeError
 | sh.STDOUT | Redirect stderr to same place as stdout. | TypeError

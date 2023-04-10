@@ -58,7 +58,7 @@ class SupportsClose(Protocol):
     "Protocol for objects with a close() method."
 
     def close(self) -> None:
-        ...
+        "Close file object."
 
 
 def close_fds(open_fds: Iterable[Union[SupportsClose, int]]) -> None:
