@@ -90,3 +90,6 @@ required-version = "23.3.0"
 
 [tool.isort]
 profile = "black"
+
+[tool.ruff]
+line-length = 120
