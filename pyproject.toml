@@ -37,7 +37,7 @@ pytest-timeout = "^2.1.0"
 pdoc = "^13.0.1"
 asyncstdlib = "3.10.5"
 pyright = "^1.1.300"
-ruff = "^0.0.262"
+ruff = {version = "^0.0.262", markers = "sys_platform != 'freebsd'"}
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
