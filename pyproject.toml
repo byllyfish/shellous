@@ -24,20 +24,20 @@ classifiers = [
 [tool.poetry.dependencies]
 python = "^3.9"
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 pytest = "^7.2.2"
 pytest-asyncio = "^0.21.0"
 pylint = "^2.17.1"
 mypy = "^1.1.1"
 black = "^23.3.0"
 coverage = "^7.2.3"
-flake8 = "^6.0.0"
 pytest-dotenv = "^0.5.2"
 pytest-randomly = "^3.12.0"
 pytest-timeout = "^2.1.0"
 pdoc = "^13.0.1"
 asyncstdlib = "3.10.5"
 pyright = "^1.1.300"
+ruff = "^0.0.262"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
