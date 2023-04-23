@@ -138,12 +138,12 @@ class Pipeline:
     @property
     def writable(self):
         "Set writable=True option on last command of pipeline."
-        return self._set(writable=True)
+        return self._set(_writable=True)
 
     @property
     def result(self):
-        "Set `return_result` and `exit_codes`."
-        return self._set(return_result=True, exit_codes=range(-255, 256))
+        "Set `_return_result` and `exit_codes`."
+        return self._set(_return_result=True, exit_codes=range(-255, 256))
 
     def __await__(self):
         return self.coro().__await__()

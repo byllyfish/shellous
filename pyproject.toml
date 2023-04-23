@@ -69,7 +69,7 @@ exclude-protected = ["_run_"]
 [tool.pyright]
 pythonPlatform = "All"
 ignore = [
-  "tests/**/*.py"
+  # "tests/**/*.py"
 ]
 strict = [
   "shellous/__init__.py",

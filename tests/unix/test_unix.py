@@ -80,7 +80,7 @@ async def test_echo_bytes():
 
 async def test_echo_with_result():
     "Test running the echo command using the Result object."
-    result = await sh("echo", "-n", "foo").set(return_result=True)
+    result = await sh("echo", "-n", "foo").set(_return_result=True)
     assert result == Result(
         exit_code=0,
         output_bytes=b"foo",
@@ -514,9 +514,9 @@ async def test_pipeline_with_env():
 
 
 async def test_pipeline_with_result():
-    "Test a simple pipeline with `return_result` set to True."
+    "Test a simple pipeline with `_return_result` set to True."
     echo = sh("echo", "-n", "xyz")
-    tr = sh("tr", "[:lower:]", "[:upper:]").set(return_result=True)
+    tr = sh("tr", "[:lower:]", "[:upper:]").set(_return_result=True)
     result = await (echo | tr)
     assert result == Result(
         exit_code=0,
@@ -618,7 +618,7 @@ async def test_cancelled_antipattern():
     when you want to cancel the current task.
     """
 
-    sleep_cmd = sh("sleep", 3600).set(return_result=True, catch_cancelled_error=True)
+    sleep_cmd = sh("sleep", 3600).set(_return_result=True, catch_cancelled_error=True)
 
     async def _subtask():
         try:
@@ -653,7 +653,7 @@ async def test_cancelled_antipattern_fix():
     the `ResultError`.
     """
 
-    sleep_cmd = sh("sleep", 3600).set(return_result=True, catch_cancelled_error=True)
+    sleep_cmd = sh("sleep", 3600).set(_return_result=True, catch_cancelled_error=True)
 
     async def _subtask():
         try:
@@ -718,7 +718,7 @@ async def test_cancel_timeout():
 async def test_shell_cmd():
     "Test a shell command.  (https://bugs.python.org/issue43884)"
     shell = sh("/bin/sh", "-c").set(
-        return_result=True,
+        _return_result=True,
         catch_cancelled_error=True,
         exit_codes={0, _CANCELLED_EXIT_CODE},
     )

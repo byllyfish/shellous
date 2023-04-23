@@ -182,16 +182,16 @@ async def test_error_only():
 
 async def test_nonexistant_cmd():
     with pytest.raises(FileNotFoundError):
-        await sh("non_existant_command").set(return_result=True)
+        await sh("non_existant_command").set(_return_result=True)
 
 
 async def test_nonexecutable_cmd():
     if sys.platform == "win32":
         with pytest.raises(OSError, match="not a valid Win32 application"):
-            await sh("./README.md").set(return_result=True)
+            await sh("./README.md").set(_return_result=True)
     else:
         with pytest.raises(PermissionError):
-            await sh("./README.md").set(return_result=True)
+            await sh("./README.md").set(_return_result=True)
 
 
 async def test_pipeline(echo_cmd, cat_cmd, tr_cmd):
@@ -201,7 +201,7 @@ async def test_pipeline(echo_cmd, cat_cmd, tr_cmd):
 
 
 async def test_echo_exit_code(echo_cmd):
-    options = dict(return_result=True, exit_codes={7})
+    options = dict(_return_result=True, exit_codes={7})
     result = await echo_cmd("abc").env(SHELLOUS_EXIT_CODE=7).set(**options)
     assert result.exit_code == 7
     assert result.output == "abc"
@@ -876,7 +876,7 @@ async def test_quick_cancel(echo_cmd):
 @pytest.mark.skipif(sys.platform == "win32" or _is_uvloop(), reason="win32,uvloop")
 async def test_pty_echo_exit_code(echo_cmd):
     "Test exit code is reported correctly for pty."
-    options = dict(return_result=True, exit_codes={7}, pty=True)
+    options = dict(_return_result=True, exit_codes={7}, pty=True)
     result = await echo_cmd("abc").env(SHELLOUS_EXIT_CODE=7).set(**options)
 
     assert result.exit_code == 7
@@ -1488,7 +1488,7 @@ async def test_process_pool_executor(echo_cmd, report_children):
 
     from concurrent.futures import ProcessPoolExecutor
 
-    echo = echo_cmd.set(return_result=True)
+    echo = echo_cmd.set(_return_result=True)
 
     with ProcessPoolExecutor() as executor:
         loop = asyncio.get_running_loop()

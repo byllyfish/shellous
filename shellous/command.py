@@ -104,7 +104,7 @@ class Options:  # pylint: disable=too-many-instance-attributes
     encoding: str = "utf-8"
     "Specifies encoding of input/ouput."
 
-    return_result: bool = False
+    _return_result: bool = False
     "True if we should return `Result` object instead of the output text/bytes."
 
     catch_cancelled_error: bool = False
@@ -131,7 +131,7 @@ class Options:  # pylint: disable=too-many-instance-attributes
     pass_fds_close: bool = False
     "True if pass_fds should be closed after subprocess launch."
 
-    writable: bool = False
+    _writable: bool = False
     "True if using process substitution in write mode."
 
     _start_new_session: bool = False
@@ -262,7 +262,7 @@ class CmdContext:
         *,
         inherit_env: Unset[bool] = _UNSET,
         encoding: Unset[str] = _UNSET,
-        return_result: Unset[bool] = _UNSET,
+        _return_result: Unset[bool] = _UNSET,
         catch_cancelled_error: Unset[bool] = _UNSET,
         exit_codes: Unset[Optional[Container[int]]] = _UNSET,
         timeout: Unset[Optional[float]] = _UNSET,
@@ -271,7 +271,7 @@ class CmdContext:
         alt_name: Unset[Optional[str]] = _UNSET,
         pass_fds: Unset[Iterable[int]] = _UNSET,
         pass_fds_close: Unset[bool] = _UNSET,
-        writable: Unset[bool] = _UNSET,
+        _writable: Unset[bool] = _UNSET,
         _start_new_session: Unset[bool] = _UNSET,
         _preexec_fn: Unset[_PreexecFnT] = _UNSET,
         pty: Unset[PtyAdapterOrBool] = _UNSET,
@@ -294,8 +294,8 @@ class CmdContext:
 
     @property
     def result(self) -> Self:
-        "Set `return_result` and `exit_codes`."
-        return self.set(return_result=True, exit_codes=range(-255, 256))
+        "Set `_return_result` and `exit_codes`."
+        return self.set(_return_result=True, exit_codes=range(-255, 256))
 
 
 @dataclass(frozen=True)
@@ -381,7 +381,7 @@ class Command:
         *,
         inherit_env: Unset[bool] = _UNSET,
         encoding: Unset[str] = _UNSET,
-        return_result: Unset[bool] = _UNSET,
+        _return_result: Unset[bool] = _UNSET,
         catch_cancelled_error: Unset[bool] = _UNSET,
         exit_codes: Unset[Optional[Container[int]]] = _UNSET,
         timeout: Unset[Optional[float]] = _UNSET,
@@ -390,7 +390,7 @@ class Command:
         alt_name: Unset[Optional[str]] = _UNSET,
         pass_fds: Unset[Iterable[int]] = _UNSET,
         pass_fds_close: Unset[bool] = _UNSET,
-        writable: Unset[bool] = _UNSET,
+        _writable: Unset[bool] = _UNSET,
         _start_new_session: Unset[bool] = _UNSET,
         _preexec_fn: Unset[_PreexecFnT] = _UNSET,
         pty: Unset[PtyAdapterOrBool] = _UNSET,
@@ -411,8 +411,9 @@ class Command:
         append it after a space. For example, use "utf-8 replace" to specify
         "utf-8" with errors "replace".
 
-        **return_result** (bool) default=False<br>
+        **_return_result** (bool) default=False<br>
         When True, return a `Result` object instead of the standard output.
+        Private API -- use the `result` modifier instead.
 
         **catch_cancelled_error** (bool) default=False<br>
         When True, raise a `ResultError` when the command is cancelled. On the
@@ -456,8 +457,9 @@ class Command:
         Close the file descriptors in `pass_fds` immediately in the current
         process immediately after launching the subprocess.
 
-        **writable** (bool) default=False<br>
-        Used to indicate process substitution is writing.
+        **_writable** (bool) default=False<br>
+        Used to indicate process substitution is writing. Private API -- use the
+        `writable` modifier instead.
 
         **_start_new_session** (bool) default=False<br>
         Provided for testing purposes only.
@@ -617,12 +619,12 @@ class Command:
     @property
     def writable(self) -> Self:
         "Set `writable` to True."
-        return self.set(writable=True)
+        return self.set(_writable=True)
 
     @property
     def result(self) -> Self:
-        "Set `return_result` and `exit_codes`."
-        return self.set(return_result=True, exit_codes=range(-255, 256))
+        "Set `_return_result` and `exit_codes`."
+        return self.set(_return_result=True, exit_codes=range(-255, 256))
 
 
 def _check_args(out: Any, append: bool):
