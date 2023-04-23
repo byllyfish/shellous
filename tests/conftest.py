@@ -2,12 +2,10 @@
 
 import asyncio
 import contextlib
-import functools
 import gc
 import os
 import platform
 import re
-import signal
 import sys
 import threading
 
