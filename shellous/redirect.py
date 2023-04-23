@@ -70,6 +70,17 @@ STDIN_TYPES = (
     asyncio.StreamReader,
 )
 
+STDIN_TYPES_T = Union[
+    str,
+    bytes,
+    Path,
+    bytearray,
+    io.IOBase,
+    int,
+    Redirect,
+    asyncio.StreamReader,
+]
+
 STDOUT_TYPES = (
     Path,
     bytearray,
@@ -80,7 +91,19 @@ STDOUT_TYPES = (
     asyncio.StreamWriter,
 )
 
+STDOUT_TYPES_T = Union[
+    Path,
+    bytearray,
+    io.IOBase,
+    int,
+    Redirect,
+    Logger,
+    asyncio.StreamWriter,
+]
+
 STDOUT_APPEND_TYPES = (Path,)
+
+STDOUT_APPEND_TYPES_T = Path
 
 
 async def _drain(stream: asyncio.StreamWriter):

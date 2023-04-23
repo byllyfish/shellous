@@ -18,18 +18,30 @@ from typing import (
     Callable,
     ClassVar,
     Container,
+    Coroutine,
+    Generic,
     Optional,
     Sequence,
     TypedDict,
     TypeVar,
     Union,
+    cast,
+    overload,
 )
 
 from typing_extensions import Self
 
 import shellous
 from shellous.pty_util import PtyAdapterOrBool
-from shellous.redirect import STDIN_TYPES, STDOUT_APPEND_TYPES, STDOUT_TYPES, Redirect
+from shellous.redirect import (
+    STDIN_TYPES,
+    STDIN_TYPES_T,
+    STDOUT_APPEND_TYPES,
+    STDOUT_APPEND_TYPES_T,
+    STDOUT_TYPES,
+    STDOUT_TYPES_T,
+    Redirect,
+)
 from shellous.runner import Runner
 from shellous.util import EnvironmentDict, context_aenter, context_aexit
 
@@ -215,8 +227,12 @@ class Options:  # pylint: disable=too-many-instance-attributes
         return dataclasses.replace(self, **kwds)
 
 
+# Return type for a Command, CmdContext can be either `str` or `Result`.
+_RT = TypeVar("_RT", str, "shellous.Result")
+
+
 @dataclass(frozen=True)
-class CmdContext:
+class CmdContext(Generic[_RT]):
     """Concrete class for an immutable execution context."""
 
     CAPTURE: ClassVar[Redirect] = Redirect.CAPTURE
@@ -288,18 +304,24 @@ class CmdContext:
             raise TypeError("invalid encoding")
         return CmdContext(self.options.set(kwargs))
 
-    def __call__(self, *args: Any) -> "Command":
+    def __call__(self, *args: Any) -> "Command[_RT]":
         "Construct a new command."
         return Command(coerce(args), self.options)
 
     @property
-    def result(self) -> Self:
+    def result(self) -> "CmdContext[shellous.Result]":
         "Set `_return_result` and `exit_codes`."
-        return self.set(_return_result=True, exit_codes=range(-255, 256))
+        return cast(
+            CmdContext[shellous.Result],
+            self.set(
+                _return_result=True,
+                exit_codes=range(-255, 256),
+            ),
+        )
 
 
 @dataclass(frozen=True)
-class Command:
+class Command(Generic[_RT]):
     """A Command instance is lightweight and immutable object that specifies the
     arguments and options used to run a program. Commands do not do anything
     until they are awaited.
@@ -317,7 +339,7 @@ class Command:
     ```
     """
 
-    args: "tuple[Union[str, bytes, Command, shellous.Pipeline], ...]"
+    args: "tuple[Union[str, bytes, Command[Any], shellous.Pipeline], ...]"
     "Command arguments including the program name as first argument."
 
     options: Options
@@ -528,9 +550,14 @@ class Command:
         assert new_args[0] is self.args[0]
         return Command(tuple(new_args), self.options)
 
-    def coro(self, *, _run_future: Optional[asyncio.Future[Runner]] = None):
+    def coro(
+        self, *, _run_future: Optional[asyncio.Future[Runner]] = None
+    ) -> Coroutine[Any, Any, _RT]:
         "Return coroutine object to run awaitable."
-        return Runner.run_command(self, _run_future=_run_future)
+        return cast(
+            Coroutine[Any, Any, _RT],
+            Runner.run_command(self, _run_future=_run_future),
+        )
 
     def _run_(self) -> Runner:
         """Return a `Runner` to run the process incrementally.
@@ -592,25 +619,35 @@ class Command:
         """
         return str(self.args[0])
 
+    @overload
+    def __or__(self, rhs: STDOUT_TYPES_T) -> Self:
+        ...
+
+    @overload
+    def __or__(self, rhs: "Command[Any]") -> "shellous.Pipeline":
+        ...
+
     def __or__(self, rhs: Any):
         "Bitwise or operator is used to build pipelines."
         if isinstance(rhs, STDOUT_TYPES):
             return self.stdout(rhs)
         return shellous.Pipeline.create(self) | rhs
 
-    def __ror__(self, lhs: Any):
+    def __ror__(self, lhs: STDIN_TYPES_T) -> Self:
         "Bitwise or operator is used to build pipelines."
         if isinstance(lhs, STDIN_TYPES):
             return self.stdin(lhs)
         return NotImplemented
 
-    def __rshift__(self, rhs: Any):
+    def __rshift__(self, rhs: STDOUT_APPEND_TYPES_T) -> Self:
         "Right shift operator is used to build pipelines."
-        if isinstance(rhs, STDOUT_APPEND_TYPES):
+        if isinstance(
+            rhs, STDOUT_APPEND_TYPES
+        ):  # pyright: ignore[reportUnnecessaryIsInstance]
             return self.stdout(rhs, append=True)
         return NotImplemented
 
-    def __mod__(self, rhs: "Command"):
+    def __mod__(self, rhs: "Command[Any]") -> Self:
         "Modulo operator is used to concatenate commands."
         if isinstance(rhs, Command):  # pyright: ignore[reportUnnecessaryIsInstance]
             return self(rhs.args)
@@ -622,9 +659,12 @@ class Command:
         return self.set(_writable=True)
 
     @property
-    def result(self) -> Self:
+    def result(self) -> "Command[shellous.Result]":
         "Set `_return_result` and `exit_codes`."
-        return self.set(_return_result=True, exit_codes=range(-255, 256))
+        return cast(
+            Command[shellous.Result],
+            self.set(_return_result=True, exit_codes=range(-255, 256)),
+        )
 
 
 def _check_args(out: Any, append: bool):

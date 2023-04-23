@@ -31,7 +31,7 @@ if sys.version_info[:3] in [(3, 10, 9), (3, 11, 1)]:
     )
 
 
-sh = CmdContext()
+sh = CmdContext[str]()
 """`sh` is the default command context (`CmdContext`).
 
 Use `sh` to create commands or new command contexts.

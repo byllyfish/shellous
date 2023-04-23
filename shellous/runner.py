@@ -873,10 +873,10 @@ class Runner:
 
     @staticmethod
     async def run_command(
-        command: "shellous.Command",
+        command: "shellous.Command[Any]",
         *,
         _run_future: Optional[asyncio.Future["Runner"]] = None,
-    ):
+    ) -> Union[str, Result]:
         "Run a command. This is the main entry point for Runner."
         if not _run_future and _is_multiple_capture(command):
             LOGGER.warning("run_command: multiple capture requires 'async with'")
