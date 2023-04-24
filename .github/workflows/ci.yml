@@ -46,9 +46,7 @@ jobs:
         pylint -v --fail-under 9.5 shellous
         # Run pylint on tests directory with some checks disabled.
         pylint --disable=C0116,C0103,R0903,W0212,C0302,C0415 --fail-under 9.1 tests
-        if ! mypy --check-untyped-defs shellous tests; then
-          echo "::warning title=Lint Warning::mypy found issues in $BUILD_NAME"
-        fi
+        pyright || echo "Failed."
     - name: Run Tests
       run: |
         if ! pytest -vv -s --durations=20 --log-cli-level=DEBUG | ./ci/annotate.awk -v step=Run_Tests; then
