@@ -273,9 +273,9 @@ def test_percent_op_not_implemented():
 
     echo = sh("echo", "hello")
     with pytest.raises(TypeError):
-        assert None % echo
+        assert None % echo  # pyright: ignore[reportGeneralTypeIssues]
     with pytest.raises(TypeError):
-        assert echo % None
+        assert echo % None  # pyright: ignore[reportGeneralTypeIssues]
 
 
 def test_percent_equals_op():
@@ -375,4 +375,4 @@ def test_command_invalid_encoding():
         sh("echo").set(encoding="")
 
     with pytest.raises(TypeError, match="invalid encoding"):
-        sh("echo").set(encoding=None)
+        sh("echo").set(encoding=None)  # pyright: ignore[reportGeneralTypeIssues]

@@ -229,7 +229,6 @@ class Options:  # pylint: disable=too-many-instance-attributes
 
 # Return type for a Command, CmdContext can be either `str` or `Result`.
 _RT = TypeVar("_RT", str, "shellous.Result")
-_CT = TypeVar("_RT", str, "shellous.Result")
 
 
 @dataclass(frozen=True)
@@ -394,7 +393,7 @@ class Command(Generic[_RT]):
         new_options = self.options.set_stderr(error, append, close)
         return Command(self.args, new_options)
 
-    def env(self, **kwds: str) -> Self:
+    def env(self, **kwds: Any) -> Self:
         """Return new command with augmented environment."""
         new_options = self.options.set_env(kwds)
         return Command(self.args, new_options)
@@ -541,7 +540,7 @@ class Command(Generic[_RT]):
             raise TypeError("invalid encoding")
         return Command(self.args, self.options.set(kwargs))
 
-    def _replace_args(self, new_args: list[Union[str, bytes]]) -> Self:
+    def _replace_args(self, new_args: Sequence[Union[str, bytes]]) -> Self:
         """Return new command with arguments replaced by `new_args`.
 
         Arguments are NOT type-checked by the context. Program name must be the

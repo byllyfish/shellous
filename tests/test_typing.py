@@ -1,3 +1,5 @@
+"Shellous typing tests."
+
 from pathlib import Path
 
 from typing_extensions import assert_type

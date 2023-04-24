@@ -3,7 +3,9 @@
 import dataclasses
 from dataclasses import dataclass
 from types import TracebackType
-from typing import Any, Coroutine, Generic, Optional, Self, TypeVar, Union, overload
+from typing import Any, Coroutine, Generic, Optional, TypeVar, Union, overload
+
+from typing_extensions import Self
 
 import shellous
 from shellous.redirect import (

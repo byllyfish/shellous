@@ -24,6 +24,7 @@ async def test_bug():
         "import time; time.sleep(2)",
         stdin=asyncio.subprocess.PIPE,
     )
+    assert proc.stdin is not None
 
     try:
         data = b"a" * PIPE_MAX_SIZE
