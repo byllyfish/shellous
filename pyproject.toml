@@ -28,7 +28,6 @@ python = "^3.9"
 pytest = "^7.2.2"
 pytest-asyncio = "^0.21.0"
 pylint = "^2.17.1"
-mypy = "^1.1.1"
 black = "^23.3.0"
 coverage = "^7.2.3"
 pytest-dotenv = "^0.5.2"
@@ -38,6 +37,7 @@ pdoc = "^13.0.1"
 asyncstdlib = "3.10.5"
 pyright = "^1.1.300"
 ruff = {version = "^0.0.262", markers = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'"}
+typing-extensions = "^4.5.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -69,7 +69,7 @@ exclude-protected = ["_run_"]
 [tool.pyright]
 pythonPlatform = "All"
 ignore = [
-  "tests/**/*.py"
+  # "tests/**/*.py"
 ]
 strict = [
   "shellous/__init__.py",

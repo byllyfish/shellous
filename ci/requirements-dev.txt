@@ -1,4 +1,4 @@
-# Poetry (version 1.4.2) export at Sat Apr 22 17:27:35 MST 2023
+# Poetry (version 1.4.2) export at Sun Apr 23 21:07:01 MST 2023
 astroid==2.15.3 ; python_version >= "3.9" and python_version < "4.0"
 asyncstdlib==3.10.5 ; python_version >= "3.9" and python_version < "4.0"
 black==23.3.0 ; python_version >= "3.9" and python_version < "4.0"
@@ -15,7 +15,6 @@ lazy-object-proxy==1.9.0 ; python_version >= "3.9" and python_version < "4.0"
 markupsafe==2.1.2 ; python_version >= "3.9" and python_version < "4.0"
 mccabe==0.7.0 ; python_version >= "3.9" and python_version < "4.0"
 mypy-extensions==1.0.0 ; python_version >= "3.9" and python_version < "4.0"
-mypy==1.2.0 ; python_version >= "3.9" and python_version < "4.0"
 nodeenv==1.7.0 ; python_version >= "3.9" and python_version < "4.0"
 packaging==23.1 ; python_version >= "3.9" and python_version < "4.0"
 pathspec==0.11.1 ; python_version >= "3.9" and python_version < "4.0"

@@ -273,9 +273,9 @@ def test_percent_op_not_implemented():
 
     echo = sh("echo", "hello")
     with pytest.raises(TypeError):
-        assert None % echo
+        assert None % echo  # pyright: ignore[reportGeneralTypeIssues]
     with pytest.raises(TypeError):
-        assert echo % None
+        assert echo % None  # pyright: ignore[reportGeneralTypeIssues]
 
 
 def test_percent_equals_op():
@@ -325,7 +325,9 @@ def test_dataclasses():
     opt_fields = [field.name for field in dataclasses.fields(sh.options)]
     assert sorted(opt_fields) == [
         "_preexec_fn",
+        "_return_result",
         "_start_new_session",
+        "_writable",
         "alt_name",
         "audit_callback",
         "cancel_signal",
@@ -347,9 +349,7 @@ def test_dataclasses():
         "pass_fds",
         "pass_fds_close",
         "pty",
-        "return_result",
         "timeout",
-        "writable",
     ]
 
 
@@ -365,7 +365,7 @@ def test_context_enums():
 def test_context_result():
     "Test that `sh` supports the .result modifier."
     ctxt = sh.result
-    assert ctxt.options.return_result
+    assert ctxt.options._return_result
     assert ctxt.options.exit_codes == range(-255, 256)
 
 
@@ -375,4 +375,4 @@ def test_command_invalid_encoding():
         sh("echo").set(encoding="")
 
     with pytest.raises(TypeError, match="invalid encoding"):
-        sh("echo").set(encoding=None)
+        sh("echo").set(encoding=None)  # pyright: ignore[reportGeneralTypeIssues]

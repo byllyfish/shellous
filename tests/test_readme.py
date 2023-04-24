@@ -62,7 +62,7 @@ async def run_asyncio_repl(cmds, logfile=None):
         .stdin(sh.CAPTURE)
         .stdout(sh.CAPTURE)
         .stderr(errbuf)
-        .set(return_result=True, inherit_env=False)
+        .set(_return_result=True, inherit_env=False)
         .env(**_current_env())
     )
 

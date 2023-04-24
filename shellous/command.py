@@ -18,18 +18,28 @@ from typing import (
     Callable,
     ClassVar,
     Container,
+    Coroutine,
+    Generic,
     Optional,
     Sequence,
     TypedDict,
     TypeVar,
     Union,
+    cast,
+    overload,
 )
-
-from typing_extensions import Self
 
 import shellous
 from shellous.pty_util import PtyAdapterOrBool
-from shellous.redirect import STDIN_TYPES, STDOUT_APPEND_TYPES, STDOUT_TYPES, Redirect
+from shellous.redirect import (
+    APPEND_TYPES,
+    APPEND_TYPES_T,
+    STDIN_TYPES,
+    STDIN_TYPES_T,
+    STDOUT_TYPES,
+    STDOUT_TYPES_T,
+    Redirect,
+)
 from shellous.runner import Runner
 from shellous.util import EnvironmentDict, context_aenter, context_aexit
 
@@ -104,7 +114,7 @@ class Options:  # pylint: disable=too-many-instance-attributes
     encoding: str = "utf-8"
     "Specifies encoding of input/ouput."
 
-    return_result: bool = False
+    _return_result: bool = False
     "True if we should return `Result` object instead of the output text/bytes."
 
     catch_cancelled_error: bool = False
@@ -131,7 +141,7 @@ class Options:  # pylint: disable=too-many-instance-attributes
     pass_fds_close: bool = False
     "True if pass_fds should be closed after subprocess launch."
 
-    writable: bool = False
+    _writable: bool = False
     "True if using process substitution in write mode."
 
     _start_new_session: bool = False
@@ -160,7 +170,7 @@ class Options:  # pylint: disable=too-many-instance-attributes
             return dict(self.env)  # make copy of dict
         return {}
 
-    def set_stdin(self, input_: Any, close: bool) -> Self:
+    def set_stdin(self, input_: Any, close: bool) -> "Options":
         "Return new options with `input` configured."
         if input_ is None:
             raise TypeError("invalid stdin")
@@ -174,7 +184,7 @@ class Options:  # pylint: disable=too-many-instance-attributes
             input_close=close,
         )
 
-    def set_stdout(self, output: Any, append: bool, close: bool) -> Self:
+    def set_stdout(self, output: Any, append: bool, close: bool) -> "Options":
         "Return new options with `output` configured."
         if output is None:
             raise TypeError("invalid stdout")
@@ -189,7 +199,7 @@ class Options:  # pylint: disable=too-many-instance-attributes
             output_close=close,
         )
 
-    def set_stderr(self, error: Any, append: bool, close: bool) -> Self:
+    def set_stderr(self, error: Any, append: bool, close: bool) -> "Options":
         "Return new options with `error` configured."
         if error is None:
             raise TypeError("invalid stderr")
@@ -201,12 +211,12 @@ class Options:  # pylint: disable=too-many-instance-attributes
             error_close=close,
         )
 
-    def set_env(self, updates: dict[str, Any]) -> Self:
+    def set_env(self, updates: dict[str, Any]) -> "Options":
         "Return new options with augmented environment."
         new_env = EnvironmentDict(self.env, updates)
         return dataclasses.replace(self, env=new_env)
 
-    def set(self, kwds: dict[str, Any]) -> Self:
+    def set(self, kwds: dict[str, Any]) -> "Options":
         """Return new options with given properties updated.
 
         See `Command.set` for option reference.
@@ -215,8 +225,12 @@ class Options:  # pylint: disable=too-many-instance-attributes
         return dataclasses.replace(self, **kwds)
 
 
+# Return type for a Command, CmdContext can be either `str` or `Result`.
+_RT = TypeVar("_RT", str, "shellous.Result")
+
+
 @dataclass(frozen=True)
-class CmdContext:
+class CmdContext(Generic[_RT]):
     """Concrete class for an immutable execution context."""
 
     CAPTURE: ClassVar[Redirect] = Redirect.CAPTURE
@@ -237,22 +251,26 @@ class CmdContext:
     options: Options = Options()
     "Default command options."
 
-    def stdin(self, input_: Any, *, close: bool = False) -> Self:
+    def stdin(self, input_: Any, *, close: bool = False) -> "CmdContext[_RT]":
         "Return new context with updated `input` settings."
         new_options = self.options.set_stdin(input_, close)
         return CmdContext(new_options)
 
-    def stdout(self, output: Any, *, append: bool = False, close: bool = False) -> Self:
+    def stdout(
+        self, output: Any, *, append: bool = False, close: bool = False
+    ) -> "CmdContext[_RT]":
         "Return new context with updated `output` settings."
         new_options = self.options.set_stdout(output, append, close)
         return CmdContext(new_options)
 
-    def stderr(self, error: Any, *, append: bool = False, close: bool = False) -> Self:
+    def stderr(
+        self, error: Any, *, append: bool = False, close: bool = False
+    ) -> "CmdContext[_RT]":
         "Return new context with updated `error` settings."
         new_options = self.options.set_stderr(error, append, close)
         return CmdContext(new_options)
 
-    def env(self, **kwds: Any) -> Self:
+    def env(self, **kwds: Any) -> "CmdContext[_RT]":
         """Return new context with augmented environment."""
         new_options = self.options.set_env(kwds)
         return CmdContext(new_options)
@@ -262,7 +280,7 @@ class CmdContext:
         *,
         inherit_env: Unset[bool] = _UNSET,
         encoding: Unset[str] = _UNSET,
-        return_result: Unset[bool] = _UNSET,
+        _return_result: Unset[bool] = _UNSET,
         catch_cancelled_error: Unset[bool] = _UNSET,
         exit_codes: Unset[Optional[Container[int]]] = _UNSET,
         timeout: Unset[Optional[float]] = _UNSET,
@@ -271,13 +289,13 @@ class CmdContext:
         alt_name: Unset[Optional[str]] = _UNSET,
         pass_fds: Unset[Iterable[int]] = _UNSET,
         pass_fds_close: Unset[bool] = _UNSET,
-        writable: Unset[bool] = _UNSET,
+        _writable: Unset[bool] = _UNSET,
         _start_new_session: Unset[bool] = _UNSET,
         _preexec_fn: Unset[_PreexecFnT] = _UNSET,
         pty: Unset[PtyAdapterOrBool] = _UNSET,
         close_fds: Unset[bool] = _UNSET,
         audit_callback: Unset[_AuditFnT] = _UNSET,
-    ) -> Self:
+    ) -> "CmdContext[_RT]":
         """Return new context with custom options set.
 
         See `Command.set` for option reference.
@@ -288,18 +306,24 @@ class CmdContext:
             raise TypeError("invalid encoding")
         return CmdContext(self.options.set(kwargs))
 
-    def __call__(self, *args: Any) -> "Command":
+    def __call__(self, *args: Any) -> "Command[_RT]":
         "Construct a new command."
         return Command(coerce(args), self.options)
 
     @property
-    def result(self) -> Self:
-        "Set `return_result` and `exit_codes`."
-        return self.set(return_result=True, exit_codes=range(-255, 256))
+    def result(self) -> "CmdContext[shellous.Result]":
+        "Set `_return_result` and `exit_codes`."
+        return cast(
+            CmdContext[shellous.Result],
+            self.set(
+                _return_result=True,
+                exit_codes=range(-255, 256),
+            ),
+        )
 
 
 @dataclass(frozen=True)
-class Command:
+class Command(Generic[_RT]):
     """A Command instance is lightweight and immutable object that specifies the
     arguments and options used to run a program. Commands do not do anything
     until they are awaited.
@@ -317,7 +341,7 @@ class Command:
     ```
     """
 
-    args: "tuple[Union[str, bytes, Command, shellous.Pipeline], ...]"
+    args: "tuple[Union[str, bytes, Command[Any], shellous.Pipeline[Any]], ...]"
     "Command arguments including the program name as first argument."
 
     options: Options
@@ -342,7 +366,7 @@ class Command:
             return f"...{name[-31:]}"
         return name
 
-    def stdin(self, input_: Any, *, close: bool = False) -> Self:
+    def stdin(self, input_: Any, *, close: bool = False) -> "Command[_RT]":
         "Pass `input` to command's standard input."
         new_options = self.options.set_stdin(input_, close)
         return Command(self.args, new_options)
@@ -353,7 +377,7 @@ class Command:
         *,
         append: bool = False,
         close: bool = False,
-    ) -> Self:
+    ) -> "Command[_RT]":
         "Redirect standard output to `output`."
         _check_args(output, append)
         new_options = self.options.set_stdout(output, append, close)
@@ -365,13 +389,13 @@ class Command:
         *,
         append: bool = False,
         close: bool = False,
-    ) -> Self:
+    ) -> "Command[_RT]":
         "Redirect standard error to `error`."
         _check_args(error, append)
         new_options = self.options.set_stderr(error, append, close)
         return Command(self.args, new_options)
 
-    def env(self, **kwds: str) -> Self:
+    def env(self, **kwds: Any) -> "Command[_RT]":
         """Return new command with augmented environment."""
         new_options = self.options.set_env(kwds)
         return Command(self.args, new_options)
@@ -381,7 +405,7 @@ class Command:
         *,
         inherit_env: Unset[bool] = _UNSET,
         encoding: Unset[str] = _UNSET,
-        return_result: Unset[bool] = _UNSET,
+        _return_result: Unset[bool] = _UNSET,
         catch_cancelled_error: Unset[bool] = _UNSET,
         exit_codes: Unset[Optional[Container[int]]] = _UNSET,
         timeout: Unset[Optional[float]] = _UNSET,
@@ -390,13 +414,13 @@ class Command:
         alt_name: Unset[Optional[str]] = _UNSET,
         pass_fds: Unset[Iterable[int]] = _UNSET,
         pass_fds_close: Unset[bool] = _UNSET,
-        writable: Unset[bool] = _UNSET,
+        _writable: Unset[bool] = _UNSET,
         _start_new_session: Unset[bool] = _UNSET,
         _preexec_fn: Unset[_PreexecFnT] = _UNSET,
         pty: Unset[PtyAdapterOrBool] = _UNSET,
         close_fds: Unset[bool] = _UNSET,
         audit_callback: Unset[_AuditFnT] = _UNSET,
-    ) -> Self:
+    ) -> "Command[_RT]":
         """Return new command with custom options set.
 
         **inherit_env** (bool) default=True<br>
@@ -411,8 +435,9 @@ class Command:
         append it after a space. For example, use "utf-8 replace" to specify
         "utf-8" with errors "replace".
 
-        **return_result** (bool) default=False<br>
+        **_return_result** (bool) default=False<br>
         When True, return a `Result` object instead of the standard output.
+        Private API -- use the `result` modifier instead.
 
         **catch_cancelled_error** (bool) default=False<br>
         When True, raise a `ResultError` when the command is cancelled. On the
@@ -456,8 +481,9 @@ class Command:
         Close the file descriptors in `pass_fds` immediately in the current
         process immediately after launching the subprocess.
 
-        **writable** (bool) default=False<br>
-        Used to indicate process substitution is writing.
+        **_writable** (bool) default=False<br>
+        Used to indicate process substitution is writing. Private API -- use the
+        `writable` modifier instead.
 
         **_start_new_session** (bool) default=False<br>
         Provided for testing purposes only.
@@ -516,7 +542,7 @@ class Command:
             raise TypeError("invalid encoding")
         return Command(self.args, self.options.set(kwargs))
 
-    def _replace_args(self, new_args: list[Union[str, bytes]]) -> Self:
+    def _replace_args(self, new_args: Sequence[Union[str, bytes]]) -> "Command[_RT]":
         """Return new command with arguments replaced by `new_args`.
 
         Arguments are NOT type-checked by the context. Program name must be the
@@ -526,9 +552,14 @@ class Command:
         assert new_args[0] is self.args[0]
         return Command(tuple(new_args), self.options)
 
-    def coro(self, *, _run_future: Optional[asyncio.Future[Runner]] = None):
+    def coro(
+        self, *, _run_future: Optional[asyncio.Future[Runner]] = None
+    ) -> Coroutine[Any, Any, _RT]:
         "Return coroutine object to run awaitable."
-        return Runner.run_command(self, _run_future=_run_future)
+        return cast(
+            Coroutine[Any, Any, _RT],
+            Runner.run_command(self, _run_future=_run_future),
+        )
 
     def _run_(self) -> Runner:
         """Return a `Runner` to run the process incrementally.
@@ -576,7 +607,7 @@ class Command:
             async for line in run:
                 yield line
 
-    def __call__(self, *args: Any) -> Self:
+    def __call__(self, *args: Any) -> "Command[_RT]":
         "Apply more arguments to the end of the command."
         if not args:
             return self
@@ -590,43 +621,62 @@ class Command:
         """
         return str(self.args[0])
 
+    @overload
+    def __or__(self, rhs: STDOUT_TYPES_T) -> "Command[_RT]":
+        ...
+
+    @overload
+    def __or__(self, rhs: "Command[str]") -> "shellous.Pipeline[str]":
+        ...
+
+    @overload
+    def __or__(
+        self, rhs: "Command[shellous.Result]"
+    ) -> "shellous.Pipeline[shellous.Result]":
+        ...
+
     def __or__(self, rhs: Any):
         "Bitwise or operator is used to build pipelines."
         if isinstance(rhs, STDOUT_TYPES):
             return self.stdout(rhs)
         return shellous.Pipeline.create(self) | rhs
 
-    def __ror__(self, lhs: Any):
+    def __ror__(self, lhs: STDIN_TYPES_T) -> "Command[_RT]":
         "Bitwise or operator is used to build pipelines."
         if isinstance(lhs, STDIN_TYPES):
             return self.stdin(lhs)
         return NotImplemented
 
-    def __rshift__(self, rhs: Any):
+    def __rshift__(self, rhs: APPEND_TYPES_T) -> "Command[_RT]":
         "Right shift operator is used to build pipelines."
-        if isinstance(rhs, STDOUT_APPEND_TYPES):
+        if isinstance(
+            rhs, APPEND_TYPES
+        ):  # pyright: ignore[reportUnnecessaryIsInstance]
             return self.stdout(rhs, append=True)
         return NotImplemented
 
-    def __mod__(self, rhs: "Command"):
+    def __mod__(self, rhs: "Command[Any]") -> "Command[_RT]":
         "Modulo operator is used to concatenate commands."
         if isinstance(rhs, Command):  # pyright: ignore[reportUnnecessaryIsInstance]
             return self(rhs.args)
         return NotImplemented
 
     @property
-    def writable(self) -> Self:
+    def writable(self) -> "Command[_RT]":
         "Set `writable` to True."
-        return self.set(writable=True)
+        return self.set(_writable=True)
 
     @property
-    def result(self) -> Self:
-        "Set `return_result` and `exit_codes`."
-        return self.set(return_result=True, exit_codes=range(-255, 256))
+    def result(self) -> "Command[shellous.Result]":
+        "Set `_return_result` and `exit_codes`."
+        return cast(
+            Command[shellous.Result],
+            self.set(_return_result=True, exit_codes=range(-255, 256)),
+        )
 
 
 def _check_args(out: Any, append: bool):
-    if append and not isinstance(out, STDOUT_APPEND_TYPES):
+    if append and not isinstance(out, APPEND_TYPES):
         raise TypeError(f"{type(out)} does not support append")
 
 

@@ -48,11 +48,11 @@ def _is_cancelled(ex: BaseException):
 
 
 def _is_writable(cmd: "Union[shellous.Command, shellous.Pipeline]"):
-    "Return true if command/pipeline has `writable` set."
+    "Return true if command/pipeline has `_writable` set."
     if isinstance(cmd, shellous.Pipeline):
         # Pipelines need to check both the last/first commands.
-        return cmd.options.writable or cmd[0].options.writable
-    return cmd.options.writable
+        return cmd.options._writable or cmd[0].options._writable
+    return cmd.options._writable
 
 
 def _enc(encoding: str) -> list[str]:
@@ -873,10 +873,10 @@ class Runner:
 
     @staticmethod
     async def run_command(
-        command: "shellous.Command",
+        command: "shellous.Command[Any]",
         *,
         _run_future: Optional[asyncio.Future["Runner"]] = None,
-    ):
+    ) -> Union[str, Result]:
         "Run a command. This is the main entry point for Runner."
         if not _run_future and _is_multiple_capture(command):
             LOGGER.warning("run_command: multiple capture requires 'async with'")
@@ -889,7 +889,7 @@ class Runner:
                 _run_future.set_result(run)
 
         result = run.result()
-        if command.options.return_result:
+        if command.options._return_result:
             return result
         return result.output
 
@@ -1045,7 +1045,7 @@ class PipeRunner:
             cmds[i + 1] = cmds[i + 1].stdin(read_fd, close=True)
 
         for i in range(cmd_count):
-            cmds[i] = cmds[i].set(return_result=True, catch_cancelled_error=True)
+            cmds[i] = cmds[i].set(_return_result=True, catch_cancelled_error=True)
 
         return cmds
 
@@ -1109,7 +1109,7 @@ class PipeRunner:
             pass
 
         result = run.result()
-        if pipe.options.return_result:
+        if pipe.options._return_result:
             return result
         return result.output
 
