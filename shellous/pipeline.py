@@ -3,22 +3,34 @@
 import dataclasses
 from dataclasses import dataclass
 from types import TracebackType
-from typing import Any, Optional, Union
+from typing import Any, Coroutine, Generic, Optional, Self, TypeVar, Union, overload
 
 import shellous
-from shellous.redirect import STDIN_TYPES, STDOUT_APPEND_TYPES, STDOUT_TYPES, Redirect
+from shellous.redirect import (
+    APPEND_TYPES,
+    APPEND_TYPES_T,
+    STDIN_TYPES,
+    STDIN_TYPES_T,
+    STDOUT_TYPES,
+    STDOUT_TYPES_T,
+    Redirect,
+)
 from shellous.runner import PipeRunner
 from shellous.util import context_aenter, context_aexit
 
+# Return type for a Command, CmdContext can be either `str` or `Result`.
+_RT = TypeVar("_RT", str, "shellous.Result")
+_T = TypeVar("_T", str, "shellous.Result")
+
 
 @dataclass(frozen=True)
-class Pipeline:
+class Pipeline(Generic[_RT]):
     "A Pipeline is a sequence of commands."
 
-    commands: tuple[shellous.Command, ...] = ()
+    commands: tuple[shellous.Command[_RT], ...] = ()
 
     @staticmethod
-    def create(*commands: shellous.Command) -> "Pipeline":
+    def create(*commands: shellous.Command[_T]) -> "Pipeline[_T]":
         "Create a new Pipeline."
         return Pipeline(commands)
 
@@ -37,7 +49,7 @@ class Pipeline:
         "Return last command's options."
         return self.commands[-1].options
 
-    def stdin(self, input_: Any, *, close: bool = False) -> "Pipeline":
+    def stdin(self, input_: Any, *, close: bool = False) -> Self:
         "Set stdin on the first command of the pipeline."
         new_first = self.commands[0].stdin(input_, close=close)
         new_commands = (new_first,) + self.commands[1:]
@@ -49,7 +61,7 @@ class Pipeline:
         *,
         append: bool = False,
         close: bool = False,
-    ) -> "Pipeline":
+    ) -> Self:
         "Set stdout on the last command of the pipeline."
         new_last = self.commands[-1].stdout(output, append=append, close=close)
         new_commands = self.commands[0:-1] + (new_last,)
@@ -61,7 +73,7 @@ class Pipeline:
         *,
         append: bool = False,
         close: bool = False,
-    ) -> "Pipeline":
+    ) -> Self:
         "Set stderr on the last command of the pipeline."
         new_last = self.commands[-1].stderr(error, append=append, close=close)
         new_commands = self.commands[0:-1] + (new_last,)
@@ -73,7 +85,7 @@ class Pipeline:
         new_commands = self.commands[0:-1] + (new_last,)
         return dataclasses.replace(self, commands=new_commands)
 
-    def coro(self):
+    def coro(self) -> Coroutine[Any, Any, _RT]:
         "Return coroutine object for pipeline."
         return PipeRunner.run_pipeline(self)
 
@@ -89,7 +101,7 @@ class Pipeline:
         """
         return PipeRunner(self, capturing=True)
 
-    def _add(self, item: Union["shellous.Command", "Pipeline"]):
+    def _add(self, item: Union["shellous.Command[Any]", "Pipeline[Any]"]):
         if isinstance(item, shellous.Command):
             return dataclasses.replace(self, commands=self.commands + (item,))
         return dataclasses.replace(
@@ -101,7 +113,7 @@ class Pipeline:
         "Return number of commands in pipe."
         return len(self.commands)
 
-    def __getitem__(self, key: int):
+    def __getitem__(self, key: int) -> shellous.Command[Any]:
         "Return specified command by index."
         return self.commands[key]
 
@@ -110,7 +122,23 @@ class Pipeline:
             raise TypeError("Calling pipeline with 1 or more arguments.")
         return self
 
-    def __or__(self, rhs: Any):
+    @overload
+    def __or__(
+        self, rhs: "Union[shellous.Command[shellous.Result], Pipeline[shellous.Result]]"
+    ) -> "Pipeline[shellous.Result]":
+        ...
+
+    @overload
+    def __or__(
+        self, rhs: "Union[shellous.Command[str], Pipeline[str]]"
+    ) -> "Pipeline[str]":
+        ...
+
+    @overload
+    def __or__(self, rhs: STDOUT_TYPES_T) -> Self:
+        ...
+
+    def __or__(self, rhs: Any) -> "Pipeline[Any]":
         if isinstance(rhs, (shellous.Command, Pipeline)):
             return self._add(rhs)
         if isinstance(rhs, STDOUT_TYPES):
@@ -121,13 +149,13 @@ class Pipeline:
             )
         return NotImplemented
 
-    def __ror__(self, lhs: Any):
+    def __ror__(self, lhs: STDIN_TYPES_T) -> Self:
         if isinstance(lhs, STDIN_TYPES):
             return self.stdin(lhs)
         return NotImplemented
 
-    def __rshift__(self, rhs: Any):
-        if isinstance(rhs, STDOUT_APPEND_TYPES):
+    def __rshift__(self, rhs: APPEND_TYPES_T) -> Self:
+        if isinstance(rhs, APPEND_TYPES):
             return self.stdout(rhs, append=True)
         if isinstance(rhs, (str, bytes)):
             raise TypeError(
@@ -141,7 +169,7 @@ class Pipeline:
         return self._set(_writable=True)
 
     @property
-    def result(self):
+    def result(self) -> "Pipeline[shellous.Result]":
         "Set `_return_result` and `exit_codes`."
         return self._set(_return_result=True, exit_codes=range(-255, 256))
 

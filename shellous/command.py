@@ -34,10 +34,10 @@ from typing_extensions import Self
 import shellous
 from shellous.pty_util import PtyAdapterOrBool
 from shellous.redirect import (
+    APPEND_TYPES,
+    APPEND_TYPES_T,
     STDIN_TYPES,
     STDIN_TYPES_T,
-    STDOUT_APPEND_TYPES,
-    STDOUT_APPEND_TYPES_T,
     STDOUT_TYPES,
     STDOUT_TYPES_T,
     Redirect,
@@ -229,6 +229,7 @@ class Options:  # pylint: disable=too-many-instance-attributes
 
 # Return type for a Command, CmdContext can be either `str` or `Result`.
 _RT = TypeVar("_RT", str, "shellous.Result")
+_CT = TypeVar("_RT", str, "shellous.Result")
 
 
 @dataclass(frozen=True)
@@ -339,7 +340,7 @@ class Command(Generic[_RT]):
     ```
     """
 
-    args: "tuple[Union[str, bytes, Command[Any], shellous.Pipeline], ...]"
+    args: "tuple[Union[str, bytes, Command[Any], shellous.Pipeline[Any]], ...]"
     "Command arguments including the program name as first argument."
 
     options: Options
@@ -624,7 +625,13 @@ class Command(Generic[_RT]):
         ...
 
     @overload
-    def __or__(self, rhs: "Command[Any]") -> "shellous.Pipeline":
+    def __or__(self, rhs: "Command[str]") -> "shellous.Pipeline[str]":
+        ...
+
+    @overload
+    def __or__(
+        self, rhs: "Command[shellous.Result]"
+    ) -> "shellous.Pipeline[shellous.Result]":
         ...
 
     def __or__(self, rhs: Any):
@@ -639,10 +646,10 @@ class Command(Generic[_RT]):
             return self.stdin(lhs)
         return NotImplemented
 
-    def __rshift__(self, rhs: STDOUT_APPEND_TYPES_T) -> Self:
+    def __rshift__(self, rhs: APPEND_TYPES_T) -> Self:
         "Right shift operator is used to build pipelines."
         if isinstance(
-            rhs, STDOUT_APPEND_TYPES
+            rhs, APPEND_TYPES
         ):  # pyright: ignore[reportUnnecessaryIsInstance]
             return self.stdout(rhs, append=True)
         return NotImplemented
@@ -668,7 +675,7 @@ class Command(Generic[_RT]):
 
 
 def _check_args(out: Any, append: bool):
-    if append and not isinstance(out, STDOUT_APPEND_TYPES):
+    if append and not isinstance(out, APPEND_TYPES):
         raise TypeError(f"{type(out)} does not support append")
 
 
