@@ -29,8 +29,6 @@ from typing import (
     overload,
 )
 
-from typing_extensions import Self
-
 import shellous
 from shellous.pty_util import PtyAdapterOrBool
 from shellous.redirect import (
@@ -172,7 +170,7 @@ class Options:  # pylint: disable=too-many-instance-attributes
             return dict(self.env)  # make copy of dict
         return {}
 
-    def set_stdin(self, input_: Any, close: bool) -> Self:
+    def set_stdin(self, input_: Any, close: bool) -> "Options":
         "Return new options with `input` configured."
         if input_ is None:
             raise TypeError("invalid stdin")
@@ -186,7 +184,7 @@ class Options:  # pylint: disable=too-many-instance-attributes
             input_close=close,
         )
 
-    def set_stdout(self, output: Any, append: bool, close: bool) -> Self:
+    def set_stdout(self, output: Any, append: bool, close: bool) -> "Options":
         "Return new options with `output` configured."
         if output is None:
             raise TypeError("invalid stdout")
@@ -201,7 +199,7 @@ class Options:  # pylint: disable=too-many-instance-attributes
             output_close=close,
         )
 
-    def set_stderr(self, error: Any, append: bool, close: bool) -> Self:
+    def set_stderr(self, error: Any, append: bool, close: bool) -> "Options":
         "Return new options with `error` configured."
         if error is None:
             raise TypeError("invalid stderr")
@@ -213,12 +211,12 @@ class Options:  # pylint: disable=too-many-instance-attributes
             error_close=close,
         )
 
-    def set_env(self, updates: dict[str, Any]) -> Self:
+    def set_env(self, updates: dict[str, Any]) -> "Options":
         "Return new options with augmented environment."
         new_env = EnvironmentDict(self.env, updates)
         return dataclasses.replace(self, env=new_env)
 
-    def set(self, kwds: dict[str, Any]) -> Self:
+    def set(self, kwds: dict[str, Any]) -> "Options":
         """Return new options with given properties updated.
 
         See `Command.set` for option reference.
@@ -253,22 +251,26 @@ class CmdContext(Generic[_RT]):
     options: Options = Options()
     "Default command options."
 
-    def stdin(self, input_: Any, *, close: bool = False) -> Self:
+    def stdin(self, input_: Any, *, close: bool = False) -> "CmdContext[_RT]":
         "Return new context with updated `input` settings."
         new_options = self.options.set_stdin(input_, close)
         return CmdContext(new_options)
 
-    def stdout(self, output: Any, *, append: bool = False, close: bool = False) -> Self:
+    def stdout(
+        self, output: Any, *, append: bool = False, close: bool = False
+    ) -> "CmdContext[_RT]":
         "Return new context with updated `output` settings."
         new_options = self.options.set_stdout(output, append, close)
         return CmdContext(new_options)
 
-    def stderr(self, error: Any, *, append: bool = False, close: bool = False) -> Self:
+    def stderr(
+        self, error: Any, *, append: bool = False, close: bool = False
+    ) -> "CmdContext[_RT]":
         "Return new context with updated `error` settings."
         new_options = self.options.set_stderr(error, append, close)
         return CmdContext(new_options)
 
-    def env(self, **kwds: Any) -> Self:
+    def env(self, **kwds: Any) -> "CmdContext[_RT]":
         """Return new context with augmented environment."""
         new_options = self.options.set_env(kwds)
         return CmdContext(new_options)
@@ -293,7 +295,7 @@ class CmdContext(Generic[_RT]):
         pty: Unset[PtyAdapterOrBool] = _UNSET,
         close_fds: Unset[bool] = _UNSET,
         audit_callback: Unset[_AuditFnT] = _UNSET,
-    ) -> Self:
+    ) -> "CmdContext[_RT]":
         """Return new context with custom options set.
 
         See `Command.set` for option reference.
@@ -364,7 +366,7 @@ class Command(Generic[_RT]):
             return f"...{name[-31:]}"
         return name
 
-    def stdin(self, input_: Any, *, close: bool = False) -> Self:
+    def stdin(self, input_: Any, *, close: bool = False) -> "Command[_RT]":
         "Pass `input` to command's standard input."
         new_options = self.options.set_stdin(input_, close)
         return Command(self.args, new_options)
@@ -375,7 +377,7 @@ class Command(Generic[_RT]):
         *,
         append: bool = False,
         close: bool = False,
-    ) -> Self:
+    ) -> "Command[_RT]":
         "Redirect standard output to `output`."
         _check_args(output, append)
         new_options = self.options.set_stdout(output, append, close)
@@ -387,13 +389,13 @@ class Command(Generic[_RT]):
         *,
         append: bool = False,
         close: bool = False,
-    ) -> Self:
+    ) -> "Command[_RT]":
         "Redirect standard error to `error`."
         _check_args(error, append)
         new_options = self.options.set_stderr(error, append, close)
         return Command(self.args, new_options)
 
-    def env(self, **kwds: Any) -> Self:
+    def env(self, **kwds: Any) -> "Command[_RT]":
         """Return new command with augmented environment."""
         new_options = self.options.set_env(kwds)
         return Command(self.args, new_options)
@@ -418,7 +420,7 @@ class Command(Generic[_RT]):
         pty: Unset[PtyAdapterOrBool] = _UNSET,
         close_fds: Unset[bool] = _UNSET,
         audit_callback: Unset[_AuditFnT] = _UNSET,
-    ) -> Self:
+    ) -> "Command[_RT]":
         """Return new command with custom options set.
 
         **inherit_env** (bool) default=True<br>
@@ -540,7 +542,7 @@ class Command(Generic[_RT]):
             raise TypeError("invalid encoding")
         return Command(self.args, self.options.set(kwargs))
 
-    def _replace_args(self, new_args: Sequence[Union[str, bytes]]) -> Self:
+    def _replace_args(self, new_args: Sequence[Union[str, bytes]]) -> "Command[_RT]":
         """Return new command with arguments replaced by `new_args`.
 
         Arguments are NOT type-checked by the context. Program name must be the
@@ -605,7 +607,7 @@ class Command(Generic[_RT]):
             async for line in run:
                 yield line
 
-    def __call__(self, *args: Any) -> Self:
+    def __call__(self, *args: Any) -> "Command[_RT]":
         "Apply more arguments to the end of the command."
         if not args:
             return self
@@ -620,7 +622,7 @@ class Command(Generic[_RT]):
         return str(self.args[0])
 
     @overload
-    def __or__(self, rhs: STDOUT_TYPES_T) -> Self:
+    def __or__(self, rhs: STDOUT_TYPES_T) -> "Command[_RT]":
         ...
 
     @overload
@@ -639,13 +641,13 @@ class Command(Generic[_RT]):
             return self.stdout(rhs)
         return shellous.Pipeline.create(self) | rhs
 
-    def __ror__(self, lhs: STDIN_TYPES_T) -> Self:
+    def __ror__(self, lhs: STDIN_TYPES_T) -> "Command[_RT]":
         "Bitwise or operator is used to build pipelines."
         if isinstance(lhs, STDIN_TYPES):
             return self.stdin(lhs)
         return NotImplemented
 
-    def __rshift__(self, rhs: APPEND_TYPES_T) -> Self:
+    def __rshift__(self, rhs: APPEND_TYPES_T) -> "Command[_RT]":
         "Right shift operator is used to build pipelines."
         if isinstance(
             rhs, APPEND_TYPES
@@ -653,14 +655,14 @@ class Command(Generic[_RT]):
             return self.stdout(rhs, append=True)
         return NotImplemented
 
-    def __mod__(self, rhs: "Command[Any]") -> Self:
+    def __mod__(self, rhs: "Command[Any]") -> "Command[_RT]":
         "Modulo operator is used to concatenate commands."
         if isinstance(rhs, Command):  # pyright: ignore[reportUnnecessaryIsInstance]
             return self(rhs.args)
         return NotImplemented
 
     @property
-    def writable(self) -> Self:
+    def writable(self) -> "Command[_RT]":
         "Set `writable` to True."
         return self.set(_writable=True)
 

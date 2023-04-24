@@ -5,8 +5,6 @@ from dataclasses import dataclass
 from types import TracebackType
 from typing import Any, Coroutine, Generic, Optional, TypeVar, Union, overload
 
-from typing_extensions import Self
-
 import shellous
 from shellous.redirect import (
     APPEND_TYPES,
@@ -51,7 +49,7 @@ class Pipeline(Generic[_RT]):
         "Return last command's options."
         return self.commands[-1].options
 
-    def stdin(self, input_: Any, *, close: bool = False) -> Self:
+    def stdin(self, input_: Any, *, close: bool = False) -> "Pipeline[_RT]":
         "Set stdin on the first command of the pipeline."
         new_first = self.commands[0].stdin(input_, close=close)
         new_commands = (new_first,) + self.commands[1:]
@@ -63,7 +61,7 @@ class Pipeline(Generic[_RT]):
         *,
         append: bool = False,
         close: bool = False,
-    ) -> Self:
+    ) -> "Pipeline[_RT]":
         "Set stdout on the last command of the pipeline."
         new_last = self.commands[-1].stdout(output, append=append, close=close)
         new_commands = self.commands[0:-1] + (new_last,)
@@ -75,7 +73,7 @@ class Pipeline(Generic[_RT]):
         *,
         append: bool = False,
         close: bool = False,
-    ) -> Self:
+    ) -> "Pipeline[_RT]":
         "Set stderr on the last command of the pipeline."
         new_last = self.commands[-1].stderr(error, append=append, close=close)
         new_commands = self.commands[0:-1] + (new_last,)
@@ -137,7 +135,7 @@ class Pipeline(Generic[_RT]):
         ...
 
     @overload
-    def __or__(self, rhs: STDOUT_TYPES_T) -> Self:
+    def __or__(self, rhs: STDOUT_TYPES_T) -> "Pipeline[_RT]":
         ...
 
     def __or__(self, rhs: Any) -> "Pipeline[Any]":
@@ -151,12 +149,12 @@ class Pipeline(Generic[_RT]):
             )
         return NotImplemented
 
-    def __ror__(self, lhs: STDIN_TYPES_T) -> Self:
+    def __ror__(self, lhs: STDIN_TYPES_T) -> "Pipeline[_RT]":
         if isinstance(lhs, STDIN_TYPES):
             return self.stdin(lhs)
         return NotImplemented
 
-    def __rshift__(self, rhs: APPEND_TYPES_T) -> Self:
+    def __rshift__(self, rhs: APPEND_TYPES_T) -> "Pipeline[_RT]":
         if isinstance(rhs, APPEND_TYPES):
             return self.stdout(rhs, append=True)
         if isinstance(rhs, (str, bytes)):
