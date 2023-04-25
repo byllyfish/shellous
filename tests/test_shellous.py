@@ -216,7 +216,6 @@ async def test_echo_cancel(echo_cmd):
 
 async def test_echo_cancel_incomplete(echo_cmd):
     "When a command is cancelled, we should see partial output."
-
     cmd = echo_cmd("abc").env(SHELLOUS_EXIT_SLEEP=2).set(catch_cancelled_error=True)
     with pytest.raises(ResultError) as exc_info:
         await asyncio.wait_for(cmd, timeout=0.75)
@@ -234,7 +233,6 @@ async def test_echo_cancel_incomplete(echo_cmd):
 
 async def test_echo_cancel_stringio(echo_cmd):
     "When a command is cancelled, we should see partial output."
-
     buf = io.StringIO()
     cmd = echo_cmd("abc").env(SHELLOUS_EXIT_SLEEP=2).stdout(buf)
     with pytest.raises(asyncio.TimeoutError):
@@ -245,7 +243,6 @@ async def test_echo_cancel_stringio(echo_cmd):
 
 async def test_echo_cancel_stringio_incomplete(echo_cmd):
     "When a command is cancelled, we should see partial output."
-
     buf = io.StringIO()
     cmd = (
         echo_cmd("abc")
@@ -354,7 +351,6 @@ async def test_pipe_cancel_incomplete(echo_cmd, cat_cmd):
 
 async def test_pipe_error_cmd1(echo_cmd, tr_cmd):
     "Test a pipe where the first command fails with an error."
-
     echo_cmd = echo_cmd("abc").env(SHELLOUS_EXIT_SLEEP=1, SHELLOUS_EXIT_CODE=3)
     tr_cmd = tr_cmd.env(SHELLOUS_EXIT_SLEEP=2)
 
@@ -392,7 +388,6 @@ async def test_pipe_error_cmd1(echo_cmd, tr_cmd):
 
 async def test_pipe_error_cmd2(echo_cmd, tr_cmd):
     "Test a pipe where the second command fails with an error."
-
     tr_cmd = tr_cmd.env(SHELLOUS_EXIT_CODE=5)
     with pytest.raises(ResultError) as exc_info:
         await (echo_cmd("abc") | tr_cmd)
@@ -498,7 +493,6 @@ async def test_redirect_stdin_stringio_no_encoding(cat_cmd):
 
 async def test_redirect_stdin_inherit(echo_cmd):
     "Test reading stdin from INHERIT."
-
     try:
         result = await echo_cmd("abc").stdin(sh.INHERIT)
         assert result == "abc"
@@ -643,7 +637,6 @@ async def test_runner_enter(echo_cmd):
 
 async def test_encoding_utf8(cat_cmd):
     "Test use of encoding option with bad utf-8 data."
-
     cat = cat_cmd.set(encoding="utf-8")
     with pytest.raises(UnicodeDecodeError, match="invalid start byte"):
         await (b"\x81abc" | cat)
@@ -651,7 +644,6 @@ async def test_encoding_utf8(cat_cmd):
 
 async def test_encoding_utf8_strict(cat_cmd):
     "Test use of encoding option with bad utf-8 data."
-
     cat = cat_cmd.set(encoding="utf-8 strict")
     with pytest.raises(UnicodeDecodeError, match="invalid start byte"):
         await (b"\x81abc" | cat)
@@ -659,7 +651,6 @@ async def test_encoding_utf8_strict(cat_cmd):
 
 async def test_encoding_utf8_replace(cat_cmd):
     "Test use of encoding option with bad utf-8 data."
-
     cat = cat_cmd.set(encoding="utf-8 replace")
     result = await (b"\x81abc" | cat)
     assert result == "\ufffdabc"
@@ -667,7 +658,6 @@ async def test_encoding_utf8_replace(cat_cmd):
 
 async def test_encoding_utf8_replace_str(cat_cmd):
     "Test use of encoding option with utf-8 data."
-
     cat = cat_cmd.set(encoding="utf-8 replace")
     result = await ("abc" | cat)
     assert result == "abc"
@@ -675,7 +665,6 @@ async def test_encoding_utf8_replace_str(cat_cmd):
 
 async def test_encoding_ascii_str(cat_cmd):
     "Test use of encoding option with ascii data."
-
     cat = cat_cmd.set(encoding="ascii")
     result = await ("abc" | cat)
     assert result == "abc"
@@ -683,7 +672,6 @@ async def test_encoding_ascii_str(cat_cmd):
 
 async def test_encoding_utf8_split(cat_cmd):
     "Test reconstitution of split utf-8 chars in output."
-
     buf = io.StringIO()
     cmd = sh.CAPTURE | cat_cmd | buf
 
@@ -833,7 +821,6 @@ async def test_process_substitution(echo_cmd, cat_cmd):
 
 async def test_async_iter_with_latin1_encoding(cat_cmd):
     "Test async iteration with encoding=None."
-
     cmd = b"a\nb\nc\nd" | cat_cmd.set(encoding="latin1") | sh.CAPTURE
     async with cmd._run_() as run:
         lines = [line async for line in run]
@@ -894,7 +881,6 @@ async def test_redirect_to_arbitrary_tuple():
 
 async def test_command_context_manager_default():
     "Test running a command using its context manager."
-
     async with sh("echo", "hello") as run:
         # By default, context manager does not capture any streams.
         assert run.stdin is None
@@ -906,7 +892,6 @@ async def test_command_context_manager_default():
 
 async def test_command_context_manager_api():
     "Test running a command using its context manager."
-
     async with sh("echo", "hello").stdout(sh.CAPTURE) as run:
         out = await run.stdout.read()
 
@@ -915,7 +900,6 @@ async def test_command_context_manager_api():
 
 async def test_command_context_manager_api_reentrant():
     "Test running a command using its context manager."
-
     cmd = sh("echo", "hello").stdout(sh.CAPTURE)
     async with cmd as run1:
         out1 = await run1.stdout.read()
@@ -929,7 +913,6 @@ async def test_command_context_manager_api_reentrant():
 
 async def test_pipe_context_manager_api():
     "Test running a pipeline using its context manager."
-
     async with sh("echo", "hello") | sh("cat").stdout(sh.CAPTURE) as run:
         out = await run.stdout.read()
 
@@ -938,7 +921,6 @@ async def test_pipe_context_manager_api():
 
 async def test_pipe_context_manager_api_reentrant():
     "Test running a pipeline using its context manager."
-
     cmd = sh("echo", "hello") | sh("cat").stdout(sh.CAPTURE)
     async with cmd as run1:
         out1 = await run1.stdout.read()
@@ -952,7 +934,6 @@ async def test_pipe_context_manager_api_reentrant():
 
 async def test_command_iterator_api(echo_cmd):
     "Test running a command's async iterator directly."
-
     lines = [line.rstrip() async for line in echo_cmd("hello\n", "world")]
     assert lines == ["hello", " world"]
 
@@ -998,7 +979,6 @@ def test_command_iterator_api_interrupted_sync(echo_cmd):
 
 async def test_pipe_iterator_api(echo_cmd, cat_cmd):
     "Test running a command's async iterator directly."
-
     cmd = echo_cmd("hello\n", "world") | cat_cmd()
     lines = [line.rstrip() async for line in cmd]
     assert lines == ["hello", " world"]
@@ -1032,7 +1012,6 @@ async def test_pipe_iterator_api_interrupted(echo_cmd, cat_cmd):
 
 def test_pipe_iterator_api_interrupted_sync(echo_cmd, cat_cmd):
     "Test running a command's async iterator directly."
-
     # Due to bpo-?, asyncio.run may log an ERROR message for a task even
     # though the task's exception has been explicitly consumed:
     #
@@ -1073,7 +1052,6 @@ def test_pipe_iterator_api_interrupted_sync(echo_cmd, cat_cmd):
 
 async def test_audit_callback(echo_cmd):
     "Test the audit callback hook."
-
     calls = []
 
     def _audit(phase, info):
@@ -1093,7 +1071,6 @@ async def test_audit_callback(echo_cmd):
 
 async def test_audit_callback_launch_failure():
     "Test the audit callback hook with a failure-to-launch error."
-
     calls = []
 
     def _audit(phase, info):
@@ -1127,7 +1104,6 @@ async def test_audit_callback_launch_failure():
 
 async def test_audit_pipe_cancel(echo_cmd, tr_cmd):
     "Test audit callback when a pipe is cancelled."
-
     calls = []
 
     def _audit(phase, info):
@@ -1153,7 +1129,6 @@ async def test_audit_pipe_cancel(echo_cmd, tr_cmd):
 
 async def test_multiple_pipe(echo_cmd, cat_cmd):
     "Test a pipeline of 7 commands."
-
     cat = cat_cmd
     cmd = echo_cmd("xyz") | cat | cat | cat | cat | cat | cat
 
@@ -1163,21 +1138,18 @@ async def test_multiple_pipe(echo_cmd, cat_cmd):
 
 async def test_command_with_timeout_expiring(sleep_cmd):
     "Test a command with a timeout option."
-
     with pytest.raises(asyncio.TimeoutError):
         await sleep_cmd(10).set(timeout=0.1)
 
 
 async def test_command_with_timeout_ignored(sleep_cmd):
     "Test a command with a timeout option."
-
     result = await sleep_cmd(0.1).set(timeout=1.0)
     assert result == ""
 
 
 async def test_command_with_timeout_expiring_context(sleep_cmd):
     "Test a command with a timeout option."
-
     sleep = sleep_cmd(10).set(timeout=0.1).stdout(sh.CAPTURE)
 
     with pytest.raises(asyncio.TimeoutError):
@@ -1188,7 +1160,6 @@ async def test_command_with_timeout_expiring_context(sleep_cmd):
 
 async def test_command_with_timeout_expiring_generator(sleep_cmd):
     "Test a command with a timeout option."
-
     sleep = sleep_cmd(10).set(timeout=0.1)
 
     with pytest.raises(asyncio.TimeoutError):
@@ -1239,7 +1210,6 @@ async def test_command_with_timeout_incomplete_resulterror(sleep_cmd):
 
 async def test_wait_for_zero_seconds(sleep_cmd):
     "Test asyncio.wait_for(0) with a timeout of zero seconds."
-
     calls = []
 
     def _audit(phase, info):
@@ -1259,7 +1229,6 @@ async def test_wait_for_zero_seconds(sleep_cmd):
 
 async def test_timeout_zero_seconds(sleep_cmd):
     "Test command with a timeout of zero seconds."
-
     calls = []
 
     def _audit(phase, info):
@@ -1282,7 +1251,6 @@ async def test_timeout_zero_seconds(sleep_cmd):
 
 async def test_timeout_negative_seconds(sleep_cmd):
     "Test command with a negative timeout (treated the same as 0 seconds)."
-
     calls = []
 
     def _audit(phase, info):
@@ -1305,7 +1273,6 @@ async def test_timeout_negative_seconds(sleep_cmd):
 
 async def test_command_timeout_incomplete_result(echo_cmd):
     "Test timeout option in combination with catch_cancelled_error option."
-
     cmd = (
         echo_cmd("abc")
         .env(SHELLOUS_EXIT_SLEEP=2)
@@ -1326,7 +1293,6 @@ async def test_command_timeout_incomplete_result(echo_cmd):
 
 async def test_command_timeout_incomplete_result_exit_code(echo_cmd):
     "Test timeout, catch_cancelled_error, and exit_codes option."
-
     # Test timeout alone.
     cmd = echo_cmd("abc").env(SHELLOUS_EXIT_SLEEP=2).set(timeout=0.4)
     with pytest.raises(asyncio.TimeoutError):
@@ -1356,7 +1322,6 @@ async def test_command_timeout_incomplete_result_exit_code(echo_cmd):
 
 async def test_as_completed(echo_cmd):
     "Test shellous using asyncio's `as_completed` function."
-
     cmds = [echo_cmd(i).env(SHELLOUS_EXIT_SLEEP=0.75 * i) for i in range(5)]
 
     for i, cmd in enumerate(asyncio.as_completed(cmds)):
@@ -1366,7 +1331,6 @@ async def test_as_completed(echo_cmd):
 
 async def test_multiple_context_manager(echo_cmd):
     "Test use of multiple context managers at the same time."
-
     echo1 = echo_cmd(1).stdout(sh.CAPTURE)
     echo2 = echo_cmd(2).stdout(sh.CAPTURE)
 
@@ -1390,7 +1354,6 @@ async def test_asl_map(count_cmd):
 
 async def test_asl_zip(count_cmd):
     "Test compatibility with async itertools like `asyncstdlib.zip`."
-
     calls = []
 
     def _audit(phase, info):
@@ -1451,7 +1414,6 @@ async def test_asl_takewhile_sum(count_cmd, echo_cmd):
 
 async def test_asl_islice(count_cmd):
     "Test compatibility with async itertool `islice`."
-
     iterator = count_cmd(25)
 
     async with asl.scoped_iter(iterator) as iter1:
@@ -1463,7 +1425,6 @@ async def test_asl_islice(count_cmd):
 
 async def test_bulk_line_limit(bulk_cmd):
     "Test line iteration with bulk command."
-
     with pytest.raises(ValueError, match="Separator is not found"):
         async for _ in bulk_cmd:
             assert False  # never reached
@@ -1485,7 +1446,6 @@ async def test_process_pool_executor(echo_cmd, report_children):
     This tests that a command is pickle-able. It also tests that
     ProcessPoolExecutor and shellous can co-exist.
     """
-
     from concurrent.futures import ProcessPoolExecutor
 
     echo = echo_cmd.set(_return_result=True)

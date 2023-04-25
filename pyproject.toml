@@ -92,4 +92,10 @@ required-version = "23.3.0"
 profile = "black"
 
 [tool.ruff]
+select = ["E", "F", "D202", "PTH", "RET", "RUF", "W"]
+ignore = [
+  "S101",   # Use of `assert` detected
+  "EM101",  # Exception must not use a string literal, assign to variable first
+  "EM102",  # Exception must not use an f-string literal, assign to variable first
+]
 line-length = 120

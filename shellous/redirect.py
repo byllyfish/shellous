@@ -154,7 +154,6 @@ async def write_reader(
     eof: Optional[bytes] = None,
 ):
     "Copy from reader to writer."
-
     ends_with_newline = True
     try:
         while True:

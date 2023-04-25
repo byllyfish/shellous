@@ -617,7 +617,6 @@ async def test_cancelled_antipattern():
     Catching `ResultError` using try/except conceals the `CancelledError`
     when you want to cancel the current task.
     """
-
     sleep_cmd = sh("sleep", 3600).set(_return_result=True, catch_cancelled_error=True)
 
     async def _subtask():
@@ -652,7 +651,6 @@ async def test_cancelled_antipattern_fix():
     The fix is to explicitly re-raise the CancelledError when you are done with
     the `ResultError`.
     """
-
     sleep_cmd = sh("sleep", 3600).set(_return_result=True, catch_cancelled_error=True)
 
     async def _subtask():
@@ -759,7 +757,6 @@ async def test_env_ellipsis_unix():
 
 async def test_env_ellipsis_unix_wrong_case():
     "Test using `...` in env method to grab value from global environment."
-
     # Fails because actual env is named "PATH", not "path"
     with pytest.raises(KeyError):
         sh("env").set(inherit_env=False).env(path=...)
@@ -772,7 +769,6 @@ async def test_process_substitution():
     diff <(echo a) <(echo b)
     ```
     """
-
     cmd = sh("diff", sh("echo", "a"), sh("echo", "b")).set(exit_codes={0, 1})
     result = await cmd
 
@@ -789,7 +785,6 @@ async def test_process_substitution_with_pipe():
     diff <(echo a | cat) <(echo b | cat)
     ```
     """
-
     pipe1 = sh("echo", "a") | sh("cat")
     pipe2 = sh("echo", "b") | sh("cat")
     cmd = sh("diff", pipe1, pipe2).set(exit_codes={0, 1})
@@ -808,7 +803,6 @@ async def test_process_substitution_write(tmp_path):
     echo a | tee >(cat > tmpfile)
     ```
     """
-
     out = tmp_path / "test_process_sub_write"
     cat = sh("cat") | out
     pipe = sh("echo", "a") | sh("tee", cat().writable)
@@ -825,7 +819,6 @@ async def test_process_substitution_write_pipe(tmp_path):
     echo b | tee >(cat | cat > tmpfile)
     ```
     """
-
     out = tmp_path / "test_process_sub_write"
     cat = sh("cat") | sh("cat") | out
     pipe = sh("echo", "b") | sh("tee", cat().writable)
@@ -844,7 +837,6 @@ async def test_process_substitution_write_pipe_alt(tmp_path):
     echo b | tee >(cat | cat > tmpfile)
     ```
     """
-
     out = tmp_path / "test_process_sub_write"
     cat = sh("cat").writable | sh("cat") | out
     pipe = sh("echo", "b") | sh("tee", cat()).stderr(sh.INHERIT)
@@ -856,7 +848,6 @@ async def test_process_substitution_write_pipe_alt(tmp_path):
 
 async def test_process_substitution_error_filenotfound():
     """Test process substitution with FileNotFoundError error."""
-
     cmd = sh("diff", sh("echo", "a"), sh("_unknown_", "b")).set(exit_codes={0, 1})
 
     with pytest.raises(FileNotFoundError, match="_unknown_"):
@@ -865,7 +856,6 @@ async def test_process_substitution_error_filenotfound():
 
 async def test_process_substitution_error_exit_1():
     """Test process substitution with FileNotFoundError error."""
-
     # sleep exits with code 1 if no argument passed.
     cmd = sh("diff", sh("echo", "a"), sh("sleep")).set(exit_codes={0, 1})
 
@@ -884,7 +874,6 @@ async def test_process_substitution_error_exit_1():
 
 async def test_start_new_session():
     """Test `_start_new_session` option."""
-
     script = """import os; print(os.getsid(0) == os.getpid())"""
     cmd = sh(sys.executable, "-c", script)
 
@@ -901,7 +890,6 @@ async def test_start_new_session():
 @pytest.mark.skipif(_is_uvloop(), reason="uvloop")
 async def test_pty_manual():
     """Test setting up a pty manually."""
-
     import pty  # import not supported on windows
 
     parent_fd, child_fd = pty.openpty()
@@ -926,7 +914,6 @@ async def test_pty_manual():
 @pytest.mark.skipif(_is_uvloop(), reason="uvloop")
 async def test_pty_manual_ls(ls):
     """Test setting up a pty manually."""
-
     import pty  # import not supported on windows
 
     import shellous
@@ -973,7 +960,6 @@ async def test_pty_manual_ls(ls):
 
 async def _get_streams(fd):
     "Wrap fd in a StreamReader, StreamWriter pair."
-
     import fcntl
 
     fcntl.fcntl(fd, fcntl.F_SETFL, os.O_NONBLOCK)
@@ -1006,7 +992,6 @@ async def _get_streams(fd):
 @pytest.mark.skipif(_is_uvloop(), reason="uvloop")
 async def test_pty_manual_streams():
     """Test setting up a pty manually."""
-
     import pty  # import not supported on windows
 
     parent_fd, child_fd = pty.openpty()
@@ -1135,7 +1120,6 @@ _STTY_FREEBSD_13 = (
 @pytest.mark.skipif(_is_uvloop() or _IS_ALPINE, reason="uvloop,alpine")
 async def test_pty_stty_all(tmp_path):
     "Test the `pty` option and print out the result of stty -a"
-
     err = tmp_path / "test_pty_stty_all"
     cmd = sh("stty", "-a").stdin(sh.CAPTURE).stderr(err).set(pty=True)
 
@@ -1194,7 +1178,6 @@ async def test_pty_cat_eot():
 @pytest.mark.skipif(_is_uvloop(), reason="uvloop")
 async def test_pty_raw_size():
     "Test the `pty` option in raw mode."
-
     cmd = sh("stty", "size").set(pty=raw(rows=17, cols=41))
     result = await cmd
     assert result == "17 41\n"
@@ -1203,7 +1186,6 @@ async def test_pty_raw_size():
 @pytest.mark.skipif(_is_uvloop(), reason="uvloop")
 async def test_pty_cbreak_size():
     "Test the `pty` option in cbreak mode."
-
     cmd = sh("stty", "size").set(pty=cbreak(rows=19, cols=43))
     result = await cmd
     assert result == "19 43\r\n"
@@ -1212,7 +1194,6 @@ async def test_pty_cbreak_size():
 @pytest.mark.skipif(_is_uvloop(), reason="uvloop")
 async def test_pty_raw_ls(ls):
     "Test the `pty` option in raw mode."
-
     cmd = ls.set(pty=raw(rows=24, cols=40)).stderr(sh.STDOUT)
     result = await cmd
 
@@ -1224,7 +1205,6 @@ async def test_pty_raw_ls(ls):
 @pytest.mark.skipif(_is_uvloop() or _IS_ALPINE, reason="uvloop,alpine")
 async def test_pty_raw_size_inherited():
     "Test the `pty` option in raw mode."
-
     cmd = sh("stty", "size").set(pty=raw(rows=..., cols=...))
     result = await cmd
 
@@ -1247,7 +1227,6 @@ async def test_pty_cat_auto_eof():
 @pytest.mark.skipif(_is_uvloop(), reason="uvloop")
 async def test_pty_cat_iteration_no_echo():
     "Test the `pty` option with string input, iteration, and echo=False."
-
     cmd = "abc\ndef\nghi" | sh("cat").set(pty=cooked(echo=False))
 
     async with cmd.stdout(sh.CAPTURE)._run_() as run:
@@ -1349,7 +1328,6 @@ async def test_pty_timeout_fail():
 @pytest.mark.skipif(_is_uvloop(), reason="uvloop")
 async def test_pty_default_redirect_stderr(ls):
     "Test that pty redirects stderr to stdout."
-
     cmd = ls("DOES_NOT_EXIST")
 
     # Non-pty mode redirects stderr to /dev/null.
@@ -1370,7 +1348,6 @@ async def test_pty_default_redirect_stderr(ls):
 @pytest.mark.skipif(_is_uvloop(), reason="uvloop")
 async def test_pty_cat_hangs():
     "Test that cat under pty hangs because we don't send EOF."
-
     cmd = sh("cat")
 
     # Non-pty mode we read from b"".
@@ -1385,7 +1362,6 @@ async def test_pty_cat_hangs():
 @pytest.mark.skipif(_is_uvloop(), reason="uvloop")
 async def test_pty_separate_stderr(caplog):
     "Test that stderr can be separately redirected from stdout with pty."
-
     script = """
 import sys
 print('test1', flush=True)
@@ -1450,7 +1426,6 @@ async def test_pty_redirect_stdin_streamreader():
 
 async def test_redirect_stdout_streamwriter():
     "Test writing stdout to a StreamWriter."
-
     buf = io.BytesIO()
 
     async def _hello(reader, _writer):
@@ -1475,7 +1450,6 @@ async def test_redirect_stdout_streamwriter():
 @pytest.mark.skipif(_is_uvloop(), reason="uvloop")
 async def test_pty_redirect_stdout_streamwriter():
     "Test writing stdout to a StreamWriter."
-
     buf = io.BytesIO()
 
     async def _hello(reader, _writer):
@@ -1499,7 +1473,6 @@ async def test_pty_redirect_stdout_streamwriter():
 
 async def test_audit_cancel_nohup():
     "Test audit callback when a command is cancelled."
-
     calls = []
 
     def _audit(phase, info):
@@ -1526,7 +1499,6 @@ async def test_audit_cancel_nohup():
 
 async def test_set_cancel_signal_invalid():
     "Test audit callback when a command is cancelled."
-
     calls = []
 
     def _audit(phase, info):
@@ -1553,7 +1525,6 @@ async def test_set_cancel_signal_invalid():
 
 async def test_timeout_and_wait_for():
     "Test combinining `asyncio.wait_for` with timeout and cancel_timeout."
-
     cmd = sh("nohup", "sleep", 10).set(
         timeout=0.5,
         cancel_signal=signal.SIGHUP,
@@ -1576,7 +1547,6 @@ $4 ~ /^[0-9]+/ { sub(/[0-9]+/, "N", $9); print $4, $5, $9 }
 @pytest.mark.skipif(_is_lsof_unsupported(), reason="uvloop,codecov,alpine")
 async def test_open_file_descriptors():
     "Test what file descriptors are open in the subprocess."
-
     cmd = sh("cat").stdin(sh.CAPTURE).stderr(sh.DEVNULL)
     lsof = sh("lsof", "-n", "-P", "-p").stderr(sh.STDOUT)
     awk = sh("awk", _AWK_SCRIPT).stderr(sh.STDOUT)
@@ -1602,7 +1572,6 @@ async def test_open_file_descriptors():
 @pytest.mark.skipif(_is_lsof_unsupported(), reason="uvloop,codecov,alpine")
 async def test_open_file_descriptors_unclosed_fds():
     "Test what file descriptors are open in the subprocess (close_fds=False)."
-
     cmd = sh("cat").stdin(sh.CAPTURE).stderr(sh.DEVNULL)
     lsof = sh("lsof", "-n", "-P", "-p").stderr(sh.STDOUT)
     awk = sh("awk", _AWK_SCRIPT).stderr(sh.STDOUT)
@@ -1628,7 +1597,6 @@ async def test_open_file_descriptors_unclosed_fds():
 @pytest.mark.skipif(_is_lsof_unsupported(), reason="uvloop,codecov,alpine")
 async def test_open_file_descriptors_pty():
     "Test what file descriptors are open in the pty subprocess."
-
     cmd = sh("cat").stdin(sh.CAPTURE)
     lsof = sh("lsof", "-n", "-P", "-p").stderr(sh.STDOUT)
     awk = sh("awk", _AWK_SCRIPT).stderr(sh.STDOUT)
@@ -1651,7 +1619,6 @@ async def test_open_file_descriptors_pty():
 @pytest.mark.skipif(_is_lsof_unsupported(), reason="uvloop,codecov,alpine")
 async def test_open_file_descriptors_pty_unclosed_fds():
     "Test what file descriptors are open in the pty (close_fds=False)."
-
     cmd = sh("cat").stdin(sh.CAPTURE)
     lsof = sh("lsof", "-n", "-P", "-p").stderr(sh.STDOUT)
     awk = sh("awk", _AWK_SCRIPT).stderr(sh.STDOUT)
@@ -1701,7 +1668,6 @@ async def test_limited_file_descriptors(report_children):
 
 async def test_simultaneous_context_manager():
     "Test multiple simultaneous context managers."
-
     async with sh("sleep", 3) as sleep1:
         async with sh("sleep", 2) as sleep2:
             await asyncio.sleep(0.1)
@@ -1712,7 +1678,6 @@ async def test_simultaneous_context_manager():
 
 async def test_context_manager_running():
     "Test context manager updates the running status of a process."
-
     async with sh("sleep", 3) as sleep1:
         await asyncio.sleep(0.1)
         sleep1.cancel()

@@ -122,7 +122,6 @@ async def test_harvest_wait_timeout():
 
 async def test_harvest_wait_cancel_finish():
     "Test the harvest_wait function with cancel_finish=True."
-
     _finished = False
 
     async def _coro1():
@@ -146,7 +145,6 @@ async def test_harvest_wait_cancel_finish():
 
 async def test_harvest_cancel_finish():
     "Test the harvest function with cancel_finish=True."
-
     _finished = False
 
     async def _coro1():

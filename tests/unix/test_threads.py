@@ -179,7 +179,6 @@ async def test_thread_pty():
 @run_in_thread(CHILD_WATCHER)
 async def test_thread_pipe_long():
     "Test pipe in another thread."
-
     # Create a pipe with 1 echo, and 9 cat commands.
     pipe = sh("echo", "xyz")
     for _ in range(9):
