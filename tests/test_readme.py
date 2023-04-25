@@ -145,6 +145,8 @@ def test_parse_readme():
         "await cmd",
         'pipe = sh("ls") | sh("grep", "README")',
         "await pipe",
+        'pipe = sh("ls") | sh("grep", "README").result',
+        "await pipe",
         'cmd = sh("grep", "README", sh("ls"))',
         "await cmd",
         "buf = bytearray()",

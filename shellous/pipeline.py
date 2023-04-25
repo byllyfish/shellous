@@ -7,8 +7,6 @@ from typing import Any, Coroutine, Generic, Optional, TypeVar, Union, overload
 
 import shellous
 from shellous.redirect import (
-    APPEND_TYPES,
-    APPEND_TYPES_T,
     STDIN_TYPES,
     STDIN_TYPES_T,
     STDOUT_TYPES,
@@ -154,8 +152,8 @@ class Pipeline(Generic[_RT]):
             return self.stdin(lhs)
         return NotImplemented
 
-    def __rshift__(self, rhs: APPEND_TYPES_T) -> "Pipeline[_RT]":
-        if isinstance(rhs, APPEND_TYPES):
+    def __rshift__(self, rhs: STDOUT_TYPES_T) -> "Pipeline[_RT]":
+        if isinstance(rhs, STDOUT_TYPES):
             return self.stdout(rhs, append=True)
         if isinstance(rhs, (str, bytes)):
             raise TypeError(

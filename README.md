@@ -193,6 +193,8 @@ with `|`.
 To redirect to or from a file, use a `pathlib.Path` object. Alternatively, you can redirect input/output
 to a StringIO object, an open file, a Logger, or use a special redirection constant like `sh.DEVNULL`.
 
+**IMPORTANT**: When combining the redirect operators with `await`, you must use parentheses. Remember that `await` has higher precedence than `|` and `>>`.
+
 ### Redirecting Standard Input
 
 To redirect standard input, use the pipe operator `|` with the argument on the **left-side**.
@@ -253,20 +255,21 @@ b'abc\ndef\n'
 
 Shellous supports different STDOUT behavior when using different Python types.
 
-| Python Type | Behavior as STDOUT/STDERR | append=True
-| ----------- | --------------- | ------
-| Path | Write output to file path specified by `Path`. | Open file for append
-| bytearray | Write output to mutable byte array. | TypeError
-| File, StringIO, ByteIO | Write output to open file object. | TypeError
-| int | Write output to existing file descriptor. | TypeError
-| logging.Logger | Log each line of output. | TypeError
-| asyncio.StreamWriter | Write output to `StreamWriter`. | TypeError
-| sh.CAPTURE | Capture output for `async with`. | TypeError
-| sh.DEVNULL | Write output to `/dev/null`. | TypeError
-| sh.INHERIT  | Write output to existing `sys.stdout` or `sys.stderr`. | TypeError
-| sh.STDOUT | Redirect stderr to same place as stdout. | TypeError
+| Python Type | Behavior as STDOUT/STDERR | 
+| ----------- | --------------- | 
+| Path | Write output to the file path specified by `Path`.  | 
+| bytearray | Write output to a mutable byte array. | 
+| File, StringIO, ByteIO | Write output to an open file object. | 
+| int | Write output to existing file descriptor at its current position. 🔹 | 
+| logging.Logger | Log each line of output. 🔹 | 
+| asyncio.StreamWriter | Write output to `StreamWriter`. 🔹 | 
+| sh.CAPTURE | Capture output for `async with`. 🔹 | 
+| sh.DEVNULL | Write output to `/dev/null`. 🔹 | 
+| sh.INHERIT  | Write output to existing `sys.stdout` or `sys.stderr`. 🔹 | 
 
-Shellous does not support redirecting standard output/error to a plain `str` or `bytes` object. 
+🔹 For these types, there is no difference between using `|` and `>>`.
+
+Shellous does **not** support redirecting standard output/error to a plain `str` or `bytes` object. 
 If you intend to redirect output to a file, you must use a `pathlib.Path` object.
 
 ### Redirecting Standard Error
@@ -274,8 +277,9 @@ If you intend to redirect output to a file, you must use a `pathlib.Path` object
 By default, the first 1024 bytes of standard error is collected into the Result object.
 
 To redirect standard error, use the `stderr` method. Standard error supports the
-same Python types as standard output. To redirect stderr to the same place as stdout, 
-use the `sh.STDOUT` constant.
+same Python types as standard output. To append, set `append=True` in the `stderr` method.
+
+To redirect stderr to the same place as stdout, use the `sh.STDOUT` constant.
 
 ```pycon
 >>> cmd = sh("cat", "does_not_exist").stderr(sh.STDOUT)
@@ -302,15 +306,14 @@ If you redirect stderr, it will no longer be stored in the Result object.
 For regular commands, the default redirections are:
 
 - Standard input is read from the empty string ("").
-- Standard out is captured by the program and returned (CAPTURE).
-- Standard error is captured and stored in the Result object (RESULT).
+- Standard out is buffered and stored in the Result object (BUFFER).
+- First 1024 bytes of standard error is buffered and stored in the Result object (BUFFER).
 
 However, the default redirections are adjusted when using a pseudo-terminal (pty):
 
 - Standard input is captured and ignored (CAPTURE).
-- Standard out is captured by the program and returned (CAPTURE).
+- Standard out is buffered and stored in the Result object (BUFFER).
 - Standard error is redirected to standard output (STDOUT).
-
 
 ## Pipelines
 
@@ -320,6 +323,14 @@ You can create a pipeline by combining commands using the `|` operator.
 >>> pipe = sh("ls") | sh("grep", "README")
 >>> await pipe
 'README.md\n'
+```
+
+A pipeline returns a `Result` if the last command in the pipeline has the `.result` modifier.
+
+```pycon
+>>> pipe = sh("ls") | sh("grep", "README").result
+>>> await pipe
+Result(exit_code=0, output_bytes=b'README.md\n', error_bytes=b'', cancelled=False, encoding='utf-8', extra=(PipeResult(exit_code=0, cancelled=False), PipeResult(exit_code=0, cancelled=False)))
 ```
 
 ## Process Substitution (Unix Only)
@@ -345,6 +356,7 @@ bytearray(b'README.md\n')
 ```
 
 The above example is equivalent to `ls | tee >(grep README > buf) > /dev/null`.
+
 ## Timeouts
 
 You can specify a timeout using the `timeout` option. If the timeout expires, shellous will raise
