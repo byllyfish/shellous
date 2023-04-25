@@ -266,7 +266,6 @@ Shellous supports different STDOUT behavior when using different Python types.
 | sh.CAPTURE | Capture output for `async with`. 🔹 | 
 | sh.DEVNULL | Write output to `/dev/null`. 🔹 | 
 | sh.INHERIT  | Write output to existing `sys.stdout` or `sys.stderr`. 🔹 | 
-| sh.STDOUT | Redirect stderr to same place as stdout. 🔹 | 
 
 🔹 For these types, there is no difference between using `|` and `>>`.
 
@@ -278,8 +277,9 @@ If you intend to redirect output to a file, you must use a `pathlib.Path` object
 By default, the first 1024 bytes of standard error is collected into the Result object.
 
 To redirect standard error, use the `stderr` method. Standard error supports the
-same Python types as standard output. To redirect stderr to the same place as stdout, 
-use the `sh.STDOUT` constant.
+same Python types as standard output. To append, set `append=True` in the `stderr` method.
+
+To redirect stderr to the same place as stdout, use the `sh.STDOUT` constant.
 
 ```pycon
 >>> cmd = sh("cat", "does_not_exist").stderr(sh.STDOUT)
@@ -306,15 +306,14 @@ If you redirect stderr, it will no longer be stored in the Result object.
 For regular commands, the default redirections are:
 
 - Standard input is read from the empty string ("").
-- Standard out is buffered by the program and returned (BUFFER).
-- Standard error is captured and stored in the Result object (BUFFER).
+- Standard out is buffered and stored in the Result object (BUFFER).
+- First 1024 bytes of standard error is buffered and stored in the Result object (BUFFER).
 
 However, the default redirections are adjusted when using a pseudo-terminal (pty):
 
 - Standard input is captured and ignored (CAPTURE).
-- Standard out is captured by the program and returned (BUFFER).
+- Standard out is buffered and stored in the Result object (BUFFER).
 - Standard error is redirected to standard output (STDOUT).
-
 
 ## Pipelines
 
