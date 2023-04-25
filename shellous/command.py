@@ -32,8 +32,6 @@ from typing import (
 import shellous
 from shellous.pty_util import PtyAdapterOrBool
 from shellous.redirect import (
-    APPEND_TYPES,
-    APPEND_TYPES_T,
     STDIN_TYPES,
     STDIN_TYPES_T,
     STDOUT_TYPES,
@@ -379,7 +377,6 @@ class Command(Generic[_RT]):
         close: bool = False,
     ) -> "Command[_RT]":
         "Redirect standard output to `output`."
-        _check_args(output, append)
         new_options = self.options.set_stdout(output, append, close)
         return Command(self.args, new_options)
 
@@ -391,7 +388,6 @@ class Command(Generic[_RT]):
         close: bool = False,
     ) -> "Command[_RT]":
         "Redirect standard error to `error`."
-        _check_args(error, append)
         new_options = self.options.set_stderr(error, append, close)
         return Command(self.args, new_options)
 
@@ -647,10 +643,10 @@ class Command(Generic[_RT]):
             return self.stdin(lhs)
         return NotImplemented
 
-    def __rshift__(self, rhs: APPEND_TYPES_T) -> "Command[_RT]":
+    def __rshift__(self, rhs: STDOUT_TYPES_T) -> "Command[_RT]":
         "Right shift operator is used to build pipelines."
         if isinstance(
-            rhs, APPEND_TYPES
+            rhs, STDOUT_TYPES
         ):  # pyright: ignore[reportUnnecessaryIsInstance]
             return self.stdout(rhs, append=True)
         return NotImplemented
@@ -673,11 +669,6 @@ class Command(Generic[_RT]):
             Command[shellous.Result],
             self.set(_return_result=True, exit_codes=range(-255, 256)),
         )
-
-
-def _check_args(out: Any, append: bool):
-    if append and not isinstance(out, APPEND_TYPES):
-        raise TypeError(f"{type(out)} does not support append")
 
 
 def coerce(args: Sequence[Any]) -> tuple[Any, ...]:

@@ -315,9 +315,11 @@ class _RunOptions:
             output, (io.StringIO, io.BytesIO, bytearray, Logger, asyncio.StreamWriter)
         ):
             # Shellous-supported output classes.
+            _set_position(output, append)
             assert stdout == asyncio.subprocess.PIPE
         elif isinstance(output, io.IOBase):
             # Client-managed File-like object.
+            _set_position(output, append)
             stdout = output
         else:
             raise TypeError(f"unsupported output type: {output!r}")
@@ -1156,3 +1158,20 @@ def _signame(signal) -> str:
         return signal.name
     except AttributeError:
         return str(signal)
+
+
+def _set_position(output, append: bool):
+    "Truncate output stream object."
+    match output:
+        case bytearray():
+            if not append:
+                output.clear()
+        case io.IOBase():
+            if output.seekable():
+                if append:
+                    output.seek(0, io.SEEK_END)
+                else:
+                    output.truncate(0)
+                    output.seek(0, io.SEEK_SET)
+        case _:
+            pass

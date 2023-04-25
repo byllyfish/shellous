@@ -101,10 +101,6 @@ STDOUT_TYPES_T = Union[
     asyncio.StreamWriter,
 ]
 
-APPEND_TYPES = (Path,)
-
-APPEND_TYPES_T = Path
-
 
 async def _drain(stream: asyncio.StreamWriter):
     "Safe drain method."
