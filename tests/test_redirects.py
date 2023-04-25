@@ -1,8 +1,11 @@
 "Test shellous output redirect behavior."
 
+import io
 from io import BytesIO, StringIO
 from pathlib import Path
 from tempfile import TemporaryDirectory
+
+import pytest
 
 from shellous import sh
 
@@ -75,6 +78,32 @@ async def test_redirect_textfile_append():
         assert tmp.read_text().rstrip() == "12345abc"
 
 
+async def test_redirect_textfile_readwrite():
+    "Test redirecting to an existing file open in read/write mode."
+    with TemporaryDirectory() as tmpdir:
+        tmp = Path(tmpdir) / "testfile"
+        tmp.write_text("12345")
+
+        with open(tmp, "r+") as fp:
+            out = await (sh("echo", "abc") | fp)
+
+        assert out == ""
+        assert tmp.read_text().rstrip() == "abc"
+
+
+async def test_redirect_textfile_append_readwrite():
+    "Test redirecting to an existing file open in read/write mode with append."
+    with TemporaryDirectory() as tmpdir:
+        tmp = Path(tmpdir) / "testfile"
+        tmp.write_text("12345")
+
+        with open(tmp, "r+") as fp:
+            out = await (sh("echo", "abc") >> fp)
+
+        assert out == ""
+        assert tmp.read_text().rstrip() == "12345abc"
+
+
 async def test_redirect_binaryfile():
     "Test redirecting to an existing file."
     with TemporaryDirectory() as tmpdir:
@@ -99,6 +128,20 @@ async def test_redirect_binaryfile_append():
 
         assert out == ""
         assert tmp.read_text().rstrip() == "12345abc"
+
+
+async def test_redirect_binaryfile_readonly():
+    "Test redirecting to an existing file open in readonly mode."
+    with TemporaryDirectory() as tmpdir:
+        tmp = Path(tmpdir) / "testfile"
+        tmp.write_text("12345")
+
+        with open(tmp, "rb") as fp:
+            # Writing to a readonly file should cause an OSError.
+            with pytest.raises(OSError):
+                _ = await (sh("echo", "abc") | fp)
+
+        assert tmp.read_text().rstrip() == "12345"
 
 
 async def test_redirect_stringio():
@@ -136,4 +179,41 @@ async def test_redirect_bytesio_append():
 # For int, Redirect, Logger and StreamWriter, there is no difference between
 # writing and appending. The result is always an append.
 
-# TODO
+
+async def test_redirect_devnull_append():
+    "Test appending to /dev/null."
+    out = await (sh("echo", "abc") >> sh.DEVNULL)
+    assert out == ""
+
+
+async def test_redirect_int():
+    "Test redirecting output to a file descriptor."
+    with TemporaryDirectory() as tmpdir:
+        tmp = Path(tmpdir) / "testfile"
+        tmp.write_bytes(b"1234567890")
+
+        with open(tmp, "r+b", buffering=0) as fp:
+            fp.seek(3, io.SEEK_SET)
+            out = await (sh("echo", "abc") | fp.fileno())
+
+        # There is no truncate/seek behavior on a raw file descriptor.
+        assert out == ""
+        assert tmp.read_bytes() in (b"123abc\n890", b"123abc\r\n890")
+
+
+async def test_redirect_int_append():
+    "Test appending to a file descriptor (same behavior as `test_redirect_int`)."
+    with TemporaryDirectory() as tmpdir:
+        tmp = Path(tmpdir) / "testfile"
+        tmp.write_bytes(b"1234567890")
+
+        with open(tmp, "r+b", buffering=0) as fp:
+            fp.seek(3, io.SEEK_SET)
+            out = await (sh("echo", "abc") >> fp.fileno())
+
+        # There is no seek behavior on a raw file descriptor.
+        assert out == ""
+        assert tmp.read_bytes() in (b"123abc\n890", b"123abc\r\n890")
+
+
+# TODO: Logger and StreamWriter

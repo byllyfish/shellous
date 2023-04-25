@@ -193,6 +193,8 @@ with `|`.
 To redirect to or from a file, use a `pathlib.Path` object. Alternatively, you can redirect input/output
 to a StringIO object, an open file, a Logger, or use a special redirection constant like `sh.DEVNULL`.
 
+**IMPORTANT**: When combining the redirect operators with `await`, you must use parentheses. Remember that `await` has higher precedence than `|` and `>>`.
+
 ### Redirecting Standard Input
 
 To redirect standard input, use the pipe operator `|` with the argument on the **left-side**.
