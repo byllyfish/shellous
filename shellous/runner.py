@@ -1161,17 +1161,14 @@ def _signame(signal) -> str:
 
 
 def _set_position(output, append: bool):
-    "Truncate output stream object."
-    match output:
-        case bytearray():
-            if not append:
-                output.clear()
-        case io.IOBase():
-            if output.seekable():
-                if append:
-                    output.seek(0, io.SEEK_END)
-                else:
-                    output.truncate(0)
-                    output.seek(0, io.SEEK_SET)
-        case _:
-            pass
+    "Truncate/seek output stream object."
+    if isinstance(output, bytearray):
+        if not append:
+            output.clear()
+    elif isinstance(output, io.IOBase):
+        if output.seekable():
+            if append:
+                output.seek(0, io.SEEK_END)
+            else:
+                output.truncate(0)
+                output.seek(0, io.SEEK_SET)
