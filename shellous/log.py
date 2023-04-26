@@ -55,7 +55,6 @@ def log_method(enabled: Union[bool, int], *, _info: bool = False, **kwds: int):
 
     def _decorator(func):
         "Decorator to log method call entry and exit."
-
         if not enabled:
             return func
 
@@ -170,7 +169,6 @@ def _info_args(args, kwds, _info):
 
 def _platform_info():
     "Return platform information for use in logging."
-
     # Include module name with name of loop class.
     loop_cls = asyncio.get_running_loop().__class__
     loop_name = f"{loop_cls.__module__}.{loop_cls.__name__}"
@@ -224,7 +222,6 @@ def log_thread(enabled: bool):
 
     def _decorator(func):
         "Decorator to log thread entry and exit."
-
         if not enabled:
             return func
 

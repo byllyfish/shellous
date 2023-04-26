@@ -38,7 +38,6 @@ def _has_posix_spawn():
 
 async def test_audit():
     "Test PEP 578 audit hooks."
-
     global _HOOK
     events = []
 
@@ -75,7 +74,6 @@ async def test_audit():
 @pytest.mark.skipif(not _has_posix_spawn(), reason="posix_spawn")
 async def test_audit_posix_spawn():
     "Test PEP 578 audit hooks."
-
     global _HOOK
     events = []
 
@@ -111,7 +109,6 @@ async def test_audit_posix_spawn():
 @pytest.mark.xfail(_is_uvloop(), reason="uvloop")
 async def test_audit_block_popen():
     "Test PEP 578 audit hooks."
-
     global _HOOK
 
     def _hook(event, _args):
@@ -130,7 +127,6 @@ async def test_audit_block_popen():
 
 async def test_audit_block_subprocess_spawn():
     "Test PEP 578 audit hooks."
-
     global _HOOK
 
     def _hook(event, _args):
@@ -155,7 +151,6 @@ async def test_audit_block_subprocess_spawn():
 
 async def test_audit_block_pipe_specific_cmd():
     "Test PEP 578 audit hooks to block a specific command (in a pipe)."
-
     global _HOOK
     grep_path = shutil.which("grep")
 

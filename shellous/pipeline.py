@@ -101,7 +101,7 @@ class Pipeline(Generic[_RT]):
 
     def _add(self, item: Union["shellous.Command[Any]", "Pipeline[Any]"]):
         if isinstance(item, shellous.Command):
-            return dataclasses.replace(self, commands=self.commands + (item,))
+            return dataclasses.replace(self, commands=(*self.commands, item))
         return dataclasses.replace(
             self,
             commands=self.commands + item.commands,

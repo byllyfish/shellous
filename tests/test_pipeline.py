@@ -300,7 +300,6 @@ def test_pipeline_redirect_tuple_stdout():
 
 def test_pipeline_percent_op():
     "Pipeline does not support percent op for concatenating commands."
-
     pipe = sh("echo", "abc") | sh("cat")
     with pytest.raises(TypeError):
         _ = sh("nohup") % pipe
@@ -311,7 +310,6 @@ def test_pipeline_percent_op():
 
 def test_pipeline_percent_precedence():
     "Test operator precedence with % operator."
-
     cmd = sh("nohup") % sh("echo") >> Path("/tmp/output")
     assert cmd == sh("nohup", sh("echo").args).stdout(Path("/tmp/output"), append=True)
 

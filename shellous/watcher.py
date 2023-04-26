@@ -130,7 +130,6 @@ class DefaultChildWatcher(asyncio.AbstractChildWatcher):
 
     def __exit__(self, *_args: Any):
         """Exit the watcher's context"""
-        return None
 
     def _init_strategy(self):
         "Construct child watcher strategy."

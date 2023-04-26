@@ -145,7 +145,6 @@ def poll_wait_pid(proc: Process) -> bool:
 
 async def uninterrupted(coro: Coroutine[Any, Any, Any]):
     "Run a coroutine so it completes even if the current task is cancelled."
-
     task = asyncio.create_task(coro)
     try:
         return await asyncio.shield(task)

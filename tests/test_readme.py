@@ -171,7 +171,6 @@ def test_parse_readme():
 @pytest.mark.skipif(sys.platform == "win32", reason="win32")
 async def test_readme(tmp_path):
     "Test that the REPL commands in the README.md file actually work."
-
     cmds, outputs = _parse_readme("README.md")
 
     try:
@@ -246,7 +245,6 @@ def _current_env():
 
 def _check_result(output, result):
     "Fail if result does not match pattern."
-
     # The result of the `wc` command has platform-dependent number of spaces.
     # Linux: '3\n'  MacOS: '       3\n'
     WCOUT = re.compile(r"'\s*\d+\\n'")

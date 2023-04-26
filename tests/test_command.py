@@ -229,7 +229,6 @@ def test_replace_args_method():
 
 def test_percent_op():
     "Test the percent/modulo operator for concatenation."
-
     nohup = sh("nohup").stdin("abc")
     echo = sh("echo", "hello").stdout(sh.INHERIT)
 
@@ -241,7 +240,6 @@ def test_percent_op():
 
 def test_percent_op_multiple():
     "Test the percent/modulo operator for concatenation."
-
     nohup = sh("nohup").stdin("abc")
     echo = sh("echo", "hello").stdout(sh.INHERIT)
 
@@ -250,7 +248,6 @@ def test_percent_op_multiple():
 
 def test_percent_op_not_implemented():
     "Test the percent/modulo operator for concatenation."
-
     echo = sh("echo", "hello")
     with pytest.raises(TypeError):
         assert None % echo  # pyright: ignore[reportGeneralTypeIssues]
@@ -260,7 +257,6 @@ def test_percent_op_not_implemented():
 
 def test_percent_equals_op():
     "Test the %= operator."
-
     cmd = sh("nohup")
     cmd %= sh("echo", "abc")
     assert cmd == sh("nohup", sh("echo", "abc").args)
@@ -268,7 +264,6 @@ def test_percent_equals_op():
 
 def test_command_pickle():
     "Test that basic commands can be pickled."
-
     cmd = sh("echo", "hello") | Path("/tmp/test_file")
     value = pickle.dumps(cmd)
     result = pickle.loads(value)
@@ -295,7 +290,6 @@ def test_dataclasses():
 
     Check that class variables don't appear here.
     """
-
     ctxt_fields = [field.name for field in dataclasses.fields(sh)]
     assert sorted(ctxt_fields) == ["options"]
 
@@ -335,7 +329,6 @@ def test_dataclasses():
 
 def test_context_enums():
     "Test that `sh` defines the important Redirect enums."
-
     assert sh.CAPTURE.name == "CAPTURE"
     assert sh.DEVNULL.name == "DEVNULL"
     assert sh.INHERIT.name == "INHERIT"

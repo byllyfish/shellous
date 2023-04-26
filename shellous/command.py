@@ -246,7 +246,7 @@ class CmdContext(Generic[_RT]):
     BUFFER: ClassVar[Redirect] = Redirect.BUFFER
     "Redirect output to a buffer in the Result object. This is the default for stdout/stderr."
 
-    options: Options = Options()
+    options: Options = field(default_factory=Options)
     "Default command options."
 
     def stdin(self, input_: Any, *, close: bool = False) -> "CmdContext[_RT]":

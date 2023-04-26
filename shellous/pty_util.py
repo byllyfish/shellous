@@ -148,7 +148,6 @@ class PtyStreamReaderProtocol(asyncio.StreamReaderProtocol):
 
 async def _open_pty_streams(parent_fd: int, child_fd: ChildFd):
     "Open reader, writer streams for pty file descriptor."
-
     loop = asyncio.get_running_loop()
     reader = asyncio.StreamReader(loop=loop)
     reader_protocol = PtyStreamReaderProtocol(reader, loop=loop)
@@ -182,7 +181,6 @@ async def _open_pty_streams(parent_fd: int, child_fd: ChildFd):
 
 def raw(rows=0, cols=0):
     "Return a function that sets PtyOptions.child_fd to raw mode."
-
     if Ellipsis in (rows, cols):
         rows, cols = _inherit_term_size(rows, cols)
 
@@ -197,7 +195,6 @@ def raw(rows=0, cols=0):
 
 def cbreak(rows=0, cols=0):
     "Return a function that sets PtyOptions.child_fd to cbreak mode."
-
     if Ellipsis in (rows, cols):
         rows, cols = _inherit_term_size(rows, cols)
 
@@ -212,7 +209,6 @@ def cbreak(rows=0, cols=0):
 
 def cooked(rows=0, cols=0, echo=True):
     "Return a function that leaves PtyOptions.child_fd in cooked mode."
-
     if Ellipsis in (rows, cols):
         rows, cols = _inherit_term_size(rows, cols)
 
@@ -269,7 +265,6 @@ def _inherit_term_size(rows, cols):
 
 def _get_eof(fdesc: int):
     "Return the End-of-file character (EOF) if tty is in canonical mode only."
-
     eof = b""
     attrs = termios.tcgetattr(fdesc)
     if attrs[_LFLAG] & termios.ICANON:

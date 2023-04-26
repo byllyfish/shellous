@@ -17,7 +17,6 @@ from shellous.util import (
 
 def test_decode():
     "Test the util.decode function."
-
     assert decode(b"", "utf-8") == ""
     assert decode(b"abc", "utf-8") == "abc"
     assert decode(None, "utf-8") == ""
@@ -30,7 +29,6 @@ def test_decode():
 
 def test_decode_encoding_none():
     "Test the util.decode function encoding=None (invalid)."
-
     # Invalid but allowed.
     assert decode(None, None) == ""
 
@@ -66,7 +64,6 @@ def test_close_fds(tmp_path):
 
 async def test_uninterrupted():
     "Test the uninterrupted() helper."
-
     done = False
 
     async def _test1():
@@ -87,14 +84,12 @@ async def test_uninterrupted():
 
 def test_verify_dev_fd():
     "Test verify_dev_fd utility function with bogus fd."
-
     with pytest.raises(RuntimeError, match="fdescfs"):
         verify_dev_fd(999)
 
 
 def test_environment_dict():
     "Test the EnvironmentDict class."
-
     d1 = EnvironmentDict(None, {"a": 1})
     assert len(d1) == 1
     assert d1["a"] == "1"

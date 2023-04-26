@@ -331,7 +331,6 @@ class _RunOptions:
 
         Initializes `self.pty_fds`.
         """
-
         self.pty_fds = pty_util.open_pty(pty)
 
         # On BSD-derived systems like FreeBSD and Darwin, we delay closing the
@@ -650,7 +649,6 @@ class Runner:
     @log_method(LOG_DETAIL)
     async def _subprocess_spawn(self, opts):
         "Start the subprocess."
-
         # Second half of pty setup.
         if opts.pty_fds:
             opts.pty_fds = await opts.pty_fds.open_streams()
@@ -990,7 +988,7 @@ class PipeRunner:
         return suppress
 
     @log_method(LOG_DETAIL)
-    async def _finish(self, exc_value):
+    async def _finish(self, exc_value) -> bool:
         "Wait for pipeline to exit and handle cancellation."
         if exc_value is not None:
             LOGGER.warning("PipeRunner._finish exc_value=%r", exc_value)
@@ -1000,6 +998,7 @@ class PipeRunner:
             return self._cancelled
 
         await self._wait()
+        return False
 
     @log_method(LOG_DETAIL)
     async def _start(self):
@@ -1054,7 +1053,6 @@ class PipeRunner:
     @log_method(LOG_DETAIL)
     async def _setup_capturing(self, cmds):
         """Set up capturing and return (stdin, stdout, stderr) streams."""
-
         loop = asyncio.get_event_loop()
         first_fut = loop.create_future()
         last_fut = loop.create_future()
@@ -1105,7 +1103,6 @@ class PipeRunner:
     @staticmethod
     async def run_pipeline(pipe: "shellous.Pipeline"):
         "Run a pipeline. This is the main entry point for PipeRunner."
-
         run = PipeRunner(pipe, capturing=False)
         async with run:
             pass

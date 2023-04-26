@@ -33,7 +33,6 @@ async def harvest(
     consumed before raising `CancelledError`. If `cancel_finish` is True, the
     tasks are not cancelled, but allowed to finish.
     """
-
     tasks = [asyncio.ensure_future(item) for item in aws]
     await harvest_wait(
         tasks,
@@ -75,7 +74,6 @@ async def harvest_results(
     If `harvest_results` is cancelled itself, all awaitables are cancelled and
     `cancelled` is returned as True.
     """
-
     tasks = [asyncio.ensure_future(item) for item in aws]
     cancelled = False
     try:
@@ -113,7 +111,6 @@ async def harvest_wait(
     consumed before raising `CancelledError`. If `cancel_finish` is True,
     the tasks are not cancelled, but allowed to finish.
     """
-
     try:
         # Wait for all tasks to complete, the first one to raise an
         # exception, or a timeout.
@@ -183,7 +180,6 @@ async def _cancel_waiter(
     timeout: float,
 ):
     "Handle case where _cancel_wait is cancelled itself."
-
     _, pending = await asyncio.wait(
         tasks,
         timeout=timeout,
