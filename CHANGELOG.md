@@ -1,14 +1,29 @@
 Shellous Change Log
 ===================
 
+0.24.0
+------
+
+- [API] The `Runner.run()` method is now private. The correct API is `await`, `async for` or `async with`.
+- [API] The `return_result` and `writable` options in the `Options` class are now private.
+- [FEATURE] Improve typing of Command, CmdContext and Pipeline to differentiate between "string" mode and "Result" mode (#375).
+- [FEATURE] Improve typing of the audit_callback info; add `AuditEventInfo` as a `TypedDict`.
+- [FEATURE] Allow redirection with append to more types than `Path` (#359).
+- [BUGFIX] Fix bug in redirecting via `|` to a `bytearray`, `StringIO` or `BytesIO` where the original content was not replaced/truncated.
+- [BUGFIX] Fix unintended dependency on typing_extensions module; shellous has no required dependencies.
+- [BUGFIX] Fix edge case on FreeBSD where running command in a pty that produces no output causes a shellous command to hang (#378).
+- [LATERAL] Add CI testing for Python 3.12-dev.
+- [LATERAL] Fix CI code coverage due to codecov API changes.
+- [LATERAL] Replace flake8 with ruff in CI.
+
 0.23.0
 ------
 
-[API] When using `async with`, you MUST tag the desired input/output streams with `sh.CAPTURE`. The new default is to capture nothing; the previous default was `stdout(sh.CAPTURE)`.
-[API] In Runner/PipeRunner, the `result()` method will always return a `Result` object. Previously, it could return `str`.
-[API] Setting the encoding to `None` is no longer allowed. If you want `bytes` output, use the `Result` object. This was previously a DeprecationWarning.
-[API] The `sh.RESULT` constant has been renamed to `sh.BUFFER` to avoid confusion with the `sh.result` modifier.
-[FEATURE] Added the `.result` modifier to CmdContext. You can now request a `Result` using the syntax `await sh.result("echo")`.
+- [API] When using `async with`, you MUST tag the desired input/output streams with `sh.CAPTURE`. The new default is to capture nothing; the previous default was `stdout(sh.CAPTURE)`.
+- [API] In Runner/PipeRunner, the `result()` method will always return a `Result` object. Previously, it could return `str`.
+- [API] Setting the encoding to `None` is no longer allowed. If you want `bytes` output, use the `Result` object. This was previously a DeprecationWarning.
+- [API] The `sh.RESULT` constant has been renamed to `sh.BUFFER` to avoid confusion with the `sh.result` modifier.
+- [FEATURE] Added the `.result` modifier to CmdContext. You can now request a `Result` using the syntax `await sh.result("echo")`.
 
 0.22.0
 ------
