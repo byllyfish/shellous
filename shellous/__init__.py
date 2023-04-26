@@ -10,14 +10,14 @@ __version__ = "0.23.0"
 import sys
 import warnings
 
-from .command import AuditEventInfo, CmdContext, Command, Options  # noqa: F401
-from .pipeline import Pipeline  # noqa: F401
-from .pty_util import cbreak, cooked, raw  # noqa: F401
+from .command import AuditEventInfo, CmdContext, Command, Options
+from .pipeline import Pipeline
+from .pty_util import cbreak, cooked, raw
 from .result import PipeResult, Result, ResultError  # noqa: F401
-from .runner import AUDIT_EVENT_SUBPROCESS_SPAWN, PipeRunner, Runner  # noqa: F401
+from .runner import AUDIT_EVENT_SUBPROCESS_SPAWN, PipeRunner, Runner
 
 if sys.platform != "win32":
-    from .watcher import DefaultChildWatcher  # noqa: F401
+    from .watcher import DefaultChildWatcher
 
 
 if sys.version_info[:3] in [(3, 10, 9), (3, 11, 1)]:

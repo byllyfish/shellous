@@ -988,7 +988,7 @@ class PipeRunner:
         return suppress
 
     @log_method(LOG_DETAIL)
-    async def _finish(self, exc_value):
+    async def _finish(self, exc_value) -> bool:
         "Wait for pipeline to exit and handle cancellation."
         if exc_value is not None:
             LOGGER.warning("PipeRunner._finish exc_value=%r", exc_value)
@@ -998,6 +998,7 @@ class PipeRunner:
             return self._cancelled
 
         await self._wait()
+        return False
 
     @log_method(LOG_DETAIL)
     async def _start(self):

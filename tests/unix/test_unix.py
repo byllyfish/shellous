@@ -150,7 +150,7 @@ async def test_custom_echo_func():
     "Test defining a custom echo function."
 
     def excited(*args):
-        return sh("echo", "-n", *(args + ("!!",)))
+        return sh("echo", "-n", *(*args, "!!"))
 
     result = await excited("x", "z")
     assert result == "x z !!"
