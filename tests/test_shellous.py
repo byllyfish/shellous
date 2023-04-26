@@ -873,10 +873,10 @@ async def test_pty_echo_exit_code(echo_cmd):
 async def test_redirect_to_arbitrary_tuple():
     "Test redirection to an arbitrary tuple."
     with pytest.raises(TypeError, match="unsupported"):
-        await sh("echo").stdout((1, 2))
+        await sh("echo").stdout((1, 2))  # type: ignore
 
     with pytest.raises(TypeError, match="unsupported"):
-        await (sh("echo") | (1, 2))
+        await (sh("echo") | (1, 2))  # type: ignore
 
 
 async def test_command_context_manager_default():

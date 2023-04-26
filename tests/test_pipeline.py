@@ -44,17 +44,17 @@ def test_pipeline():
 
 def test_pipeline_unsupported_rhs():
     with pytest.raises(TypeError, match=r"unsupported operand type\(s\) for \|"):
-        _ = Pipeline.create(sh("echo")) | (1 + 2j)
+        _ = Pipeline.create(sh("echo")) | (1 + 2j)  # type: ignore
 
 
 def test_pipeline_unsupported_lhs():
     with pytest.raises(TypeError, match=r"unsupported operand type\(s\) for \|"):
-        _ = (1 + 2j) | Pipeline.create(sh("echo"))
+        _ = (1 + 2j) | Pipeline.create(sh("echo"))  # type: ignore
 
 
 def test_pipeline_unsupported_rhs_append():
     with pytest.raises(TypeError, match=r"unsupported operand type\(s\) for >>"):
-        _ = Pipeline.create(sh("echo")) >> (1 + 2j)
+        _ = Pipeline.create(sh("echo")) >> (1 + 2j)  # type: ignore
 
 
 def test_pipeline_input():
@@ -69,18 +69,18 @@ def test_pipeline_output():
 
 def test_pipeline_output_str():
     with pytest.raises(TypeError, match=r"unsupported.+ 'pathlib\.Path'"):
-        _ = Pipeline.create(sh("echo")) | "/tmp/somefile"
+        _ = Pipeline.create(sh("echo")) | "/tmp/somefile"  # type: ignore
 
     with pytest.raises(TypeError, match=r"unsupported.+ 'pathlib\.Path'"):
-        _ = Pipeline.create(sh("echo")) >> "/tmp/somefile"
+        _ = Pipeline.create(sh("echo")) >> "/tmp/somefile"  # type: ignore
 
 
 def test_pipeline_output_bytes():
     with pytest.raises(TypeError, match=r"unsupported.+ 'pathlib\.Path'"):
-        _ = Pipeline.create(sh("echo")) | b"/tmp/somefile"
+        _ = Pipeline.create(sh("echo")) | b"/tmp/somefile"  # type: ignore
 
     with pytest.raises(TypeError, match=r"unsupported.+ 'pathlib\.Path'"):
-        _ = Pipeline.create(sh("echo")) >> b"/tmp/somefile"
+        _ = Pipeline.create(sh("echo")) >> b"/tmp/somefile"  # type: ignore
 
 
 def test_pipeline_output_append():
@@ -265,47 +265,47 @@ def test_pipeline_len_getitem():
 def test_pipeline_redirect_none_stdin():
     "Test use of None in pipeline."
     with pytest.raises(TypeError, match="unsupported"):
-        _ = None | sh("echo")
+        _ = None | sh("echo")  # type: ignore
 
 
 def test_pipeline_redirect_none_stdout():
     "Test use of None in pipeline."
     with pytest.raises(TypeError, match="unsupported"):
-        _ = sh("echo") | None
+        _ = sh("echo") | None  # type: ignore
 
 
 def test_pipeline_redirect_ellipsis_stdin():
     "Test use of Ellipsis in pipeline."
     with pytest.raises(TypeError, match="unsupported"):
-        _ = ... | sh("echo")
+        _ = ... | sh("echo")  # type: ignore
 
 
 def test_pipeline_redirect_ellipsis_stdout():
     "Test use of Ellipsis in pipeline."
     with pytest.raises(TypeError, match="unsupported"):
-        _ = sh("echo") | ...
+        _ = sh("echo") | ...  # type: ignore
 
 
 def test_pipeline_redirect_tuple_stdin():
     "Test use of empty tuple in pipeline."
     with pytest.raises(TypeError, match="unsupported"):
-        _ = () | sh("echo")
+        _ = () | sh("echo")  # type: ignore
 
 
 def test_pipeline_redirect_tuple_stdout():
     "Test use of empty tuple in pipeline."
     with pytest.raises(TypeError, match="unsupported"):
-        _ = sh("echo") | ()
+        _ = sh("echo") | ()  # type: ignore
 
 
 def test_pipeline_percent_op():
     "Pipeline does not support percent op for concatenating commands."
     pipe = sh("echo", "abc") | sh("cat")
     with pytest.raises(TypeError):
-        _ = sh("nohup") % pipe
+        _ = sh("nohup") % pipe  # type: ignore
 
     with pytest.raises(TypeError):
-        _ = pipe % sh("nohup")
+        _ = pipe % sh("nohup")  # type: ignore
 
 
 def test_pipeline_percent_precedence():
