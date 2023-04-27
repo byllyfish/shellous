@@ -32,7 +32,7 @@ if loop_type:
         import uvloop  # pyright: ignore[reportMissingImports]
 
         @pytest.fixture
-        def event_loop():
+        def event_loop():  # pyright: ignore[reportGeneralTypeIssues]
             loop = uvloop.new_event_loop()
             loop.set_debug(True)
             yield loop

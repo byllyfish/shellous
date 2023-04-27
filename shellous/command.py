@@ -538,7 +538,7 @@ class Command(Generic[_RT]):
             raise TypeError("invalid encoding")
         return Command(self.args, self.options.set(kwargs))
 
-    def _replace_args(self, new_args: Sequence[Union[str, bytes]]) -> "Command[_RT]":
+    def _replace_args(self, new_args: Sequence[Any]) -> "Command[_RT]":
         """Return new command with arguments replaced by `new_args`.
 
         Arguments are NOT type-checked by the context. Program name must be the

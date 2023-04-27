@@ -556,7 +556,7 @@ async def test_broken_pipe_in_failed_pipeline(cat_cmd, echo_cmd):
     with pytest.raises((BrokenPipeError, ResultError)) as exc_info:
         await (data | cat_cmd | echo("abc"))
 
-    if exc_info.type == ResultError:
+    if isinstance(exc_info.value, ResultError):
         assert exc_info.value.result in [
             Result(
                 exit_code=7,
@@ -842,7 +842,9 @@ async def test_quick_cancel(echo_cmd):
 
     async def _test_task():
         # Cancel in Runner._subprocess_exec().
-        asyncio.current_task().cancel()
+        current_task = asyncio.current_task()
+        assert current_task is not None
+        current_task.cancel()
         return await echo_cmd("hello").set(catch_cancelled_error=True)
 
     task = asyncio.create_task(_test_task())
@@ -1470,4 +1472,4 @@ async def test_process_pool_executor(echo_cmd, report_children):
     # failures for open fd's and child processes.
     from multiprocessing import resource_tracker
 
-    resource_tracker._resource_tracker._stop()
+    resource_tracker._resource_tracker._stop()  # pyright: ignore[reportGeneralTypeIssues]
