@@ -124,17 +124,17 @@ class Pipeline(Generic[_RT]):
     def __or__(
         self, rhs: "Union[shellous.Command[shellous.Result], Pipeline[shellous.Result]]"
     ) -> "Pipeline[shellous.Result]":
-        ...
+        ...  # pragma: no cover
 
     @overload
     def __or__(
         self, rhs: "Union[shellous.Command[str], Pipeline[str]]"
     ) -> "Pipeline[str]":
-        ...
+        ...  # pragma: no cover
 
     @overload
     def __or__(self, rhs: STDOUT_TYPES_T) -> "Pipeline[_RT]":
-        ...
+        ...  # pragma: no cover
 
     def __or__(self, rhs: Any) -> "Pipeline[Any]":
         if isinstance(rhs, (shellous.Command, Pipeline)):

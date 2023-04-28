@@ -619,17 +619,17 @@ class Command(Generic[_RT]):
 
     @overload
     def __or__(self, rhs: STDOUT_TYPES_T) -> "Command[_RT]":
-        ...
+        ...  # pragma: no cover
 
     @overload
     def __or__(self, rhs: "Command[str]") -> "shellous.Pipeline[str]":
-        ...
+        ...  # pragma: no cover
 
     @overload
     def __or__(
         self, rhs: "Command[shellous.Result]"
     ) -> "shellous.Pipeline[shellous.Result]":
-        ...
+        ...  # pragma: no cover
 
     def __or__(self, rhs: Any):
         "Bitwise or operator is used to build pipelines."

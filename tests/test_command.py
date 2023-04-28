@@ -349,3 +349,49 @@ def test_command_invalid_encoding():
 
     with pytest.raises(TypeError, match="invalid encoding"):
         sh("echo").set(encoding=None)  # pyright: ignore[reportGeneralTypeIssues]
+
+
+def test_context_invalid_encoding():
+    "Test context with invalid encoding."
+    with pytest.raises(TypeError, match="invalid encoding"):
+        sh.set(encoding="")
+
+    with pytest.raises(TypeError, match="invalid encoding"):
+        sh.set(encoding=None)  # pyright: ignore[reportGeneralTypeIssues]
+
+
+def test_context_redirects():
+    "Test that `sh` supports stdin/stdout/stderr methods."
+    out1 = bytearray()
+    out2 = bytearray()
+    ctxt = sh.stdin("abc").stdout(out1).stderr(out2)
+
+    assert ctxt.options.input == "abc"
+    assert ctxt.options.output == out1
+    assert ctxt.options.error == out2
+
+    assert not ctxt.options.input_close
+    assert not ctxt.options.output_close
+    assert not ctxt.options.error_close
+
+
+def test_context_redirects_invalid():
+    "Test that `sh` complains about invalid redirects."
+    with pytest.raises(TypeError):
+        sh.stdin(None)
+    with pytest.raises(ValueError):
+        sh.stdin(sh.STDOUT)
+
+    with pytest.raises(TypeError):
+        sh.stdout(None)
+    with pytest.raises(ValueError):
+        sh.stdout(sh.STDOUT)
+
+    with pytest.raises(TypeError):
+        sh.stderr(None)
+
+
+def test_command_append():
+    "Test command appending an invalid type."
+    with pytest.raises(TypeError, match=">>"):
+        _ = sh("echo") >> (1 + 2j)  # pyright: ignore[reportGeneralTypeIssues]
