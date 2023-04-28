@@ -1101,7 +1101,7 @@ class PipeRunner:
         return self._readlines()
 
     @staticmethod
-    async def run_pipeline(pipe: "shellous.Pipeline"):
+    async def run_pipeline(pipe: "shellous.Pipeline[Any]") -> Union[str, Result]:
         "Run a pipeline. This is the main entry point for PipeRunner."
         run = PipeRunner(pipe, capturing=False)
         async with run:
