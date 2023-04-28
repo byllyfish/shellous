@@ -31,11 +31,8 @@ BSD_FREEBSD = sys.platform.startswith("freebsd")
 BSD_DERIVED = BSD_FREEBSD or sys.platform == "darwin"
 
 
-def decode(data: Optional[bytes], encoding: str) -> str:
-    "Utility function to decode optional byte strings."
-    if not data:
-        return ""
-    assert isinstance(encoding, str)
+def decode(data: bytes, encoding: str) -> str:
+    "Utility function to decode byte strings."
     return data.decode(*encoding.split(maxsplit=1))
 
 

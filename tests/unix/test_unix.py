@@ -75,12 +75,12 @@ async def test_echo():
 async def test_echo_bytes():
     "Test running the echo command with bytes output."
     with pytest.raises(TypeError, match="invalid encoding"):
-        await sh("echo", "-n", "foo").set(encoding=None)
+        await sh("echo", "-n", "foo").set(encoding=None)  # type: ignore
 
 
 async def test_echo_with_result():
     "Test running the echo command using the Result object."
-    result = await sh("echo", "-n", "foo").set(_return_result=True)
+    result = await sh("echo", "-n", "foo").result
     assert result == Result(
         exit_code=0,
         output_bytes=b"foo",
@@ -269,7 +269,7 @@ async def test_input_bytes():
 async def test_input_none_encoding():
     "Test calling a command with input string, but bytes encoding expected."
     with pytest.raises(TypeError, match="invalid encoding"):
-        sh("tr", "[:lower:]", "[:upper:]").set(encoding=None)
+        sh("tr", "[:lower:]", "[:upper:]").set(encoding=None)  # type: ignore
 
 
 async def test_exit_code_error():
