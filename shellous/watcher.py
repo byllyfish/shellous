@@ -279,28 +279,10 @@ class EPollStrategy(ChildStrategy):
         "Register a PID with epoll."
         try:
             self._add_pidfd(pid, callback, args)
-        except ProcessLookupError:
-            self._pidfd_process_missing(pid, callback, args)
         except Exception as ex:
             LOGGER.warning("EPollStrategy.watch_pid failed pid=%r ex=%r", pid, ex)
             self._pidfd_error(pid, callback, args)
             raise
-
-    def _pidfd_process_missing(
-        self,
-        pid: int,
-        callback: _CallbackType,
-        args: _CallbackArgsType,
-    ):
-        "Handle case where pidfd_open fails with a ProcessLookupError (ESRCH)."
-        LOGGER.debug("_pidfd_process_missing pid=%r", pid)
-
-        status = wait_pid(pid)
-        if status is not None:
-            _invoke_callback(callback, pid, status, args)
-        else:
-            # Process is still dying. Spawn a task to poll it.
-            self._tasks.create_task(_poll_dead_pid(pid, callback, args))
 
     def _pidfd_error(
         self,
