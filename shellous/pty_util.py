@@ -179,7 +179,10 @@ async def _open_pty_streams(parent_fd: int, child_fd: ChildFd):
     return reader, writer
 
 
-def raw(rows=0, cols=0):
+IntOrEllipsis = Union[int, type(...)]
+
+
+def raw(rows: IntOrEllipsis = 0, cols: IntOrEllipsis = 0):
     "Return a function that sets PtyOptions.child_fd to raw mode."
     if Ellipsis in (rows, cols):
         rows, cols = _inherit_term_size(rows, cols)
@@ -193,7 +196,7 @@ def raw(rows=0, cols=0):
     return _pty_set_raw
 
 
-def cbreak(rows=0, cols=0):
+def cbreak(rows: IntOrEllipsis = 0, cols: IntOrEllipsis = 0):
     "Return a function that sets PtyOptions.child_fd to cbreak mode."
     if Ellipsis in (rows, cols):
         rows, cols = _inherit_term_size(rows, cols)
@@ -207,7 +210,7 @@ def cbreak(rows=0, cols=0):
     return _pty_set_cbreak
 
 
-def cooked(rows=0, cols=0, echo=True):
+def cooked(rows: IntOrEllipsis = 0, cols: IntOrEllipsis = 0, echo=True):
     "Return a function that leaves PtyOptions.child_fd in cooked mode."
     if Ellipsis in (rows, cols):
         rows, cols = _inherit_term_size(rows, cols)
@@ -245,7 +248,7 @@ def _set_term_size(fdesc, rows, cols):
         LOGGER.warning("_set_term_size ex=%r", ex)
 
 
-def _inherit_term_size(rows, cols):
+def _inherit_term_size(rows: IntOrEllipsis, cols: IntOrEllipsis):
     "Override ... with terminal setting from current stdin."
     try:
         zeros = struct.pack("HHHH", 0, 0, 0, 0)

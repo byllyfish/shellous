@@ -39,6 +39,7 @@ class Prompt:
             raise asyncio.CancelledError()
 
         # If there are ellipsis bytes in the beginning of out, remove them.
+        assert isinstance(out, bytes)
         out = re.sub(rb"^(?:\.\.\. )+", b"", out)
 
         # Combine stderr and stdout, then clear stderr.
@@ -67,6 +68,8 @@ async def run_asyncio_repl(cmds, logfile=None):
     )
 
     async with repl._run_() as run:
+        assert run.stdin is not None
+
         p = Prompt(run.stdin, run.stdout, errbuf)
         await p.prompt()
 
@@ -173,8 +176,8 @@ async def test_readme(tmp_path):
     "Test that the REPL commands in the README.md file actually work."
     cmds, outputs = _parse_readme("README.md")
 
+    logfile = tmp_path / "test_readme.log"
     try:
-        logfile = tmp_path / "test_readme.log"
         results = await run_asyncio_repl(cmds, logfile)
 
         # Compare known outputs to actual results.

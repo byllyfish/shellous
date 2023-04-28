@@ -28,7 +28,7 @@ class EventLoopThread(threading.Thread):
         self._shutdown_fut = None
 
     @property
-    def loop(self):
+    def loop(self) -> asyncio.AbstractEventLoop:
         result = None
         for _ in range(3):
             with self._lock:
@@ -36,6 +36,7 @@ class EventLoopThread(threading.Thread):
             if result:
                 break
             time.sleep(0.1)
+        assert result is not None
         return result
 
     def future(self, coro):
@@ -72,6 +73,7 @@ class EventLoopThread(threading.Thread):
 
     def _stop(self):
         "Trigger shutdown future."
+        assert self._shutdown_fut is not None
         if not self._shutdown_fut.done():
             self._shutdown_fut.set_result(1)
 

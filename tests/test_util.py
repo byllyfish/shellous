@@ -19,21 +19,14 @@ def test_decode():
     "Test the util.decode function."
     assert decode(b"", "utf-8") == ""
     assert decode(b"abc", "utf-8") == "abc"
-    assert decode(None, "utf-8") == ""
+
+    with pytest.raises(AttributeError):
+        assert decode(None, "utf-8") == ""  # pyright: ignore[reportGeneralTypeIssues]
 
     with pytest.raises(UnicodeDecodeError):
         decode(b"\x81", "utf-8")
 
     assert decode(b"\x81abc", "utf-8 replace") == "\ufffdabc"
-
-
-def test_decode_encoding_none():
-    "Test the util.decode function encoding=None (invalid)."
-    # Invalid but allowed.
-    assert decode(None, None) == ""
-
-    with pytest.raises(AssertionError):
-        decode(b"abc", None)
 
 
 def test_coerce_env():
@@ -74,8 +67,8 @@ async def test_uninterrupted():
     async def task1():
         return await uninterrupted(_test1())
 
+    task = asyncio.create_task(task1())
     with pytest.raises(asyncio.TimeoutError):
-        task = asyncio.create_task(task1())
         await asyncio.wait_for(task, 0.1)
 
     assert task.cancelled()
@@ -114,4 +107,4 @@ def test_environment_dict():
 
     # EnvironmentDict is immutable.
     with pytest.raises(TypeError):
-        d1["b"] = "2"
+        d1["b"] = "2"  # pyright: ignore[reportGeneralTypeIssues]

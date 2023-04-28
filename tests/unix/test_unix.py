@@ -25,19 +25,19 @@ _IS_ALPINE = os.path.exists("/etc/alpine-release")
 _IS_PY3_NO_FD_COUNT = sys.version_info[:3] >= (3, 10, 9)
 
 
-def _is_uvloop():
+def _is_uvloop() -> bool:
     "Return true if we're running under uvloop."
     return os.environ.get("SHELLOUS_LOOP_TYPE") == "uvloop"
 
 
-def _is_codecov():
+def _is_codecov() -> bool:
     "Return true if we're running code coverage."
-    return os.environ.get("SHELLOUS_CODE_COVERAGE")
+    return bool(os.environ.get("SHELLOUS_CODE_COVERAGE"))
 
 
-def _is_lsof_unsupported():
+def _is_lsof_unsupported() -> bool:
     "Return true if lsof tests are unsupported."
-    return _IS_ALPINE or _is_uvloop() or _is_codecov()
+    return bool(_IS_ALPINE or _is_uvloop() or _is_codecov())
 
 
 def _readouterr(capfd):
@@ -75,12 +75,12 @@ async def test_echo():
 async def test_echo_bytes():
     "Test running the echo command with bytes output."
     with pytest.raises(TypeError, match="invalid encoding"):
-        await sh("echo", "-n", "foo").set(encoding=None)
+        await sh("echo", "-n", "foo").set(encoding=None)  # type: ignore
 
 
 async def test_echo_with_result():
     "Test running the echo command using the Result object."
-    result = await sh("echo", "-n", "foo").set(_return_result=True)
+    result = await sh("echo", "-n", "foo").result
     assert result == Result(
         exit_code=0,
         output_bytes=b"foo",
@@ -269,7 +269,7 @@ async def test_input_bytes():
 async def test_input_none_encoding():
     "Test calling a command with input string, but bytes encoding expected."
     with pytest.raises(TypeError, match="invalid encoding"):
-        sh("tr", "[:lower:]", "[:upper:]").set(encoding=None)
+        sh("tr", "[:lower:]", "[:upper:]").set(encoding=None)  # type: ignore
 
 
 async def test_exit_code_error():
@@ -468,6 +468,8 @@ async def test_async_context_manager():
     tr = sh("tr", "[:lower:]", "[:upper:]").stdin(sh.CAPTURE)
 
     async with tr.stdout(sh.CAPTURE)._run_() as run:
+        assert run.stdin is not None
+        assert run.stdout is not None
         assert run.stderr is None
 
         # N.B. We won't deadlock writing/reading a single byte.
@@ -583,6 +585,8 @@ async def test_pipeline_async_context_manager():
     tr = sh("tr", "[:lower:]", "[:upper:]")
     pipe = (tr | sh("cat")).stdin(sh.CAPTURE)
     async with pipe.stdout(sh.CAPTURE)._run_() as run:
+        assert run.stdin is not None
+        assert run.stdout is not None
         assert run.stderr is None
 
         # N.B. We won't deadlock writing/reading a single byte.
@@ -682,6 +686,9 @@ async def test_multiple_capture():
     cmd = sh("cat").stdin(sh.CAPTURE)
 
     async with cmd.stdout(sh.CAPTURE)._run_() as run:
+        assert run.stdin is not None
+        assert run.stdout is not None
+
         run.stdin.write(b"abc\n")
         output, _ = await asyncio.gather(run.stdout.readline(), run.stdin.drain())
         run.stdin.close()
@@ -1021,6 +1028,9 @@ async def test_pty():
     cmd = sh("tr", "[:lower:]", "[:upper:]").stdin(sh.CAPTURE).set(pty=True)
 
     async with cmd.stdout(sh.CAPTURE)._run_() as run:
+        assert run.stdin is not None
+        assert run.stdout is not None
+
         run.stdin.write(b"abc\n")
         await run.stdin.drain()
         await asyncio.sleep(0.1)
@@ -1044,6 +1054,9 @@ async def test_pty_ctermid():
     )
 
     async with cmd.stdout(sh.CAPTURE)._run_() as run:
+        assert run.stdin is not None
+        assert run.stdout is not None
+
         result = await run.stdout.read(1024)
         run.stdin.close()
 
@@ -1125,6 +1138,9 @@ async def test_pty_stty_all(tmp_path):
 
     buf = b""
     async with cmd.stdout(sh.CAPTURE)._run_() as run:
+        assert run.stdin is not None
+        assert run.stdout is not None
+
         while True:
             result = await run.stdout.read(1024)
             if not result:
@@ -1147,6 +1163,9 @@ async def test_pty_tr_eot():
     cmd = sh("tr", "[:lower:]", "[:upper:]").stdin(sh.CAPTURE).set(pty=True)
 
     async with cmd.stdout(sh.CAPTURE)._run_() as run:
+        assert run.stdin is not None
+        assert run.stdout is not None
+
         run.stdin.write(b"abc\n\x04")
         await run.stdin.drain()
         await asyncio.sleep(0.1)
@@ -1164,6 +1183,9 @@ async def test_pty_cat_eot():
     cmd = sh("cat").stdin(sh.CAPTURE).set(pty=True)
 
     async with cmd.stdout(sh.CAPTURE)._run_() as run:
+        assert run.stdin is not None
+        assert run.stdout is not None
+
         run.stdin.write(b"abc\x04\x04")
         await run.stdin.drain()
         await asyncio.sleep(0.1)
@@ -1388,6 +1410,8 @@ async def test_redirect_stdin_streamreader():
         writer.write(b"hello")
         writer.close()
 
+    writer = None
+    server = None
     try:
         sock_path = "/tmp/__streamreader__"
         server = await asyncio.start_unix_server(_hello, sock_path)
@@ -1397,9 +1421,12 @@ async def test_redirect_stdin_streamreader():
         assert result == "hello"
 
     finally:
-        writer.close()
-        server.close()
-        await server.wait_closed()
+        if writer:
+            writer.close()
+
+        if server:
+            server.close()
+            await server.wait_closed()
 
 
 @pytest.mark.skipif(_is_uvloop(), reason="uvloop")
@@ -1410,6 +1437,8 @@ async def test_pty_redirect_stdin_streamreader():
         writer.write(b"hello\n")
         writer.close()
 
+    writer = None
+    server = None
     try:
         sock_path = "/tmp/__streamreader__"
         server = await asyncio.start_unix_server(_hello, sock_path)
@@ -1419,9 +1448,12 @@ async def test_pty_redirect_stdin_streamreader():
         assert result.replace("^D\x08\x08", "") == "hello\r\nhello\r\n"
 
     finally:
-        writer.close()
-        server.close()
-        await server.wait_closed()
+        if writer:
+            writer.close()
+
+        if server:
+            server.close()
+            await server.wait_closed()
 
 
 async def test_redirect_stdout_streamwriter():
@@ -1432,6 +1464,8 @@ async def test_redirect_stdout_streamwriter():
         buf.write(await reader.read())
         _writer.close()
 
+    server = None
+    writer = None
     try:
         sock_path = "/tmp/__streamwriter__"
         server = await asyncio.start_unix_server(_hello, sock_path)
@@ -1442,9 +1476,12 @@ async def test_redirect_stdout_streamwriter():
         assert buf.getvalue() == b"hello\n"
 
     finally:
-        writer.close()
-        server.close()
-        await server.wait_closed()
+        if writer:
+            writer.close()
+
+        if server:
+            server.close()
+            await server.wait_closed()
 
 
 @pytest.mark.skipif(_is_uvloop(), reason="uvloop")
@@ -1507,7 +1544,7 @@ async def test_set_cancel_signal_invalid():
         calls.append((phase, runner.name, runner.returncode, runner.cancelled, signal))
 
     xsh = sh.set(
-        cancel_signal="INVALID",
+        cancel_signal="INVALID",  # type: ignore
         cancel_timeout=0.2,
         audit_callback=_audit,
     )

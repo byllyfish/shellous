@@ -3,7 +3,7 @@
 import dataclasses
 from dataclasses import dataclass
 from types import TracebackType
-from typing import Any, Coroutine, Generic, Optional, TypeVar, Union, overload
+from typing import Any, Coroutine, Generic, Optional, TypeVar, Union, cast, overload
 
 import shellous
 from shellous.redirect import (
@@ -85,7 +85,7 @@ class Pipeline(Generic[_RT]):
 
     def coro(self) -> Coroutine[Any, Any, _RT]:
         "Return coroutine object for pipeline."
-        return PipeRunner.run_pipeline(self)
+        return cast(Coroutine[Any, Any, _RT], PipeRunner.run_pipeline(self))
 
     def _run_(self) -> "PipeRunner":
         """Return a `Runner` to help run the pipeline incrementally.
@@ -138,7 +138,7 @@ class Pipeline(Generic[_RT]):
 
     def __or__(self, rhs: Any) -> "Pipeline[Any]":
         if isinstance(rhs, (shellous.Command, Pipeline)):
-            return self._add(rhs)
+            return self._add(rhs)  # pyright: ignore[reportUnknownArgumentType]
         if isinstance(rhs, STDOUT_TYPES):
             return self.stdout(rhs)
         if isinstance(rhs, (str, bytes)):
@@ -169,7 +169,10 @@ class Pipeline(Generic[_RT]):
     @property
     def result(self) -> "Pipeline[shellous.Result]":
         "Set `_return_result` and `exit_codes`."
-        return self._set(_return_result=True, exit_codes=range(-255, 256))
+        return cast(
+            Pipeline[shellous.Result],
+            self._set(_return_result=True, exit_codes=range(-255, 256)),
+        )
 
     def __await__(self):
         return self.coro().__await__()

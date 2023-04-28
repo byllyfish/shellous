@@ -31,7 +31,7 @@ class Result:
     exit_code: int
     "Command's exit code."
 
-    output_bytes: Optional[bytes]
+    output_bytes: bytes
     "Output of command as bytes. May be None if there is no output."
 
     error_bytes: bytes
