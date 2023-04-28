@@ -1758,3 +1758,20 @@ async def test_pipe_iter_pty():
     cmd = sh("echo", "1\n", "2") | sh("cat").set(pty=True)
     output = {line async for line in cmd}
     assert output == {"1\r\n", " 2\r\n"}
+
+
+async def test_pass_fds(tmp_path):
+    "Test the pass_fds option."
+    out = tmp_path / "test_pass_fds"
+    script = """
+import sys
+import os
+fd = int(sys.argv[1])
+os.write(fd, b"hello")
+"""
+
+    with open(out, "w") as fp:
+        fd = fp.fileno()
+        await sh(sys.executable, "-c", script, fd).set(pass_fds=[fd])
+
+    assert out.read_bytes() == b"hello"
