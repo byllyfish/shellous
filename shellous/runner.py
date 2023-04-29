@@ -458,7 +458,9 @@ class Runner:
         )
 
     def add_task(
-        self, coro: Coroutine[Any, Any, _T], tag: str = ""
+        self,
+        coro: Coroutine[Any, Any, _T],
+        tag: str = "",
     ) -> asyncio.Task[_T]:
         "Add a background task."
         task_name = f"{self.name}#{tag}"
@@ -957,9 +959,14 @@ class PipeRunner:
     stderr = None
     "Pipeline standard error."
 
+    _pipe: "shellous.Pipeline[Any]"
+    _capturing: bool
+    _tasks: list[asyncio.Task[Any]]
+    _encoding: str
+    _cancelled: bool = False
     _results: Optional[list[Union[BaseException, Result]]] = None
 
-    def __init__(self, pipe, *, capturing):
+    def __init__(self, pipe: "shellous.Pipeline[Any]", *, capturing: bool):
         """`capturing=True` indicates we are within an `async with` block and
         client needs to access `stdin` and `stderr` streams.
         """
@@ -972,11 +979,11 @@ class PipeRunner:
         self._encoding = pipe.options.encoding
 
     @property
-    def name(self):
+    def name(self) -> str:
         "Return name of the pipeline."
         return self._pipe.name
 
-    def result(self):
+    def result(self) -> Result:
         "Return `Result` object for PipeRunner."
         assert self._results is not None
 
@@ -986,7 +993,11 @@ class PipeRunner:
             self._cancelled,
         )
 
-    def add_task(self, coro, tag=""):
+    def add_task(
+        self,
+        coro: Coroutine[Any, Any, _T],
+        tag: str = "",
+    ) -> asyncio.Task[_T]:
         "Add a background task."
         task_name = f"{self.name}#{tag}"
         task = asyncio.create_task(coro, name=task_name)
@@ -994,7 +1005,7 @@ class PipeRunner:
         return task
 
     @log_method(LOG_DETAIL)
-    async def _wait(self, *, kill=False):
+    async def _wait(self, *, kill: bool = False):
         "Wait for pipeline to finish."
         assert self._results is None
 
@@ -1021,7 +1032,12 @@ class PipeRunner:
             raise
 
     @log_method(LOG_EXIT, exc_value=2)
-    async def __aexit__(self, _exc_type, exc_value, _exc_tb):
+    async def __aexit__(
+        self,
+        _exc_type: Union[type[BaseException], None],
+        exc_value: Union[BaseException, None],
+        _exc_tb: Optional[TracebackType],
+    ):
         "Wait for pipeline to exit and handle cancellation."
         suppress = False
         try:
@@ -1032,7 +1048,7 @@ class PipeRunner:
         return suppress
 
     @log_method(LOG_DETAIL)
-    async def _finish(self, exc_value) -> bool:
+    async def _finish(self, exc_value: Optional[BaseException]) -> bool:
         "Wait for pipeline to exit and handle cancellation."
         if exc_value is not None:
             LOGGER.warning("PipeRunner._finish exc_value=%r", exc_value)
@@ -1073,7 +1089,7 @@ class PipeRunner:
             close_fds(open_fds)
             raise
 
-    def _setup_pipeline(self, open_fds):
+    def _setup_pipeline(self, open_fds: list[int]):
         """Return the pipeline stitched together with pipe fd's.
 
         Each created open file descriptor is added to `open_fds` so it can
@@ -1095,7 +1111,7 @@ class PipeRunner:
         return cmds
 
     @log_method(LOG_DETAIL)
-    async def _setup_capturing(self, cmds):
+    async def _setup_capturing(self, cmds: "list[shellous.Command[Any]]"):
         """Set up capturing and return (stdin, stdout, stderr) streams."""
         loop = asyncio.get_event_loop()
         first_fut = loop.create_future()
@@ -1123,7 +1139,7 @@ class PipeRunner:
 
         return (stdin, stdout, stderr)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         "Return string representation of PipeRunner."
         cancelled_info = ""
         if self._cancelled:
