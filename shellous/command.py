@@ -249,20 +249,33 @@ class CmdContext(Generic[_RT]):
     options: Options = field(default_factory=Options)
     "Default command options."
 
-    def stdin(self, input_: Any, *, close: bool = False) -> "CmdContext[_RT]":
+    def stdin(
+        self,
+        input_: Any,
+        *,
+        close: bool = False,
+    ) -> "CmdContext[_RT]":
         "Return new context with updated `input` settings."
         new_options = self.options.set_stdin(input_, close)
         return CmdContext(new_options)
 
     def stdout(
-        self, output: Any, *, append: bool = False, close: bool = False
+        self,
+        output: Any,
+        *,
+        append: bool = False,
+        close: bool = False,
     ) -> "CmdContext[_RT]":
         "Return new context with updated `output` settings."
         new_options = self.options.set_stdout(output, append, close)
         return CmdContext(new_options)
 
     def stderr(
-        self, error: Any, *, append: bool = False, close: bool = False
+        self,
+        error: Any,
+        *,
+        append: bool = False,
+        close: bool = False,
     ) -> "CmdContext[_RT]":
         "Return new context with updated `error` settings."
         new_options = self.options.set_stderr(error, append, close)
@@ -549,7 +562,9 @@ class Command(Generic[_RT]):
         return Command(tuple(new_args), self.options)
 
     def coro(
-        self, *, _run_future: Optional[asyncio.Future[Runner]] = None
+        self,
+        *,
+        _run_future: Optional[asyncio.Future[Runner]] = None,
     ) -> Coroutine[Any, Any, _RT]:
         "Return coroutine object to run awaitable."
         return cast(
@@ -627,7 +642,8 @@ class Command(Generic[_RT]):
 
     @overload
     def __or__(
-        self, rhs: "Command[shellous.Result]"
+        self,
+        rhs: "Command[shellous.Result]",
     ) -> "shellous.Pipeline[shellous.Result]":
         ...  # pragma: no cover
 
@@ -676,7 +692,8 @@ def coerce(args: Sequence[Any]) -> tuple[Any, ...]:
     result: list[Any] = []
     for arg in args:
         if isinstance(
-            arg, (str, bytes, bytearray, os.PathLike, Command, shellous.Pipeline)
+            arg,
+            (str, bytes, bytearray, os.PathLike, Command, shellous.Pipeline),
         ):
             result.append(arg)
         elif isinstance(arg, (list, tuple)):
