@@ -10,7 +10,7 @@ import sys
 import threading
 import time
 from contextlib import contextmanager
-from typing import Union
+from typing import Any, Callable, Sequence, Union
 
 LOGGER = logging.getLogger(__package__)
 
@@ -53,7 +53,7 @@ def log_method(enabled: Union[bool, int], *, _info: bool = False, **kwds: int):
     Use `kwds` to log other arguments.
     """
 
-    def _decorator(func):
+    def _decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         "Decorator to log method call entry and exit."
         if not enabled:
             return func
@@ -66,7 +66,7 @@ def log_method(enabled: Union[bool, int], *, _info: bool = False, **kwds: int):
         if "." in func.__qualname__ and is_asyncgen:
             # Use _asyncgen_wrapper which includes value of `self` arg.
             @functools.wraps(func)
-            async def _asyncgen_wrapper(*args, **kwargs):
+            async def _asyncgen_wrapper(*args: Any, **kwargs: Any):
                 more_info, plat_info = _info_args(args, kwds, _info)
 
                 if enabled != _LOG_IGNORE_STEPIN:
@@ -95,7 +95,7 @@ def log_method(enabled: Union[bool, int], *, _info: bool = False, **kwds: int):
         if "." in func.__qualname__:
             # Use _method_wrapper which incldues value of `self` arg.
             @functools.wraps(func)
-            async def _method_wrapper(*args, **kwargs):
+            async def _method_wrapper(*args: Any, **kwargs: Any):
                 more_info, plat_info = _info_args(args, kwds, _info)
 
                 if enabled != _LOG_IGNORE_STEPIN:
@@ -123,7 +123,7 @@ def log_method(enabled: Union[bool, int], *, _info: bool = False, **kwds: int):
         if is_asyncgen:
             # Use _function_wrapper which ignores arguments.
             @functools.wraps(func)
-            async def _asyncgen_function_wrapper(*args, **kwargs):
+            async def _asyncgen_function_wrapper(*args: Any, **kwargs: Any):
                 if enabled != _LOG_IGNORE_STEPIN:
                     LOGGER.info("%s stepin", func.__qualname__)
                 try:
@@ -141,7 +141,7 @@ def log_method(enabled: Union[bool, int], *, _info: bool = False, **kwds: int):
 
         # Use _function_wrapper which ignores arguments.
         @functools.wraps(func)
-        async def _function_wrapper(*args, **kwargs):
+        async def _function_wrapper(*args: Any, **kwargs: Any):
             if enabled != _LOG_IGNORE_STEPIN:
                 LOGGER.info("%s stepin", func.__qualname__)
             try:
@@ -159,7 +159,7 @@ def log_method(enabled: Union[bool, int], *, _info: bool = False, **kwds: int):
     return _decorator
 
 
-def _info_args(args, kwds, _info):
+def _info_args(args: Sequence[Any], kwds: dict[str, int], _info: bool):
     "Return info strings with specified arguments."
     more_args = [f" {key}={args[value]!r}" for key, value in kwds.items()]
     more_info = "".join(more_args)
@@ -220,13 +220,13 @@ def log_thread(enabled: bool):
     DEBUG thread <name> stopping
     """
 
-    def _decorator(func):
+    def _decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         "Decorator to log thread entry and exit."
         if not enabled:
             return func
 
         @functools.wraps(func)
-        def _function_wrapper(*args, **kwargs):
+        def _function_wrapper(*args: Any, **kwargs: Any):
             thread_name = threading.current_thread().name
             LOGGER.debug("thread %r starting", thread_name)
             try:
