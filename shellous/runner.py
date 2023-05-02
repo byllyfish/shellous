@@ -7,7 +7,7 @@ import sys
 from logging import Logger
 from pathlib import Path
 from types import TracebackType
-from typing import Any, Coroutine, Optional, TextIO, TypeAlias, TypeVar, Union, cast
+from typing import Any, Coroutine, Optional, TextIO, TypeVar, Union, cast
 
 import shellous
 import shellous.redirect as redir
@@ -45,14 +45,13 @@ The audit event has one argument: the name of the command.
 """
 
 _T = TypeVar("_T")
-_CmdType: TypeAlias = "Union[shellous.Command[Any], shellous.Pipeline[Any]]"
 
 
 def _is_cancelled(ex: BaseException):
     return isinstance(ex, asyncio.CancelledError)
 
 
-def _is_writable(cmd: _CmdType):
+def _is_writable(cmd: "Union[shellous.Command[Any], shellous.Pipeline[Any]]"):
     "Return true if command/pipeline has `_writable` set."
     if isinstance(cmd, shellous.Pipeline):
         # Pipelines need to check both the last/first commands.
@@ -84,7 +83,7 @@ class _RunOptions:
     input_bytes: Optional[bytes]
     pos_args: list[Union[str, bytes]]
     kwd_args: dict[str, Any]
-    subcmds: "list[_CmdType]"
+    subcmds: "list[Union[shellous.Command[Any], shellous.Pipeline[Any]]]"
     pty_fds: Optional[pty_util.PtyFds]
     output_bytes: Optional[bytearray]
     error_bytes: Optional[bytearray]
@@ -1187,7 +1186,7 @@ def _is_multiple_capture(cmd: "shellous.Command[Any]"):
     return output == Redirect.CAPTURE and error == Redirect.CAPTURE
 
 
-def _cleanup(command: _CmdType):
+def _cleanup(command: "Union[shellous.Command[Any], shellous.Pipeline[Any]]"):
     "Close remaining file descriptors that need to be closed."
 
     def _add_close(close: bool, fdesc: Any):
