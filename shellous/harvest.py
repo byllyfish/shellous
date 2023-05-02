@@ -115,7 +115,9 @@ async def harvest_wait(
         # Wait for all tasks to complete, the first one to raise an
         # exception, or a timeout.
         done, pending = await asyncio.wait(
-            tasks, timeout=timeout, return_when=asyncio.FIRST_EXCEPTION
+            tasks,
+            timeout=timeout,
+            return_when=asyncio.FIRST_EXCEPTION,
         )
 
         # Determine whether asyncio.wait timed out.

@@ -68,21 +68,8 @@ exclude-protected = ["_run_"]
 
 [tool.pyright]
 pythonPlatform = "All"
-ignore = [
-  # "tests/**/*.py"
-]
 strict = [
-  "shellous/__init__.py",
-  "shellous/command.py",
-  "shellous/harvest.py",
-  # "shellous/log.py",
-  "shellous/pipeline.py",
-  # "shellous/pty_util.py",
-  "shellous/redirect.py",
-  # "shellous/result.py",
-  # "shellous/runner.py",
-  "shellous/util.py",
-  "shellous/watcher.py",
+  "shellous/*.py",
 ]
 
 [tool.black]
@@ -98,5 +85,6 @@ ignore = [
   "S101",   # Use of `assert` detected
   "EM101",  # Exception must not use a string literal, assign to variable first
   "EM102",  # Exception must not use an f-string literal, assign to variable first
+  "UP007",  # Use `X | Y` for type annotations
 ]
 line-length = 120

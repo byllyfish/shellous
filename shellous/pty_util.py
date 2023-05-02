@@ -7,7 +7,7 @@ import errno
 import os
 import struct
 from dataclasses import dataclass
-from typing import Callable, NamedTuple, Optional, Union
+from typing import Any, Callable, NamedTuple, Optional, Union
 
 # The following modules are not supported on Windows.
 try:
@@ -104,15 +104,15 @@ def set_ctty(ttypath: str):
 class PtyStreamReaderProtocol(asyncio.StreamReaderProtocol):
     "Custom subclass of StreamReaderProtocol for pty's."
 
-    _pty_child_fd: Optional[ChildFd] = None
-    _pty_timer: Optional[asyncio.TimerHandle] = None  # Issue #378
+    pty__child_fd: Optional[ChildFd] = None
+    pty__timer: Optional[asyncio.TimerHandle] = None  # Issue #378
 
     def connection_lost(self, exc: Optional[Exception]):
         "Intercept EIO error and treat it as EOF."
         if LOG_DETAIL:
             LOGGER.info("PtyStreamReaderProtocol.connection_lost ex=%r", exc)
-        if BSD_DERIVED and self._pty_timer is not None:
-            self._pty_timer.cancel()
+        if BSD_DERIVED and self.pty__timer is not None:
+            self.pty__timer.cancel()
         if isinstance(exc, OSError) and exc.errno == errno.EIO:
             exc = None
         super().connection_lost(exc)
@@ -121,18 +121,18 @@ class PtyStreamReaderProtocol(asyncio.StreamReaderProtocol):
         # BSD only: On Linux, use the default behavior.
 
         def _close_child_fd(self):
-            if self._pty_child_fd:
-                self._pty_child_fd.close()
-                self._pty_child_fd = None
+            if self.pty__child_fd:
+                self.pty__child_fd.close()
+                self.pty__child_fd = None
 
         if BSD_FREEBSD:
             # Timer is only necessary on FreeBSD, not MacOS.
-            def connection_made(self, transport):
+            def connection_made(self, transport: asyncio.BaseTransport):
                 # Set up timer to close child fd when no data is received.
                 super().connection_made(transport)
                 if LOG_DETAIL:
                     LOGGER.info("PtyStreamReaderProtocol.connection_made")
-                self._pty_timer = self._loop.call_later(2.0, self._close_child_fd)  # type: ignore
+                self.pty__timer = self._loop.call_later(2.0, self._close_child_fd)  # type: ignore
 
         def data_received(self, data: bytes):
             "Close child_fd when first data received."
@@ -154,7 +154,7 @@ async def _open_pty_streams(parent_fd: int, child_fd: ChildFd):
 
     # Stick reference to child_fd into protocol so we can close it after the
     # first data is received on BSD systems.
-    reader_protocol._pty_child_fd = child_fd  # pylint: disable=protected-access
+    reader_protocol.pty__child_fd = child_fd
 
     reader_transport, _ = await loop.connect_read_pipe(
         lambda: reader_protocol,
@@ -184,13 +184,12 @@ IntOrEllipsis = Union[int, type(...)]
 
 def raw(rows: IntOrEllipsis = 0, cols: IntOrEllipsis = 0):
     "Return a function that sets PtyOptions.child_fd to raw mode."
-    if Ellipsis in (rows, cols):
-        rows, cols = _inherit_term_size(rows, cols)
+    rows_int, cols_int = _inherit_term_size(rows, cols)
 
-    def _pty_set_raw(fdesc):
+    def _pty_set_raw(fdesc: int):
         tty.setraw(fdesc)
-        if rows or cols:
-            _set_term_size(fdesc, rows, cols)
+        if rows_int or cols_int:
+            _set_term_size(fdesc, rows_int, cols_int)
         assert _get_eof(fdesc) == b""
 
     return _pty_set_raw
@@ -198,26 +197,24 @@ def raw(rows: IntOrEllipsis = 0, cols: IntOrEllipsis = 0):
 
 def cbreak(rows: IntOrEllipsis = 0, cols: IntOrEllipsis = 0):
     "Return a function that sets PtyOptions.child_fd to cbreak mode."
-    if Ellipsis in (rows, cols):
-        rows, cols = _inherit_term_size(rows, cols)
+    rows_int, cols_int = _inherit_term_size(rows, cols)
 
-    def _pty_set_cbreak(fdesc):
+    def _pty_set_cbreak(fdesc: int):
         tty.setcbreak(fdesc)
-        if rows or cols:
-            _set_term_size(fdesc, rows, cols)
+        if rows_int or cols_int:
+            _set_term_size(fdesc, rows_int, cols_int)
         assert _get_eof(fdesc) == b""
 
     return _pty_set_cbreak
 
 
-def cooked(rows: IntOrEllipsis = 0, cols: IntOrEllipsis = 0, echo=True):
+def cooked(rows: IntOrEllipsis = 0, cols: IntOrEllipsis = 0, echo: bool = True):
     "Return a function that leaves PtyOptions.child_fd in cooked mode."
-    if Ellipsis in (rows, cols):
-        rows, cols = _inherit_term_size(rows, cols)
+    rows_int, cols_int = _inherit_term_size(rows, cols)
 
-    def _pty_set_canonical(fdesc):
-        if rows or cols:
-            _set_term_size(fdesc, rows, cols)
+    def _pty_set_canonical(fdesc: int):
+        if rows_int or cols_int:
+            _set_term_size(fdesc, rows_int, cols_int)
         if not echo:
             _set_term_echo(fdesc, False)
         assert _get_eof(fdesc) == b"\x04"
@@ -239,7 +236,7 @@ def _set_term_echo(fdesc: int, echo: bool):
         termios.tcsetattr(fdesc, termios.TCSADRAIN, attrs)
 
 
-def _set_term_size(fdesc, rows, cols):
+def _set_term_size(fdesc: int, rows: int, cols: int):
     "Set pseudo-terminal size."
     try:
         winsz = struct.pack("HHHH", rows, cols, 0, 0)
@@ -248,8 +245,11 @@ def _set_term_size(fdesc, rows, cols):
         LOGGER.warning("_set_term_size ex=%r", ex)
 
 
-def _inherit_term_size(rows: IntOrEllipsis, cols: IntOrEllipsis):
+def _inherit_term_size(rows: IntOrEllipsis, cols: IntOrEllipsis) -> tuple[int, int]:
     "Override ... with terminal setting from current stdin."
+    if Ellipsis not in (rows, cols):
+        return rows, cols  # type: ignore
+
     try:
         zeros = struct.pack("HHHH", 0, 0, 0, 0)
         winsz = fcntl.ioctl(_STDOUT_FILENO, tty.TIOCGWINSZ, zeros)  # pyright: ignore
@@ -263,7 +263,7 @@ def _inherit_term_size(rows: IntOrEllipsis, cols: IntOrEllipsis):
     if cols is Ellipsis:
         cols = winsz[1]
 
-    return rows, cols
+    return rows, cols  # type: ignore
 
 
 def _get_eof(fdesc: int):
@@ -292,7 +292,7 @@ def _patch_child_watcher():
 
     saved_add_handler = watcher.add_child_handler
 
-    def _add_child_handler(pid, callback, *args):
+    def _add_child_handler(pid: int, callback: Callable[..., object], *args: Any):
         if not _IGNORE_CHILD_PROCESS.get():
             saved_add_handler(pid, callback, *args)
 

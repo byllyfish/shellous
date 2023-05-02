@@ -7,7 +7,7 @@ import sys
 from logging import Logger
 from pathlib import Path
 from types import TracebackType
-from typing import Any, Optional, Union, cast
+from typing import Any, Coroutine, Optional, TextIO, TypeVar, Union, cast
 
 import shellous
 import shellous.redirect as redir
@@ -31,6 +31,8 @@ from shellous.util import (
     which,
 )
 
+# pyright: reportPrivateUsage=false
+
 _KILL_TIMEOUT = 3.0
 _CLOSE_TIMEOUT = 0.25
 _UNKNOWN_EXIT_CODE = 255
@@ -42,12 +44,14 @@ AUDIT_EVENT_SUBPROCESS_SPAWN = "byllyfish/shellous.subprocess_spawn"
 The audit event has one argument: the name of the command.
 """
 
+_T = TypeVar("_T")
+
 
 def _is_cancelled(ex: BaseException):
     return isinstance(ex, asyncio.CancelledError)
 
 
-def _is_writable(cmd: "Union[shellous.Command, shellous.Pipeline]"):
+def _is_writable(cmd: "Union[shellous.Command[Any], shellous.Pipeline[Any]]"):
     "Return true if command/pipeline has `_writable` set."
     if isinstance(cmd, shellous.Pipeline):
         # Pipelines need to check both the last/first commands.
@@ -73,18 +77,18 @@ class _RunOptions:
     ```
     """
 
-    command: "shellous.Command"
+    command: "shellous.Command[Any]"
     encoding: str
     open_fds: list[Union[int, SupportsClose]]
     input_bytes: Optional[bytes]
     pos_args: list[Union[str, bytes]]
     kwd_args: dict[str, Any]
-    subcmds: "list[Union[shellous.Command, shellous.Pipeline]]"
+    subcmds: "list[Union[shellous.Command[Any], shellous.Pipeline[Any]]]"
     pty_fds: Optional[pty_util.PtyFds]
     output_bytes: Optional[bytearray]
     error_bytes: Optional[bytearray]
 
-    def __init__(self, command: "shellous.Command"):
+    def __init__(self, command: "shellous.Command[Any]"):
         self.command = command
         self.encoding = command.options.encoding
         self.open_fds = []
@@ -245,7 +249,7 @@ class _RunOptions:
             # Only set close_fds if it is not already set.
             self.kwd_args["close_fds"] = options.close_fds
 
-    def _setup_input(self, input_, close, encoding):
+    def _setup_input(self, input_: Any, close: bool, encoding: str):
         "Set up process input."
         assert input_ is not None
 
@@ -282,7 +286,7 @@ class _RunOptions:
 
         return stdin, input_bytes
 
-    def _setup_output(self, output, append, close, sys_stream):
+    def _setup_output(self, output: Any, append: bool, close: bool, sys_stream: TextIO):
         "Set up process output. Used for both stdout and stderr."
         assert output is not None
 
@@ -290,7 +294,7 @@ class _RunOptions:
 
         if isinstance(output, os.PathLike):
             mode = "ab" if append else "wb"
-            stdout = open(output, mode=mode)  # pylint: disable=consider-using-with
+            stdout = open(cast(os.PathLike[str], output), mode=mode)
             self.open_fds.append(stdout)
         elif isinstance(output, Redirect) and output.is_custom():
             # Custom support for Redirect constants.
@@ -326,7 +330,13 @@ class _RunOptions:
 
         return stdout
 
-    def _setup_pty1(self, stdin, stdout, stderr, pty):
+    def _setup_pty1(
+        self,
+        stdin: Any,
+        stdout: Any,
+        stderr: Any,
+        pty: pty_util.PtyAdapterOrBool,
+    ):
         """Set up pseudo-terminal and return (stdin, stdout, stderr, preexec_fn).
 
         Initializes `self.pty_fds`.
@@ -377,15 +387,17 @@ class Runner:
     stderr: Optional[asyncio.StreamReader] = None
     "Process standard error."
 
+    _options: _RunOptions
+    _tasks: list[asyncio.Task[Any]]
     _proc: Optional["asyncio.subprocess.Process"] = None
+    _cancelled: bool = False
+    _timer: Optional[asyncio.TimerHandle] = None
+    _timed_out: bool = False
+    _last_signal: Optional[int] = None
 
-    def __init__(self, command):
+    def __init__(self, command: "shellous.Command[Any]"):
         self._options = _RunOptions(command)
-        self._cancelled = False
         self._tasks = []
-        self._timer = None  # asyncio.TimerHandle
-        self._timed_out = False  # True if runner timeout expired
-        self._last_signal = None
 
     @property
     def name(self) -> str:
@@ -393,7 +405,7 @@ class Runner:
         return self.command.name
 
     @property
-    def command(self) -> "shellous.Command":
+    def command(self) -> "shellous.Command[Any]":
         "Return the command being run."
         return self._options.command
 
@@ -444,7 +456,11 @@ class Runner:
             self._timed_out,
         )
 
-    def add_task(self, coro, tag=""):
+    def add_task(
+        self,
+        coro: Coroutine[Any, Any, _T],
+        tag: str = "",
+    ) -> asyncio.Task[_T]:
         "Add a background task."
         task_name = f"{self.name}#{tag}"
         task = asyncio.create_task(coro, name=task_name)
@@ -581,15 +597,15 @@ class Runner:
     @log_method(LOG_DETAIL)
     async def _start(self):
         "Set up redirections and launch subprocess."
-        assert self._proc is None
+        # assert self._proc is None
         assert not self._tasks
 
         try:
             # Set up subprocess arguments and launch subprocess.
             with self._options as opts:
                 await self._subprocess_spawn(opts)
-                assert self._proc is not None  # (pyright)
 
+            assert self._proc is not None
             stdin = self._proc.stdin
             stdout = self._proc.stdout
             stderr = self._proc.stderr
@@ -647,8 +663,10 @@ class Runner:
         return self
 
     @log_method(LOG_DETAIL)
-    async def _subprocess_spawn(self, opts):
+    async def _subprocess_spawn(self, opts: _RunOptions):
         "Start the subprocess."
+        assert self._proc is None
+
         # Second half of pty setup.
         if opts.pty_fds:
             opts.pty_fds = await opts.pty_fds.open_streams()
@@ -697,7 +715,7 @@ class Runner:
         self._cancelled = True
         self._stop_timer()
 
-    def _start_timer(self, timeout):
+    def _start_timer(self, timeout: Optional[float]):
         "Start an optional timer to cancel the process if `timeout` desired."
         assert self._timer is None
         if timeout is not None:
@@ -708,7 +726,7 @@ class Runner:
                 asyncio.current_task(),
             )
 
-    def _set_timer_expired(self, main_task):
+    def _set_timer_expired(self, main_task: asyncio.Task[Any]):
         "Set a flag when the timer expires and cancel the main task."
         self._timed_out = True
         self._timer = None
@@ -719,7 +737,11 @@ class Runner:
             self._timer.cancel()
             self._timer = None
 
-    def _setup_input_source(self, stream, opts):
+    def _setup_input_source(
+        self,
+        stream: asyncio.StreamWriter,
+        opts: _RunOptions,
+    ):
         "Set up a task to read from custom input source."
         tag = "stdin"
         eof = opts.pty_fds.eof if opts.pty_fds else None
@@ -745,31 +767,48 @@ class Runner:
 
         return stream
 
-    def _setup_output_sink(self, stream, sink, encoding, tag, limit=-1):
+    def _setup_output_sink(
+        self,
+        stream: asyncio.StreamReader,
+        sink: Any,
+        encoding: str,
+        tag: str,
+        limit: int = -1,
+    ) -> Optional[asyncio.StreamReader]:
         "Set up a task to write to custom output sink."
         if isinstance(sink, io.StringIO):
             self.add_task(redir.copy_stringio(stream, sink, encoding), tag)
-            stream = None
-        elif isinstance(sink, io.BytesIO):
+            return None
+
+        if isinstance(sink, io.BytesIO):
             self.add_task(redir.copy_bytesio(stream, sink), tag)
-            stream = None
-        elif isinstance(sink, bytearray):
+            return None
+
+        if isinstance(sink, bytearray):
             # N.B. `limit` is only supported for bytearray.
             if limit >= 0:
                 self.add_task(redir.copy_bytearray_limit(stream, sink, limit), tag)
             else:
                 self.add_task(redir.copy_bytearray(stream, sink), tag)
-            stream = None
-        elif isinstance(sink, Logger):
+            return None
+
+        if isinstance(sink, Logger):
             self.add_task(redir.copy_logger(stream, sink, encoding), tag)
-            stream = None
-        elif isinstance(sink, asyncio.StreamWriter):
+            return None
+
+        if isinstance(sink, asyncio.StreamWriter):
             self.add_task(redir.copy_streamwriter(stream, sink), tag)
-            stream = None
+            return None
+
         return stream
 
     @log_method(LOG_EXIT, exc_value=2)
-    async def __aexit__(self, _exc_type, exc_value, _exc_tb):
+    async def __aexit__(
+        self,
+        _exc_type: Union[type[BaseException], None],
+        exc_value: Union[BaseException, None],
+        _exc_tb: Optional[TracebackType],
+    ):
         "Wait for process to exit and handle cancellation."
         suppress = False
         try:
@@ -790,7 +829,7 @@ class Runner:
         return suppress
 
     @log_method(LOG_DETAIL)
-    async def _finish(self, exc_value):
+    async def _finish(self, exc_value: Union[BaseException, None]):
         "Finish the run. Return True only if `exc_value` should be suppressed."
         assert self._proc
 
@@ -839,7 +878,13 @@ class Runner:
         except asyncio.TimeoutError:
             LOGGER.critical("Runner._close %r timeout stdin=%r", self, self._proc.stdin)
 
-    def _audit_callback(self, phase: str, *, failure: str = "", signal=None):
+    def _audit_callback(
+        self,
+        phase: str,
+        *,
+        failure: str = "",
+        signal: Optional[int] = None,
+    ):
         "Call `audit_callback` if there is one."
         callback = self.command.options.audit_callback
         if callback:
@@ -913,9 +958,14 @@ class PipeRunner:
     stderr = None
     "Pipeline standard error."
 
+    _pipe: "shellous.Pipeline[Any]"
+    _capturing: bool
+    _tasks: list[asyncio.Task[Any]]
+    _encoding: str
+    _cancelled: bool = False
     _results: Optional[list[Union[BaseException, Result]]] = None
 
-    def __init__(self, pipe, *, capturing):
+    def __init__(self, pipe: "shellous.Pipeline[Any]", *, capturing: bool):
         """`capturing=True` indicates we are within an `async with` block and
         client needs to access `stdin` and `stderr` streams.
         """
@@ -928,11 +978,11 @@ class PipeRunner:
         self._encoding = pipe.options.encoding
 
     @property
-    def name(self):
+    def name(self) -> str:
         "Return name of the pipeline."
         return self._pipe.name
 
-    def result(self):
+    def result(self) -> Result:
         "Return `Result` object for PipeRunner."
         assert self._results is not None
 
@@ -942,7 +992,11 @@ class PipeRunner:
             self._cancelled,
         )
 
-    def add_task(self, coro, tag=""):
+    def add_task(
+        self,
+        coro: Coroutine[Any, Any, _T],
+        tag: str = "",
+    ) -> asyncio.Task[_T]:
         "Add a background task."
         task_name = f"{self.name}#{tag}"
         task = asyncio.create_task(coro, name=task_name)
@@ -950,7 +1004,7 @@ class PipeRunner:
         return task
 
     @log_method(LOG_DETAIL)
-    async def _wait(self, *, kill=False):
+    async def _wait(self, *, kill: bool = False):
         "Wait for pipeline to finish."
         assert self._results is None
 
@@ -977,7 +1031,12 @@ class PipeRunner:
             raise
 
     @log_method(LOG_EXIT, exc_value=2)
-    async def __aexit__(self, _exc_type, exc_value, _exc_tb):
+    async def __aexit__(
+        self,
+        _exc_type: Union[type[BaseException], None],
+        exc_value: Union[BaseException, None],
+        _exc_tb: Optional[TracebackType],
+    ):
         "Wait for pipeline to exit and handle cancellation."
         suppress = False
         try:
@@ -988,7 +1047,7 @@ class PipeRunner:
         return suppress
 
     @log_method(LOG_DETAIL)
-    async def _finish(self, exc_value) -> bool:
+    async def _finish(self, exc_value: Optional[BaseException]) -> bool:
         "Wait for pipeline to exit and handle cancellation."
         if exc_value is not None:
             LOGGER.warning("PipeRunner._finish exc_value=%r", exc_value)
@@ -1029,7 +1088,7 @@ class PipeRunner:
             close_fds(open_fds)
             raise
 
-    def _setup_pipeline(self, open_fds):
+    def _setup_pipeline(self, open_fds: list[int]):
         """Return the pipeline stitched together with pipe fd's.
 
         Each created open file descriptor is added to `open_fds` so it can
@@ -1051,7 +1110,7 @@ class PipeRunner:
         return cmds
 
     @log_method(LOG_DETAIL)
-    async def _setup_capturing(self, cmds):
+    async def _setup_capturing(self, cmds: "list[shellous.Command[Any]]"):
         """Set up capturing and return (stdin, stdout, stderr) streams."""
         loop = asyncio.get_event_loop()
         first_fut = loop.create_future()
@@ -1079,7 +1138,7 @@ class PipeRunner:
 
         return (stdin, stdout, stderr)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         "Return string representation of PipeRunner."
         cancelled_info = ""
         if self._cancelled:
@@ -1113,29 +1172,29 @@ class PipeRunner:
         return result.output
 
 
-def _uses_process_substitution(cmd: "shellous.Command") -> bool:
+def _uses_process_substitution(cmd: "shellous.Command[Any]") -> bool:
     "Return True if command uses process substitution."
     return any(
         isinstance(arg, (shellous.Command, shellous.Pipeline)) for arg in cmd.args
     )
 
 
-def _is_multiple_capture(cmd):
+def _is_multiple_capture(cmd: "shellous.Command[Any]"):
     "Return true if both stdout and stderr are CAPTURE."
     output = Redirect.from_default(cmd.options.output, 1, cmd.options.pty)
     error = Redirect.from_default(cmd.options.error, 2, cmd.options.pty)
     return output == Redirect.CAPTURE and error == Redirect.CAPTURE
 
 
-def _cleanup(command):
+def _cleanup(command: "Union[shellous.Command[Any], shellous.Pipeline[Any]]"):
     "Close remaining file descriptors that need to be closed."
 
-    def _add_close(close, fdesc):
+    def _add_close(close: bool, fdesc: Any):
         if close:
             if isinstance(fdesc, (int, io.IOBase)):
                 open_fds.append(fdesc)
 
-    open_fds = []
+    open_fds: list[Any] = []
 
     _add_close(command.options.input_close, command.options.input)
     _add_close(command.options.output_close, command.options.output)
@@ -1147,7 +1206,7 @@ def _cleanup(command):
     close_fds(open_fds)
 
 
-def _signame(signal) -> str:
+def _signame(signal: Any) -> str:
     "Return string name of signal."
     if signal is None:
         return "SIGKILL"  # SIGKILL (even on win32)
@@ -1157,7 +1216,7 @@ def _signame(signal) -> str:
         return str(signal)
 
 
-def _set_position(output, append: bool):
+def _set_position(output: Any, append: bool):
     "Truncate/seek output stream object."
     if isinstance(output, bytearray):
         if not append:
