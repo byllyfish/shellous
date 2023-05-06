@@ -588,7 +588,7 @@ class Command(Generic[_RT]):
         "Run process and return the standard output."
         return self.coro().__await__()
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> Runner:
         "Enter the async context manager."
         return await context_aenter(id(self), self._run_())
 
@@ -597,7 +597,7 @@ class Command(Generic[_RT]):
         exc_type: Optional[type[BaseException]],
         exc_value: Optional[BaseException],
         exc_tb: Optional[TracebackType],
-    ):
+    ) -> Optional[bool]:
         "Exit the async context manager."
         return await context_aexit(id(self), exc_type, exc_value, exc_tb)
 

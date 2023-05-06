@@ -1589,6 +1589,7 @@ async def test_open_file_descriptors():
     awk = sh("awk", _AWK_SCRIPT).stderr(sh.STDOUT)
 
     async with cmd.set(close_fds=True) as run:
+        assert run.stdin is not None
         result = await (lsof(run.pid) | awk)
         run.stdin.close()
 
@@ -1614,6 +1615,7 @@ async def test_open_file_descriptors_unclosed_fds():
     awk = sh("awk", _AWK_SCRIPT).stderr(sh.STDOUT)
 
     async with cmd.set(close_fds=False) as run:
+        assert run.stdin is not None
         result = await (lsof(run.pid) | awk)
         run.stdin.close()
 
@@ -1639,6 +1641,7 @@ async def test_open_file_descriptors_pty():
     awk = sh("awk", _AWK_SCRIPT).stderr(sh.STDOUT)
 
     async with cmd.set(close_fds=True, pty=True) as run:
+        assert run.stdin is not None
         result = await (lsof(run.pid) | awk)
         run.stdin.close()
 
@@ -1661,6 +1664,7 @@ async def test_open_file_descriptors_pty_unclosed_fds():
     awk = sh("awk", _AWK_SCRIPT).stderr(sh.STDOUT)
 
     async with cmd.set(close_fds=False, pty=True) as run:
+        assert run.stdin is not None
         result = await (lsof(run.pid) | awk)
         run.stdin.close()
 

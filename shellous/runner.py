@@ -949,13 +949,13 @@ class PipeRunner:
     ```
     """
 
-    stdin = None
+    stdin: Optional[asyncio.StreamWriter] = None
     "Pipeline standard input."
 
-    stdout = None
+    stdout: Optional[asyncio.StreamReader] = None
     "Pipeline standard output."
 
-    stderr = None
+    stderr: Optional[asyncio.StreamReader] = None
     "Pipeline standard error."
 
     _pipe: "shellous.Pipeline[Any]"

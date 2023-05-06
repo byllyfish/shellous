@@ -177,7 +177,7 @@ class Pipeline(Generic[_RT]):
     def __await__(self):
         return self.coro().__await__()
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> PipeRunner:
         "Enter the async context manager."
         return await context_aenter(id(self), self._run_())
 

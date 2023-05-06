@@ -895,6 +895,7 @@ async def test_command_context_manager_default():
 async def test_command_context_manager_api():
     "Test running a command using its context manager."
     async with sh("echo", "hello").stdout(sh.CAPTURE) as run:
+        assert run.stdout is not None
         out = await run.stdout.read()
 
     assert out == b"hello\n"
@@ -904,10 +905,12 @@ async def test_command_context_manager_api_reentrant():
     "Test running a command using its context manager."
     cmd = sh("echo", "hello").stdout(sh.CAPTURE)
     async with cmd as run1:
+        assert run1.stdout is not None
         out1 = await run1.stdout.read()
 
         # Re-enter context manager here for exact same command.
         async with cmd as run2:
+            assert run2.stdout is not None
             out2 = await run2.stdout.read()
 
     assert out1 == out2 == b"hello\n"
@@ -916,6 +919,7 @@ async def test_command_context_manager_api_reentrant():
 async def test_pipe_context_manager_api():
     "Test running a pipeline using its context manager."
     async with sh("echo", "hello") | sh("cat").stdout(sh.CAPTURE) as run:
+        assert run.stdout is not None
         out = await run.stdout.read()
 
     assert out == b"hello\n"
@@ -925,10 +929,12 @@ async def test_pipe_context_manager_api_reentrant():
     "Test running a pipeline using its context manager."
     cmd = sh("echo", "hello") | sh("cat").stdout(sh.CAPTURE)
     async with cmd as run1:
+        assert run1.stdout is not None
         out1 = await run1.stdout.read()
 
         # Re-enter context manager here for exact same command.
         async with cmd as run2:
+            assert run2.stdout is not None
             out2 = await run2.stdout.read()
 
     assert out1 == out2 == b"hello\n"
