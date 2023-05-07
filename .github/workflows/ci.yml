@@ -109,6 +109,7 @@ jobs:
         SHELLOUS_CHILDWATCHER_TYPE: "default"
     - name: Verify Types
       run: |
+        pip install -e shellous
         pyright --verifytypes shellous
 
   build-alpine:
