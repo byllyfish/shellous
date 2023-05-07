@@ -13,6 +13,7 @@ from typing import (
     AsyncContextManager,
     Coroutine,
     Iterable,
+    Iterator,
     Optional,
     Protocol,
     TypeVar,
@@ -145,7 +146,7 @@ def poll_wait_pid(proc: Process) -> bool:
     return True
 
 
-async def uninterrupted(coro: Coroutine[Any, Any, Any]):
+async def uninterrupted(coro: Coroutine[Any, Any, _T]) -> _T:
     "Run a coroutine so it completes even if the current task is cancelled."
     task = asyncio.create_task(coro)
     try:
@@ -157,7 +158,7 @@ async def uninterrupted(coro: Coroutine[Any, Any, Any]):
         raise
 
 
-def which(command: Union[str, bytes]):
+def which(command: Union[str, bytes]) -> Union[str, bytes]:
     "Given a command without a directory, return the fully qualified path."
     path = shutil.which(command)
     if path is None:
@@ -217,7 +218,7 @@ class EnvironmentDict(abc.Mapping[str, str]):
     def __len__(self) -> int:
         return len(self._data)
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[str]:
         return iter(self._data)
 
     def __hash__(self) -> int:

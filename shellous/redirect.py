@@ -27,7 +27,7 @@ class Redirect(enum.IntEnum):
     BUFFER = -12
     DEFAULT = -20
 
-    def is_custom(self):
+    def is_custom(self) -> bool:
         "Return true if this redirect option is not built into asyncio."
         return self in {
             Redirect.CAPTURE,
@@ -37,7 +37,9 @@ class Redirect(enum.IntEnum):
         }
 
     @staticmethod
-    def from_default(obj: Any, fdesc: int, pty: PtyAdapterOrBool):
+    def from_default(
+        obj: Any, fdesc: int, pty: PtyAdapterOrBool
+    ) -> "Union[bytes, Redirect]":
         "Return object with Redirect.DEFAULT replaced by actual value."
         if not isinstance(obj, Redirect) or obj != Redirect.DEFAULT:
             return obj

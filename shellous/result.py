@@ -16,7 +16,7 @@ class ResultError(Exception):
     "Represents a non-zero exit status."
 
     @property
-    def result(self):
+    def result(self) -> "shellous.Result":
         "Result of the command."
         return self.args[0]
 
@@ -69,7 +69,7 @@ class PipeResult:
     cancelled: bool
 
     @staticmethod
-    def from_result(result: Union[BaseException, Result]):
+    def from_result(result: Union[BaseException, Result]) -> "PipeResult":
         "Construct a `PipeResult` from a `Result`."
         if isinstance(result, ResultError):
             result = result.result
@@ -80,7 +80,7 @@ class PipeResult:
 def convert_result_list(
     result_list: list[Union[BaseException, Result]],
     cancelled: bool,
-):
+) -> Result:
     "Convert list of results into a single pipe result."
     assert result_list is not None
 
