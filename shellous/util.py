@@ -15,13 +15,18 @@ from typing import (
     Iterable,
     Optional,
     Protocol,
+    TypeVar,
     Union,
 )
 
 from .log import LOG_DETAIL, LOGGER, log_timer
 
+_T = TypeVar("_T")
+
 # Stores current stack of context managers for immutable Command objects.
-_CTXT_STACK = contextvars.ContextVar[Optional[dict[int, list[Any]]]](
+_CTXT_STACK = contextvars.ContextVar[
+    Optional[dict[int, list[AsyncContextManager[_T]]]]
+](
     "ctxt_stack",
     default=None,
 )
@@ -160,7 +165,7 @@ def which(command: Union[str, bytes]):
     return path
 
 
-async def context_aenter(scope: int, ctxt_manager: AsyncContextManager[Any]):
+async def context_aenter(scope: int, ctxt_manager: AsyncContextManager[_T]) -> _T:
     "Enter an async context manager."
     ctxt_stack = _CTXT_STACK.get()
     if ctxt_stack is None:
@@ -179,7 +184,7 @@ async def context_aexit(
     exc_type: Optional[type[BaseException]],
     exc_value: Optional[BaseException],
     exc_tb: Optional[TracebackType],
-):
+) -> Optional[bool]:
     "Exit an async context manager."
     ctxt_stack = _CTXT_STACK.get()
     assert ctxt_stack is not None  # (pyright)

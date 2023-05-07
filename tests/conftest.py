@@ -151,7 +151,7 @@ async def _get_children():
     my_pid = os.getpid()
 
     children = set()
-    async with ps.stdout(sh.CAPTURE)._run_() as run:
+    async with ps as run:
         async for line in run:
             m = re.match(f"^\\s*(\\d+)\\s+{my_pid}\\s+(.*)$", line)
             if m:

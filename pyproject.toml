@@ -63,9 +63,6 @@ max-args = 7
 max-attributes = 12
 min-public-methods = 1
 
-[tool.pylint.classes]
-exclude-protected = ["_run_"]
-
 [tool.pyright]
 pythonPlatform = "All"
 strict = [

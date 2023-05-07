@@ -467,7 +467,7 @@ async def test_async_context_manager():
     "Use `async with` to read/write bytes incrementally."
     tr = sh("tr", "[:lower:]", "[:upper:]").stdin(sh.CAPTURE)
 
-    async with tr.stdout(sh.CAPTURE)._run_() as run:
+    async with tr.stdout(sh.CAPTURE) as run:
         assert run.stdin is not None
         assert run.stdout is not None
         assert run.stderr is None
@@ -487,7 +487,7 @@ async def test_async_iteration():
         .stdout(sh.CAPTURE)
         .stderr(sh.DEVNULL)
     )
-    async with echo._run_() as run:
+    async with echo as run:
         result = [line async for line in run]
     assert result == ["line1\n", " line2\n", " line3"]
 
@@ -575,7 +575,7 @@ async def test_pipeline_async_iteration():
     "Use `async for` to read stdout line by line."
     echo = sh("echo", "-n", "line1\n", "line2\n", "line3")
     cat = sh("cat").stdout(sh.CAPTURE)
-    async with (echo | cat)._run_() as run:
+    async with (echo | cat) as run:
         result = [line async for line in run]
     assert result == ["line1\n", " line2\n", " line3"]
 
@@ -584,7 +584,7 @@ async def test_pipeline_async_context_manager():
     "Use `async with` to read/write bytes incrementally."
     tr = sh("tr", "[:lower:]", "[:upper:]")
     pipe = (tr | sh("cat")).stdin(sh.CAPTURE)
-    async with pipe.stdout(sh.CAPTURE)._run_() as run:
+    async with pipe.stdout(sh.CAPTURE) as run:
         assert run.stdin is not None
         assert run.stdout is not None
         assert run.stderr is None
@@ -685,7 +685,7 @@ async def test_multiple_capture():
     "Test the multiple capture example from the documentation."
     cmd = sh("cat").stdin(sh.CAPTURE)
 
-    async with cmd.stdout(sh.CAPTURE)._run_() as run:
+    async with cmd.stdout(sh.CAPTURE) as run:
         assert run.stdin is not None
         assert run.stdout is not None
 
@@ -908,7 +908,7 @@ async def test_pty_manual():
         .set(_start_new_session=True)
     )
 
-    async with cmd._run_():
+    async with cmd:
         # Use synchronous functions to test pty directly.
         os.write(parent_fd, b"abc\n")
         await asyncio.sleep(0.1)
@@ -940,7 +940,7 @@ async def test_pty_manual_ls(ls):
     )
 
     result = bytearray()
-    async with cmd._run_():
+    async with cmd:
         # Use synchronous functions to test pty directly.
         while True:
             try:
@@ -1012,7 +1012,7 @@ async def test_pty_manual_streams():
 
     reader, writer = await _get_streams(parent_fd)
 
-    async with cmd._run_():
+    async with cmd:
         writer.write(b"abc\n")
         await writer.drain()
         await asyncio.sleep(0.05)
@@ -1027,7 +1027,7 @@ async def test_pty():
     "Test the `pty` option."
     cmd = sh("tr", "[:lower:]", "[:upper:]").stdin(sh.CAPTURE).set(pty=True)
 
-    async with cmd.stdout(sh.CAPTURE)._run_() as run:
+    async with cmd.stdout(sh.CAPTURE) as run:
         assert run.stdin is not None
         assert run.stdout is not None
 
@@ -1053,7 +1053,7 @@ async def test_pty_ctermid():
         .set(pty=True)
     )
 
-    async with cmd.stdout(sh.CAPTURE)._run_() as run:
+    async with cmd.stdout(sh.CAPTURE) as run:
         assert run.stdin is not None
         assert run.stdout is not None
 
@@ -1137,7 +1137,7 @@ async def test_pty_stty_all(tmp_path):
     cmd = sh("stty", "-a").stdin(sh.CAPTURE).stderr(err).set(pty=True)
 
     buf = b""
-    async with cmd.stdout(sh.CAPTURE)._run_() as run:
+    async with cmd.stdout(sh.CAPTURE) as run:
         assert run.stdin is not None
         assert run.stdout is not None
 
@@ -1162,7 +1162,7 @@ async def test_pty_tr_eot():
     "Test the `pty` option with a control-D (EOT = 0x04)"
     cmd = sh("tr", "[:lower:]", "[:upper:]").stdin(sh.CAPTURE).set(pty=True)
 
-    async with cmd.stdout(sh.CAPTURE)._run_() as run:
+    async with cmd.stdout(sh.CAPTURE) as run:
         assert run.stdin is not None
         assert run.stdout is not None
 
@@ -1182,7 +1182,7 @@ async def test_pty_cat_eot():
     "Test the `pty` option with a control-D (EOT = 0x04)"
     cmd = sh("cat").stdin(sh.CAPTURE).set(pty=True)
 
-    async with cmd.stdout(sh.CAPTURE)._run_() as run:
+    async with cmd.stdout(sh.CAPTURE) as run:
         assert run.stdin is not None
         assert run.stdout is not None
 
@@ -1251,7 +1251,7 @@ async def test_pty_cat_iteration_no_echo():
     "Test the `pty` option with string input, iteration, and echo=False."
     cmd = "abc\ndef\nghi" | sh("cat").set(pty=cooked(echo=False))
 
-    async with cmd.stdout(sh.CAPTURE)._run_() as run:
+    async with cmd.stdout(sh.CAPTURE) as run:
         lines = [line async for line in run]
 
     assert lines == ["abc\r\n", "def\r\n", "ghi"]
@@ -1361,7 +1361,7 @@ async def test_pty_default_redirect_stderr(ls):
     assert result.endswith("No such file or directory\r\n")
 
     # Test that pty's runner.stdin is still available...
-    async with cmd.stdout(sh.CAPTURE).set(exit_codes={1, 2}, pty=True)._run_() as run:
+    async with cmd.stdout(sh.CAPTURE).set(exit_codes={1, 2}, pty=True) as run:
         assert run.stdin is not None
         result = await run.stdout.read()
         assert result.endswith(b"No such file or directory\r\n")
@@ -1589,6 +1589,7 @@ async def test_open_file_descriptors():
     awk = sh("awk", _AWK_SCRIPT).stderr(sh.STDOUT)
 
     async with cmd.set(close_fds=True) as run:
+        assert run.stdin is not None
         result = await (lsof(run.pid) | awk)
         run.stdin.close()
 
@@ -1614,6 +1615,7 @@ async def test_open_file_descriptors_unclosed_fds():
     awk = sh("awk", _AWK_SCRIPT).stderr(sh.STDOUT)
 
     async with cmd.set(close_fds=False) as run:
+        assert run.stdin is not None
         result = await (lsof(run.pid) | awk)
         run.stdin.close()
 
@@ -1639,6 +1641,7 @@ async def test_open_file_descriptors_pty():
     awk = sh("awk", _AWK_SCRIPT).stderr(sh.STDOUT)
 
     async with cmd.set(close_fds=True, pty=True) as run:
+        assert run.stdin is not None
         result = await (lsof(run.pid) | awk)
         run.stdin.close()
 
@@ -1661,6 +1664,7 @@ async def test_open_file_descriptors_pty_unclosed_fds():
     awk = sh("awk", _AWK_SCRIPT).stderr(sh.STDOUT)
 
     async with cmd.set(close_fds=False, pty=True) as run:
+        assert run.stdin is not None
         result = await (lsof(run.pid) | awk)
         run.stdin.close()
 

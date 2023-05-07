@@ -87,18 +87,6 @@ class Pipeline(Generic[_RT]):
         "Return coroutine object for pipeline."
         return cast(Coroutine[Any, Any, _RT], PipeRunner.run_pipeline(self))
 
-    def _run_(self) -> "PipeRunner":
-        """Return a `Runner` to help run the pipeline incrementally.
-
-        ```
-        async with pipe.run() as run:
-            # do something with run.stdin, run.stdout, run.stderr...
-            # close stdin to signal we're done...
-        result = run.result()
-        ```
-        """
-        return PipeRunner(self, capturing=True)
-
     def _add(self, item: Union["shellous.Command[Any]", "Pipeline[Any]"]):
         if isinstance(item, shellous.Command):
             return dataclasses.replace(self, commands=(*self.commands, item))
@@ -177,9 +165,9 @@ class Pipeline(Generic[_RT]):
     def __await__(self):
         return self.coro().__await__()
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> PipeRunner:
         "Enter the async context manager."
-        return await context_aenter(id(self), self._run_())
+        return await context_aenter(id(self), PipeRunner(self, capturing=True))
 
     async def __aexit__(
         self,
@@ -200,7 +188,7 @@ class Pipeline(Generic[_RT]):
         if cmd.options.output == Redirect.DEFAULT:
             cmd = cmd.stdout(Redirect.CAPTURE)
 
-        async with cmd._run_() as run:
+        async with PipeRunner(cmd, capturing=True) as run:
             if run.stdout is not None and run.stderr is not None:
                 raise RuntimeError("multiple capture not supported in iterator")
             async for line in run:

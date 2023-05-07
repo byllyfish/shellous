@@ -67,7 +67,7 @@ async def run_asyncio_repl(cmds, logfile=None):
         .env(**_current_env())
     )
 
-    async with repl._run_() as run:
+    async with repl as run:
         assert run.stdin is not None
 
         p = Prompt(run.stdin, run.stdout, errbuf)

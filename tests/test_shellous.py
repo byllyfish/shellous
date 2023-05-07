@@ -589,7 +589,7 @@ async def test_broken_pipe_in_async_with_failed_pipeline(cat_cmd, echo_cmd):
     echo = echo_cmd.env(SHELLOUS_EXIT_CODE=7)
 
     cmd = (data | cat_cmd | echo("abc")).stdin(sh.CAPTURE).stdout(sh.DEVNULL)
-    async with cmd._run_() as run:
+    async with cmd as run:
         run.stdin.write(data)
         try:
             await run.stdin.drain()
@@ -608,7 +608,7 @@ async def test_stdout_deadlock_antipattern(bulk_cmd):
     "Use async-with but don't read from stdout."
 
     async def _antipattern():
-        async with bulk_cmd.set(timeout=3.0).stdout(sh.CAPTURE)._run_() as run:
+        async with bulk_cmd.set(timeout=3.0).stdout(sh.CAPTURE) as run:
             assert run.stdin is None
             assert run.stderr is None
             assert run.stdout
@@ -623,7 +623,7 @@ async def test_runner_enter(echo_cmd):
     "Test cancellation behavior in Runner.__aenter__."
 
     async def test_task():
-        async with echo_cmd._run_() as run:
+        async with echo_cmd as run:
             pass
         return run.result()
 
@@ -675,7 +675,7 @@ async def test_encoding_utf8_split(cat_cmd):
     buf = io.StringIO()
     cmd = sh.CAPTURE | cat_cmd | buf
 
-    async with cmd._run_() as run:
+    async with cmd as run:
         # Not split.
         run.stdin.write(b"\xf0\x9f\x90\x9f")  # "\U0001F41F" in utf-8
         await run.stdin.drain()
@@ -757,7 +757,7 @@ async def test_pipe_immediate_cancel(cat_cmd, tr_cmd):
 
 async def test_breaking_out_of_async_iter(env_cmd):
     "Test breaking out of an async iterator."
-    async with env_cmd._run_() as run:
+    async with env_cmd as run:
         async for _ in run:
             break
     # report_orphan_tasks
@@ -766,7 +766,7 @@ async def test_breaking_out_of_async_iter(env_cmd):
 async def test_exception_in_async_iter(env_cmd):
     "Test breaking out of an async iterator."
     with pytest.raises(ValueError):
-        async with env_cmd.stdout(sh.CAPTURE)._run_() as run:
+        async with env_cmd.stdout(sh.CAPTURE) as run:
             async for _ in run:
                 raise ValueError(1)
     # report_orphan_tasks
@@ -776,7 +776,7 @@ async def test_pipe_breaking_out_of_async_iter(env_cmd, tr_cmd):
     "Test breaking out of an async iterator."
     cmd = env_cmd | tr_cmd
 
-    async with cmd._run_() as run:
+    async with cmd as run:
         async for _ in run:
             break
     # report_orphan_tasks
@@ -787,7 +787,7 @@ async def test_pipe_exception_in_async_iter(env_cmd, tr_cmd):
     cmd = env_cmd | tr_cmd
 
     with pytest.raises(ValueError):
-        async with cmd.stdout(sh.CAPTURE)._run_() as run:
+        async with cmd.stdout(sh.CAPTURE) as run:
             async for _ in run:
                 raise ValueError(1)
     # report_orphan_tasks
@@ -798,7 +798,7 @@ async def test_pipe_with_exception_in_middle(env_cmd, tr_cmd):
     cmd = env_cmd | tr_cmd
 
     with pytest.raises(ValueError):
-        async with cmd._run_():
+        async with cmd:
             raise ValueError(1)
     # report_orphan_tasks
 
@@ -822,7 +822,7 @@ async def test_process_substitution(echo_cmd, cat_cmd):
 async def test_async_iter_with_latin1_encoding(cat_cmd):
     "Test async iteration with encoding=None."
     cmd = b"a\nb\nc\nd" | cat_cmd.set(encoding="latin1") | sh.CAPTURE
-    async with cmd._run_() as run:
+    async with cmd as run:
         lines = [line async for line in run]
 
     assert lines == ["a\n", "b\n", "c\n", "d"]
@@ -895,6 +895,7 @@ async def test_command_context_manager_default():
 async def test_command_context_manager_api():
     "Test running a command using its context manager."
     async with sh("echo", "hello").stdout(sh.CAPTURE) as run:
+        assert run.stdout is not None
         out = await run.stdout.read()
 
     assert out == b"hello\n"
@@ -904,10 +905,12 @@ async def test_command_context_manager_api_reentrant():
     "Test running a command using its context manager."
     cmd = sh("echo", "hello").stdout(sh.CAPTURE)
     async with cmd as run1:
+        assert run1.stdout is not None
         out1 = await run1.stdout.read()
 
         # Re-enter context manager here for exact same command.
         async with cmd as run2:
+            assert run2.stdout is not None
             out2 = await run2.stdout.read()
 
     assert out1 == out2 == b"hello\n"
@@ -916,6 +919,7 @@ async def test_command_context_manager_api_reentrant():
 async def test_pipe_context_manager_api():
     "Test running a pipeline using its context manager."
     async with sh("echo", "hello") | sh("cat").stdout(sh.CAPTURE) as run:
+        assert run.stdout is not None
         out = await run.stdout.read()
 
     assert out == b"hello\n"
@@ -925,10 +929,12 @@ async def test_pipe_context_manager_api_reentrant():
     "Test running a pipeline using its context manager."
     cmd = sh("echo", "hello") | sh("cat").stdout(sh.CAPTURE)
     async with cmd as run1:
+        assert run1.stdout is not None
         out1 = await run1.stdout.read()
 
         # Re-enter context manager here for exact same command.
         async with cmd as run2:
+            assert run2.stdout is not None
             out2 = await run2.stdout.read()
 
     assert out1 == out2 == b"hello\n"

@@ -572,32 +572,20 @@ class Command(Generic[_RT]):
             Runner.run_command(self, _run_future=_run_future),
         )
 
-    def _run_(self) -> Runner:
-        """Return a `Runner` to run the process incrementally.
-
-        ```
-        async with cmd.run() as run:
-            # do something with run.stdin, run.stdout, run.stderr...
-            # close run.stdin to signal we're done...
-        result = run.result()
-        ```
-        """
-        return Runner(self)
-
     def __await__(self):
         "Run process and return the standard output."
         return self.coro().__await__()
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> Runner:
         "Enter the async context manager."
-        return await context_aenter(id(self), self._run_())
+        return await context_aenter(id(self), Runner(self))
 
     async def __aexit__(
         self,
         exc_type: Optional[type[BaseException]],
         exc_value: Optional[BaseException],
         exc_tb: Optional[TracebackType],
-    ):
+    ) -> Optional[bool]:
         "Exit the async context manager."
         return await context_aexit(id(self), exc_type, exc_value, exc_tb)
 
@@ -611,7 +599,7 @@ class Command(Generic[_RT]):
         if cmd.options.output == Redirect.DEFAULT:
             cmd = cmd.stdout(Redirect.CAPTURE)
 
-        async with cmd._run_() as run:
+        async with Runner(cmd) as run:
             if run.stdout is not None and run.stderr is not None:
                 raise RuntimeError("multiple capture not supported in iterator")
 
