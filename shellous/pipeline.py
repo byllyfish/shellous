@@ -87,18 +87,6 @@ class Pipeline(Generic[_RT]):
         "Return coroutine object for pipeline."
         return cast(Coroutine[Any, Any, _RT], PipeRunner.run_pipeline(self))
 
-    def _run_(self) -> "PipeRunner":
-        """Return a `Runner` to help run the pipeline incrementally.
-
-        ```
-        async with pipe.run() as run:
-            # do something with run.stdin, run.stdout, run.stderr...
-            # close stdin to signal we're done...
-        result = run.result()
-        ```
-        """
-        return PipeRunner(self, capturing=True)
-
     def _add(self, item: Union["shellous.Command[Any]", "Pipeline[Any]"]):
         if isinstance(item, shellous.Command):
             return dataclasses.replace(self, commands=(*self.commands, item))

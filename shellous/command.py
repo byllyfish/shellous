@@ -572,18 +572,6 @@ class Command(Generic[_RT]):
             Runner.run_command(self, _run_future=_run_future),
         )
 
-    def _run_(self) -> Runner:
-        """Return a `Runner` to run the process incrementally.
-
-        ```
-        async with cmd.run() as run:
-            # do something with run.stdin, run.stdout, run.stderr...
-            # close run.stdin to signal we're done...
-        result = run.result()
-        ```
-        """
-        return Runner(self)
-
     def __await__(self):
         "Run process and return the standard output."
         return self.coro().__await__()
