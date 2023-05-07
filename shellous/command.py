@@ -590,7 +590,7 @@ class Command(Generic[_RT]):
 
     async def __aenter__(self) -> Runner:
         "Enter the async context manager."
-        return await context_aenter(id(self), self._run_())
+        return await context_aenter(id(self), Runner(self))
 
     async def __aexit__(
         self,
@@ -611,7 +611,7 @@ class Command(Generic[_RT]):
         if cmd.options.output == Redirect.DEFAULT:
             cmd = cmd.stdout(Redirect.CAPTURE)
 
-        async with cmd._run_() as run:
+        async with Runner(cmd) as run:
             if run.stdout is not None and run.stderr is not None:
                 raise RuntimeError("multiple capture not supported in iterator")
 

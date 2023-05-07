@@ -928,7 +928,7 @@ class Runner:
             _cleanup(command)
             raise ValueError("multiple capture requires 'async with'")
 
-        async with command._run_() as run:
+        async with Runner(command) as run:
             if _run_future is not None:
                 # Return streams to caller in another task.
                 _run_future.set_result(run)
