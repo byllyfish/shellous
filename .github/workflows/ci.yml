@@ -107,6 +107,9 @@ jobs:
         fi
       env:
         SHELLOUS_CHILDWATCHER_TYPE: "default"
+    - name: Verify Types
+      run: |
+        pyright --verifytypes shellous
 
   build-alpine:
     runs-on: ubuntu-latest
