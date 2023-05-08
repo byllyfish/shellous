@@ -36,7 +36,7 @@ pytest-timeout = "^2.1.0"
 pdoc = "^13.0.1"
 asyncstdlib = "3.10.5"
 pyright = "^1.1.300"
-ruff = {version = "^0.0.262", markers = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'"}
+ruff = {version = ">=0.0.262,<0.0.266", markers = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'"}
 typing-extensions = "^4.5.0"
 
 [build-system]
