@@ -3,7 +3,18 @@
 import dataclasses
 from dataclasses import dataclass
 from types import TracebackType
-from typing import Any, Coroutine, Generic, Optional, TypeVar, Union, cast, overload
+from typing import (
+    Any,
+    AsyncIterator,
+    Coroutine,
+    Generator,
+    Generic,
+    Optional,
+    TypeVar,
+    Union,
+    cast,
+    overload,
+)
 
 import shellous
 from shellous.redirect import (
@@ -32,7 +43,7 @@ class Pipeline(Generic[_RT]):
         "Create a new Pipeline."
         return Pipeline(commands)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         "Validate the pipeline."
         if len(self.commands) == 0:
             raise ValueError("Pipeline must include at least one command")
@@ -95,7 +106,7 @@ class Pipeline(Generic[_RT]):
             commands=self.commands + item.commands,
         )
 
-    def __len__(self):
+    def __len__(self) -> int:
         "Return number of commands in pipe."
         return len(self.commands)
 
@@ -103,7 +114,7 @@ class Pipeline(Generic[_RT]):
         "Return specified command by index."
         return self.commands[key]
 
-    def __call__(self, *args: Any):
+    def __call__(self, *args: Any) -> "Pipeline[_RT]":
         if args:
             raise TypeError("Calling pipeline with 1 or more arguments.")
         return self
@@ -150,7 +161,7 @@ class Pipeline(Generic[_RT]):
         return NotImplemented
 
     @property
-    def writable(self):
+    def writable(self) -> "Pipeline[_RT]":
         "Set writable=True option on last command of pipeline."
         return self._set(_writable=True)
 
@@ -162,7 +173,7 @@ class Pipeline(Generic[_RT]):
             self._set(_return_result=True, exit_codes=range(-255, 256)),
         )
 
-    def __await__(self):
+    def __await__(self) -> "Generator[Any, None, _RT]":
         return self.coro().__await__()
 
     async def __aenter__(self) -> PipeRunner:
@@ -174,11 +185,11 @@ class Pipeline(Generic[_RT]):
         exc_type: Optional[type[BaseException]],
         exc_value: Optional[BaseException],
         exc_tb: Optional[TracebackType],
-    ):
+    ) -> Optional[bool]:
         "Exit the async context manager."
         return await context_aexit(id(self), exc_type, exc_value, exc_tb)
 
-    def __aiter__(self):
+    def __aiter__(self) -> AsyncIterator[str]:
         "Return async iterator to iterate over output lines."
         return self._readlines()
 

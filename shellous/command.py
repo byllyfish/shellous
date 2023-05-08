@@ -15,10 +15,12 @@ from dataclasses import dataclass, field
 from types import TracebackType
 from typing import (
     Any,
+    AsyncIterator,
     Callable,
     ClassVar,
     Container,
     Coroutine,
+    Generator,
     Generic,
     Optional,
     Sequence,
@@ -358,7 +360,7 @@ class Command(Generic[_RT]):
     options: Options
     "Command options."
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         "Validate the command."
         if len(self.args) == 0:
             raise ValueError("Command must include program name")
@@ -572,7 +574,7 @@ class Command(Generic[_RT]):
             Runner.run_command(self, _run_future=_run_future),
         )
 
-    def __await__(self):
+    def __await__(self) -> "Generator[Any, None, _RT]":
         "Run process and return the standard output."
         return self.coro().__await__()
 
@@ -589,11 +591,11 @@ class Command(Generic[_RT]):
         "Exit the async context manager."
         return await context_aexit(id(self), exc_type, exc_value, exc_tb)
 
-    def __aiter__(self):
+    def __aiter__(self) -> AsyncIterator[str]:
         "Return async iterator to iterate over output lines."
         return self._readlines()
 
-    async def _readlines(self):
+    async def _readlines(self) -> AsyncIterator[str]:
         "Async generator to iterate over lines."
         cmd = self
         if cmd.options.output == Redirect.DEFAULT:
@@ -635,7 +637,7 @@ class Command(Generic[_RT]):
     ) -> "shellous.Pipeline[shellous.Result]":
         ...  # pragma: no cover
 
-    def __or__(self, rhs: Any):
+    def __or__(self, rhs: Any) -> Any:
         "Bitwise or operator is used to build pipelines."
         if isinstance(rhs, STDOUT_TYPES):
             return self.stdout(rhs)

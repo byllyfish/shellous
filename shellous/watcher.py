@@ -70,7 +70,7 @@ class DefaultChildWatcher(asyncio.AbstractChildWatcher):
         pid: int,
         callback: _CallbackType,
         *args: Any,
-    ):
+    ) -> None:
         """Register a new child handler.
 
         Arrange for callback(pid, returncode, *args) to be called when
@@ -86,7 +86,7 @@ class DefaultChildWatcher(asyncio.AbstractChildWatcher):
 
         self._strategy.watch_pid(pid, callback, args)  # ATOMIC: self._strategy
 
-    def remove_child_handler(self, pid: int):
+    def remove_child_handler(self, pid: int) -> bool:
         """Removes the handler for process 'pid'.
 
         The function returns True if the handler was successfully removed,
@@ -94,7 +94,7 @@ class DefaultChildWatcher(asyncio.AbstractChildWatcher):
         """
         return False  # not supported
 
-    def attach_loop(self, loop: Optional[asyncio.AbstractEventLoop]):
+    def attach_loop(self, loop: Optional[asyncio.AbstractEventLoop]) -> None:
         """Attach the watcher to an event loop.
 
         If the watcher was previously attached to an event loop, then it is
@@ -104,7 +104,7 @@ class DefaultChildWatcher(asyncio.AbstractChildWatcher):
         """
         # no op
 
-    def close(self):
+    def close(self) -> None:
         """Close the watcher.
 
         This must be called to make sure that any underlying resource is freed.
@@ -116,7 +116,7 @@ class DefaultChildWatcher(asyncio.AbstractChildWatcher):
         if strategy:
             strategy.close()
 
-    def is_active(self):
+    def is_active(self) -> bool:
         """Return ``True`` if the watcher is active and is used by the event loop.
 
         Return True if the watcher is installed and ready to handle process exit
@@ -124,11 +124,11 @@ class DefaultChildWatcher(asyncio.AbstractChildWatcher):
         """
         return True
 
-    def __enter__(self):
+    def __enter__(self) -> "DefaultChildWatcher":
         """Enter the watcher's context and allow starting new processes."""
         return self
 
-    def __exit__(self, *_args: Any):
+    def __exit__(self, *_args: Any) -> None:
         """Exit the watcher's context"""
 
     def _init_strategy(self):

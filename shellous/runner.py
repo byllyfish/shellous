@@ -7,7 +7,7 @@ import sys
 from logging import Logger
 from pathlib import Path
 from types import TracebackType
-from typing import Any, Coroutine, Optional, TextIO, TypeVar, Union, cast
+from typing import Any, AsyncIterator, Coroutine, Optional, TextIO, TypeVar, Union, cast
 
 import shellous
 import shellous.redirect as redir
@@ -436,7 +436,7 @@ class Runner:
         "Return True if the command was cancelled."
         return self._cancelled
 
-    def result(self):
+    def result(self) -> Result:
         "Check process exit code and raise a ResultError if necessary."
         code = self.returncode
         assert code is not None
@@ -467,22 +467,22 @@ class Runner:
         self._tasks.append(task)
         return task
 
-    def send_signal(self, sig: int):
+    def send_signal(self, sig: int) -> None:
         "Send an arbitrary signal to the process if it is running."
         if self.returncode is None:
             self._signal(sig)
 
-    def cancel(self):
+    def cancel(self) -> None:
         "Cancel the running process if it is running."
         if self.returncode is None:
             self._signal(self.command.options.cancel_signal)
 
-    def _is_bsd_pty(self):
+    def _is_bsd_pty(self) -> bool:
         "Return true if we're running a pty on BSD."
-        return BSD_DERIVED and self._options.pty_fds
+        return BSD_DERIVED and bool(self._options.pty_fds)
 
     @log_method(LOG_DETAIL)
-    async def _wait(self):
+    async def _wait(self) -> None:
         "Normal wait for background I/O tasks and process to finish."
         assert self._proc
 
@@ -896,7 +896,7 @@ class Runner:
             }
             callback(phase, info)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         "Return string representation of Runner."
         cancelled = " cancelled" if self._cancelled else ""
         if self._proc:
@@ -912,7 +912,7 @@ class Runner:
             async for line in redir.read_lines(stream, self._options.encoding):
                 yield line
 
-    def __aiter__(self):
+    def __aiter__(self) -> AsyncIterator[str]:
         "Return asynchronous iterator over stdout/stderr."
         return self._readlines()
 
@@ -1148,14 +1148,14 @@ class PipeRunner:
             result_info = f" results={self._results!r}"
         return f"<PipeRunner {self.name!r}{cancelled_info}{result_info}>"
 
-    async def _readlines(self):
+    async def _readlines(self) -> AsyncIterator[str]:
         "Iterate over lines in stdout/stderr"
         stream = self.stdout or self.stderr
         if stream:
             async for line in redir.read_lines(stream, self._encoding):
                 yield line
 
-    def __aiter__(self):
+    def __aiter__(self) -> AsyncIterator[str]:
         "Return asynchronous iterator over stdout/stderr."
         return self._readlines()
 

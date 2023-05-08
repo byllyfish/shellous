@@ -14,7 +14,7 @@ async def harvest(
     cancel_timeout: float = _CANCEL_TIMEOUT,
     trustee: Any = None,
     cancel_finish: bool = False,
-):
+) -> None:
     """Run a bunch of awaitables as tasks. Do not return results.
 
     After the harvest returns, all of the awaitables are guaranteed to be done.
@@ -52,7 +52,7 @@ async def harvest_results(
     timeout: Optional[float] = None,
     cancel_timeout: float = _CANCEL_TIMEOUT,
     trustee: Any = None,
-):
+) -> tuple[bool, list[Any]]:
     """Run a bunch of awaitables as tasks and return (cancelled, results).
 
     ```
@@ -95,7 +95,7 @@ async def harvest_wait(
     cancel_timeout: float = _CANCEL_TIMEOUT,
     cancel_finish: bool = False,
     trustee: Any = None,
-):
+) -> None:
     """Wait for tasks to finish or raise an exception.
 
     After the harvest returns, all of the tasks are guaranteed to be done.

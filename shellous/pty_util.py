@@ -25,8 +25,8 @@ _STDOUT_FILENO = 1
 _LFLAG = 3
 _CC = 6
 
-# Either a function f(fd) that can set up a PTY descriptor, or a boolean.
-PtyAdapterOrBool = Union[Callable[[int], None], bool]
+PtyAdapter = Callable[[int], None]
+PtyAdapterOrBool = Union[PtyAdapter, bool]
 
 
 @dataclass
@@ -34,10 +34,10 @@ class ChildFd:
     "Make sure child fd is only closed once."
     child_fd: int
 
-    def __int__(self):
+    def __int__(self) -> int:
         return self.child_fd
 
-    def close(self):
+    def close(self) -> None:
         "Close the child file descriptor exactly once."
         if self.child_fd >= 0:
             fdesc = self.child_fd
@@ -54,7 +54,7 @@ class PtyFds(NamedTuple):
     writer: Optional[asyncio.StreamWriter] = None
 
     @log_method(LOG_DETAIL)
-    async def open_streams(self):
+    async def open_streams(self) -> "PtyFds":
         "Open pty reader/writer streams."
         reader, writer = await _open_pty_streams(self.parent_fd, self.child_fd)
         return PtyFds(
@@ -65,7 +65,7 @@ class PtyFds(NamedTuple):
             writer,
         )
 
-    def close(self):
+    def close(self) -> None:
         "Close pty file descriptors."
         if LOG_DETAIL:
             LOGGER.info("PtyFds.close")
@@ -76,7 +76,7 @@ class PtyFds(NamedTuple):
             close_fds([self.parent_fd])
 
 
-def open_pty(pty_func: PtyAdapterOrBool):
+def open_pty(pty_func: PtyAdapterOrBool) -> PtyFds:
     "Open pseudo-terminal (pty) descriptors. Returns (PtyFds, child_fd)."
     parent_fd, child_fd = pty.openpty()
 
@@ -92,7 +92,7 @@ def open_pty(pty_func: PtyAdapterOrBool):
     )
 
 
-def set_ctty(ttypath: str):
+def set_ctty(ttypath: str) -> None:
     "Explicitly open the tty to make it become a controlling tty."
     # See https://github.com/python/cpython/blob/3.9/Lib/pty.py
 
@@ -107,7 +107,7 @@ class PtyStreamReaderProtocol(asyncio.StreamReaderProtocol):
     pty__child_fd: Optional[ChildFd] = None
     pty__timer: Optional[asyncio.TimerHandle] = None  # Issue #378
 
-    def connection_lost(self, exc: Optional[Exception]):
+    def connection_lost(self, exc: Optional[Exception]) -> None:
         "Intercept EIO error and treat it as EOF."
         if LOG_DETAIL:
             LOGGER.info("PtyStreamReaderProtocol.connection_lost ex=%r", exc)
@@ -127,19 +127,19 @@ class PtyStreamReaderProtocol(asyncio.StreamReaderProtocol):
 
         if BSD_FREEBSD:
             # Timer is only necessary on FreeBSD, not MacOS.
-            def connection_made(self, transport: asyncio.BaseTransport):
-                # Set up timer to close child fd when no data is received.
+            def connection_made(self, transport: asyncio.BaseTransport) -> None:
+                "Set up timer to close child fd when no data is received."
                 super().connection_made(transport)
                 if LOG_DETAIL:
                     LOGGER.info("PtyStreamReaderProtocol.connection_made")
                 self.pty__timer = self._loop.call_later(2.0, self._close_child_fd)  # type: ignore
 
-        def data_received(self, data: bytes):
+        def data_received(self, data: bytes) -> None:
             "Close child_fd when first data received."
             self._close_child_fd()
             return super().data_received(data)
 
-    def eof_received(self):
+    def eof_received(self) -> Optional[bool]:
         "Log when EOF received."
         if LOG_DETAIL:
             LOGGER.info("PtyStreamReaderProtocol.eof_received")
@@ -182,7 +182,7 @@ async def _open_pty_streams(parent_fd: int, child_fd: ChildFd):
 IntOrEllipsis = Union[int, type(...)]
 
 
-def raw(rows: IntOrEllipsis = 0, cols: IntOrEllipsis = 0):
+def raw(rows: IntOrEllipsis = 0, cols: IntOrEllipsis = 0) -> PtyAdapter:
     "Return a function that sets PtyOptions.child_fd to raw mode."
     rows_int, cols_int = _inherit_term_size(rows, cols)
 
@@ -195,7 +195,7 @@ def raw(rows: IntOrEllipsis = 0, cols: IntOrEllipsis = 0):
     return _pty_set_raw
 
 
-def cbreak(rows: IntOrEllipsis = 0, cols: IntOrEllipsis = 0):
+def cbreak(rows: IntOrEllipsis = 0, cols: IntOrEllipsis = 0) -> PtyAdapter:
     "Return a function that sets PtyOptions.child_fd to cbreak mode."
     rows_int, cols_int = _inherit_term_size(rows, cols)
 
@@ -208,7 +208,9 @@ def cbreak(rows: IntOrEllipsis = 0, cols: IntOrEllipsis = 0):
     return _pty_set_cbreak
 
 
-def cooked(rows: IntOrEllipsis = 0, cols: IntOrEllipsis = 0, echo: bool = True):
+def cooked(
+    rows: IntOrEllipsis = 0, cols: IntOrEllipsis = 0, echo: bool = True
+) -> PtyAdapter:
     "Return a function that leaves PtyOptions.child_fd in cooked mode."
     rows_int, cols_int = _inherit_term_size(rows, cols)
 

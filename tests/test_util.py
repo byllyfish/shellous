@@ -86,6 +86,7 @@ def test_environment_dict():
     d1 = EnvironmentDict(None, {"a": 1})
     assert len(d1) == 1
     assert d1["a"] == "1"
+    assert [x for x in d1] == ["a"]
     assert {(k, v) for k, v in d1.items()} == {("a", "1")}
     assert list(d1.keys()) == ["a"]
     assert list(d1.values()) == ["1"]

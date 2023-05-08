@@ -42,7 +42,12 @@ def _exc():
     return sys.exc_info()[1]
 
 
-def log_method(enabled: Union[bool, int], *, _info: bool = False, **kwds: int):
+_ANYFN = Callable[..., Any]
+
+
+def log_method(
+    enabled: Union[bool, int], *, _info: bool = False, **kwds: int
+) -> Callable[[_ANYFN], _ANYFN]:
     """`log_method` logs when an async method call is entered and exited.
 
     <method-name> stepin <self>
@@ -53,7 +58,7 @@ def log_method(enabled: Union[bool, int], *, _info: bool = False, **kwds: int):
     Use `kwds` to log other arguments.
     """
 
-    def _decorator(func: Callable[..., Any]) -> Callable[..., Any]:
+    def _decorator(func: _ANYFN) -> _ANYFN:
         "Decorator to log method call entry and exit."
         if not enabled:
             return func
@@ -213,14 +218,14 @@ def log_timer(msg: str, warn_limit: float = 0.1, exc_info: bool = True):
             log_func("%s took %g seconds ex=%r", msg, duration, _exc())
 
 
-def log_thread(enabled: bool):
+def log_thread(enabled: bool) -> Callable[[_ANYFN], _ANYFN]:
     """`log_thread` logs when thread function is entered and exited.
 
     DEBUG thread <name> starting
     DEBUG thread <name> stopping
     """
 
-    def _decorator(func: Callable[..., Any]) -> Callable[..., Any]:
+    def _decorator(func: _ANYFN) -> _ANYFN:
         "Decorator to log thread entry and exit."
         if not enabled:
             return func
