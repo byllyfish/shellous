@@ -12,13 +12,13 @@ import time
 from contextlib import contextmanager
 from typing import Any, Callable, Sequence, Union
 
+# Type Alias.
+_ANYFN = Callable[..., Any]
+
+# LOGGER is the package-wide logger object.
 LOGGER = logging.getLogger(__package__)
 
-# Do these at module import; may invoke subprocess.Popen.
-PLATFORM_VERS = platform.platform(terse=True)
-PYTHON_IMPL = platform.python_implementation()
-PYTHON_VERS = platform.python_version()
-
+_PYTHON_VERSION = platform.python_version()
 _LOG_IGNORE_STEPIN = -1
 _LOG_IGNORE_STEPOUT = -2
 
@@ -40,9 +40,6 @@ if SHELLOUS_DEBUG:
 def _exc():
     "Return the current exception value. Useful in logging."
     return sys.exc_info()[1]
-
-
-_ANYFN = Callable[..., Any]
 
 
 def log_method(
@@ -192,7 +189,7 @@ def _platform_info():
     except NotImplementedError:
         child_watcher = None
 
-    info = f"{PLATFORM_VERS} {PYTHON_IMPL} {PYTHON_VERS} {loop_name} {thread_name}"
+    info = f"{_PYTHON_VERSION} {loop_name} {thread_name}"
     if child_watcher:
         return f"{info} {child_watcher}"
     return info
