@@ -29,12 +29,12 @@ SHELLOUS_DEBUG = os.environ.get("SHELLOUS_DEBUG")
 
 
 if SHELLOUS_DEBUG:
-    logger_info = LOGGER.info
+    _logger_info = LOGGER.info
     LOG_ENTER = True
     LOG_EXIT = True
     LOG_DETAIL = True
 else:
-    logger_info = LOGGER.debug
+    _logger_info = LOGGER.debug
     LOG_ENTER = _LOG_IGNORE_STEPOUT  # pyright: ignore[reportConstantRedefinition]
     LOG_EXIT = _LOG_IGNORE_STEPIN  # pyright: ignore[reportConstantRedefinition]
     LOG_DETAIL = False  # pyright: ignore[reportConstantRedefinition]
@@ -45,9 +45,7 @@ def _exc():
     return sys.exc_info()[1]
 
 
-def log_method(
-    enabled: Union[bool, int], *, _info: bool = False
-) -> Callable[[_ANYFN], _ANYFN]:
+def log_method(enabled: Union[bool, int]) -> Callable[[_ANYFN], _ANYFN]:
     """`log_method` logs when an async method call is entered and exited.
 
     <method-name> stepin <self>
@@ -73,19 +71,17 @@ def log_method(
             @functools.wraps(func)
             async def _asyncgen_wrapper(*args: Any, **kwargs: Any):
                 if enabled != _LOG_IGNORE_STEPIN:
-                    plat_info = f" ({_platform_info()})" if _info else ""
-                    logger_info(
-                        "%s stepin %r%s",
+                    _logger_info(
+                        "%s stepin %r",
                         func.__qualname__,
                         args[0],
-                        plat_info,
                     )
                 try:
                     async for i in func(*args, **kwargs):
                         yield i
                 finally:
                     if enabled != _LOG_IGNORE_STEPOUT:
-                        logger_info(
+                        _logger_info(
                             "%s stepout %r ex=%r",
                             func.__qualname__,
                             args[0],
@@ -99,8 +95,11 @@ def log_method(
             @functools.wraps(func)
             async def _method_wrapper(*args: Any, **kwargs: Any):
                 if enabled != _LOG_IGNORE_STEPIN:
-                    plat_info = f" ({_platform_info()})" if _info else ""
-                    logger_info(
+                    if func.__name__ == "__aenter__":
+                        plat_info = f" ({_platform_info()})"
+                    else:
+                        plat_info = ""
+                    _logger_info(
                         "%s stepin %r%s",
                         func.__qualname__,
                         args[0],
@@ -114,7 +113,7 @@ def log_method(
                             more_info = f" exc_value={args[2]!r}"
                         else:
                             more_info = ""
-                        logger_info(
+                        _logger_info(
                             "%s stepout %r ex=%r%s",
                             func.__qualname__,
                             args[0],
@@ -129,13 +128,13 @@ def log_method(
             @functools.wraps(func)
             async def _asyncgen_function_wrapper(*args: Any, **kwargs: Any):
                 if enabled != _LOG_IGNORE_STEPIN:
-                    logger_info("%s stepin", func.__qualname__)
+                    _logger_info("%s stepin", func.__qualname__)
                 try:
                     async for item in func(*args, **kwargs):
                         yield item
                 finally:
                     if enabled != _LOG_IGNORE_STEPOUT:
-                        logger_info(
+                        _logger_info(
                             "%s stepout ex=%r",
                             func.__qualname__,
                             _exc(),
@@ -147,12 +146,12 @@ def log_method(
         @functools.wraps(func)
         async def _function_wrapper(*args: Any, **kwargs: Any):
             if enabled != _LOG_IGNORE_STEPIN:
-                logger_info("%s stepin", func.__qualname__)
+                _logger_info("%s stepin", func.__qualname__)
             try:
                 return await func(*args, **kwargs)
             finally:
                 if enabled != _LOG_IGNORE_STEPOUT:
-                    logger_info(
+                    _logger_info(
                         "%s stepout ex=%r",
                         func.__qualname__,
                         _exc(),
@@ -205,7 +204,7 @@ def log_timer(msg: str, warn_limit: float = 0.1, exc_info: bool = True):
     finally:
         duration = time.perf_counter() - start
         if duration >= warn_limit:
-            log_func = LOGGER.warning if warn_limit > 0 else logger_info
+            log_func = LOGGER.warning if warn_limit > 0 else _logger_info
             log_func("%s took %g seconds ex=%r", msg, duration, _exc())
 
 

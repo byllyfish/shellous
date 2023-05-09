@@ -579,7 +579,7 @@ class Runner:
                 LOGGER.error("%r failed to kill process %r", self, self._proc)
                 raise RuntimeError(f"Unable to kill process {self._proc!r}") from ex
 
-    @log_method(LOG_ENTER, _info=True)
+    @log_method(LOG_ENTER)
     async def __aenter__(self):
         "Set up redirections and launch subprocess."
         self._audit_callback("start")
