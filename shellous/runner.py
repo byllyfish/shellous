@@ -802,7 +802,7 @@ class Runner:
 
         return stream
 
-    @log_method(LOG_EXIT, exc_value=2)
+    @log_method(LOG_EXIT)
     async def __aexit__(
         self,
         _exc_type: Union[type[BaseException], None],
@@ -1030,7 +1030,7 @@ class PipeRunner:
             await self._wait(kill=True)
             raise
 
-    @log_method(LOG_EXIT, exc_value=2)
+    @log_method(LOG_EXIT)
     async def __aexit__(
         self,
         _exc_type: Union[type[BaseException], None],
