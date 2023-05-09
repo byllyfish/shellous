@@ -133,7 +133,7 @@ async def harvest_wait(
     except (asyncio.CancelledError, GeneratorExit) as ex:
         # Cancel all tasks and wait for them to finish.
         if LOG_DETAIL:
-            LOGGER.info(
+            LOGGER.debug(
                 "harvest_wait cancelled trustee=%r cancel_finish=%r ex=%r",
                 trustee,
                 cancel_finish,
@@ -150,7 +150,7 @@ async def harvest_wait(
 
     if time_expired:
         if LOG_DETAIL:
-            LOGGER.info("harvest_wait timed out trustee=%r", trustee)
+            LOGGER.debug("harvest_wait timed out trustee=%r", trustee)
         _consume_exceptions(tasks)
         raise asyncio.TimeoutError()
 

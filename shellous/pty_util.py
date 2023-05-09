@@ -68,7 +68,7 @@ class PtyFds(NamedTuple):
     def close(self) -> None:
         "Close pty file descriptors."
         if LOG_DETAIL:
-            LOGGER.info("PtyFds.close")
+            LOGGER.debug("PtyFds.close")
         self.child_fd.close()
         if self.writer:
             self.writer.close()
@@ -110,7 +110,7 @@ class PtyStreamReaderProtocol(asyncio.StreamReaderProtocol):
     def connection_lost(self, exc: Optional[Exception]) -> None:
         "Intercept EIO error and treat it as EOF."
         if LOG_DETAIL:
-            LOGGER.info("PtyStreamReaderProtocol.connection_lost ex=%r", exc)
+            LOGGER.debug("PtyStreamReaderProtocol.connection_lost ex=%r", exc)
         if BSD_DERIVED and self.pty__timer is not None:
             self.pty__timer.cancel()
         if isinstance(exc, OSError) and exc.errno == errno.EIO:
@@ -131,7 +131,7 @@ class PtyStreamReaderProtocol(asyncio.StreamReaderProtocol):
                 "Set up timer to close child fd when no data is received."
                 super().connection_made(transport)
                 if LOG_DETAIL:
-                    LOGGER.info("PtyStreamReaderProtocol.connection_made")
+                    LOGGER.debug("PtyStreamReaderProtocol.connection_made")
                 self.pty__timer = self._loop.call_later(2.0, self._close_child_fd)  # type: ignore
 
         def data_received(self, data: bytes) -> None:
@@ -142,7 +142,7 @@ class PtyStreamReaderProtocol(asyncio.StreamReaderProtocol):
     def eof_received(self) -> Optional[bool]:
         "Log when EOF received."
         if LOG_DETAIL:
-            LOGGER.info("PtyStreamReaderProtocol.eof_received")
+            LOGGER.debug("PtyStreamReaderProtocol.eof_received")
         return super().eof_received()
 
 
@@ -170,7 +170,7 @@ async def _open_pty_streams(parent_fd: int, child_fd: ChildFd):
     # Patch writer_transport.close so it also closes the reader_transport.
     def _close():
         if LOG_DETAIL:
-            LOGGER.info("writer_transport.close()")
+            LOGGER.debug("writer_transport.close()")
         _orig_close()
         reader_transport.close()
 
