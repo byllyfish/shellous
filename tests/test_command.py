@@ -298,6 +298,7 @@ def test_dataclasses():
 
     opt_fields = [field.name for field in dataclasses.fields(sh.options)]
     assert sorted(opt_fields) == [
+        "_catch_cancelled_error",
         "_preexec_fn",
         "_return_result",
         "_start_new_session",
@@ -306,7 +307,6 @@ def test_dataclasses():
         "audit_callback",
         "cancel_signal",
         "cancel_timeout",
-        "catch_cancelled_error",
         "close_fds",
         "encoding",
         "env",
