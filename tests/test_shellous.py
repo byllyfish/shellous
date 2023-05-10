@@ -216,7 +216,7 @@ async def test_echo_cancel(echo_cmd):
 
 async def test_echo_cancel_incomplete(echo_cmd):
     "When a command is cancelled, we should see partial output."
-    cmd = echo_cmd("abc").env(SHELLOUS_EXIT_SLEEP=2).set(catch_cancelled_error=True)
+    cmd = echo_cmd("abc").env(SHELLOUS_EXIT_SLEEP=2).set(_catch_cancelled_error=True)
     with pytest.raises(ResultError) as exc_info:
         await asyncio.wait_for(cmd, timeout=0.75)
 
@@ -248,7 +248,7 @@ async def test_echo_cancel_stringio_incomplete(echo_cmd):
         echo_cmd("abc")
         .env(SHELLOUS_EXIT_SLEEP=2)
         .stdout(buf)
-        .set(catch_cancelled_error=True)
+        .set(_catch_cancelled_error=True)
     )
     with pytest.raises(ResultError) as exc_info:
         await asyncio.wait_for(cmd, timeout=0.75)
@@ -329,7 +329,7 @@ async def test_pipe_cancel(echo_cmd, tr_cmd):
 async def test_pipe_cancel_incomplete(echo_cmd, cat_cmd):
     "When a pipe is cancelled, we should see partial output."
     echo_cmd = echo_cmd("abc")
-    cat_cmd = cat_cmd.env(SHELLOUS_EXIT_SLEEP=2).set(catch_cancelled_error=True)
+    cat_cmd = cat_cmd.env(SHELLOUS_EXIT_SLEEP=2).set(_catch_cancelled_error=True)
 
     cmd = echo_cmd | cat_cmd
     with pytest.raises(ResultError) as exc_info:
@@ -845,7 +845,7 @@ async def test_quick_cancel(echo_cmd):
         current_task = asyncio.current_task()
         assert current_task is not None
         current_task.cancel()
-        return await echo_cmd("hello").set(catch_cancelled_error=True)
+        return await echo_cmd("hello").set(_catch_cancelled_error=True)
 
     task = asyncio.create_task(_test_task())
 
@@ -1185,7 +1185,7 @@ async def test_command_with_timeout_result(sleep_cmd):
 
 async def test_command_with_timeout_incomplete_result(sleep_cmd):
     "Test a command with both timeout and .result modifiers."
-    sleep = sleep_cmd(10).result.set(catch_cancelled_error=True)
+    sleep = sleep_cmd(10).result.set(_catch_cancelled_error=True)
 
     result = await sleep(10).set(timeout=0.1)
 
@@ -1201,7 +1201,7 @@ async def test_command_with_timeout_incomplete_result(sleep_cmd):
 
 async def test_command_with_timeout_incomplete_resulterror(sleep_cmd):
     "Test a command with both timeout and catch_cancelled_error modifiers."
-    sleep = sleep_cmd(10).set(catch_cancelled_error=True)
+    sleep = sleep_cmd(10).set(_catch_cancelled_error=True)
 
     with pytest.raises(ResultError) as exc_info:
         await sleep(10).set(timeout=0.1)
@@ -1284,7 +1284,7 @@ async def test_command_timeout_incomplete_result(echo_cmd):
     cmd = (
         echo_cmd("abc")
         .env(SHELLOUS_EXIT_SLEEP=2)
-        .set(catch_cancelled_error=True, timeout=0.4)
+        .set(_catch_cancelled_error=True, timeout=0.4)
     )
     with pytest.raises(ResultError) as exc_info:
         await cmd
@@ -1308,7 +1308,7 @@ async def test_command_timeout_incomplete_result_exit_code(echo_cmd):
 
     # Test timeout and catch_cancelled_error. Setting `catch_cancelled_error` gives
     # us a ResultError with the partial result.
-    cmd = cmd.set(catch_cancelled_error=True)
+    cmd = cmd.set(_catch_cancelled_error=True)
     with pytest.raises(ResultError) as exc_info:
         await cmd
 

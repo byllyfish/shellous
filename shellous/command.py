@@ -117,7 +117,7 @@ class Options:  # pylint: disable=too-many-instance-attributes
     _return_result: bool = False
     "True if we should return `Result` object instead of the output text/bytes."
 
-    catch_cancelled_error: bool = False
+    _catch_cancelled_error: bool = False
     "True if we should raise `ResultError` after clean up from cancelled task."
 
     exit_codes: Optional[Container[int]] = None
@@ -294,7 +294,7 @@ class CmdContext(Generic[_RT]):
         inherit_env: Unset[bool] = _UNSET,
         encoding: Unset[str] = _UNSET,
         _return_result: Unset[bool] = _UNSET,
-        catch_cancelled_error: Unset[bool] = _UNSET,
+        _catch_cancelled_error: Unset[bool] = _UNSET,
         exit_codes: Unset[Optional[Container[int]]] = _UNSET,
         timeout: Unset[Optional[float]] = _UNSET,
         cancel_timeout: Unset[float] = _UNSET,
@@ -417,7 +417,7 @@ class Command(Generic[_RT]):
         inherit_env: Unset[bool] = _UNSET,
         encoding: Unset[str] = _UNSET,
         _return_result: Unset[bool] = _UNSET,
-        catch_cancelled_error: Unset[bool] = _UNSET,
+        _catch_cancelled_error: Unset[bool] = _UNSET,
         exit_codes: Unset[Optional[Container[int]]] = _UNSET,
         timeout: Unset[Optional[float]] = _UNSET,
         cancel_timeout: Unset[float] = _UNSET,
@@ -450,13 +450,9 @@ class Command(Generic[_RT]):
         When True, return a `Result` object instead of the standard output.
         Private API -- use the `result` modifier instead.
 
-        **catch_cancelled_error** (bool) default=False<br>
-        When True, raise a `ResultError` when the command is cancelled. On the
-        plus side, this gives you access to the initial output of the command.
-        On the negative side, the `ResultError` swallows the `CancelledError`.
-        Your code may need to re-raise a CancelledError after dealing with the
-        partial result. When `catch_cancelled_error` is False, a cancelled command
-        will raise a `CancelledError`.
+        **_catch_cancelled_error** (bool) default=False<br>
+        When True, raise a `ResultError` when the command is cancelled.
+        Private API -- used internally by PipeRunner.
 
         **exit_codes** (set[int] | None) default=None<br>
         Set of allowed exit codes that will not raise a `ResultError`. By default,
@@ -493,14 +489,14 @@ class Command(Generic[_RT]):
         process immediately after launching the subprocess.
 
         **_writable** (bool) default=False<br>
-        Used to indicate process substitution is writing. Private API -- use the
-        `writable` modifier instead.
+        Used to indicate process substitution is writing.
+        Private API -- use the `writable` modifier instead.
 
         **_start_new_session** (bool) default=False<br>
-        Provided for testing purposes only.
+        Private API -- provided for testing purposes only.
 
         **_preexec_fn** (Callable() | None) default=None<br>
-        Provided for testing purposes only.
+        Private API -- provided for testing purposes only.
 
         **pty** (bool | Callable(int)) default=False<br>
         If True, use a pseudo-terminal (pty) to control the child process.

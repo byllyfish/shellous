@@ -189,7 +189,7 @@ async def test_task_cancel():
 
 async def test_task_cancel_incomplete_result():
     "Test that we can cancel a running command task."
-    task = asyncio.create_task(sh("sleep", "5").set(catch_cancelled_error=True).coro())
+    task = asyncio.create_task(sh("sleep", "5").set(_catch_cancelled_error=True).coro())
     await asyncio.sleep(0.1)
 
     # Cancel task and wait for it to exit.
@@ -209,7 +209,7 @@ async def test_task_immediate_cancel():
 
 async def test_timeout_fail():
     "Test that an awaitable command can be called with a timeout."
-    cmd = sh("sleep", "5").set(catch_cancelled_error=True)
+    cmd = sh("sleep", "5").set(_catch_cancelled_error=True)
     with pytest.raises(ResultError) as exc_info:
         await asyncio.wait_for(cmd, 0.25)
 
@@ -230,7 +230,7 @@ async def test_timeout_fail_no_capturing():
         sh("sleep", "5")
         .stdin(sh.DEVNULL)
         .stdout(sh.DEVNULL)
-        .set(catch_cancelled_error=True)
+        .set(_catch_cancelled_error=True)
     )
 
     with pytest.raises(ResultError) as exc_info:
@@ -621,7 +621,7 @@ async def test_cancelled_antipattern():
     Catching `ResultError` using try/except conceals the `CancelledError`
     when you want to cancel the current task.
     """
-    sleep_cmd = sh("sleep", 3600).set(_return_result=True, catch_cancelled_error=True)
+    sleep_cmd = sh("sleep", 3600).set(_return_result=True, _catch_cancelled_error=True)
 
     async def _subtask():
         try:
@@ -655,7 +655,7 @@ async def test_cancelled_antipattern_fix():
     The fix is to explicitly re-raise the CancelledError when you are done with
     the `ResultError`.
     """
-    sleep_cmd = sh("sleep", 3600).set(_return_result=True, catch_cancelled_error=True)
+    sleep_cmd = sh("sleep", 3600).set(_return_result=True, _catch_cancelled_error=True)
 
     async def _subtask():
         try:
@@ -724,7 +724,7 @@ async def test_shell_cmd():
     "Test a shell command.  (https://bugs.python.org/issue43884)"
     shell = sh("/bin/sh", "-c").set(
         _return_result=True,
-        catch_cancelled_error=True,
+        _catch_cancelled_error=True,
         exit_codes={0, _CANCELLED_EXIT_CODE},
     )
 
@@ -1332,7 +1332,7 @@ async def test_stress_pty_canonical_ls_sequence(ls, report_children):
 @pytest.mark.skipif(_is_uvloop(), reason="uvloop")
 async def test_pty_timeout_fail():
     "Test that a pty command can be called with a timeout."
-    cmd = sh("sleep", "5").set(catch_cancelled_error=True, pty=True)
+    cmd = sh("sleep", "5").set(_catch_cancelled_error=True, pty=True)
     with pytest.raises(ResultError) as exc_info:
         await asyncio.wait_for(cmd, 0.25)
 

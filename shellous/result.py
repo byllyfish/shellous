@@ -116,7 +116,10 @@ def check_result(
     timed_out: bool = False,
 ) -> Result:
     """Check result and raise exception if necessary."""
-    if cancelled and not options.catch_cancelled_error:
+    if (
+        cancelled
+        and not options._catch_cancelled_error  # pyright: ignore[reportPrivateUsage]
+    ):
         raise asyncio.CancelledError()
 
     exit_codes = options.exit_codes or {0}
