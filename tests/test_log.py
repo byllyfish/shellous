@@ -4,7 +4,15 @@ import logging
 
 import pytest
 
-from shellous.log import _LOG_IGNORE_STEPIN, _LOG_IGNORE_STEPOUT, log_method, log_timer
+from shellous.log import (
+    _LOG_IGNORE_STEPIN,
+    _LOG_IGNORE_STEPOUT,
+    SHELLOUS_DEBUG,
+    log_method,
+    log_timer,
+)
+
+_LOG_LEVEL = logging.INFO if SHELLOUS_DEBUG else logging.DEBUG
 
 
 class _Tester:
@@ -39,7 +47,7 @@ class _Tester:
 
 async def test_log_method(caplog):
     "Test the log_method decorator for async methods."
-    caplog.set_level(logging.INFO)
+    caplog.set_level(logging.DEBUG)
 
     tester = _Tester()
     await tester.demo1()
@@ -52,25 +60,25 @@ async def test_log_method(caplog):
     await tester.demo6()
 
     assert caplog.record_tuples == [
-        ("shellous", 20, "_Tester.demo1 stepin <self>"),
-        ("shellous", 20, "_Tester.demo1 stepout <self> ex=None"),
-        ("shellous", 20, "_Tester.demo3 stepin <self>"),
-        ("shellous", 20, "_Tester.demo3 stepout <self> ex=ValueError(1)"),
-        ("shellous", 20, "_Tester.demo4 stepin <self>"),
-        ("shellous", 20, "_Tester.demo4 stepout <self> ex=None"),
-        ("shellous", 20, "_Tester.demo5 stepin <self>"),
-        ("shellous", 20, "_Tester.demo6 stepout <self> ex=None"),
+        ("shellous", _LOG_LEVEL, "_Tester.demo1 stepin <self>"),
+        ("shellous", _LOG_LEVEL, "_Tester.demo1 stepout <self> ex=None"),
+        ("shellous", _LOG_LEVEL, "_Tester.demo3 stepin <self>"),
+        ("shellous", _LOG_LEVEL, "_Tester.demo3 stepout <self> ex=ValueError(1)"),
+        ("shellous", _LOG_LEVEL, "_Tester.demo4 stepin <self>"),
+        ("shellous", _LOG_LEVEL, "_Tester.demo4 stepout <self> ex=None"),
+        ("shellous", _LOG_LEVEL, "_Tester.demo5 stepin <self>"),
+        ("shellous", _LOG_LEVEL, "_Tester.demo6 stepout <self> ex=None"),
     ]
 
 
 def test_log_timer(caplog):
     "Test the log_timer context manager."
-    caplog.set_level(logging.INFO)
+    caplog.set_level(logging.DEBUG)
 
     with log_timer("test1", -1):
         pass
 
     assert len(caplog.record_tuples) == 1
     rec = caplog.record_tuples[0]
-    assert rec[0:2] == ("shellous", 20)
+    assert rec[0:2] == ("shellous", _LOG_LEVEL)
     assert rec[2].startswith("test1 took ")

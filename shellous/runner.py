@@ -351,7 +351,7 @@ class _RunOptions:
             self.open_fds.append(self.pty_fds.child_fd)
 
         if LOG_DETAIL:
-            LOGGER.info("_setup_pty1: %r", self.pty_fds)
+            LOGGER.debug("_setup_pty1: %r", self.pty_fds)
 
         child_fd = int(self.pty_fds.child_fd)
 
@@ -493,13 +493,13 @@ class Runner:
                 await self._waiter()
 
         except asyncio.CancelledError:
-            LOGGER.info("Runner.wait cancelled %r", self)
+            LOGGER.debug("Runner.wait cancelled %r", self)
             self._set_cancelled()
             self._tasks.clear()  # all tasks were cancelled
             await self._kill()
 
         except Exception as ex:
-            LOGGER.info("Runner.wait exited with error %r ex=%r", self, ex)
+            LOGGER.debug("Runner.wait exited with error %r ex=%r", self, ex)
             self._tasks.clear()  # all tasks were cancelled
             await self._kill()
             raise  # re-raise exception
@@ -550,7 +550,7 @@ class Runner:
         "Send a signal to the process."
         assert self._proc is not None  # (pyright)
 
-        LOGGER.info("Runner.signal %r signal=%r", self, sig)
+        LOGGER.debug("Runner.signal %r signal=%r", self, sig)
         self._audit_callback("signal", signal=sig)
 
         if sig is None:
@@ -579,7 +579,7 @@ class Runner:
                 LOGGER.error("%r failed to kill process %r", self, self._proc)
                 raise RuntimeError(f"Unable to kill process {self._proc!r}") from ex
 
-    @log_method(LOG_ENTER, _info=True)
+    @log_method(LOG_ENTER)
     async def __aenter__(self):
         "Set up redirections and launch subprocess."
         self._audit_callback("start")
@@ -640,7 +640,7 @@ class Runner:
                 stdin = self._setup_input_source(stdin, opts)
 
         except (Exception, asyncio.CancelledError) as ex:
-            LOGGER.info("Runner._start %r ex=%r", self, ex)
+            LOGGER.debug("Runner._start %r ex=%r", self, ex)
             if _is_cancelled(ex):
                 self._set_cancelled()
             if self._proc:
@@ -802,7 +802,7 @@ class Runner:
 
         return stream
 
-    @log_method(LOG_EXIT, exc_value=2)
+    @log_method(LOG_EXIT)
     async def __aexit__(
         self,
         _exc_type: Union[type[BaseException], None],
@@ -814,7 +814,7 @@ class Runner:
         try:
             suppress = await self._finish(exc_value)
         except asyncio.CancelledError:
-            LOGGER.info("Runner cancelled inside _finish %r", self)
+            LOGGER.debug("Runner cancelled inside _finish %r", self)
             self._set_cancelled()
         finally:
             self._stop_timer()  # failsafe just in case
@@ -1009,7 +1009,7 @@ class PipeRunner:
         assert self._results is None
 
         if kill:
-            LOGGER.info("PipeRunner.wait killing pipe %r", self)
+            LOGGER.debug("PipeRunner.wait killing pipe %r", self)
             for task in self._tasks:
                 task.cancel()
 
@@ -1030,7 +1030,7 @@ class PipeRunner:
             await self._wait(kill=True)
             raise
 
-    @log_method(LOG_EXIT, exc_value=2)
+    @log_method(LOG_EXIT)
     async def __aexit__(
         self,
         _exc_type: Union[type[BaseException], None],

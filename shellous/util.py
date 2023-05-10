@@ -108,7 +108,7 @@ def wait_pid(pid: int, *, block: bool = False) -> Optional[int]:
         return 255
 
     if LOG_DETAIL:
-        LOGGER.info("os.waitpid(%r) returned %r", pid, (result_pid, status))
+        LOGGER.debug("os.waitpid(%r) returned %r", pid, (result_pid, status))
 
     if result_pid != pid:
         return None

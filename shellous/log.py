@@ -10,15 +10,15 @@ import sys
 import threading
 import time
 from contextlib import contextmanager
-from typing import Any, Callable, Sequence, Union
+from typing import Any, Callable, Union
 
+# Type Alias.
+_ANYFN = Callable[..., Any]
+
+# LOGGER is the package-wide logger object.
 LOGGER = logging.getLogger(__package__)
 
-# Do these at module import; may invoke subprocess.Popen.
-PLATFORM_VERS = platform.platform(terse=True)
-PYTHON_IMPL = platform.python_implementation()
-PYTHON_VERS = platform.python_version()
-
+_PYTHON_VERSION = platform.python_version()
 _LOG_IGNORE_STEPIN = -1
 _LOG_IGNORE_STEPOUT = -2
 
@@ -27,14 +27,17 @@ _LOG_IGNORE_STEPOUT = -2
 
 SHELLOUS_DEBUG = os.environ.get("SHELLOUS_DEBUG")
 
-LOG_ENTER = _LOG_IGNORE_STEPOUT
-LOG_EXIT = _LOG_IGNORE_STEPIN
-LOG_DETAIL = False
 
 if SHELLOUS_DEBUG:
-    LOG_ENTER = True  # pyright: ignore[reportConstantRedefinition]
-    LOG_EXIT = True  # pyright: ignore[reportConstantRedefinition]
-    LOG_DETAIL = True  # pyright: ignore[reportConstantRedefinition]
+    _logger_info = LOGGER.info
+    LOG_ENTER = True
+    LOG_EXIT = True
+    LOG_DETAIL = True
+else:
+    _logger_info = LOGGER.debug
+    LOG_ENTER = _LOG_IGNORE_STEPOUT  # pyright: ignore[reportConstantRedefinition]
+    LOG_EXIT = _LOG_IGNORE_STEPIN  # pyright: ignore[reportConstantRedefinition]
+    LOG_DETAIL = False  # pyright: ignore[reportConstantRedefinition]
 
 
 def _exc():
@@ -42,12 +45,7 @@ def _exc():
     return sys.exc_info()[1]
 
 
-_ANYFN = Callable[..., Any]
-
-
-def log_method(
-    enabled: Union[bool, int], *, _info: bool = False, **kwds: int
-) -> Callable[[_ANYFN], _ANYFN]:
+def log_method(enabled: Union[bool, int]) -> Callable[[_ANYFN], _ANYFN]:
     """`log_method` logs when an async method call is entered and exited.
 
     <method-name> stepin <self>
@@ -72,50 +70,50 @@ def log_method(
             # Use _asyncgen_wrapper which includes value of `self` arg.
             @functools.wraps(func)
             async def _asyncgen_wrapper(*args: Any, **kwargs: Any):
-                more_info, plat_info = _info_args(args, kwds, _info)
-
                 if enabled != _LOG_IGNORE_STEPIN:
-                    LOGGER.info(
-                        "%s stepin %r%s%s",
+                    _logger_info(
+                        "%s stepin %r",
                         func.__qualname__,
                         args[0],
-                        plat_info,
-                        more_info,
                     )
                 try:
                     async for i in func(*args, **kwargs):
                         yield i
                 finally:
                     if enabled != _LOG_IGNORE_STEPOUT:
-                        LOGGER.info(
-                            "%s stepout %r ex=%r%s",
+                        _logger_info(
+                            "%s stepout %r ex=%r",
                             func.__qualname__,
                             args[0],
                             _exc(),
-                            more_info,
                         )
 
             return _asyncgen_wrapper
 
         if "." in func.__qualname__:
-            # Use _method_wrapper which incldues value of `self` arg.
+            # Use _method_wrapper which includes value of `self` arg.
             @functools.wraps(func)
             async def _method_wrapper(*args: Any, **kwargs: Any):
-                more_info, plat_info = _info_args(args, kwds, _info)
-
                 if enabled != _LOG_IGNORE_STEPIN:
-                    LOGGER.info(
-                        "%s stepin %r%s%s",
+                    if func.__name__ == "__aenter__":
+                        plat_info = f" ({_platform_info()})"
+                    else:
+                        plat_info = ""
+                    _logger_info(
+                        "%s stepin %r%s",
                         func.__qualname__,
                         args[0],
                         plat_info,
-                        more_info,
                     )
                 try:
                     return await func(*args, **kwargs)
                 finally:
                     if enabled != _LOG_IGNORE_STEPOUT:
-                        LOGGER.info(
+                        if func.__name__ == "__aexit__":
+                            more_info = f" exc_value={args[2]!r}"
+                        else:
+                            more_info = ""
+                        _logger_info(
                             "%s stepout %r ex=%r%s",
                             func.__qualname__,
                             args[0],
@@ -130,13 +128,13 @@ def log_method(
             @functools.wraps(func)
             async def _asyncgen_function_wrapper(*args: Any, **kwargs: Any):
                 if enabled != _LOG_IGNORE_STEPIN:
-                    LOGGER.info("%s stepin", func.__qualname__)
+                    _logger_info("%s stepin", func.__qualname__)
                 try:
                     async for item in func(*args, **kwargs):
                         yield item
                 finally:
                     if enabled != _LOG_IGNORE_STEPOUT:
-                        LOGGER.info(
+                        _logger_info(
                             "%s stepout ex=%r",
                             func.__qualname__,
                             _exc(),
@@ -148,12 +146,12 @@ def log_method(
         @functools.wraps(func)
         async def _function_wrapper(*args: Any, **kwargs: Any):
             if enabled != _LOG_IGNORE_STEPIN:
-                LOGGER.info("%s stepin", func.__qualname__)
+                _logger_info("%s stepin", func.__qualname__)
             try:
                 return await func(*args, **kwargs)
             finally:
                 if enabled != _LOG_IGNORE_STEPOUT:
-                    LOGGER.info(
+                    _logger_info(
                         "%s stepout ex=%r",
                         func.__qualname__,
                         _exc(),
@@ -162,14 +160,6 @@ def log_method(
         return _function_wrapper
 
     return _decorator
-
-
-def _info_args(args: Sequence[Any], kwds: dict[str, int], _info: bool):
-    "Return info strings with specified arguments."
-    more_args = [f" {key}={args[value]!r}" for key, value in kwds.items()]
-    more_info = "".join(more_args)
-    plat_info = f" ({_platform_info()})" if _info else ""
-    return more_info, plat_info
 
 
 def _platform_info():
@@ -192,7 +182,7 @@ def _platform_info():
     except NotImplementedError:
         child_watcher = None
 
-    info = f"{PLATFORM_VERS} {PYTHON_IMPL} {PYTHON_VERS} {loop_name} {thread_name}"
+    info = f"{_PYTHON_VERSION} {loop_name} {thread_name}"
     if child_watcher:
         return f"{info} {child_watcher}"
     return info
@@ -214,7 +204,7 @@ def log_timer(msg: str, warn_limit: float = 0.1, exc_info: bool = True):
     finally:
         duration = time.perf_counter() - start
         if duration >= warn_limit:
-            log_func = LOGGER.warning if warn_limit > 0 else LOGGER.info
+            log_func = LOGGER.warning if warn_limit > 0 else _logger_info
             log_func("%s took %g seconds ex=%r", msg, duration, _exc())
 
 
