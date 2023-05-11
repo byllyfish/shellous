@@ -3,7 +3,7 @@
 import asyncio
 import sys
 from dataclasses import dataclass
-from typing import Any, Optional, Union
+from typing import Optional, Union
 
 import shellous
 from shellous.util import decode
@@ -42,9 +42,6 @@ class Result:
 
     encoding: str
     "Output encoding."
-
-    extra: Any = None
-    "Used for pipeline results (see `PipeResult`)."
 
     @property
     def output(self) -> str:
@@ -105,7 +102,6 @@ def convert_result_list(
         error_bytes=last.error_bytes,
         cancelled=cancelled,
         encoding=last.encoding,
-        extra=tuple(PipeResult.from_result(r) for r in result_list),
     )
 
 

@@ -173,7 +173,6 @@ async def test_error_only():
         error_bytes=b"",
         cancelled=False,
         encoding="utf-8",
-        extra=None,
     )
 
     out = [line async for line in cmd]
@@ -227,7 +226,6 @@ async def test_echo_cancel_incomplete(echo_cmd):
         error_bytes=b"",
         cancelled=True,
         encoding="utf-8",
-        extra=None,
     )
 
 
@@ -261,7 +259,6 @@ async def test_echo_cancel_stringio_incomplete(echo_cmd):
         error_bytes=b"",
         cancelled=True,
         encoding="utf-8",
-        extra=None,
     )
 
 
@@ -342,10 +339,6 @@ async def test_pipe_cancel_incomplete(echo_cmd, cat_cmd):
         error_bytes=b"",
         cancelled=True,
         encoding="utf-8",
-        extra=(
-            PipeResult(exit_code=0, cancelled=False),
-            PipeResult(exit_code=CANCELLED_EXIT_CODE, cancelled=True),
-        ),
     )
 
 
@@ -367,10 +360,6 @@ async def test_pipe_error_cmd1(echo_cmd, tr_cmd):
             error_bytes=b"",
             cancelled=False,
             encoding="utf-8",
-            extra=(
-                PipeResult(exit_code=3, cancelled=False),
-                PipeResult(exit_code=CANCELLED_EXIT_CODE, cancelled=True),
-            ),
         ),
         Result(
             exit_code=3,
@@ -378,10 +367,6 @@ async def test_pipe_error_cmd1(echo_cmd, tr_cmd):
             error_bytes=b"",
             cancelled=False,
             encoding="utf-8",
-            extra=(
-                PipeResult(exit_code=3, cancelled=False),
-                PipeResult(exit_code=CANCELLED_EXIT_CODE, cancelled=True),
-            ),
         ),
     )
 
@@ -394,29 +379,12 @@ async def test_pipe_error_cmd2(echo_cmd, tr_cmd):
 
     # This test has a race condition; sometimes the first command is cancelled.
 
-    assert exc_info.value.result in (
-        Result(
-            exit_code=5,
-            output_bytes=b"ABC",
-            error_bytes=b"",
-            cancelled=False,
-            encoding="utf-8",
-            extra=(
-                PipeResult(exit_code=0, cancelled=False),
-                PipeResult(exit_code=5, cancelled=False),
-            ),
-        ),
-        Result(
-            exit_code=5,
-            output_bytes=b"ABC",
-            error_bytes=b"",
-            cancelled=False,
-            encoding="utf-8",
-            extra=(
-                PipeResult(exit_code=0, cancelled=True),  # only difference
-                PipeResult(exit_code=5, cancelled=False),
-            ),
-        ),
+    assert exc_info.value.result == Result(
+        exit_code=5,
+        output_bytes=b"ABC",
+        error_bytes=b"",
+        cancelled=False,
+        encoding="utf-8",
     )
 
 
@@ -557,30 +525,13 @@ async def test_broken_pipe_in_failed_pipeline(cat_cmd, echo_cmd):
         await (data | cat_cmd | echo("abc"))
 
     if isinstance(exc_info.value, ResultError):
-        assert exc_info.value.result in [
-            Result(
-                exit_code=7,
-                output_bytes=b"abc",
-                error_bytes=b"",
-                cancelled=False,
-                encoding="utf-8",
-                extra=(
-                    PipeResult(exit_code=1, cancelled=True),
-                    PipeResult(exit_code=7, cancelled=False),
-                ),
-            ),
-            Result(
-                exit_code=7,
-                output_bytes=b"abc",
-                error_bytes=b"",
-                cancelled=False,
-                encoding="utf-8",
-                extra=(
-                    PipeResult(exit_code=120, cancelled=True),  # Windows sometimes
-                    PipeResult(exit_code=7, cancelled=False),
-                ),
-            ),
-        ]
+        assert exc_info.value.result == Result(
+            exit_code=7,
+            output_bytes=b"abc",
+            error_bytes=b"",
+            cancelled=False,
+            encoding="utf-8",
+        )
 
 
 async def test_broken_pipe_in_async_with_failed_pipeline(cat_cmd, echo_cmd):
@@ -858,7 +809,6 @@ async def test_quick_cancel(echo_cmd):
         error_bytes=b"",
         cancelled=True,
         encoding="utf-8",
-        extra=None,
     )
 
 
@@ -1195,7 +1145,6 @@ async def test_command_with_timeout_incomplete_result(sleep_cmd):
         error_bytes=b"",
         cancelled=True,
         encoding="utf-8",
-        extra=None,
     )
 
 
@@ -1212,7 +1161,6 @@ async def test_command_with_timeout_incomplete_resulterror(sleep_cmd):
         error_bytes=b"",
         cancelled=True,
         encoding="utf-8",
-        extra=None,
     )
 
 
@@ -1295,7 +1243,6 @@ async def test_command_timeout_incomplete_result(echo_cmd):
         error_bytes=b"",
         cancelled=True,
         encoding="utf-8",
-        extra=None,
     )
 
 
@@ -1318,7 +1265,6 @@ async def test_command_timeout_incomplete_result_exit_code(echo_cmd):
         error_bytes=b"",
         cancelled=True,
         encoding="utf-8",
-        extra=None,
     )
 
     # Test timeout, catch_cancelled_error, and exit_codes. You can't do this with
@@ -1471,7 +1417,6 @@ async def test_process_pool_executor(echo_cmd, report_children):
         error_bytes=b"",
         cancelled=False,
         encoding="utf-8",
-        extra=None,
     )
 
     # Close the multiprocessing resource_tracker. Otherwise, it will trigger

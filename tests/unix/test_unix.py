@@ -87,7 +87,6 @@ async def test_echo_with_result():
         error_bytes=b"",
         cancelled=False,
         encoding="utf-8",
-        extra=None,
     )
     assert result.output == "foo"
 
@@ -220,7 +219,6 @@ async def test_timeout_fail():
         error_bytes=b"",
         cancelled=True,
         encoding="utf-8",
-        extra=None,
     )
 
 
@@ -242,7 +240,6 @@ async def test_timeout_fail_no_capturing():
         error_bytes=b"",
         cancelled=True,
         encoding="utf-8",
-        extra=None,
     )
 
 
@@ -283,7 +280,6 @@ async def test_exit_code_error():
         error_bytes=b"",
         cancelled=False,
         encoding="utf-8",
-        extra=None,
     )
 
 
@@ -526,16 +522,6 @@ async def test_pipeline_with_result():
         error_bytes=b"",
         cancelled=False,
         encoding="utf-8",
-        extra=(
-            PipeResult(
-                exit_code=0,
-                cancelled=False,
-            ),
-            PipeResult(
-                exit_code=0,
-                cancelled=False,
-            ),
-        ),
     )
 
 
@@ -598,8 +584,8 @@ async def test_pipeline_async_context_manager():
     assert run.name == "tr|cat"
     assert (
         repr(run) == "<PipeRunner 'tr|cat' results=["
-        "Result(exit_code=0, output_bytes=b'', error_bytes=b'', cancelled=False, encoding='utf-8', extra=None), "
-        "Result(exit_code=0, output_bytes=b'', error_bytes=b'', cancelled=False, encoding='utf-8', extra=None)]>"
+        "Result(exit_code=0, output_bytes=b'', error_bytes=b'', cancelled=False, encoding='utf-8'), "
+        "Result(exit_code=0, output_bytes=b'', error_bytes=b'', cancelled=False, encoding='utf-8')]>"
     )
 
 
@@ -700,7 +686,6 @@ async def test_multiple_capture():
         error_bytes=b"",
         cancelled=False,
         encoding="utf-8",
-        extra=None,
     )
 
 
@@ -742,7 +727,6 @@ async def test_shell_cmd():
         error_bytes=b"",
         cancelled=True,
         encoding="utf-8",
-        extra=None,
     )
 
 
@@ -875,7 +859,6 @@ async def test_process_substitution_error_exit_1():
     assert result.exit_code == 1
     assert result.cancelled is False
     assert result.encoding == "utf-8"
-    assert result.extra is None  # FIXME: This should indicate that "sleep" failed...
     assert b"sleep" in result.error_bytes
 
 
@@ -1343,7 +1326,6 @@ async def test_pty_timeout_fail():
         error_bytes=b"",
         cancelled=True,
         encoding="utf-8",
-        extra=None,
     )
 
 
