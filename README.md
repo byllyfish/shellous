@@ -90,7 +90,7 @@ When a command completes successfully, it returns the standard output (or "" if 
 
 ```pycon
 >>> await echo.result("abc")
-Result(exit_code=0, output_bytes=b'abc', error_bytes=b'', cancelled=False, encoding='utf-8', extra=None)
+Result(exit_code=0, output_bytes=b'abc', error_bytes=b'', cancelled=False, encoding='utf-8')
 ```
 
 A `Result` object contains the command's `exit_code` in addition to its output. A `Result` is True if 
@@ -114,7 +114,7 @@ When a command fails, it raises a `ResultError` exception:
 >>> await sh("cat", "does_not_exist")
 Traceback (most recent call last):
   ...
-shellous.result.ResultError: Result(exit_code=1, output_bytes=b'', error_bytes=b'cat: does_not_exist: No such file or directory\n', cancelled=False, encoding='utf-8', extra=None)
+shellous.result.ResultError: Result(exit_code=1, output_bytes=b'', error_bytes=b'cat: does_not_exist: No such file or directory\n', cancelled=False, encoding='utf-8')
 ```
 
 The `ResultError` exception contains a `Result` object with the exit_code and the first 1024 bytes of standard error.
@@ -296,7 +296,7 @@ option.
 cat: does_not_exist: No such file or directory
 Traceback (most recent call last):
   ...
-shellous.result.ResultError: Result(exit_code=1, output_bytes=b'', error_bytes=b'', cancelled=False, encoding='utf-8', extra=None)
+shellous.result.ResultError: Result(exit_code=1, output_bytes=b'', error_bytes=b'', cancelled=False, encoding='utf-8')
 ```
 
 If you redirect stderr, it will no longer be stored in the Result object.
@@ -330,7 +330,7 @@ A pipeline returns a `Result` if the last command in the pipeline has the `.resu
 ```pycon
 >>> pipe = sh("ls") | sh("grep", "README").result
 >>> await pipe
-Result(exit_code=0, output_bytes=b'README.md\n', error_bytes=b'', cancelled=False, encoding='utf-8', extra=(PipeResult(exit_code=0, cancelled=False), PipeResult(exit_code=0, cancelled=False)))
+Result(exit_code=0, output_bytes=b'README.md\n', error_bytes=b'', cancelled=False, encoding='utf-8')
 ```
 
 ## Process Substitution (Unix Only)
@@ -430,5 +430,5 @@ You can also create a context object that specifies all return values are `Resul
 ```pycon
 >>> rsh = sh.result
 >>> await rsh("echo", "whatever")
-Result(exit_code=0, output_bytes=b'whatever\n', error_bytes=b'', cancelled=False, encoding='utf-8', extra=None)
+Result(exit_code=0, output_bytes=b'whatever\n', error_bytes=b'', cancelled=False, encoding='utf-8')
 ```

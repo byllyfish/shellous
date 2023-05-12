@@ -3,7 +3,7 @@
 import asyncio
 import sys
 from dataclasses import dataclass
-from typing import Any, Optional, Union
+from typing import Optional, Union
 
 import shellous
 from shellous.util import decode
@@ -43,9 +43,6 @@ class Result:
     encoding: str
     "Output encoding."
 
-    extra: Any = None
-    "Used for pipeline results (see `PipeResult`)."
-
     @property
     def output(self) -> str:
         "Output of command as a string."
@@ -59,22 +56,6 @@ class Result:
     def __bool__(self) -> bool:
         "Return true if exit_code is 0."
         return self.exit_code == 0
-
-
-@dataclass
-class PipeResult:
-    "Concrete class for the result of command that is part of a Pipe."
-
-    exit_code: int
-    cancelled: bool
-
-    @staticmethod
-    def from_result(result: Union[BaseException, Result]) -> "PipeResult":
-        "Construct a `PipeResult` from a `Result`."
-        if isinstance(result, ResultError):
-            result = result.result
-        assert isinstance(result, Result)
-        return PipeResult(result.exit_code, result.cancelled)
 
 
 def convert_result_list(
@@ -105,7 +86,6 @@ def convert_result_list(
         error_bytes=last.error_bytes,
         cancelled=cancelled,
         encoding=last.encoding,
-        extra=tuple(PipeResult.from_result(r) for r in result_list),
     )
 
 
