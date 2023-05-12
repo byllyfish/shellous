@@ -11,7 +11,7 @@ import sys
 
 import pytest
 
-from shellous import PipeResult, Result, ResultError, cbreak, cooked, raw, sh
+from shellous import Result, ResultError, cbreak, cooked, raw, sh
 from shellous.harvest import harvest, harvest_results
 
 pytestmark = pytest.mark.skipif(sys.platform == "win32", reason="Unix")

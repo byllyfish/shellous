@@ -13,7 +13,7 @@ from pathlib import Path
 import asyncstdlib as asl
 import pytest
 
-from shellous import PipeResult, Result, ResultError, sh
+from shellous import Result, ResultError, sh
 from shellous.harvest import harvest_results
 
 # 4MB + 1: Much larger than necessary.

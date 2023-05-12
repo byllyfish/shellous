@@ -58,22 +58,6 @@ class Result:
         return self.exit_code == 0
 
 
-@dataclass
-class PipeResult:
-    "Concrete class for the result of command that is part of a Pipe."
-
-    exit_code: int
-    cancelled: bool
-
-    @staticmethod
-    def from_result(result: Union[BaseException, Result]) -> "PipeResult":
-        "Construct a `PipeResult` from a `Result`."
-        if isinstance(result, ResultError):
-            result = result.result
-        assert isinstance(result, Result)
-        return PipeResult(result.exit_code, result.cancelled)
-
-
 def convert_result_list(
     result_list: list[Union[BaseException, Result]],
     cancelled: bool,
