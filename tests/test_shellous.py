@@ -189,6 +189,32 @@ async def test_error_only():
     assert out[0].rstrip() == "abc"
 
 
+async def test_pipeline_error_only():
+    "Test pipeline with standard error output only (STDOUT + DEVNULL)."
+    cmd = sh("echo", "123") | sh(
+        sys.executable,
+        "-c",
+        "import sys; print('xyz'); print('abc', file=sys.stderr)",
+    ).stdout(sh.DEVNULL).stderr(sh.STDOUT)
+
+    result = await cmd.result()
+    assert result.output.rstrip() == "abc"
+    assert result.error == ""
+
+    async with cmd as run:
+        assert run.stdin is None
+        assert run.stdout is None
+        assert run.stderr is None
+
+    res = run.result()
+    assert res.output.rstrip() == "abc"
+    assert res.error == ""
+
+    out = [line async for line in cmd]
+    assert len(out) == 1
+    assert out[0].rstrip() == "abc"
+
+
 async def test_nonexistant_cmd():
     with pytest.raises(FileNotFoundError):
         await sh("non_existant_command").set(_return_result=True)

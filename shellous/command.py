@@ -39,6 +39,7 @@ from shellous.redirect import (
     STDOUT_TYPES,
     STDOUT_TYPES_T,
     Redirect,
+    aiter_adjust,
 )
 from shellous.runner import Runner
 from shellous.util import EnvironmentDict, context_aenter, context_aexit
@@ -589,16 +590,7 @@ class Command(Generic[_RT]):
 
     def __aiter__(self) -> AsyncIterator[str]:
         "Return async iterator to iterate over output lines."
-        cmd = self
-        if cmd.options.output == Redirect.DEFAULT:
-            cmd = cmd.stdout(Redirect.CAPTURE)
-        elif (
-            cmd.options.output == Redirect.DEVNULL
-            and cmd.options.error == Redirect.STDOUT
-        ):
-            cmd = cmd.stderr(Redirect.CAPTURE)
-
-        return cmd._readlines()
+        return aiter_adjust(self)._readlines()
 
     async def _readlines(self) -> AsyncIterator[str]:
         "Async generator to iterate over lines."

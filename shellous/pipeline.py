@@ -22,7 +22,7 @@ from shellous.redirect import (
     STDIN_TYPES_T,
     STDOUT_TYPES,
     STDOUT_TYPES_T,
-    Redirect,
+    aiter_adjust,
 )
 from shellous.runner import PipeRunner
 from shellous.util import context_aenter, context_aexit
@@ -191,15 +191,11 @@ class Pipeline(Generic[_RT]):
 
     def __aiter__(self) -> AsyncIterator[str]:
         "Return async iterator to iterate over output lines."
-        return self._readlines()
+        return aiter_adjust(self)._readlines()
 
     async def _readlines(self):
         "Async generator to iterate over lines."
-        cmd = self
-        if cmd.options.output == Redirect.DEFAULT:
-            cmd = cmd.stdout(Redirect.CAPTURE)
-
-        async with PipeRunner(cmd, capturing=True) as run:
+        async with PipeRunner(self, capturing=True) as run:
             if run.stdout is not None and run.stderr is not None:
                 raise RuntimeError("multiple capture not supported in iterator")
             async for line in run:

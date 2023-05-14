@@ -5,8 +5,9 @@ import enum
 import io
 from logging import Logger
 from pathlib import Path
-from typing import Any, Optional, Union
+from typing import Any, Optional, TypeVar, Union
 
+import shellous
 from shellous.log import LOG_DETAIL, log_method
 from shellous.pty_util import PtyAdapterOrBool
 from shellous.util import decode
@@ -15,6 +16,8 @@ _CHUNK_SIZE = 8192
 _STDIN = 0
 _STDOUT = 1
 _STDERR = 2
+
+_CT = TypeVar("_CT", "shellous.Command[Any]", "shellous.Pipeline[Any]")
 
 
 class Redirect(enum.IntEnum):
@@ -276,3 +279,14 @@ async def read_lines(source: asyncio.StreamReader, encoding: str):
     "Async iterator over lines in stream."
     async for line in source:
         yield decode(line, encoding)
+
+
+def aiter_adjust(cmd: _CT) -> _CT:
+    "Fix up command or pipeline when iterating using __aiter__."
+    if cmd.options.output == Redirect.DEFAULT:
+        return cmd.stdout(Redirect.CAPTURE)
+
+    if cmd.options.output == Redirect.DEVNULL and cmd.options.error == Redirect.STDOUT:
+        return cmd.stderr(Redirect.CAPTURE)
+
+    return cmd
