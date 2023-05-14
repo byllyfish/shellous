@@ -589,18 +589,22 @@ class Command(Generic[_RT]):
 
     def __aiter__(self) -> AsyncIterator[str]:
         "Return async iterator to iterate over output lines."
-        return self._readlines()
-
-    async def _readlines(self) -> AsyncIterator[str]:
-        "Async generator to iterate over lines."
         cmd = self
         if cmd.options.output == Redirect.DEFAULT:
             cmd = cmd.stdout(Redirect.CAPTURE)
+        elif (
+            cmd.options.output == Redirect.DEVNULL
+            and cmd.options.error == Redirect.STDOUT
+        ):
+            cmd = cmd.stderr(Redirect.CAPTURE)
 
-        async with Runner(cmd) as run:
+        return cmd._readlines()
+
+    async def _readlines(self) -> AsyncIterator[str]:
+        "Async generator to iterate over lines."
+        async with Runner(self) as run:
             if run.stdout is not None and run.stderr is not None:
                 raise RuntimeError("multiple capture not supported in iterator")
-
             async for line in run:
                 yield line
 

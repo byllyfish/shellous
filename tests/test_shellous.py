@@ -162,21 +162,34 @@ async def test_error_result():
 async def test_error_only():
     "Test standard error output only (STDOUT + DEVNULL)."
     cmd = (
-        sh(sys.executable, "-c", "import sys; print(sys.stderr, 'abc')")
+        sh(
+            sys.executable,
+            "-c",
+            "import sys; print('xyz'); print('abc', file=sys.stderr)",
+        )
         .stdout(sh.DEVNULL)
         .stderr(sh.STDOUT)
     )
 
     assert await cmd.result() == Result(
         exit_code=0,
-        output_bytes=b"",  # FIXME: should be "abc"
+        output_bytes=b"abc\n",
         error_bytes=b"",
         cancelled=False,
         encoding="utf-8",
     )
 
+    async with cmd as run:
+        assert run.stdin is None
+        assert run.stdout is None
+        assert run.stderr is None
+
+    res = run.result()
+    assert res.output == "abc\n"
+    assert res.error == ""
+
     out = [line async for line in cmd]
-    assert out == []  # FIXME: should be "abc"
+    assert out == ["abc\n"]
 
 
 async def test_nonexistant_cmd():
