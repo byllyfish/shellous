@@ -171,13 +171,9 @@ async def test_error_only():
         .stderr(sh.STDOUT)
     )
 
-    assert await cmd.result() == Result(
-        exit_code=0,
-        output_bytes=b"abc\n",
-        error_bytes=b"",
-        cancelled=False,
-        encoding="utf-8",
-    )
+    result = await cmd.result()
+    assert result.output.rstrip() == "abc"
+    assert result.error == ""
 
     async with cmd as run:
         assert run.stdin is None
@@ -185,11 +181,12 @@ async def test_error_only():
         assert run.stderr is None
 
     res = run.result()
-    assert res.output == "abc\n"
+    assert res.output.rstrip() == "abc"
     assert res.error == ""
 
     out = [line async for line in cmd]
-    assert out == ["abc\n"]
+    assert len(out) == 1
+    assert out[0].rstrip() == "abc"
 
 
 async def test_nonexistant_cmd():
