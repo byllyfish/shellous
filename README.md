@@ -279,7 +279,8 @@ By default, the first 1024 bytes of standard error is collected into the Result 
 To redirect standard error, use the `stderr` method. Standard error supports the
 same Python types as standard output. To append, set `append=True` in the `stderr` method.
 
-To redirect stderr to the same place as stdout, use the `sh.STDOUT` constant.
+To redirect stderr to the same place as stdout, use the `sh.STDOUT` constant. If you also
+redirect stdout to `sh.DEVNULL`, you will only receive the standard error.
 
 ```pycon
 >>> cmd = sh("cat", "does_not_exist").stderr(sh.STDOUT)

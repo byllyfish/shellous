@@ -5,8 +5,9 @@ import enum
 import io
 from logging import Logger
 from pathlib import Path
-from typing import Any, Optional, Union
+from typing import Any, Optional, TypeVar, Union
 
+import shellous
 from shellous.log import LOG_DETAIL, log_method
 from shellous.pty_util import PtyAdapterOrBool
 from shellous.util import decode
@@ -15,6 +16,8 @@ _CHUNK_SIZE = 8192
 _STDIN = 0
 _STDOUT = 1
 _STDERR = 2
+
+_CT = TypeVar("_CT", "shellous.Command[Any]", "shellous.Pipeline[Any]")
 
 
 class Redirect(enum.IntEnum):
@@ -276,3 +279,25 @@ async def read_lines(source: asyncio.StreamReader, encoding: str):
     "Async iterator over lines in stream."
     async for line in source:
         yield decode(line, encoding)
+
+
+def aiter_preflight(cmd: _CT) -> _CT:
+    "Fix up command or pipeline when iterating using __aiter__."
+    if cmd.options.output == Redirect.DEFAULT:
+        result = cmd.stdout(Redirect.CAPTURE)
+    elif (
+        cmd.options.output == Redirect.DEVNULL and cmd.options.error == Redirect.STDOUT
+    ):
+        result = cmd.stderr(Redirect.CAPTURE)
+    else:
+        result = cmd
+
+    # Check for ambiguous capture situation. This can lead to deadlocking the
+    # process being run.
+    if (
+        result.options.output == Redirect.CAPTURE
+        and result.options.error == Redirect.CAPTURE
+    ):
+        raise RuntimeError("multiple capture not supported in iterator")
+
+    return result

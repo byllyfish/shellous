@@ -87,6 +87,7 @@ class _RunOptions:
     pty_fds: Optional[pty_util.PtyFds]
     output_bytes: Optional[bytearray]
     error_bytes: Optional[bytearray]
+    is_stderr_only: bool = False
 
     def __init__(self, command: "shellous.Command[Any]"):
         self.command = command
@@ -194,6 +195,10 @@ class _RunOptions:
             self.encoding,
         )
 
+        # Handle "stderr only" case when stdout -> DEVNULL, stderr -> STDOUT.
+        if options.output == Redirect.DEVNULL and options.error == Redirect.STDOUT:
+            self.is_stderr_only = True
+
         stdout = self._setup_output(
             Redirect.from_default(options.output, 1, options.pty),
             options.output_append,
@@ -296,6 +301,10 @@ class _RunOptions:
             mode = "ab" if append else "wb"
             stdout = open(cast(os.PathLike[str], output), mode=mode)
             self.open_fds.append(stdout)
+        elif self.is_stderr_only and sys_stream == sys.stderr:
+            assert output == Redirect.STDOUT
+            self.output_bytes = bytearray()
+            assert stdout == asyncio.subprocess.PIPE
         elif isinstance(output, Redirect) and output.is_custom():
             # Custom support for Redirect constants.
             if output == Redirect.BUFFER:
@@ -620,6 +629,10 @@ class Runner:
                 if opts.error_bytes is not None:
                     error = opts.error_bytes
                     limit = RESULT_STDERR_LIMIT
+                elif opts.is_stderr_only:
+                    assert stdout is None
+                    assert opts.output_bytes is not None
+                    error = opts.output_bytes
                 else:
                     error = opts.command.options.error
                 stderr = self._setup_output_sink(

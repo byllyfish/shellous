@@ -162,21 +162,57 @@ async def test_error_result():
 async def test_error_only():
     "Test standard error output only (STDOUT + DEVNULL)."
     cmd = (
-        sh(sys.executable, "-c", "import sys; print(sys.stderr, 'abc')")
+        sh(
+            sys.executable,
+            "-c",
+            "import sys; print('xyz'); print('abc', file=sys.stderr)",
+        )
         .stdout(sh.DEVNULL)
         .stderr(sh.STDOUT)
     )
 
-    assert await cmd.result() == Result(
-        exit_code=0,
-        output_bytes=b"",  # FIXME: should be "abc"
-        error_bytes=b"",
-        cancelled=False,
-        encoding="utf-8",
-    )
+    result = await cmd.result()
+    assert result.output.rstrip() == "abc"
+    assert result.error == ""
+
+    async with cmd as run:
+        assert run.stdin is None
+        assert run.stdout is None
+        assert run.stderr is None
+
+    res = run.result()
+    assert res.output.rstrip() == "abc"
+    assert res.error == ""
 
     out = [line async for line in cmd]
-    assert out == []  # FIXME: should be "abc"
+    assert len(out) == 1
+    assert out[0].rstrip() == "abc"
+
+
+async def test_pipeline_error_only():
+    "Test pipeline with standard error output only (STDOUT + DEVNULL)."
+    cmd = sh("echo", "123") | sh(
+        sys.executable,
+        "-c",
+        "import sys; print('xyz'); print('abc', file=sys.stderr)",
+    ).stdout(sh.DEVNULL).stderr(sh.STDOUT)
+
+    result = await cmd.result()
+    assert result.output.rstrip() == "abc"
+    assert result.error == ""
+
+    async with cmd as run:
+        assert run.stdin is None
+        assert run.stdout is None
+        assert run.stderr is None
+
+    res = run.result()
+    assert res.output.rstrip() == "abc"
+    assert res.error == ""
+
+    out = [line async for line in cmd]
+    assert len(out) == 1
+    assert out[0].rstrip() == "abc"
 
 
 async def test_nonexistant_cmd():
