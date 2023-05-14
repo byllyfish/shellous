@@ -39,7 +39,7 @@ from shellous.redirect import (
     STDOUT_TYPES,
     STDOUT_TYPES_T,
     Redirect,
-    aiter_adjust,
+    aiter_preflight,
 )
 from shellous.runner import Runner
 from shellous.util import EnvironmentDict, context_aenter, context_aexit
@@ -590,13 +590,11 @@ class Command(Generic[_RT]):
 
     def __aiter__(self) -> AsyncIterator[str]:
         "Return async iterator to iterate over output lines."
-        return aiter_adjust(self)._readlines()
+        return aiter_preflight(self)._readlines()
 
     async def _readlines(self) -> AsyncIterator[str]:
         "Async generator to iterate over lines."
         async with Runner(self) as run:
-            if run.stdout is not None and run.stderr is not None:
-                raise RuntimeError("multiple capture not supported in iterator")
             async for line in run:
                 yield line
 

@@ -281,12 +281,23 @@ async def read_lines(source: asyncio.StreamReader, encoding: str):
         yield decode(line, encoding)
 
 
-def aiter_adjust(cmd: _CT) -> _CT:
+def aiter_preflight(cmd: _CT) -> _CT:
     "Fix up command or pipeline when iterating using __aiter__."
     if cmd.options.output == Redirect.DEFAULT:
-        return cmd.stdout(Redirect.CAPTURE)
+        result = cmd.stdout(Redirect.CAPTURE)
+    elif (
+        cmd.options.output == Redirect.DEVNULL and cmd.options.error == Redirect.STDOUT
+    ):
+        result = cmd.stderr(Redirect.CAPTURE)
+    else:
+        result = cmd
 
-    if cmd.options.output == Redirect.DEVNULL and cmd.options.error == Redirect.STDOUT:
-        return cmd.stderr(Redirect.CAPTURE)
+    # Check for ambiguous capture situation. This can lead to deadlocking the
+    # process being run.
+    if (
+        result.options.output == Redirect.CAPTURE
+        and result.options.error == Redirect.CAPTURE
+    ):
+        raise RuntimeError("multiple capture not supported in iterator")
 
-    return cmd
+    return result
