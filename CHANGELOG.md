@@ -1,6 +1,16 @@
 Shellous Change Log
 ===================
 
+0.25.0
+------
+
+- [API] Removed the `extra` property from the `Result` object. `PipeResult` is no longer defined.
+- [API] The `catch_cancelled_error` option has been renamed to `_catch_cancelled_err` and is now private.
+- [FEATURE] The external API is now fully typed. Added a `py.typed` file.
+- [BUGFIX] Added support for combining stdout(DEVNULL) and stderr(STDOUT) to produce only standard error, as if it was normal output (#381).
+- [BUGFIX] Reduced verbosity of logging under the `info` level.
+- [LATERAL] Refactored the `_run_` helper method used in Runner, PipeRunner.
+
 0.24.0
 ------
 
