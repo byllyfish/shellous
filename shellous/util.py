@@ -140,7 +140,6 @@ def poll_wait_pid(proc: Process) -> bool:
         status,
     )
 
-    # pylint: disable=protected-access
     proc._transport._returncode = status  # type: ignore
     proc._transport._proc.returncode = status  # type: ignore
     return True

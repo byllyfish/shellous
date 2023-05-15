@@ -214,8 +214,8 @@ class _RunOptions:
         )
 
         # Set up PTY here. This is the first half. Second half in `Runner`.
-        start_session = options._start_new_session  # pylint: disable=protected-access
-        preexec_fn = options._preexec_fn  # pylint: disable=protected-access
+        start_session = options._start_new_session
+        preexec_fn = options._preexec_fn
 
         if options.pty:
             assert preexec_fn is None
@@ -868,7 +868,7 @@ class Runner:
             self._options.pty_fds.close()
 
         # Make sure the transport is closed (for asyncio and uvloop).
-        self._proc._transport.close()  # pyright: ignore pylint: disable=protected-access
+        self._proc._transport.close()  # pyright: ignore
 
         # _close can be called when unwinding exceptions. We need to handle
         # the case that the process has not exited yet.
