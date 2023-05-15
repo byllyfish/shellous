@@ -5,12 +5,14 @@ import enum
 import io
 from logging import Logger
 from pathlib import Path
-from typing import Any, Optional, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union
 
-import shellous
 from shellous.log import LOG_DETAIL, log_method
 from shellous.pty_util import PtyAdapterOrBool
 from shellous.util import decode
+
+if TYPE_CHECKING:
+    import shellous
 
 _CHUNK_SIZE = 8192
 _STDIN = 0

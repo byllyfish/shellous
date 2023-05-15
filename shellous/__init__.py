@@ -13,7 +13,7 @@ import warnings
 from .command import AuditEventInfo, CmdContext, Command, Options
 from .pipeline import Pipeline
 from .pty_util import cbreak, cooked, raw
-from .result import Result, ResultError  # noqa: F401
+from .result import Result, ResultError
 from .runner import AUDIT_EVENT_SUBPROCESS_SPAWN, PipeRunner, Runner
 
 if sys.platform != "win32":
