@@ -1746,6 +1746,26 @@ async def test_pipe_iter_pty():
     assert output == {"1\r\n", " 2\r\n"}
 
 
+@pytest.mark.skipif(_is_uvloop(), reason="uvloop")
+async def test_pty_buffer_stderr():
+    "Test PTY with stderr buffered."
+    cmd = sh(
+        sys.executable,
+        "-c",
+        "import sys; print('xyz', flush=True); print('abc', file=sys.stderr)",
+    )
+
+    result = await cmd.result.set(pty=True).stderr(sh.BUFFER)
+    assert result.exit_code == 0
+    assert result.output == "xyz\r\n"
+    assert result.error == "abc\n"
+
+    result = await cmd.result.set(pty=True)
+    assert result.exit_code == 0
+    assert result.output == "xyz\r\nabc\r\n"
+    assert result.error == ""
+
+
 async def test_pass_fds(tmp_path):
     "Test the pass_fds option."
     out = tmp_path / "test_pass_fds"
