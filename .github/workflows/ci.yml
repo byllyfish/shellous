@@ -108,6 +108,7 @@ jobs:
       env:
         SHELLOUS_CHILDWATCHER_TYPE: "default"
     - name: Verify Types
+      if: matrix.python-version != '3.12-dev'
       run: |
         PYTHONPATH=. pyright --verifytypes shellous || echo "::warning title=Pyright Warning::Verify types failed"
 
