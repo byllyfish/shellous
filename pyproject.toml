@@ -29,15 +29,15 @@ pytest = "^7.2.2"
 pytest-asyncio = "^0.21.0"
 pylint = "^2.17.1"
 black = "^23.3.0"
-coverage = "^7.2.3"
+coverage = "^7.2.6"
 pytest-dotenv = "^0.5.2"
 pytest-randomly = "^3.12.0"
 pytest-timeout = "^2.1.0"
 pdoc = "^13.0.1"
-asyncstdlib = "3.10.5"
-pyright = "^1.1.300"
-ruff = {version = "^0.0.265", markers = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'"}
-typing-extensions = "^4.5.0"
+asyncstdlib = "3.10.7"
+pyright = "^1.1.310"
+ruff = {version = "^0.0.270", markers = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'"}
+typing-extensions = "^4.6.2"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -46,7 +46,7 @@ build-backend = "poetry.core.masonry.api"
 [tool.pytest.ini_options]
 filterwarnings = [
   "error",
-  'ignore:.*(ChildWatcher|get_child_watcher|set_child_watcher|ast.Str is deprecated|Attribute s is deprecated):DeprecationWarning',  # 3.12-dev
+  'ignore:.*(ChildWatcher|get_child_watcher|set_child_watcher|deprecated and will be removed in Python 3.14):DeprecationWarning',  # 3.12-dev
 ]
 env_files = ["tests/tests.env"]
 addopts = '--timeout=20 --color=yes --log-cli-format="%(created).03f %(levelname)s %(name)s %(message)s" --log-level=INFO --log-file-format="%(created).03f %(levelname)s %(name)s %(message)s"'
