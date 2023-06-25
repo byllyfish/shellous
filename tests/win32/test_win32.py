@@ -26,6 +26,7 @@ async def test_echo(echo):
     assert result == "foo\r\n"
 
 
+@pytest.mark.skipif(sys.version_info[0:2] >= (3, 12), reason="3.12b3 change")
 async def test_empty_env():
     "Test running a command with no environment at all."
     with pytest.raises(OSError):
