@@ -27,7 +27,7 @@ async def test_echo(echo):
 
 
 async def test_empty_env():
-    "Test running a command with no environment at all."
+    "Test running python with no environment at all."
     cmd = sh(sys.executable, "-c", "print('test2')")
 
     if sys.version_info >= (3, 12, 0, "beta", 3):
@@ -40,6 +40,20 @@ async def test_empty_env():
         # creating a process with an empty environment.
         with pytest.raises(OSError):
             await cmd.set(inherit_env=False)
+
+
+async def test_empty_env_echo(echo):
+    "Test running echo command with no environment at all."
+    if sys.version_info >= (3, 12, 0, "beta", 3):
+        # In CPython 3.12.0b3, gh-10546 fixed the behavior of this test.
+        result = await echo("test3").set(inherit_env=False)
+        assert result == "test3\r\n"
+
+    else:  # CPython 3.12.0b2 and earlier...
+        # The longstanding behavior on Windows was to raise an OSError when
+        # creating a process with an empty environment.
+        with pytest.raises(OSError):
+            await echo("test3").set(inherit_env=False)
 
 
 async def test_empty_env_system_root():
