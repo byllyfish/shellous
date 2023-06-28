@@ -1214,22 +1214,31 @@ async def test_wait_for_zero_seconds(sleep_cmd):
     with pytest.raises(asyncio.TimeoutError):
         await asyncio.wait_for(sleep(10), 0.0)
 
-    event_loop = asyncio.get_running_loop()
-    is_eager_task = event_loop.get_task_factory() == asyncio.eager_task_factory
+    # Python 3.12 added support for "eager" tasks. This test behaves differently
+    # when using eager tasks.
+    if sys.version_info[:2] >= (3, 12):
+        is_eager_task = (
+            asyncio.get_running_loop().get_task_factory() == asyncio.eager_task_factory
+        )
+    else:
+        is_eager_task = False
 
     if is_eager_task:
         # Eager task started but was cancelled before launching process.
         assert calls == [
             ("start", "sleep", None, ""),
-            ("stop", "sleep", -255, "CancelledError"),
+            ("stop", "sleep", UNLAUNCHED_EXIT_CODE, "CancelledError"),
         ]
     else:
-        # Task was cancelled before it even started.
+        # The task was cancelled before it even started, so there are no audit
+        # events.
         assert not calls
 
 
 async def test_timeout_zero_seconds(sleep_cmd):
-    "Test command with a timeout of zero seconds."
+    """Test command with a shellous timeout of zero seconds.
+
+    Note that this behaves differently than `asyncio.wait_for`."""
     calls = []
 
     def _audit(phase, info):
