@@ -13,7 +13,7 @@ from pathlib import Path
 import asyncstdlib as asl
 import pytest
 
-from shellous import Result, ResultError, sh
+from shellous import Result, ResultError, sh, UNLAUNCHED_EXIT_CODE
 from shellous.harvest import harvest_results
 
 # 4MB + 1: Much larger than necessary.
@@ -23,7 +23,6 @@ PIPE_MAX_SIZE = 4 * 1024 * 1024 + 1
 # On Windows, the exit_code of a terminated process is 1.
 CANCELLED_EXIT_CODE = -15 if sys.platform != "win32" else 1
 KILL_EXIT_CODE = -9 if sys.platform != "win32" else 1
-UNLAUNCHED_EXIT_CODE = -255
 
 
 def _is_uvloop():
