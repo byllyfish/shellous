@@ -27,22 +27,36 @@ if not os.environ.get("SHELLOUS_CODE_COVERAGE"):
 childwatcher_type = os.environ.get("SHELLOUS_CHILDWATCHER_TYPE")
 loop_type = os.environ.get("SHELLOUS_LOOP_TYPE")
 
-if loop_type:
-    if sys.platform != "win32" and loop_type == "uvloop":
-        import uvloop  # pyright: ignore[reportMissingImports]
+if loop_type == "eager_task_factory":
+    assert sys.version_info[0:2] >= (3, 12), "requires python 3.12"
 
-        @pytest.fixture
-        def event_loop():  # pyright: ignore[reportGeneralTypeIssues]
-            loop = uvloop.new_event_loop()
-            loop.set_debug(True)
-            yield loop
-            loop.close()
-            # Force garbage collection to flush out un-run __del__ methods.
-            del loop
-            gc.collect()
+    @pytest.fixture
+    def event_loop():
+        _init_child_watcher()
+        loop = asyncio.new_event_loop()
+        loop.set_debug(True)
+        loop.set_task_factory(asyncio.eager_task_factory)
+        yield loop
+        loop.close()
+        # Force garbage collection to flush out un-run __del__ methods.
+        del loop
+        gc.collect()
 
-    else:
-        raise NotImplementedError
+elif sys.platform != "win32" and loop_type == "uvloop":
+    import uvloop  # pyright: ignore[reportMissingImports]
+
+    @pytest.fixture
+    def event_loop():  # pyright: ignore[reportGeneralTypeIssues]
+        loop = uvloop.new_event_loop()
+        loop.set_debug(True)
+        yield loop
+        loop.close()
+        # Force garbage collection to flush out un-run __del__ methods.
+        del loop
+        gc.collect()
+
+elif loop_type:
+    raise NotImplementedError
 
 else:
 

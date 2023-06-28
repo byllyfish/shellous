@@ -13,7 +13,7 @@ from pathlib import Path
 import asyncstdlib as asl
 import pytest
 
-from shellous import Result, ResultError, sh
+from shellous import Result, ResultError, sh, UNLAUNCHED_EXIT_CODE
 from shellous.harvest import harvest_results
 
 # 4MB + 1: Much larger than necessary.
@@ -23,7 +23,6 @@ PIPE_MAX_SIZE = 4 * 1024 * 1024 + 1
 # On Windows, the exit_code of a terminated process is 1.
 CANCELLED_EXIT_CODE = -15 if sys.platform != "win32" else 1
 KILL_EXIT_CODE = -9 if sys.platform != "win32" else 1
-UNLAUNCHED_EXIT_CODE = -255
 
 
 def _is_uvloop():
@@ -1214,13 +1213,31 @@ async def test_wait_for_zero_seconds(sleep_cmd):
     with pytest.raises(asyncio.TimeoutError):
         await asyncio.wait_for(sleep(10), 0.0)
 
-    # There are no start/stop audit calls when the timeout expires before
-    # launching the process.
-    assert not calls
+    # Python 3.12 added support for "eager" tasks. This test behaves differently
+    # when using eager tasks.
+    if sys.version_info[:2] >= (3, 12):
+        is_eager_task = (
+            asyncio.get_running_loop().get_task_factory() == asyncio.eager_task_factory
+        )
+    else:
+        is_eager_task = False
+
+    if is_eager_task:
+        # Eager task started but was cancelled before launching process.
+        assert calls == [
+            ("start", "sleep", None, ""),
+            ("stop", "sleep", UNLAUNCHED_EXIT_CODE, "CancelledError"),
+        ]
+    else:
+        # The task was cancelled before it even started, so there are no audit
+        # events.
+        assert not calls
 
 
 async def test_timeout_zero_seconds(sleep_cmd):
-    "Test command with a timeout of zero seconds."
+    """Test command with a shellous timeout of zero seconds.
+
+    Note that this behaves differently than `asyncio.wait_for`."""
     calls = []
 
     def _audit(phase, info):
