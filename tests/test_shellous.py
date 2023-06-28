@@ -1214,9 +1214,18 @@ async def test_wait_for_zero_seconds(sleep_cmd):
     with pytest.raises(asyncio.TimeoutError):
         await asyncio.wait_for(sleep(10), 0.0)
 
-    # There are no start/stop audit calls when the timeout expires before
-    # launching the process.
-    assert not calls
+    event_loop = asyncio.get_running_loop()
+    is_eager_task = event_loop.get_task_factory() == asyncio.eager_task_factory
+
+    if is_eager_task:
+        # Eager task started but was cancelled before launching process.
+        assert calls == [
+            ("start", "sleep", None, ""),
+            ("stop", "sleep", -255, "CancelledError"),
+        ]
+    else:
+        # Task was cancelled before it even started.
+        assert not calls
 
 
 async def test_timeout_zero_seconds(sleep_cmd):

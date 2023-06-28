@@ -80,6 +80,15 @@ jobs:
         fi
       env:
         SHELLOUS_LOOP_TYPE: "uvloop"
+    - name: Run Tests with eager task factory
+      if: matrix.python-version == '3.12-dev'
+      run: |
+        if ! pytest -vv -s --durations=20 --log-cli-level=DEBUG | ./ci/annotate.awk -v step=Run_Tests; then
+          echo "::warning title=Run Tests Warning::Re-running failed tests in $BUILD_NAME"
+          pytest -vv -s --durations=20 --log-cli-level=DEBUG --last-failed
+        fi
+      env:
+        SHELLOUS_LOOP_TYPE: "eager_task_factory"
     - name: Run Tests with PidfdWatcher (Linux)
       if: matrix.os == 'ubuntu-22.04'
       run: |
