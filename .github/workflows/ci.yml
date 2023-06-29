@@ -99,7 +99,7 @@ jobs:
       env:
         SHELLOUS_CHILDWATCHER_TYPE: "pidfd"
     - name: Run Tests with SafeChildWatcher (Linux and MacOS)
-      if: matrix.os == 'ubuntu-22.04' || matrix.os == 'macos-12'
+      if: (matrix.os == 'ubuntu-22.04' || matrix.os == 'macos-12') && matrix.python-version != '3.12-dev'
       run: |
         if ! pytest -vv -s --log-cli-level=DEBUG; then
           echo "::warning title=SafeChildWatcher Warning::Re-running failed tests in $BUILD_NAME"
