@@ -124,11 +124,17 @@ jobs:
   build-alpine:
     runs-on: ubuntu-latest
     timeout-minutes: 20  # stop runaway job after 20 minutes
+
+    strategy:
+      fail-fast: false
+      matrix:
+        image-tag: ['python:3.10-alpine', 'python:3.11-alpine']
+
     container:
-      image: python:3.10-alpine
+      image: ${{ matrix.image-tag }}
     env:
       SHELLOUS_DEBUG: 1
-      BUILD_NAME: build (alpine)
+      BUILD_NAME: build (${{ matrix.image-tag }})
 
     steps:
       - uses: actions/checkout@v3
