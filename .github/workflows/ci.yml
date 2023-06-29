@@ -99,7 +99,7 @@ jobs:
       env:
         SHELLOUS_CHILDWATCHER_TYPE: "pidfd"
     - name: Run Tests with SafeChildWatcher (Linux and MacOS)
-      if: matrix.os == 'ubuntu-22.04' || matrix.os == 'macos-12'
+      if: (matrix.os == 'ubuntu-22.04' || matrix.os == 'macos-12') && matrix.python-version != '3.12-dev'
       run: |
         if ! pytest -vv -s --log-cli-level=DEBUG; then
           echo "::warning title=SafeChildWatcher Warning::Re-running failed tests in $BUILD_NAME"
@@ -124,11 +124,17 @@ jobs:
   build-alpine:
     runs-on: ubuntu-latest
     timeout-minutes: 20  # stop runaway job after 20 minutes
+
+    strategy:
+      fail-fast: false
+      matrix:
+        image-tag: ['python:3.10-alpine', 'python:3.11-alpine']
+
     container:
-      image: python:3.10-alpine
+      image: ${{ matrix.image-tag }}
     env:
       SHELLOUS_DEBUG: 1
-      BUILD_NAME: build (alpine)
+      BUILD_NAME: build (${{ matrix.image-tag }})
 
     steps:
       - uses: actions/checkout@v3
@@ -156,15 +162,21 @@ jobs:
   build-pypy:
     runs-on: ubuntu-latest
     timeout-minutes: 20  # stop runaway job after 20 minutes
+
+    strategy:
+      fail-fast: false
+      matrix:
+        pypy-version: [ 'pypy-3.9', 'pypy-3.10']
+
     env:
       SHELLOUS_DEBUG: 1
-      BUILD_NAME: build (pypy-3.9)
+      BUILD_NAME: build (${{ matrix.pypy-version }})
 
     steps:
     - uses: actions/checkout@v3
     - uses: actions/setup-python@v4
       with:
-        python-version: 'pypy-3.9'
+        python-version: ${{ matrix.pypy-version }}
     - name: Install dependencies
       run: |
         pip3 install -U setuptools wheel
