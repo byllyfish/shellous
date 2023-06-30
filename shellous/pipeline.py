@@ -19,9 +19,9 @@ from typing import (
 import shellous
 from shellous.redirect import (
     STDIN_TYPES,
-    STDIN_TYPES_T,
+    StdinType,
     STDOUT_TYPES,
-    STDOUT_TYPES_T,
+    StdoutType,
     aiter_preflight,
 )
 from shellous.runner import PipeRunner
@@ -132,7 +132,7 @@ class Pipeline(Generic[_RT]):
         ...  # pragma: no cover
 
     @overload
-    def __or__(self, rhs: STDOUT_TYPES_T) -> "Pipeline[_RT]":
+    def __or__(self, rhs: StdoutType) -> "Pipeline[_RT]":
         ...  # pragma: no cover
 
     def __or__(self, rhs: Any) -> "Pipeline[Any]":
@@ -146,12 +146,12 @@ class Pipeline(Generic[_RT]):
             )
         return NotImplemented
 
-    def __ror__(self, lhs: STDIN_TYPES_T) -> "Pipeline[_RT]":
+    def __ror__(self, lhs: StdinType) -> "Pipeline[_RT]":
         if isinstance(lhs, STDIN_TYPES):
             return self.stdin(lhs)
         return NotImplemented
 
-    def __rshift__(self, rhs: STDOUT_TYPES_T) -> "Pipeline[_RT]":
+    def __rshift__(self, rhs: StdoutType) -> "Pipeline[_RT]":
         if isinstance(rhs, STDOUT_TYPES):
             return self.stdout(rhs, append=True)
         if isinstance(rhs, (str, bytes)):

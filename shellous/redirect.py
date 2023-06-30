@@ -77,7 +77,7 @@ STDIN_TYPES = (
     asyncio.StreamReader,
 )
 
-STDIN_TYPES_T = Union[
+StdinType = Union[
     str,
     bytes,
     Path,
@@ -98,7 +98,7 @@ STDOUT_TYPES = (
     asyncio.StreamWriter,
 )
 
-STDOUT_TYPES_T = Union[
+StdoutType = Union[
     Path,
     bytearray,
     io.IOBase,

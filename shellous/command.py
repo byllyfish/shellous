@@ -35,9 +35,9 @@ import shellous
 from shellous.pty_util import PtyAdapterOrBool
 from shellous.redirect import (
     STDIN_TYPES,
-    STDIN_TYPES_T,
+    StdinType,
     STDOUT_TYPES,
-    STDOUT_TYPES_T,
+    StdoutType,
     Redirect,
     aiter_preflight,
 )
@@ -613,7 +613,7 @@ class Command(Generic[_RT]):
         return str(self.args[0])
 
     @overload
-    def __or__(self, rhs: STDOUT_TYPES_T) -> "Command[_RT]":
+    def __or__(self, rhs: StdoutType) -> "Command[_RT]":
         ...  # pragma: no cover
 
     @overload
@@ -633,13 +633,13 @@ class Command(Generic[_RT]):
             return self.stdout(rhs)
         return shellous.Pipeline.create(self) | rhs
 
-    def __ror__(self, lhs: STDIN_TYPES_T) -> "Command[_RT]":
+    def __ror__(self, lhs: StdinType) -> "Command[_RT]":
         "Bitwise or operator is used to build pipelines."
         if isinstance(lhs, STDIN_TYPES):
             return self.stdin(lhs)
         return NotImplemented
 
-    def __rshift__(self, rhs: STDOUT_TYPES_T) -> "Command[_RT]":
+    def __rshift__(self, rhs: StdoutType) -> "Command[_RT]":
         "Right shift operator is used to build pipelines."
         if isinstance(
             rhs, STDOUT_TYPES
