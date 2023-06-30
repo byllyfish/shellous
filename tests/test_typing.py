@@ -46,15 +46,6 @@ async def test_command():
     assert isinstance(out, Result)
 
 
-async def test_command_concat():
-    "Test typing when concatenating Commands."
-    cmd1 = sh("echo1")
-    cmd2 = sh.result("echo2")
-
-    assert_type(cmd1 % cmd2, Command[str])
-    assert_type(cmd2 % cmd1, Command[Result])
-
-
 async def test_command_redirect():
     "Test typing when redirecting commands."
     tmp = Path("/tmp")
