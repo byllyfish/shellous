@@ -174,7 +174,7 @@ class Pipeline(Generic[_RT]):
         )
 
     def __await__(self) -> "Generator[Any, None, _RT]":
-        return self.coro().__await__()
+        return self.coro().__await__()  # FP pylint: disable=no-member
 
     async def __aenter__(self) -> PipeRunner:
         "Enter the async context manager."
