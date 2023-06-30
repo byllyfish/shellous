@@ -647,12 +647,6 @@ class Command(Generic[_RT]):
             return self.stdout(rhs, append=True)
         return NotImplemented
 
-    def __mod__(self, rhs: "Command[Any]") -> "Command[_RT]":
-        "Modulo operator is used to concatenate commands."
-        if isinstance(rhs, Command):  # pyright: ignore[reportUnnecessaryIsInstance]
-            return self(rhs.args)
-        return NotImplemented
-
     @property
     def writable(self) -> "Command[_RT]":
         "Set `writable` to True."

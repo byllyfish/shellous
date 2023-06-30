@@ -227,25 +227,6 @@ def test_replace_args_method():
     assert cmd.options == echo.options
 
 
-def test_percent_op():
-    "Test the percent/modulo operator for concatenation."
-    nohup = sh("nohup").stdin("abc")
-    echo = sh("echo", "hello").stdout(sh.INHERIT)
-
-    # Note that the concatenated command is a new command with default
-    # redirections and settings (from the lhs context)
-    assert nohup % echo == sh("nohup", "echo", "hello").stdin("abc")
-    assert nohup % echo == nohup(echo.args)
-
-
-def test_percent_op_multiple():
-    "Test the percent/modulo operator for concatenation."
-    nohup = sh("nohup").stdin("abc")
-    echo = sh("echo", "hello").stdout(sh.INHERIT)
-
-    assert nohup % echo % nohup == nohup(echo(nohup.args).args)
-
-
 def test_percent_op_not_implemented():
     "Test the percent/modulo operator for concatenation."
     echo = sh("echo", "hello")
@@ -253,13 +234,6 @@ def test_percent_op_not_implemented():
         assert None % echo  # pyright: ignore[reportGeneralTypeIssues]
     with pytest.raises(TypeError):
         assert echo % None  # pyright: ignore[reportGeneralTypeIssues]
-
-
-def test_percent_equals_op():
-    "Test the %= operator."
-    cmd = sh("nohup")
-    cmd %= sh("echo", "abc")
-    assert cmd == sh("nohup", sh("echo", "abc").args)
 
 
 def test_command_pickle():
