@@ -9,12 +9,12 @@ import asyncio
 import dataclasses
 import enum
 import os
+import shutil
 import signal
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
 from types import TracebackType
-import shutil
 from typing import (
     Any,
     AsyncIterator,
@@ -37,10 +37,10 @@ import shellous
 from shellous.pty_util import PtyAdapterOrBool
 from shellous.redirect import (
     STDIN_TYPES,
-    StdinType,
     STDOUT_TYPES,
-    StdoutType,
     Redirect,
+    StdinType,
+    StdoutType,
     aiter_preflight,
 )
 from shellous.runner import Runner
