@@ -33,7 +33,7 @@ class Prompt:
         cancelled, (out, _) = await harvest_results(
             self.stdout.readuntil(self.prompt_bytes),
             self.stdin.drain(),
-            timeout=2.0,
+            timeout=5.0,
         )
         if cancelled:
             raise asyncio.CancelledError()
