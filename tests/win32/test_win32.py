@@ -67,14 +67,14 @@ async def test_empty_env_system_root():
 def test_context_find_command():
     "Test the context's `find_command` method."
     assert sh.options.path is None
-    assert sh.find_command("cmd") == Path("/bin/cmd")
+    assert sh.find_command("cmd") == Path("C:/Windows/system32/cmd.EXE")
     assert sh.find_command("there_is_no_foo_command") is None
 
 
 def test_context_find_command_path():
     "Test the context's `find_command` method with a custom path configured."
-    sh1 = sh.set(path="/does_not_exist")
-    assert sh1.options.path == "/does_not_exist"
+    sh1 = sh.set(path="C:/does_not_exist")
+    assert sh1.options.path == "C:/does_not_exist"
     assert sh1.find_command("cmd") is None
 
 
