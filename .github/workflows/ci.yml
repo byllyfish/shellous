@@ -120,6 +120,10 @@ jobs:
       if: matrix.python-version != '3.12-dev'
       run: |
         PYTHONPATH=. pyright --verifytypes shellous || echo "::warning title=Pyright Warning::Verify types failed"
+    - name: Format Check
+      run: |
+        black --check .
+        isort --check .
 
   build-alpine:
     runs-on: ubuntu-latest

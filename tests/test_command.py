@@ -30,6 +30,12 @@ def test_args():
     assert cmd.args == ("echo", "a", "2")
 
 
+def test_args2():
+    "Test command args coercion and flattening."
+    cmd = sh(["echo", "b", [-1]])
+    assert cmd.args == ("echo", "b", "-1")
+
+
 def test_name():
     "Test command's name property."
     cmd = sh("echo", "a")
@@ -113,6 +119,12 @@ def test_nested_list_arg():
         [1 + 3j],
     )
     assert cmd.args == ("echo", "-n", "arg1", "1", "2", "3", "(1+3j)")
+
+
+def test_none_command():
+    "Test passing None as command."
+    with pytest.raises(TypeError):
+        sh(None, "abc")
 
 
 def test_none_arg():
@@ -296,6 +308,7 @@ def test_dataclasses():
         "output_close",
         "pass_fds",
         "pass_fds_close",
+        "path",
         "pty",
         "timeout",
     ]

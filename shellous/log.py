@@ -18,7 +18,7 @@ _ANYFN = Callable[..., Any]
 # LOGGER is the package-wide logger object.
 LOGGER = logging.getLogger(__package__)
 
-_PYTHON_VERSION = platform.python_version()
+_PYTHON_VERSION = platform.python_implementation() + platform.python_version()
 _LOG_IGNORE_STEPIN = -1
 _LOG_IGNORE_STEPOUT = -2
 

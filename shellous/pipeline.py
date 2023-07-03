@@ -19,8 +19,8 @@ from typing import (
 import shellous
 from shellous.redirect import (
     STDIN_TYPES,
-    StdinType,
     STDOUT_TYPES,
+    StdinType,
     StdoutType,
     aiter_preflight,
 )

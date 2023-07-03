@@ -16,9 +16,9 @@ from .pty_util import cbreak, cooked, raw
 from .result import Result, ResultError
 from .runner import (
     AUDIT_EVENT_SUBPROCESS_SPAWN,
+    UNLAUNCHED_EXIT_CODE,
     PipeRunner,
     Runner,
-    UNLAUNCHED_EXIT_CODE,
 )
 
 if sys.platform != "win32":

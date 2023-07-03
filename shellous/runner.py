@@ -28,7 +28,6 @@ from shellous.util import (
     poll_wait_pid,
     uninterrupted,
     verify_dev_fd,
-    which,
 )
 
 # pyright: reportPrivateUsage=false
@@ -120,8 +119,12 @@ class _RunOptions:
 
             # If executable does not include an absolute/relative directory,
             # resolve it using PATH.
-            if not os.path.dirname(self.pos_args[0]):  # type: ignore (path)
-                self.pos_args[0] = which(self.pos_args[0])
+            executable = self.pos_args[0]
+            if not os.path.dirname(executable):  # type: ignore (path)
+                found_executable = _cmd.options.which(executable)
+                if found_executable is None:
+                    raise FileNotFoundError(executable)
+                self.pos_args[0] = found_executable
 
         except Exception as ex:
             if LOG_DETAIL:
