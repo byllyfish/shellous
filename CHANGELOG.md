@@ -1,6 +1,14 @@
 Shellous Change Log
 ===================
 
+0.26.0
+------
+
+- [FEATURE] Add `path` option to customize the search path for a command.
+- [FEATURE] Add `find_command()` method to the `sh` CmdContext for use in locating a command in the `path`. (#424)
+- [API] Remove support for concatenating commands using the `%` operator. The same result can be achieved using `cmd.args`. (#420)
+- [LATERAL] Add CI testing for `eager_task_factory` in Python 3.12. (#437)
+
 0.25.0
 ------
 
