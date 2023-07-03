@@ -3,7 +3,6 @@
 import asyncio
 import contextvars
 import os
-import shutil
 import sys
 from asyncio.subprocess import Process
 from collections import abc, defaultdict
@@ -155,14 +154,6 @@ async def uninterrupted(coro: Coroutine[Any, Any, _T]) -> _T:
         if not task.cancelled():
             await task
         raise
-
-
-def which(command: Union[str, bytes]) -> Union[str, bytes]:
-    "Given a command without a directory, return the fully qualified path."
-    path = shutil.which(command)
-    if path is None:
-        raise FileNotFoundError(command)
-    return path
 
 
 async def context_aenter(scope: int, ctxt_manager: AsyncContextManager[_T]) -> _T:

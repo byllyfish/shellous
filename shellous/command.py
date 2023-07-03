@@ -12,7 +12,9 @@ import os
 import signal
 from collections.abc import Iterable
 from dataclasses import dataclass, field
+from pathlib import Path
 from types import TracebackType
+import shutil
 from typing import (
     Any,
     AsyncIterator,
@@ -81,6 +83,9 @@ _AuditFnT = Optional[Callable[[str, AuditEventInfo], None]]
 @dataclass(frozen=True)
 class Options:  # pylint: disable=too-many-instance-attributes
     "Concrete class for per-command options."
+
+    path: Optional[str] = None
+    "Optional search path to use instead of PATH environment variable."
 
     env: Optional[EnvironmentDict] = field(default=None, repr=False)
     "Additional environment variables for command."
@@ -225,6 +230,18 @@ class Options:  # pylint: disable=too-many-instance-attributes
         kwds = {key: value for key, value in kwds.items() if value is not _UNSET}
         return dataclasses.replace(self, **kwds)
 
+    @overload
+    def which(self, name: bytes) -> Optional[bytes]:
+        "Find the command with the given name and return its path."
+
+    @overload
+    def which(self, name: str) -> Optional[str]:
+        "Find the command with the given name and return its path."
+
+    def which(self, name: Union[str, bytes]) -> Optional[Union[str, bytes]]:
+        "Find the command with the given name and return its path."
+        return shutil.which(name, path=self.path)
+
 
 # Return type for a Command, CmdContext can be either `str` or `Result`.
 _RT = TypeVar("_RT", str, "shellous.Result")
@@ -292,6 +309,7 @@ class CmdContext(Generic[_RT]):
     def set(  # pylint: disable=unused-argument, too-many-locals
         self,
         *,
+        path: Unset[Optional[str]] = _UNSET,
         inherit_env: Unset[bool] = _UNSET,
         encoding: Unset[str] = _UNSET,
         _return_result: Unset[bool] = _UNSET,
@@ -334,6 +352,20 @@ class CmdContext(Generic[_RT]):
                 exit_codes=range(-255, 256),
             ),
         )
+
+    def find_command(self, name: str) -> Optional[Path]:
+        """Find the command with the given name and return its filesystem path.
+
+        Return None if the command name is not found in the search path.
+
+        Use the `path` variable specified by the context if set. Otherwise, the
+        default behavior is to use the `PATH` environment variable with a
+        fallback to the value of `os.defpath`.
+        """
+        result = self.options.which(name)
+        if not result:
+            return None
+        return Path(result)
 
 
 @dataclass(frozen=True)
@@ -415,6 +447,7 @@ class Command(Generic[_RT]):
     def set(  # pylint: disable=unused-argument, too-many-locals
         self,
         *,
+        path: Unset[Optional[str]] = _UNSET,
         inherit_env: Unset[bool] = _UNSET,
         encoding: Unset[str] = _UNSET,
         _return_result: Unset[bool] = _UNSET,
