@@ -121,6 +121,12 @@ def test_nested_list_arg():
     assert cmd.args == ("echo", "-n", "arg1", "1", "2", "3", "(1+3j)")
 
 
+def test_none_command():
+    "Test passing None as command."
+    with pytest.raises(TypeError):
+        sh(None, "abc")
+
+
 def test_none_arg():
     "Test passing None as an argument."
     with pytest.raises(TypeError):

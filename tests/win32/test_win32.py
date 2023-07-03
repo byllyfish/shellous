@@ -78,6 +78,13 @@ def test_context_find_command_path():
     assert sh1.find_command("cmd") is None
 
 
+async def test_command_as_path():
+    "Test running a command using the result of find_command (a Path object)."
+    cmd = sh.find_command("cmd")
+    result = await sh(cmd, "/c", "echo", "abc")
+    assert result == "abc\r\n"
+
+
 async def test_process_substitution():
     "Test that process substitution raises an error."
     cmd = sh(sys.executable, "-c", "pass")

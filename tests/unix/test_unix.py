@@ -129,6 +129,13 @@ def test_context_find_command_path():
     assert sh2.find_command("echo") is None
 
 
+async def test_command_as_path():
+    "Test running a command using the result of find_command (a Path object)."
+    echo = sh.find_command("echo")
+    result = await sh(echo, "abc")
+    assert result == "abc\n"
+
+
 async def test_context_env():
     "Test running the env command with a custom environment context."
     env = {
