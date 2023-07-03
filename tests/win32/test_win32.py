@@ -1,6 +1,7 @@
 "Unit tests for shellous module (Windows)."
 
 import sys
+from pathlib import Path
 
 import pytest
 
@@ -61,6 +62,20 @@ async def test_empty_env_system_root():
     cmd = sh(sys.executable, "-c", "print('test1')")
     result = await cmd.set(inherit_env=False).env(SystemRoot=...)
     assert result == "test1\r\n"
+
+
+def test_context_find_command():
+    "Test the context's `find_command` method."
+    assert sh.options.path is None
+    assert sh.find_command("cmd") == Path("/bin/cmd")
+    assert sh.find_command("there_is_no_foo_command") is None
+
+
+def test_context_find_command_path():
+    "Test the context's `find_command` method with a custom path configured."
+    sh1 = sh.set(path="/does_not_exist")
+    assert sh1.options.path == "/does_not_exist"
+    assert sh1.find_command("cmd") is None
 
 
 async def test_process_substitution():

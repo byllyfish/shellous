@@ -8,6 +8,7 @@ import os
 import re
 import signal
 import sys
+from pathlib import Path
 
 import pytest
 
@@ -107,6 +108,25 @@ async def test_which():
     "Test running the `which` command."
     result = await sh("which", "cat")
     assert result in {"/usr/bin/cat\n", "/bin/cat\n"}
+
+
+def test_context_find_command():
+    "Test the context's `find_command` method."
+    assert sh.options.path is None
+    assert sh.find_command("echo") in {Path("/bin/echo"), Path("/usr/bin/echo")}
+    assert sh.find_command("there_is_no_foo_command") is None
+
+
+def test_context_find_command_path():
+    "Test the context's `find_command` method with a custom path configured."
+    sh1 = sh.set(path="/bin:/usr/bin")
+    assert sh.options.path is None
+    assert sh1.options.path == "/bin:/usr/bin"
+    assert sh1.find_command("echo") == Path("/bin/echo")
+
+    sh2 = sh1.set(path="/does_not_exist")
+    assert sh2.options.path == "/does_not_exist"
+    assert sh2.find_command("echo") is None
 
 
 async def test_context_env():

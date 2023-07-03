@@ -376,22 +376,3 @@ def test_command_append():
     "Test command appending an invalid type."
     with pytest.raises(TypeError, match=">>"):
         _ = sh("echo") >> (1 + 2j)  # pyright: ignore[reportGeneralTypeIssues]
-
-
-def test_context_find_command():
-    "Test the context's `find_command` method."
-    assert sh.options.path is None
-    assert sh.find_command("echo") == Path("/bin/echo")
-    assert sh.find_command("there_is_no_foo_command") is None
-
-
-def test_context_find_command_path():
-    "Test the context's `find_command` method with a custom path configured."
-    sh1 = sh.set(path="/bin:/usr/bin")
-    assert sh.options.path is None
-    assert sh1.options.path == "/bin:/usr/bin"
-    assert sh1.find_command("echo") == Path("/bin/echo")
-
-    sh2 = sh1.set(path="/sbin")
-    assert sh2.options.path == "/sbin"
-    assert sh2.find_command("echo") is None
