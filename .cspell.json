@@ -1,0 +1,18 @@
+{
+    "version": "0.2",
+    "language": "en-US",
+    "dictionaries": ["python", "softwareTerms"],
+    "words": [
+        "byllyfish",
+        "shellous",
+        "ctxt",
+        "aiter",
+        "aenter",
+        "aexit",
+        "coro",
+        "pid",
+        "pidfd",
+        "cbreak",
+        "maxsplit"
+    ]
+}
