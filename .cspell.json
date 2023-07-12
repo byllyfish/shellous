@@ -14,5 +14,8 @@
         "pidfd",
         "cbreak",
         "maxsplit"
+    ],
+    "ignorePaths": [
+        "tests/**"
     ]
 }
