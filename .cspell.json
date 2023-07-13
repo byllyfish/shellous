@@ -1,0 +1,31 @@
+{
+    "version": "0.2",
+    "language": "en-US",
+    "dictionaries": ["python", "softwareTerms"],
+    "words": [
+        "byllyfish",
+        "shellous",
+        "ctxt",
+        "aiter",
+        "aenter",
+        "aexit",
+        "coro",
+        "pid",
+        "cbreak",
+        "maxsplit",
+        "redirections",
+        "codecov",
+        "pycon",
+        "pidfd",
+        "kqueue",
+        "nohup",
+        "preexec"
+    ],
+    "ignorePaths": [
+        "tests/**"
+    ],
+    "ignoreRegExpList": [
+        "# pylint:.*",
+        "`[a-z]+`"
+    ]
+}

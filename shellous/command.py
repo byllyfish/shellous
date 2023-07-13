@@ -47,9 +47,9 @@ from shellous.runner import Runner
 from shellous.util import EnvironmentDict, context_aenter, context_aexit
 
 
-# Sentinel used in "mergable" keyword arguments to indicate that a value
-# was not set by the caller. This is an enum class to make UNSET more visible
-# in generated documentation.
+# Sentinel used in keyword arguments to indicate that a value was not set by
+# the caller. This is an enum class to make UNSET more visible in generated
+# documentation.
 class _UnsetEnum(enum.Enum):
     UNSET = enum.auto()
 
@@ -118,7 +118,7 @@ class Options:  # pylint: disable=too-many-instance-attributes
     "True if error object should be closed after subprocess launch."
 
     encoding: str = "utf-8"
-    "Specifies encoding of input/ouput."
+    "Specifies encoding of input/output."
 
     _return_result: bool = False
     "True if we should return `Result` object instead of the output text/bytes."
@@ -151,7 +151,7 @@ class Options:  # pylint: disable=too-many-instance-attributes
     "True if using process substitution in write mode."
 
     _start_new_session: bool = False
-    "True if child process should start a new session with setsid()."
+    "True if child process should start a new session with `setsid` call."
 
     _preexec_fn: _PreexecFnT = None
     "Function to call in child process after fork from parent."
@@ -472,7 +472,7 @@ class Command(Generic[_RT]):
         Subprocess should inherit the parent process environment. If this is
         False, the subprocess will only have environment variables specified
         by `Command.env`. If `inherit_env` is True, the parent process
-        environment is augmented/overriden by any variables specified in
+        environment is augmented/overridden by any variables specified in
         `Command.env`.
 
         **encoding** (str) default="utf-8"<br>

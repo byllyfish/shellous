@@ -201,7 +201,7 @@ async def copy_stringio(
             buf.write(data)
     finally:
         # Only convert to string once all output is collected.
-        # (What if utf-8 codepoint is split between reads?)
+        # (What if utf-8 code point is split between reads?)
         dest.write(decode(buf.getvalue(), encoding))
 
 

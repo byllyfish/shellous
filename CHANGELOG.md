@@ -127,7 +127,7 @@ Shellous Change Log
 ------
 
 - [FEATURE] Custom child watcher class, DefaultChildWatcher, automatically picks between pidfd, kqueue and thread implementation.
-- [BUGFIX] Manually reap process when childwatcher fails to detect child exit. (#178)
+- [BUGFIX] Manually reap process when child watcher fails to detect child exit. (#178)
 - [LATERAL] Add tests to make sure that Command, Pipeline and Result objects can be pickled.
 - [LATERAL] Remove context reference from command Options class.
 
@@ -136,7 +136,7 @@ Shellous Change Log
 
 - [FEATURE] Experimental child watcher now supports linux using pidfd.
 - [BUGFIX] Fix process still running error (#172).
-- [BUGFIX] Improve exit status reporting after a SIGTERM signal with experimental child watcher.
+- [BUGFIX] Improve exit status reporting after a `SIGTERM` signal with experimental child watcher.
 - [LATERAL] Add continuous integration support for Alpine linux.
 
 0.9.3
@@ -145,7 +145,7 @@ Shellous Change Log
 - [FEATURE] Add % operator to concatenate commands, i.e. sh("nohup") % sh("echo") == sh("nohup", "echo")
 - [API] Replace command and pipe's ~ operator with .writable property.
 - [BUGFIX] Fix bug where GeneratorExit was not being re-raised.
-- [BUGFIX] Clean capfd output in tests (#151).
+- [BUGFIX] Clean captured output in tests (#151).
 - [LATERAL] Add tests to check for open/inherited file descriptors in subprocess using lsof.
 
 0.9.2
@@ -198,7 +198,7 @@ Shellous Change Log
 - [BUGFIX] Fix character encoding issue with input (#88).
 - [BUGFIX] Fix clean up of subcommands when there is an exception (#82).
 - [BUGFIX] Return correct exit status from failed/cancelled pty commands.
-- [BUGFIX] Handle ECHILD properly in pty waitpid code.
+- [BUGFIX] Handle `ECHILD` properly in pty `waitpid` code.
 - [BUGFIX] Improve reliability of pty mode on FreeBSD and MacOS (#76, #84).
 - [LATERAL] Test readme REPL commands on all platforms except Windows.
 
@@ -245,7 +245,7 @@ Shellous Change Log
 -----
 
 - [FEATURE] Use ... in env() to inherit specific environment variables.
-- [FEATURE] Support for uvloop.
+- [FEATURE] Support for `uvloop`.
 - [FEATURE] Support cancel_timeout and cancel_signal options.
 - [FEATURE] Support redirection to BytesIO and bytearray.
 - [BUGFIX] Fix support for string encoding errors.

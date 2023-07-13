@@ -1,0 +1,18 @@
+name: spellcheck
+
+on:
+  push:
+    branches: [ "*" ]
+
+jobs:
+  spellcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: streetsidesoftware/cspell-action@v2
+        with:
+          files: |
+            **/*.{py,md}
+          strict: false
+          incremental_files_only: false
+          inline: none  # just log misspelled words; no warnings
