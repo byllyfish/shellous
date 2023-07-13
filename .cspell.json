@@ -11,11 +11,21 @@
         "aexit",
         "coro",
         "pid",
-        "pidfd",
         "cbreak",
-        "maxsplit"
+        "maxsplit",
+        "redirections",
+        "codecov",
+        "pycon",
+        "pidfd",
+        "kqueue",
+        "nohup",
+        "preexec"
     ],
     "ignorePaths": [
         "tests/**"
+    ],
+    "ignoreRegExpList": [
+        "# pylint:.*",
+        "`[a-z]+`"
     ]
 }

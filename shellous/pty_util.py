@@ -278,7 +278,7 @@ def _get_eof(fdesc: int):
     return eof
 
 
-# This contextvar indicates that the childwatcher should ignore the next
+# This ContextVar indicates that the child watcher should ignore the next
 # call to `add_child_handler``.
 _IGNORE_CHILD_PROCESS = contextvars.ContextVar("ignore_child_process", default=False)
 

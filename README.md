@@ -18,7 +18,7 @@ asyncio.run(main())
 
 ## Benefits
 
-- Run programs asychronously in a single line.
+- Run programs asynchronously in a single line.
 - Redirect stdin, stdout and stderr to files, memory buffers or loggers.
 - Construct [pipelines](https://en.wikipedia.org/wiki/Pipeline_(Unix)) and use [process substitution](https://en.wikipedia.org/wiki/Process_substitution).
 - Set timeouts and reliably cancel running processes.
