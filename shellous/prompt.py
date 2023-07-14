@@ -3,8 +3,8 @@
 import asyncio
 from typing import Optional
 
-from shellous.runner import Runner
 from shellous.harvest import harvest_results
+from shellous.runner import Runner
 
 
 class Prompt:
@@ -48,7 +48,7 @@ class Prompt:
         self,
         input_text: str = "",
         *,
-        timeout: float | None = None,
+        timeout: Optional[float] = None,
     ) -> str:
         "Write some input text to stdin, then await the response."
         stdin = self.runner.stdin
