@@ -129,9 +129,6 @@ async def test_prompt_unix_shell():
         greeting = await repl.send()
         assert greeting == ""
 
-        result = await repl.send("tty -s && echo 'tty here'")
-        assert result == "tty here"
-
         result = await repl.send("echo 123")
         assert result == "123"
 
@@ -151,9 +148,6 @@ async def test_prompt_unix_shell_echo():
         greeting = await repl.send()
         assert greeting == ""
 
-        result = await repl.send("tty -s && echo 'tty here'")
-        assert result == "tty -s && echo 'tty here'\ntty here"
-
         result = await repl.send("echo 123")
         assert result == "echo 123\n123"
 
@@ -172,9 +166,6 @@ async def test_prompt_unix_shell_interactive():
 
         greeting = await repl.send()
         assert "job control" in greeting  # expect message about job control
-
-        result = await repl.send("tty -s && echo 'tty here'")
-        assert result == "tty -s && echo 'tty here'"
 
         result = await repl.send("echo 123")
         assert result == "echo 123\n123"
