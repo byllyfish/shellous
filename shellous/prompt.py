@@ -4,6 +4,7 @@ import asyncio
 from typing import Optional
 
 from shellous.harvest import harvest_results
+from shellous.log import LOGGER
 from shellous.runner import Runner
 
 
@@ -60,7 +61,9 @@ class Prompt:
             timeout = self.default_timeout
 
         if input_text:
-            stdin.write(input_text.encode("utf-8") + b"\n")
+            data = input_text.encode("utf-8") + b"\n"
+            LOGGER.debug("Prompt[pid=%s] send: %r", self.runner.pid, data)
+            stdin.write(data)
 
         # Drain our write to stdin, and wait for prompt from stdout.
         cancelled, (buf, _) = await harvest_results(
@@ -69,6 +72,7 @@ class Prompt:
             timeout=timeout,
         )
         assert isinstance(buf, bytes)
+        LOGGER.debug("Prompt[pid=%s] receive: %r", self.runner.pid, buf)
 
         if cancelled:
             raise asyncio.CancelledError()

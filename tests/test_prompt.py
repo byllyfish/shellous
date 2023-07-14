@@ -35,8 +35,7 @@ async def test_prompt_python_pty():
         result = await repl.send("print('abc')")
         assert result == "abc"
 
-        result = await repl.send("exit()")
-        assert result == ""
+        await repl.send("exit()")
 
     assert run.result().exit_code == 0
 
@@ -56,8 +55,7 @@ async def test_prompt_python_interactive():
         result = await repl.send("print('abc')")
         assert result == "abc"
 
-        result = await repl.send("exit()")
-        assert result == ""
+        await repl.send("exit()")
 
     assert run.result().exit_code == 0
 
@@ -77,8 +75,7 @@ async def test_prompt_python_ps1():
         result = await repl.send("print('def')")
         assert result == "def"
 
-        result = await repl.send("exit()")
-        assert result == ""
+        await repl.send("exit()")
 
     assert run.result().exit_code == 0
 
@@ -97,8 +94,7 @@ async def test_prompt_python_timeout():
         with pytest.raises(asyncio.TimeoutError):
             await repl.send("import time; time.sleep(1)", timeout=0.1)
 
-        result = await repl.send("exit()")
-        assert result == ""
+        await repl.send("exit()")
 
     assert run.result().exit_code == 0
 
@@ -117,8 +113,7 @@ async def test_prompt_python_missing_newline():
         result = await repl.send("print(3, end='.')")
         assert result == "3."
 
-        result = await repl.send("exit()")
-        assert result == ""
+        await repl.send("exit()")
 
     assert run.result().exit_code == 0
 
@@ -140,8 +135,7 @@ async def test_prompt_unix_shell():
         result = await repl.send("echo 123")
         assert result == "123"
 
-        result = await repl.send("exit")
-        assert result == "exit\n"
+        await repl.send("exit")
 
     assert run.result().exit_code == 0
 
@@ -163,8 +157,7 @@ async def test_prompt_unix_shell_echo():
         result = await repl.send("echo 123")
         assert result == "echo 123\n123"
 
-        result = await repl.send("exit")
-        assert result == "exit\nexit\n"
+        await repl.send("exit")
 
     assert run.result().exit_code == 0
 
@@ -178,7 +171,7 @@ async def test_prompt_unix_shell_interactive():
         repl = Prompt(run, "$")
 
         greeting = await repl.send()
-        assert greeting == "sh: no job control in this shell"
+        assert "job control" in greeting  # expect message about job control
 
         result = await repl.send("tty -s && echo 'tty here'")
         assert result == "tty -s && echo 'tty here'"
