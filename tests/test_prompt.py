@@ -1,5 +1,7 @@
 "Unit tests for the Prompt class."
 
+import asyncio
+import os
 import sys
 
 import pytest
@@ -11,8 +13,17 @@ _PS1 = ">>> "
 _NO_ECHO = cooked(echo=False)
 
 
-async def test_prompt_python():
-    "Test the prompt class with the Python REPL."
+_requires_unix = pytest.mark.skipif(sys.platform == "win32", reason="requires unix")
+
+_requires_pty = pytest.mark.skipif(
+    os.environ.get("SHELLOUS_LOOP_TYPE") == "uvloop" or sys.platform == "win32",
+    reason="requires pty",
+)
+
+
+@_requires_pty
+async def test_prompt_python_pty():
+    "Test the prompt class with the Python REPL (PTY)."
     cmd = sh(sys.executable).stdin(sh.CAPTURE).stdout(sh.CAPTURE).stderr(sh.STDOUT)
 
     async with cmd.set(pty=_NO_ECHO) as run:
@@ -24,11 +35,34 @@ async def test_prompt_python():
         result = await repl.send("print('abc')")
         assert result == "abc"
 
-        await repl.send("exit()")
+        result = await repl.send("exit()")
+        assert result == ""
 
     assert run.result().exit_code == 0
 
 
+async def test_prompt_python_interactive():
+    "Test the prompt class with the Python REPL (non-PTY using -i)."
+    cmd = (
+        sh(sys.executable, "-i").stdin(sh.CAPTURE).stdout(sh.CAPTURE).stderr(sh.STDOUT)
+    )
+
+    async with cmd as run:
+        repl = Prompt(run, _PS1, default_timeout=3.0)
+
+        greeting = await repl.send()
+        assert "Python" in greeting
+
+        result = await repl.send("print('abc')")
+        assert result == "abc"
+
+        result = await repl.send("exit()")
+        assert result == ""
+
+    assert run.result().exit_code == 0
+
+
+@_requires_pty
 async def test_prompt_python_ps1():
     "Test the Python REPL but change the prompt to something unique."
     alt_ps1 = "????"
@@ -43,11 +77,13 @@ async def test_prompt_python_ps1():
         result = await repl.send("print('def')")
         assert result == "def"
 
-        await repl.send("exit()")
+        result = await repl.send("exit()")
+        assert result == ""
 
     assert run.result().exit_code == 0
 
 
+@_requires_pty
 async def test_prompt_python_timeout():
     "Test the prompt class with the Python REPL."
     cmd = sh(sys.executable).stdin(sh.CAPTURE).stdout(sh.CAPTURE).stderr(sh.STDOUT)
@@ -58,14 +94,16 @@ async def test_prompt_python_timeout():
         greeting = await repl.send()
         assert "Python" in greeting
 
-        with pytest.raises(TimeoutError):
+        with pytest.raises(asyncio.TimeoutError):
             await repl.send("import time; time.sleep(1)", timeout=0.1)
 
-        await repl.send("exit()")
+        result = await repl.send("exit()")
+        assert result == ""
 
     assert run.result().exit_code == 0
 
 
+@_requires_pty
 async def test_prompt_python_missing_newline():
     "Test the prompt class with the Python REPL."
     cmd = sh(sys.executable).stdin(sh.CAPTURE).stdout(sh.CAPTURE).stderr(sh.STDOUT)
@@ -79,14 +117,15 @@ async def test_prompt_python_missing_newline():
         result = await repl.send("print(3, end='.')")
         assert result == "3."
 
-        await repl.send("exit()")
+        result = await repl.send("exit()")
+        assert result == ""
 
     assert run.result().exit_code == 0
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="Unix-only")
+@_requires_unix
 async def test_prompt_unix_shell():
-    "Test the prompt class with a shell."
+    "Test the prompt class with a shell (PTY no echo)."
     cmd = sh("sh").stdin(sh.CAPTURE).stdout(sh.CAPTURE).stderr(sh.STDOUT)
 
     async with cmd.set(pty=_NO_ECHO).env(PS1="$", TERM="dummy") as run:
@@ -95,9 +134,86 @@ async def test_prompt_unix_shell():
         greeting = await repl.send()
         assert greeting == ""
 
+        result = await repl.send("tty -s && echo 'tty here'")
+        assert result == "tty here"
+
         result = await repl.send("echo 123")
         assert result == "123"
 
-        await repl.send("exit")
+        result = await repl.send("exit")
+        assert result == "exit\n"
+
+    assert run.result().exit_code == 0
+
+
+@_requires_pty
+async def test_prompt_unix_shell_echo():
+    "Test the prompt class with a shell (PTY default cooked mode)."
+    cmd = sh("sh").stdin(sh.CAPTURE).stdout(sh.CAPTURE).stderr(sh.STDOUT)
+
+    async with cmd.set(pty=True).env(PS1="$", TERM="dummy") as run:
+        repl = Prompt(run, "$")
+
+        greeting = await repl.send()
+        assert greeting == ""
+
+        result = await repl.send("tty -s && echo 'tty here'")
+        assert result == "tty -s && echo 'tty here'\ntty here"
+
+        result = await repl.send("echo 123")
+        assert result == "echo 123\n123"
+
+        result = await repl.send("exit")
+        assert result == "exit\nexit\n"
+
+    assert run.result().exit_code == 0
+
+
+@_requires_unix
+async def test_prompt_unix_shell_interactive():
+    "Test the prompt class with an interactive shell (non-PTY, forced)."
+    cmd = sh("sh", "-i").stdin(sh.CAPTURE).stdout(sh.CAPTURE).stderr(sh.STDOUT)
+
+    async with cmd.env(PS1="$", TERM="dummy") as run:
+        repl = Prompt(run, "$")
+
+        greeting = await repl.send()
+        assert greeting == "sh: no job control in this shell"
+
+        result = await repl.send("tty -s && echo 'tty here'")
+        assert result == "tty -s && echo 'tty here'"
+
+        result = await repl.send("echo 123")
+        assert result == "echo 123\n123"
+
+        result = await repl.send("exit")
+        assert result == "exit\nexit\n"
+
+    assert run.result().exit_code == 0
+
+
+async def test_prompt_asyncio_repl():
+    "Test the prompt class with the asyncio REPL."
+
+    cmd = (
+        sh(sys.executable, "-m", "asyncio")
+        .stdin(sh.CAPTURE)
+        .stdout(sh.CAPTURE)
+        .stderr(sh.STDOUT)
+    )
+
+    async with cmd as run:
+        repl = Prompt(run, ">>> ")
+
+        greeting = await repl.send()
+        assert "asyncio" in greeting
+
+        extra = await repl.send()
+        assert "import asyncio" in extra
+
+        result = await repl.send("print('hello')")
+        assert result == "hello"
+
+        repl.close()
 
     assert run.result().exit_code == 0
