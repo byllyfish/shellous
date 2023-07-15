@@ -2,6 +2,7 @@
 
 import asyncio
 import os
+import platform
 import sys
 
 import pytest
@@ -9,9 +10,19 @@ import pytest
 from shellous import cooked, sh
 from shellous.prompt import Prompt
 
-_PS1 = ">>> "
-_NO_ECHO = cooked(echo=False)
+# True if we are running on PyPy.
+_IS_PYPY = platform.python_implementation() == "PyPy"
 
+# True if we're running on alpine linux.
+_IS_ALPINE = os.path.exists("/etc/alpine-release")
+
+# The interactive prompt on PyPY3 is ">>>> ".
+if _IS_PYPY:
+    _PS1 = ">>>> "
+else:
+    _PS1 = ">>> "
+
+_NO_ECHO = cooked(echo=False)
 
 _requires_unix = pytest.mark.skipif(sys.platform == "win32", reason="requires unix")
 
@@ -61,12 +72,14 @@ async def test_prompt_python_interactive():
 
 
 @_requires_pty
-async def test_prompt_python_ps1():
+async def test_prompt_python_interactive_ps1():
     "Test the Python REPL but change the prompt to something unique."
     alt_ps1 = "????"
-    cmd = sh(sys.executable).stdin(sh.CAPTURE).stdout(sh.CAPTURE).stderr(sh.STDOUT)
+    cmd = (
+        sh(sys.executable, "-i").stdin(sh.CAPTURE).stdout(sh.CAPTURE).stderr(sh.STDOUT)
+    )
 
-    async with cmd.set(pty=_NO_ECHO) as run:
+    async with cmd as run:
         repl = Prompt(run, alt_ps1)
 
         greeting = await repl.send(f"import sys; sys.ps1='{alt_ps1}'")
@@ -83,9 +96,11 @@ async def test_prompt_python_ps1():
 @_requires_pty
 async def test_prompt_python_timeout():
     "Test the prompt class with the Python REPL."
-    cmd = sh(sys.executable).stdin(sh.CAPTURE).stdout(sh.CAPTURE).stderr(sh.STDOUT)
+    cmd = (
+        sh(sys.executable, "-i").stdin(sh.CAPTURE).stdout(sh.CAPTURE).stderr(sh.STDOUT)
+    )
 
-    async with cmd.set(pty=_NO_ECHO) as run:
+    async with cmd as run:
         repl = Prompt(run, _PS1)
 
         greeting = await repl.send()
@@ -102,9 +117,11 @@ async def test_prompt_python_timeout():
 @_requires_pty
 async def test_prompt_python_missing_newline():
     "Test the prompt class with the Python REPL."
-    cmd = sh(sys.executable).stdin(sh.CAPTURE).stdout(sh.CAPTURE).stderr(sh.STDOUT)
+    cmd = (
+        sh(sys.executable, "-i").stdin(sh.CAPTURE).stdout(sh.CAPTURE).stderr(sh.STDOUT)
+    )
 
-    async with cmd.set(pty=_NO_ECHO) as run:
+    async with cmd as run:
         repl = Prompt(run, _PS1)
 
         greeting = await repl.send()
@@ -118,7 +135,7 @@ async def test_prompt_python_missing_newline():
     assert run.result().exit_code == 0
 
 
-@_requires_unix
+@_requires_pty
 async def test_prompt_unix_shell():
     "Test the prompt class with a shell (PTY no echo)."
     cmd = (
@@ -133,7 +150,9 @@ async def test_prompt_unix_shell():
         repl = Prompt(run, "$")
 
         greeting = await repl.send()
-        assert greeting == ""
+        # FIXME: FreeBSD is complaining that it can't access tty?
+        if not sys.platform.startswith("freebsd"):
+            assert greeting == ""
 
         result = await repl.send("echo 123")
         assert result == "123"
@@ -158,10 +177,16 @@ async def test_prompt_unix_shell_echo():
         repl = Prompt(run, "$")
 
         greeting = await repl.send()
-        assert greeting == ""
+        # FIXME: FreebSD is complaining that it can't access tty?
+        if not sys.platform.startswith("freebsd"):
+            assert greeting == ""
 
         result = await repl.send("echo 123")
-        assert result == "echo 123\n123"
+        if _IS_ALPINE:
+            # Alpine is including terminal escape chars.
+            assert result == "\x1b[6necho 123\n123"
+        else:
+            assert result == "echo 123\n123"
 
         await repl.send("exit")
 
