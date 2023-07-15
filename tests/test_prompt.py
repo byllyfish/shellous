@@ -232,9 +232,9 @@ async def test_prompt_unix_shell_interactive():
 
         result = await repl.send("echo 123")
 
-        if _IS_MACOS and not _IS_GITHUB_ACTIONS:
-            # On my *own* Mac, the result is 'echo 123\n123'.
-            # Result is "123" on MacOS in Github Actions?
+        if _IS_MACOS and sys.version_info[:2] >= (3, 10):
+            # On MacOS with Python 3.10 or later, the result is 'echo 123\n123'.
+            # Result is "123" on MacOS in Python 3.9?
             assert result == "echo 123\n123"
         else:
             assert result == "123"
