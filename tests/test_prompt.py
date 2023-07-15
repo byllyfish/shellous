@@ -25,6 +25,9 @@ _IS_MACOS = sys.platform == "darwin"
 # True if we're in Github Actions.
 _IS_GITHUB_ACTIONS = os.environ.get("GITHUB_ACTIONS") is not None
 
+# True if we're using uvloop.
+_IS_UVLOOP = os.environ.get("SHELLOUS_LOOP_TYPE") == "uvloop"
+
 # The interactive prompt on PyPY3 is ">>>> ".
 if _IS_PYPY:
     _PS1 = ">>>> "
@@ -36,7 +39,7 @@ _NO_ECHO = cooked(echo=False)
 _requires_unix = pytest.mark.skipif(sys.platform == "win32", reason="requires unix")
 
 _requires_pty = pytest.mark.skipif(
-    os.environ.get("SHELLOUS_LOOP_TYPE") == "uvloop" or sys.platform == "win32",
+    _IS_UVLOOP or sys.platform == "win32",
     reason="requires pty",
 )
 
@@ -232,9 +235,10 @@ async def test_prompt_unix_shell_interactive():
 
         result = await repl.send("echo 123")
 
-        if _IS_MACOS and sys.version_info[:2] >= (3, 10):
+        if _IS_MACOS and sys.version_info[:2] >= (3, 10) and not _IS_UVLOOP:
             # On MacOS with Python 3.10 or later, the result is 'echo 123\n123'.
-            # Result is "123" on MacOS in Python 3.9?
+            # (Unless we are using uvloop.) Result is "123" on MacOS in
+            # Python 3.9, or when using uvloop with later Python versions.
             assert result == "echo 123\n123"
         else:
             assert result == "123"
