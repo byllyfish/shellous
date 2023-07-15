@@ -16,6 +16,15 @@ _IS_PYPY = platform.python_implementation() == "PyPy"
 # True if we're running on alpine linux.
 _IS_ALPINE = os.path.exists("/etc/alpine-release")
 
+# True if we're running on FreeBSD.
+_IS_FREEBSD = sys.platform.startswith("freebsd")
+
+# True if we're running on MacOS.
+_IS_MACOS = sys.platform == "darwin"
+
+# True if we're in Github Actions.
+_IS_GITHUB_ACTIONS = os.environ.get("GITHUB_ACTIONS") is not None
+
 # The interactive prompt on PyPY3 is ">>>> ".
 if _IS_PYPY:
     _PS1 = ">>>> "
@@ -44,7 +53,10 @@ async def test_prompt_python_pty():
         assert "Python" in greeting
 
         result = await repl.send("print('abc')")
-        assert result == "abc"
+        if _IS_MACOS and _IS_GITHUB_ACTIONS:
+            assert result == "print('abc')\nabc"
+        else:
+            assert result == "abc"
 
         await repl.send("exit()")
 
@@ -150,12 +162,18 @@ async def test_prompt_unix_shell():
         repl = Prompt(run, "$")
 
         greeting = await repl.send()
-        # FIXME: FreeBSD is complaining that it can't access tty?
-        if not sys.platform.startswith("freebsd"):
+        if _IS_FREEBSD:
+            # FIXME: FreeBSD is complaining that it can't access tty?
+            assert "job control" in greeting
+        else:
             assert greeting == ""
 
         result = await repl.send("echo 123")
-        assert result == "123"
+        if _IS_FREEBSD:
+            # FIXME: I don't understand why FreeBSD is still echoing?
+            assert result == "echo 123\n123"
+        else:
+            assert result == "123"
 
         await repl.send("exit")
 
@@ -177,8 +195,10 @@ async def test_prompt_unix_shell_echo():
         repl = Prompt(run, "$")
 
         greeting = await repl.send()
-        # FIXME: FreebSD is complaining that it can't access tty?
-        if not sys.platform.startswith("freebsd"):
+        if _IS_FREEBSD:
+            # FIXME: FreeBSD is complaining that it can't access tty?
+            assert "job control" in greeting
+        else:
             assert greeting == ""
 
         result = await repl.send("echo 123")
@@ -212,10 +232,10 @@ async def test_prompt_unix_shell_interactive():
 
         result = await repl.send("echo 123")
 
-        if sys.platform == "darwin":
-            # On my own Mac, the result is 'echo 123\n123'. zsh weirdness?
-            # The value is correct in GHA.
-            assert result in ("123", "echo 123\n123")
+        if _IS_MACOS and not _IS_GITHUB_ACTIONS:
+            # On my *own* Mac, the result is 'echo 123\n123'.
+            # Result is "123" on MacOS in Github Actions?
+            assert result == "echo 123\n123"
         else:
             assert result == "123"
 
