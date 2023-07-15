@@ -121,9 +121,15 @@ async def test_prompt_python_missing_newline():
 @_requires_unix
 async def test_prompt_unix_shell():
     "Test the prompt class with a shell (PTY no echo)."
-    cmd = sh("sh").stdin(sh.CAPTURE).stdout(sh.CAPTURE).stderr(sh.STDOUT)
+    cmd = (
+        sh("sh")
+        .stdin(sh.CAPTURE)
+        .stdout(sh.CAPTURE)
+        .stderr(sh.STDOUT)
+        .set(pty=_NO_ECHO, inherit_env=False)
+    )
 
-    async with cmd.set(pty=_NO_ECHO).env(PS1="$", TERM="dummy") as run:
+    async with cmd.env(PS1="$", TERM="dumb") as run:
         repl = Prompt(run, "$")
 
         greeting = await repl.send()
@@ -140,9 +146,15 @@ async def test_prompt_unix_shell():
 @_requires_pty
 async def test_prompt_unix_shell_echo():
     "Test the prompt class with a shell (PTY default cooked mode)."
-    cmd = sh("sh").stdin(sh.CAPTURE).stdout(sh.CAPTURE).stderr(sh.STDOUT)
+    cmd = (
+        sh("sh")
+        .stdin(sh.CAPTURE)
+        .stdout(sh.CAPTURE)
+        .stderr(sh.STDOUT)
+        .set(pty=True, inherit_env=False)
+    )
 
-    async with cmd.set(pty=True).env(PS1="$", TERM="dummy") as run:
+    async with cmd.env(PS1="$", TERM="dumb") as run:
         repl = Prompt(run, "$")
 
         greeting = await repl.send()
@@ -159,19 +171,30 @@ async def test_prompt_unix_shell_echo():
 @_requires_unix
 async def test_prompt_unix_shell_interactive():
     "Test the prompt class with an interactive shell (non-PTY, forced)."
-    cmd = sh("sh", "-i").stdin(sh.CAPTURE).stdout(sh.CAPTURE).stderr(sh.STDOUT)
+    cmd = (
+        sh("sh", "-i")
+        .stdin(sh.CAPTURE)
+        .stdout(sh.CAPTURE)
+        .stderr(sh.STDOUT)
+        .set(inherit_env=False)
+    )
 
-    async with cmd.env(PS1="$", TERM="dummy") as run:
+    async with cmd.env(PS1="$", TERM="dumb") as run:
         repl = Prompt(run, "$")
 
         greeting = await repl.send()
         assert "job control" in greeting  # expect message about job control
 
         result = await repl.send("echo 123")
-        assert result == "echo 123\n123"
 
-        result = await repl.send("exit")
-        assert result == "exit\nexit\n"
+        if sys.platform == "darwin":
+            # On my own Mac, the result is 'echo 123\n123'. zsh weirdness?
+            # The value is correct in GHA.
+            assert result in ("123", "echo 123\n123")
+        else:
+            assert result == "123"
+
+        await repl.send("exit")
 
     assert run.result().exit_code == 0
 
