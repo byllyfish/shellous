@@ -6,7 +6,7 @@ from typing import Optional
 from shellous.harvest import harvest_results
 from shellous.log import LOGGER
 from shellous.runner import Runner
-from shellous.util import decode, encode_bytes
+from shellous.util import decode_bytes, encode_bytes
 
 
 class Prompt:
@@ -109,7 +109,7 @@ class Prompt:
         if buf.endswith(self._prompt_bytes):
             buf = buf[0 : -len(self._prompt_bytes)]
 
-        return decode(buf, self._encoding)
+        return decode_bytes(buf, self._encoding)
 
 
 async def _read_until(stream: asyncio.StreamReader, separator: bytes) -> bytes:

@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union
 
 from shellous.log import LOG_DETAIL, log_method
 from shellous.pty_util import PtyAdapterOrBool
-from shellous.util import decode
+from shellous.util import decode_bytes
 
 if TYPE_CHECKING:
     import shellous
@@ -202,7 +202,7 @@ async def copy_stringio(
     finally:
         # Only convert to string once all output is collected.
         # (What if utf-8 code point is split between reads?)
-        dest.write(decode(buf.getvalue(), encoding))
+        dest.write(decode_bytes(buf.getvalue(), encoding))
 
 
 @log_method(LOG_DETAIL)
@@ -213,7 +213,7 @@ async def copy_logger(
 ):
     "Copy lines from source stream to dest Logger."
     async for line in source:
-        data = decode(line, encoding)
+        data = decode_bytes(line, encoding)
         dest.error(data.rstrip())
 
 
@@ -280,7 +280,7 @@ async def copy_streamwriter(source: asyncio.StreamReader, dest: asyncio.StreamWr
 async def read_lines(source: asyncio.StreamReader, encoding: str):
     "Async iterator over lines in stream."
     async for line in source:
-        yield decode(line, encoding)
+        yield decode_bytes(line, encoding)
 
 
 def aiter_preflight(cmd: _CT) -> _CT:

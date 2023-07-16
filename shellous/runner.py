@@ -25,6 +25,7 @@ from shellous.util import (
     BSD_DERIVED,
     SupportsClose,
     close_fds,
+    encode_bytes,
     poll_wait_pid,
     uninterrupted,
     verify_dev_fd,
@@ -60,11 +61,6 @@ def _is_writable(cmd: "Union[shellous.Command[Any], shellous.Pipeline[Any]]"):
         # Pipelines need to check both the last/first commands.
         return cmd.options._writable or cmd[0].options._writable
     return cmd.options._writable
-
-
-def _enc(encoding: str) -> list[str]:
-    "Helper function to split the encoding name into codec and errors."
-    return encoding.split(maxsplit=1)
 
 
 class _RunOptions:
@@ -288,7 +284,7 @@ class _RunOptions:
             if close:
                 self.open_fds.append(stdin)
         elif isinstance(input_, str):
-            input_bytes = input_.encode(*_enc(encoding))
+            input_bytes = encode_bytes(input_, encoding)
         elif isinstance(input_, (asyncio.StreamReader, io.BytesIO, io.StringIO)):
             # Shellous-supported input classes.
             assert stdin == asyncio.subprocess.PIPE
@@ -781,7 +777,7 @@ class Runner:
             return None
 
         if isinstance(source, io.StringIO):
-            input_bytes = source.getvalue().encode(*_enc(opts.encoding))
+            input_bytes = encode_bytes(source.getvalue(), opts.encoding)
             self.add_task(redir.write_stream(input_bytes, stream, eof), tag)
             return None
 
