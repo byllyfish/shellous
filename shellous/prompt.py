@@ -6,7 +6,7 @@ from typing import Optional
 from shellous.harvest import harvest_results
 from shellous.log import LOGGER
 from shellous.runner import Runner
-from shellous.util import encode_bytes, decode
+from shellous.util import decode, encode_bytes
 
 
 class Prompt:
