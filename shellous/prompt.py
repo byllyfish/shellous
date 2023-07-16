@@ -6,6 +6,7 @@ from typing import Optional
 from shellous.harvest import harvest_results
 from shellous.log import LOGGER
 from shellous.runner import Runner
+from shellous.util import encode_bytes, decode
 
 
 class Prompt:
@@ -28,9 +29,10 @@ class Prompt:
     ```
     """
 
-    runner: Runner
-    prompt_bytes: bytes
-    default_timeout: Optional[float]
+    _runner: Runner
+    _encoding: str
+    _prompt_bytes: bytes
+    _default_timeout: Optional[float]
 
     def __init__(
         self,
@@ -42,9 +44,10 @@ class Prompt:
         assert runner.stdin is not None
         assert runner.stdout is not None
 
-        self.runner = runner
-        self.prompt_bytes = prompt.encode("utf-8")
-        self.default_timeout = default_timeout
+        self._runner = runner
+        self._encoding = runner.command.options.encoding
+        self._prompt_bytes = encode_bytes(prompt, self._encoding)
+        self._default_timeout = default_timeout
 
     async def send(
         self,
@@ -52,19 +55,19 @@ class Prompt:
         *,
         timeout: Optional[float] = None,
     ) -> str:
-        "Write some input text to stdin, then await the response."
-        stdin = self.runner.stdin
+        "Write some input text to stdin, then await the response from stdout."
+        stdin = self._runner.stdin
         assert stdin is not None
 
-        data = input_text.encode("utf-8") + b"\n"
-        LOGGER.debug("Prompt[pid=%s] send: %r", self.runner.pid, data)
+        data = encode_bytes(input_text, self._encoding) + b"\n"
+        LOGGER.debug("Prompt[pid=%s] send: %r", self._runner.pid, data)
         stdin.write(data)
 
         # Drain our write to stdin and wait for prompt from stdout.
         cancelled, (result, _) = await harvest_results(
             self._read_to_prompt(),
             stdin.drain(),
-            timeout=timeout or self.default_timeout,
+            timeout=timeout or self._default_timeout,
         )
         if cancelled:
             raise asyncio.CancelledError()
@@ -80,7 +83,7 @@ class Prompt:
         "Read from stdout up to the next prompt."
         cancelled, (result,) = await harvest_results(
             self._read_to_prompt(),
-            timeout=timeout or self.default_timeout,
+            timeout=timeout or self._default_timeout,
         )
         if cancelled:
             raise asyncio.CancelledError()
@@ -90,23 +93,23 @@ class Prompt:
 
     def close(self) -> None:
         "Close stdin to end the prompt session."
-        assert self.runner.stdin is not None
-        self.runner.stdin.close()
+        assert self._runner.stdin is not None
+        self._runner.stdin.close()
 
     async def _read_to_prompt(self) -> str:
         "Read all data up to the prompt and return it (after removing prompt)."
-        stdout = self.runner.stdout
+        stdout = self._runner.stdout
         assert stdout is not None
 
-        buf = await _read_until(stdout, self.prompt_bytes)
-        LOGGER.debug("Prompt[pid=%s] receive: %r", self.runner.pid, buf)
+        buf = await _read_until(stdout, self._prompt_bytes)
+        LOGGER.debug("Prompt[pid=%s] receive: %r", self._runner.pid, buf)
 
         # Clean up the output to remove the prompt, then return as string.
         buf = buf.replace(b"\r\n", b"\n")
-        if buf.endswith(self.prompt_bytes):
-            buf = buf[0 : -len(self.prompt_bytes)]
+        if buf.endswith(self._prompt_bytes):
+            buf = buf[0 : -len(self._prompt_bytes)]
 
-        return buf.decode("utf-8")
+        return decode(buf, self._encoding)
 
 
 async def _read_until(stream: asyncio.StreamReader, separator: bytes) -> bytes:

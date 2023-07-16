@@ -41,6 +41,11 @@ def decode(data: bytes, encoding: str) -> str:
     return data.decode(*encoding.split(maxsplit=1))
 
 
+def encode_bytes(data: str, encoding: str) -> bytes:
+    "Utility function to encode byte strings."
+    return data.encode(*encoding.split(maxsplit=1))
+
+
 def coerce_env(env: dict[str, Any]) -> dict[str, str]:
     """Utility function to coerce environment variables to string.
 
