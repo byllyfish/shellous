@@ -8,91 +8,52 @@ import sys
 import pytest
 
 from shellous import sh
-from shellous.harvest import harvest_results
 from shellous.log import LOGGER
+from shellous.prompt import Prompt
 
-_PROMPT = ">>> "
-_PROMPT_ELLIPSIS = "... "
-
-
-class Prompt:
-    "Utility class to help with an interactive prompt."
-
-    def __init__(self, stdin, stdout, errbuf):
-        self.stdin = stdin
-        self.stdout = stdout
-        self.errbuf = errbuf
-        self.prompt_bytes = _PROMPT.encode("utf-8")
-
-    async def prompt(self, input_text=""):
-        "Write some input text to stdin, then await the response."
-        if input_text:
-            self.stdin.write(input_text.encode("utf-8") + b"\n")
-
-        # Drain our write to stdin, and wait for prompt from stdout.
-        cancelled, (out, _) = await harvest_results(
-            self.stdout.readuntil(self.prompt_bytes),
-            self.stdin.drain(),
-            timeout=5.0,
-        )
-        if cancelled:
-            raise asyncio.CancelledError()
-
-        # If there are ellipsis bytes in the beginning of out, remove them.
-        assert isinstance(out, bytes)
-        out = re.sub(rb"^(?:\.\.\. )+", b"", out)
-
-        # Combine stderr and stdout, then clear stderr.
-        buf = self.errbuf + out
-        self.errbuf.clear()
-
-        # Clean up the output to remove the prompt, then return as string.
-        buf = buf.replace(b"\r\n", b"\n")
-        assert buf.endswith(self.prompt_bytes)
-        promptlen = len(self.prompt_bytes)
-        buf = buf[0:-promptlen].rstrip(b"\n")
-
-        return buf.decode("utf-8")
+# Custom Python REPL prompt.
+_PROMPT = "<+=+=+>"
 
 
 async def run_asyncio_repl(cmds, logfile=None):
     "Helper function to run the asyncio REPL and feed it commands."
-    errbuf = bytearray()
     repl = (
         sh(sys.executable, "-m", "asyncio")
         .stdin(sh.CAPTURE)
         .stdout(sh.CAPTURE)
-        .stderr(errbuf)
-        .set(_return_result=True, inherit_env=False)
+        .stderr(sh.STDOUT)
+        .set(inherit_env=False)
         .env(**_current_env())
     )
 
     async with repl as run:
-        assert run.stdin is not None
+        prompt = Prompt(run, _PROMPT, default_timeout=5.0)
 
-        p = Prompt(run.stdin, run.stdout, errbuf)
-        await p.prompt()
+        # Customize the python REPL prompt to make it easier to detect. The
+        # initial output of the REPL will include the old ">>> " prompt which
+        # we can ignore.
+        await prompt.send(f"import sys; sys.ps1 = '{_PROMPT}'; sys.ps2 = ''")
 
         # Optionally redirect logging to a file.
-        await p.prompt("import shellous.log, logging")
+        await prompt.send("import shellous.log, logging")
         if logfile:
-            await p.prompt("shellous.log.LOGGER.setLevel(logging.DEBUG)")
-            await p.prompt(
+            await prompt.send("shellous.log.LOGGER.setLevel(logging.DEBUG)")
+            await prompt.send(
                 f"logging.basicConfig(filename='{logfile}', level=logging.DEBUG)"
             )
         else:
             # I don't want random logging messages to confuse the output.
-            await p.prompt("shellous.log.LOGGER.setLevel(logging.ERROR)")
+            await prompt.send("shellous.log.LOGGER.setLevel(logging.ERROR)")
 
         output = []
         for cmd in cmds:
             LOGGER.info("  repl: %r", cmd)
-            output.append(await p.prompt(cmd))
+            output.append(await prompt.send(cmd))
             # Give tasks a chance to get started.
             if ".create_task(" in cmd:
                 await asyncio.sleep(0.1)
 
-        run.stdin.close()
+        prompt.close()
 
     result = run.result()
     assert result.exit_code == 0
@@ -225,12 +186,12 @@ def _separate_cmds_and_outputs(lines):
     output = ""
 
     for line in lines:
-        if line.startswith(_PROMPT):
+        if line.startswith(">>> "):
             if cmd is not None:
                 yield (cmd, output.rstrip("\n"))
             cmd = line[4:]
             output = ""
-        elif line.startswith(_PROMPT_ELLIPSIS):
+        elif line.startswith("... "):
             assert cmd
             cmd += "\n" + line[4:]
         else:

@@ -26,6 +26,7 @@
     ],
     "ignoreRegExpList": [
         "# pylint:.*",
-        "`[a-z]+`"
+        "`[a-z]+`",
+        "__[a-z]+__"
     ]
 }
