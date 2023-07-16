@@ -85,7 +85,7 @@ class Prompt:
 
         return buf.decode("utf-8")
 
-    def close(self):
+    def close(self) -> None:
         "Close stdin to end the prompt session."
         assert self.runner.stdin is not None
         self.runner.stdin.close()

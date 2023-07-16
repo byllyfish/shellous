@@ -250,7 +250,6 @@ async def test_prompt_unix_shell_interactive():
 
 async def test_prompt_asyncio_repl():
     "Test the prompt class with the asyncio REPL."
-
     cmd = (
         sh(sys.executable, "-m", "asyncio")
         .stdin(sh.CAPTURE)

@@ -6,7 +6,7 @@
 #     pytest -v -s --log-cli-level=DEBUG | ./ci/annotate.awk -v step=StepName
 
 /CRITICAL/ { critical_msg[critical_count++] = $0 }
-/[^_]ERROR/ { if (!match($0, /test_logger/)) error_msg[error_count++] = $0 }
+/[^_.]ERROR/ { if (!match($0, /test_logger/)) error_msg[error_count++] = $0 }
 /WARNING/  { warning_msg[warning_count++] = $0 }
 1          # print every line
 
