@@ -52,7 +52,7 @@ async def test_prompt_python_pty():
     async with cmd.set(pty=_NO_ECHO) as run:
         repl = Prompt(run, _PS1, default_timeout=3.0)
 
-        greeting = await repl.send()
+        greeting = await repl.receive()
         assert "Python" in greeting
 
         result = await repl.send("print('abc')")
@@ -75,7 +75,7 @@ async def test_prompt_python_interactive():
     async with cmd as run:
         repl = Prompt(run, _PS1, default_timeout=3.0)
 
-        greeting = await repl.send()
+        greeting = await repl.receive()
         assert "Python" in greeting
 
         result = await repl.send("print('abc')")
@@ -118,7 +118,7 @@ async def test_prompt_python_timeout():
     async with cmd as run:
         repl = Prompt(run, _PS1)
 
-        greeting = await repl.send()
+        greeting = await repl.receive()
         assert "Python" in greeting
 
         with pytest.raises(asyncio.TimeoutError):
@@ -139,7 +139,7 @@ async def test_prompt_python_missing_newline():
     async with cmd as run:
         repl = Prompt(run, _PS1)
 
-        greeting = await repl.send()
+        greeting = await repl.receive()
         assert "Python" in greeting
 
         result = await repl.send("print(3, end='.')")
@@ -164,7 +164,7 @@ async def test_prompt_unix_shell():
     async with cmd.env(PS1="$", TERM="dumb") as run:
         repl = Prompt(run, "$")
 
-        greeting = await repl.send()
+        greeting = await repl.receive()
         if _IS_FREEBSD:
             # FIXME: FreeBSD is complaining that it can't access tty?
             assert "job control" in greeting
@@ -197,7 +197,7 @@ async def test_prompt_unix_shell_echo():
     async with cmd.env(PS1="$", TERM="dumb") as run:
         repl = Prompt(run, "$")
 
-        greeting = await repl.send()
+        greeting = await repl.receive()
         if _IS_FREEBSD:
             # FIXME: FreeBSD is complaining that it can't access tty?
             assert "job control" in greeting
@@ -230,7 +230,7 @@ async def test_prompt_unix_shell_interactive():
     async with cmd.env(PS1="$", TERM="dumb") as run:
         repl = Prompt(run, "$")
 
-        greeting = await repl.send()
+        greeting = await repl.receive()
         assert "job control" in greeting  # expect message about job control
 
         result = await repl.send("echo 123")
@@ -260,10 +260,10 @@ async def test_prompt_asyncio_repl():
     async with cmd as run:
         repl = Prompt(run, ">>> ")
 
-        greeting = await repl.send()
+        greeting = await repl.receive()
         assert "asyncio" in greeting
 
-        extra = await repl.send()
+        extra = await repl.receive()
         assert "import asyncio" in extra
 
         result = await repl.send("print('hello')")
