@@ -73,7 +73,7 @@ async def test_prompt_python_interactive():
     )
 
     async with cmd as run:
-        repl = Prompt(run, _PS1, default_timeout=3.0)
+        repl = Prompt(run, _PS1, default_timeout=3.0, normalize_newlines=True)
 
         greeting = await repl.receive()
         assert "Python" in greeting
@@ -86,7 +86,6 @@ async def test_prompt_python_interactive():
     assert run.result().exit_code == 0
 
 
-@_requires_pty
 async def test_prompt_python_interactive_ps1():
     "Test the Python REPL but change the prompt to something unique."
     alt_ps1 = "????"
@@ -95,7 +94,7 @@ async def test_prompt_python_interactive_ps1():
     )
 
     async with cmd as run:
-        repl = Prompt(run, alt_ps1)
+        repl = Prompt(run, alt_ps1, normalize_newlines=True)
 
         greeting = await repl.send(f"import sys; sys.ps1='{alt_ps1}'")
         assert _PS1 in greeting
@@ -129,7 +128,6 @@ async def test_prompt_python_timeout():
     assert run.result().exit_code == 0
 
 
-@_requires_pty
 async def test_prompt_python_missing_newline():
     "Test the prompt class with the Python REPL."
     cmd = (
@@ -137,7 +135,7 @@ async def test_prompt_python_missing_newline():
     )
 
     async with cmd as run:
-        repl = Prompt(run, _PS1)
+        repl = Prompt(run, _PS1, normalize_newlines=True)
 
         greeting = await repl.receive()
         assert "Python" in greeting
@@ -258,7 +256,7 @@ async def test_prompt_asyncio_repl():
     )
 
     async with cmd as run:
-        repl = Prompt(run, ">>> ")
+        repl = Prompt(run, ">>> ", normalize_newlines=True)
 
         greeting = await repl.receive()
         assert "asyncio" in greeting
