@@ -57,9 +57,9 @@ async def test_prompt_python_pty():
 
         result = await repl.send("print('abc')")
         if _IS_MACOS and _IS_GITHUB_ACTIONS:
-            assert result == "print('abc')\nabc\n"
+            assert result == "print('abc')\r\nabc\r\n"
         else:
-            assert result == "abc\n"
+            assert result == "abc\r\n"
 
         await repl.send("exit()")
 
@@ -174,9 +174,9 @@ async def test_prompt_unix_shell():
         result = await repl.send("echo 123")
         if _IS_FREEBSD:
             # FIXME: I don't understand why FreeBSD is still echoing?
-            assert result == "echo 123\n123\n"
+            assert result == "echo 123\r\n123\r\n"
         else:
-            assert result == "123\n"
+            assert result == "123\r\n"
 
         await repl.send("exit")
 
@@ -207,9 +207,9 @@ async def test_prompt_unix_shell_echo():
         result = await repl.send("echo 123")
         if _IS_ALPINE:
             # Alpine is including terminal escape chars.
-            assert result == "\x1b[6necho 123\n123\n"
+            assert result == "\x1b[6necho 123\r\n123\r\n"
         else:
-            assert result == "echo 123\n123\n"
+            assert result == "echo 123\r\n123\r\n"
 
         await repl.send("exit")
 

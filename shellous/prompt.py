@@ -1,12 +1,15 @@
 "Implements the Prompt utility class."
 
 import asyncio
+import re
 from typing import Optional
 
 from shellous.harvest import harvest_results
 from shellous.log import LOGGER
 from shellous.runner import Runner
 from shellous.util import decode_bytes, encode_bytes
+
+_EOL_REGEX = re.compile(rb"\r\n|\r")
 
 
 class Prompt:
@@ -40,6 +43,7 @@ class Prompt:
         prompt: str,
         *,
         default_timeout: Optional[float] = None,
+        normalize_newlines: bool = False,
     ):
         assert runner.stdin is not None
         assert runner.stdout is not None
@@ -48,6 +52,7 @@ class Prompt:
         self._encoding = runner.command.options.encoding
         self._prompt_bytes = encode_bytes(prompt, self._encoding)
         self._default_timeout = default_timeout
+        self._normalize_newlines = normalize_newlines
 
     async def send(
         self,
@@ -104,8 +109,11 @@ class Prompt:
         buf = await _read_until(stdout, self._prompt_bytes)
         LOGGER.debug("Prompt[pid=%s] receive: %r", self._runner.pid, buf)
 
+        # Replace CR-LF or CR with LF.
+        if self._normalize_newlines:
+            buf = _EOL_REGEX.sub(b"\n", buf)
+
         # Clean up the output to remove the prompt, then return as string.
-        buf = buf.replace(b"\r\n", b"\n")
         if buf.endswith(self._prompt_bytes):
             buf = buf[0 : -len(self._prompt_bytes)]
 
