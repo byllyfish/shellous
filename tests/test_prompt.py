@@ -57,9 +57,9 @@ async def test_prompt_python_pty():
 
         result = await repl.send("print('abc')")
         if _IS_MACOS and _IS_GITHUB_ACTIONS:
-            assert result == "print('abc')\nabc"
+            assert result == "print('abc')\nabc\n"
         else:
-            assert result == "abc"
+            assert result == "abc\n"
 
         await repl.send("exit()")
 
@@ -79,7 +79,7 @@ async def test_prompt_python_interactive():
         assert "Python" in greeting
 
         result = await repl.send("print('abc')")
-        assert result == "abc"
+        assert result == "abc\n"
 
         await repl.send("exit()")
 
@@ -101,7 +101,7 @@ async def test_prompt_python_interactive_ps1():
         assert _PS1 in greeting
 
         result = await repl.send("print('def')")
-        assert result == "def"
+        assert result == "def\n"
 
         await repl.send("exit()")
 
@@ -174,9 +174,9 @@ async def test_prompt_unix_shell():
         result = await repl.send("echo 123")
         if _IS_FREEBSD:
             # FIXME: I don't understand why FreeBSD is still echoing?
-            assert result == "echo 123\n123"
+            assert result == "echo 123\n123\n"
         else:
-            assert result == "123"
+            assert result == "123\n"
 
         await repl.send("exit")
 
@@ -207,9 +207,9 @@ async def test_prompt_unix_shell_echo():
         result = await repl.send("echo 123")
         if _IS_ALPINE:
             # Alpine is including terminal escape chars.
-            assert result == "\x1b[6necho 123\n123"
+            assert result == "\x1b[6necho 123\n123\n"
         else:
-            assert result == "echo 123\n123"
+            assert result == "echo 123\n123\n"
 
         await repl.send("exit")
 
@@ -239,9 +239,9 @@ async def test_prompt_unix_shell_interactive():
             # On MacOS with Python 3.10 or later, the result is 'echo 123\n123'.
             # (Unless we are using uvloop.) Result is "123" on MacOS in
             # Python 3.9, or when using uvloop with later Python versions.
-            assert result == "echo 123\n123"
+            assert result == "echo 123\n123\n"
         else:
-            assert result == "123"
+            assert result == "123\n"
 
         await repl.send("exit")
 
@@ -267,7 +267,7 @@ async def test_prompt_asyncio_repl():
         assert "import asyncio" in extra
 
         result = await repl.send("print('hello')")
-        assert result == "hello"
+        assert result == "hello\n"
 
         repl.close()
 

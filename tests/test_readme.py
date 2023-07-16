@@ -48,7 +48,8 @@ async def run_asyncio_repl(cmds, logfile=None):
         output = []
         for cmd in cmds:
             LOGGER.info("  repl: %r", cmd)
-            output.append(await prompt.send(cmd))
+            out = await prompt.send(cmd)
+            output.append(out.rstrip("\n"))
             # Give tasks a chance to get started.
             if ".create_task(" in cmd:
                 await asyncio.sleep(0.1)

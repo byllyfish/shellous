@@ -69,13 +69,14 @@ class Prompt:
         if cancelled:
             raise asyncio.CancelledError()
 
+        assert isinstance(result, str)
         return result
 
     async def receive(
         self,
         *,
         timeout: Optional[float] = None,
-    ):
+    ) -> str:
         "Read from stdout up to the next prompt."
         cancelled, (result,) = await harvest_results(
             self._read_to_prompt(),
@@ -84,6 +85,7 @@ class Prompt:
         if cancelled:
             raise asyncio.CancelledError()
 
+        assert isinstance(result, str)
         return result
 
     def close(self) -> None:
@@ -102,7 +104,7 @@ class Prompt:
         # Clean up the output to remove the prompt, then return as string.
         buf = buf.replace(b"\r\n", b"\n")
         if buf.endswith(self.prompt_bytes):
-            buf = buf[0 : -len(self.prompt_bytes)].rstrip(b"\n")
+            buf = buf[0 : -len(self.prompt_bytes)]
 
         return buf.decode("utf-8")
 
