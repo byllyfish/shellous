@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from typing import Optional, Union
 
 import shellous
-from shellous.util import decode
+from shellous.util import decode_bytes
 
 # Limit number of bytes of stderr stored in Result object.
 RESULT_STDERR_LIMIT = 1024
@@ -46,12 +46,12 @@ class Result:
     @property
     def output(self) -> str:
         "Output of command as a string."
-        return decode(self.output_bytes, self.encoding)
+        return decode_bytes(self.output_bytes, self.encoding)
 
     @property
     def error(self) -> str:
         "Error from command as a string (if it is not redirected)."
-        return decode(self.error_bytes, self.encoding)
+        return decode_bytes(self.error_bytes, self.encoding)
 
     def __bool__(self) -> bool:
         "Return true if exit_code is 0."

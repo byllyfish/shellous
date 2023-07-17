@@ -57,9 +57,9 @@ async def test_prompt_python_pty():
 
         result = await repl.send("print('abc')")
         if _IS_MACOS and _IS_GITHUB_ACTIONS:
-            assert result == "print('abc')\nabc"
+            assert result == "print('abc')\r\nabc\r\n"
         else:
-            assert result == "abc"
+            assert result == "abc\r\n"
 
         await repl.send("exit()")
 
@@ -73,20 +73,19 @@ async def test_prompt_python_interactive():
     )
 
     async with cmd as run:
-        repl = Prompt(run, _PS1, default_timeout=3.0)
+        repl = Prompt(run, _PS1, default_timeout=3.0, normalize_newlines=True)
 
         greeting = await repl.receive()
         assert "Python" in greeting
 
         result = await repl.send("print('abc')")
-        assert result == "abc"
+        assert result == "abc\n"
 
         await repl.send("exit()")
 
     assert run.result().exit_code == 0
 
 
-@_requires_pty
 async def test_prompt_python_interactive_ps1():
     "Test the Python REPL but change the prompt to something unique."
     alt_ps1 = "????"
@@ -95,13 +94,13 @@ async def test_prompt_python_interactive_ps1():
     )
 
     async with cmd as run:
-        repl = Prompt(run, alt_ps1)
+        repl = Prompt(run, alt_ps1, normalize_newlines=True)
 
         greeting = await repl.send(f"import sys; sys.ps1='{alt_ps1}'")
         assert _PS1 in greeting
 
         result = await repl.send("print('def')")
-        assert result == "def"
+        assert result == "def\n"
 
         await repl.send("exit()")
 
@@ -129,7 +128,6 @@ async def test_prompt_python_timeout():
     assert run.result().exit_code == 0
 
 
-@_requires_pty
 async def test_prompt_python_missing_newline():
     "Test the prompt class with the Python REPL."
     cmd = (
@@ -137,7 +135,7 @@ async def test_prompt_python_missing_newline():
     )
 
     async with cmd as run:
-        repl = Prompt(run, _PS1)
+        repl = Prompt(run, _PS1, normalize_newlines=True)
 
         greeting = await repl.receive()
         assert "Python" in greeting
@@ -174,9 +172,9 @@ async def test_prompt_unix_shell():
         result = await repl.send("echo 123")
         if _IS_FREEBSD:
             # FIXME: I don't understand why FreeBSD is still echoing?
-            assert result == "echo 123\n123"
+            assert result == "echo 123\r\n123\r\n"
         else:
-            assert result == "123"
+            assert result == "123\r\n"
 
         await repl.send("exit")
 
@@ -207,9 +205,9 @@ async def test_prompt_unix_shell_echo():
         result = await repl.send("echo 123")
         if _IS_ALPINE:
             # Alpine is including terminal escape chars.
-            assert result == "\x1b[6necho 123\n123"
+            assert result == "\x1b[6necho 123\r\n123\r\n"
         else:
-            assert result == "echo 123\n123"
+            assert result == "echo 123\r\n123\r\n"
 
         await repl.send("exit")
 
@@ -239,9 +237,9 @@ async def test_prompt_unix_shell_interactive():
             # On MacOS with Python 3.10 or later, the result is 'echo 123\n123'.
             # (Unless we are using uvloop.) Result is "123" on MacOS in
             # Python 3.9, or when using uvloop with later Python versions.
-            assert result == "echo 123\n123"
+            assert result == "echo 123\n123\n"
         else:
-            assert result == "123"
+            assert result == "123\n"
 
         await repl.send("exit")
 
@@ -258,7 +256,7 @@ async def test_prompt_asyncio_repl():
     )
 
     async with cmd as run:
-        repl = Prompt(run, ">>> ")
+        repl = Prompt(run, ">>> ", normalize_newlines=True)
 
         greeting = await repl.receive()
         assert "asyncio" in greeting
@@ -267,7 +265,7 @@ async def test_prompt_asyncio_repl():
         assert "import asyncio" in extra
 
         result = await repl.send("print('hello')")
-        assert result == "hello"
+        assert result == "hello\n"
 
         repl.close()
 

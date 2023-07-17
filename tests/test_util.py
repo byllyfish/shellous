@@ -9,24 +9,27 @@ from shellous.util import (
     EnvironmentDict,
     close_fds,
     coerce_env,
-    decode,
+    decode_bytes,
     uninterrupted,
     verify_dev_fd,
 )
 
 
-def test_decode():
-    "Test the util.decode function."
-    assert decode(b"", "utf-8") == ""
-    assert decode(b"abc", "utf-8") == "abc"
+def test_decode_bytes():
+    "Test the util.decode_bytes function."
+    assert decode_bytes(b"", "utf-8") == ""
+    assert decode_bytes(b"abc", "utf-8") == "abc"
 
     with pytest.raises(AttributeError):
-        assert decode(None, "utf-8") == ""  # pyright: ignore[reportGeneralTypeIssues]
+        assert (
+            decode_bytes(None, "utf-8")  # pyright: ignore[reportGeneralTypeIssues]
+            == ""
+        )
 
     with pytest.raises(UnicodeDecodeError):
-        decode(b"\x81", "utf-8")
+        decode_bytes(b"\x81", "utf-8")
 
-    assert decode(b"\x81abc", "utf-8 replace") == "\ufffdabc"
+    assert decode_bytes(b"\x81abc", "utf-8 replace") == "\ufffdabc"
 
 
 def test_coerce_env():

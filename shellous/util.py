@@ -36,9 +36,14 @@ BSD_FREEBSD = sys.platform.startswith("freebsd")
 BSD_DERIVED = BSD_FREEBSD or sys.platform == "darwin"
 
 
-def decode(data: bytes, encoding: str) -> str:
+def decode_bytes(data: bytes, encoding: str) -> str:
     "Utility function to decode byte strings."
     return data.decode(*encoding.split(maxsplit=1))
+
+
+def encode_bytes(data: str, encoding: str) -> bytes:
+    "Utility function to encode byte strings."
+    return data.encode(*encoding.split(maxsplit=1))
 
 
 def coerce_env(env: dict[str, Any]) -> dict[str, str]:
