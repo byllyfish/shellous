@@ -1227,7 +1227,7 @@ async def test_wait_for_zero_seconds(sleep_cmd):
         # Eager task started but was cancelled before launching process.
         assert calls == [
             ("start", "sleep", None, ""),
-            ("stop", "sleep", _ABORT_EXIT_CODE, "CancelledError"),
+            ("stop", "sleep", CANCELLED_EXIT_CODE, "CancelledError"),
         ]
     else:
         # The task was cancelled before it even started, so there are no audit
