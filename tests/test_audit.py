@@ -7,7 +7,8 @@ import sys
 
 import pytest
 
-from shellous import AUDIT_EVENT_SUBPROCESS_SPAWN, sh
+from shellous import sh
+from shellous.runner import EVENT_SHELLOUS_EXEC
 
 # pylint: disable=global-statement
 
@@ -59,9 +60,7 @@ async def test_audit():
         print(event.encode("ascii", "backslashreplace").decode("ascii"))
 
     # Check for my audit event.
-    assert any(
-        event.startswith(f"('{AUDIT_EVENT_SUBPROCESS_SPAWN}',") for event in events
-    )
+    assert any(event.startswith(f"('{EVENT_SHELLOUS_EXEC}',") for event in events)
 
     if not _is_uvloop():
         # uvloop doesn't implement audit hooks.
@@ -97,9 +96,7 @@ async def test_audit_posix_spawn():
         print(event.encode("ascii", "backslashreplace").decode("ascii"))
 
     # Check for my audit event.
-    assert any(
-        event.startswith(f"('{AUDIT_EVENT_SUBPROCESS_SPAWN}',") for event in events
-    )
+    assert any(event.startswith(f"('{EVENT_SHELLOUS_EXEC}',") for event in events)
 
     # Check for subprocess.Popen and os.posix_spawn.
     assert any(event.startswith("('subprocess.Popen',") for event in events)
@@ -130,7 +127,7 @@ async def test_audit_block_subprocess_spawn():
     global _HOOK
 
     def _hook(event, _args):
-        if event == AUDIT_EVENT_SUBPROCESS_SPAWN:
+        if event == EVENT_SHELLOUS_EXEC:
             raise RuntimeError("subprocess_spawn blocked")
 
     try:
@@ -155,7 +152,7 @@ async def test_audit_block_pipe_specific_cmd():
     grep_path = shutil.which("grep")
 
     def _hook(event, args):
-        if event == AUDIT_EVENT_SUBPROCESS_SPAWN and args[0] == grep_path:
+        if event == EVENT_SHELLOUS_EXEC and args[0] == grep_path:
             raise RuntimeError("grep blocked")
 
     callbacks = []

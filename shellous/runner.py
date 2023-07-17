@@ -37,14 +37,13 @@ _KILL_TIMEOUT = 3.0
 _CLOSE_TIMEOUT = 0.25
 _UNKNOWN_EXIT_CODE = 255
 
-AUDIT_EVENT_SUBPROCESS_SPAWN = "byllyfish/shellous.subprocess_spawn"
+EVENT_SHELLOUS_EXEC = "shellous.exec"
 """Audit event raised by sys.audit() when shellous runs a subprocess.
-
 The audit event has one argument: the name of the command.
 """
 
-UNLAUNCHED_EXIT_CODE = -255
-"""Special exit code used in audit events when process launch itself
+CANCELLED_EXIT_CODE = -1000
+"""Special exit code used in audit callbacks when the process launch itself
 was cancelled."""
 
 
@@ -434,7 +433,7 @@ class Runner:
         if not self._proc:
             if self._cancelled:
                 # The process was cancelled before starting.
-                return UNLAUNCHED_EXIT_CODE
+                return CANCELLED_EXIT_CODE
             return None
         code = self._proc.returncode
         if code == _UNKNOWN_EXIT_CODE and self._last_signal is not None:
@@ -704,7 +703,7 @@ class Runner:
     async def _subprocess_exec(self, opts: _RunOptions):
         "Start the subprocess and assign to `self.proc`."
         with log_timer("asyncio.create_subprocess_exec"):
-            sys.audit(AUDIT_EVENT_SUBPROCESS_SPAWN, opts.pos_args[0])
+            sys.audit(EVENT_SHELLOUS_EXEC, opts.pos_args[0])
             with pty_util.set_ignore_child_watcher(
                 BSD_DERIVED and opts.pty_fds is not None
             ):

@@ -166,7 +166,7 @@ class Options:  # pylint: disable=too-many-instance-attributes
     "Function called to audit stages of process execution."
 
     def merge_env(self) -> Optional[dict[str, str]]:
-        "Return our `env` merged with the global environment."
+        "@private Return our `env` merged with the global environment."
         if self.inherit_env:
             if not self.env:
                 return None
@@ -177,7 +177,7 @@ class Options:  # pylint: disable=too-many-instance-attributes
         return {}
 
     def set_stdin(self, input_: Any, close: bool) -> "Options":
-        "Return new options with `input` configured."
+        "@private Return new options with `input` configured."
         if input_ is None:
             raise TypeError("invalid stdin")
 
@@ -191,7 +191,7 @@ class Options:  # pylint: disable=too-many-instance-attributes
         )
 
     def set_stdout(self, output: Any, append: bool, close: bool) -> "Options":
-        "Return new options with `output` configured."
+        "@private Return new options with `output` configured."
         if output is None:
             raise TypeError("invalid stdout")
 
@@ -206,7 +206,7 @@ class Options:  # pylint: disable=too-many-instance-attributes
         )
 
     def set_stderr(self, error: Any, append: bool, close: bool) -> "Options":
-        "Return new options with `error` configured."
+        "@private Return new options with `error` configured."
         if error is None:
             raise TypeError("invalid stderr")
 
@@ -218,12 +218,12 @@ class Options:  # pylint: disable=too-many-instance-attributes
         )
 
     def set_env(self, updates: dict[str, Any]) -> "Options":
-        "Return new options with augmented environment."
+        "@private Return new options with augmented environment."
         new_env = EnvironmentDict(self.env, updates)
         return dataclasses.replace(self, env=new_env)
 
     def set(self, kwds: dict[str, Any]) -> "Options":
-        """Return new options with given properties updated.
+        """@private Return new options with given properties updated.
 
         See `Command.set` for option reference.
         """
@@ -232,14 +232,14 @@ class Options:  # pylint: disable=too-many-instance-attributes
 
     @overload
     def which(self, name: bytes) -> Optional[bytes]:
-        "Find the command with the given name and return its path."
+        "@private Find the command with the given name and return its path."
 
     @overload
     def which(self, name: str) -> Optional[str]:
-        "Find the command with the given name and return its path."
+        "@private Find the command with the given name and return its path."
 
     def which(self, name: Union[str, bytes]) -> Optional[Union[str, bytes]]:
-        "Find the command with the given name and return its path."
+        "@private Find the command with the given name and return its path."
         return shutil.which(name, path=self.path)
 
 
