@@ -65,7 +65,10 @@ _PreexecFnT = Optional[Callable[[], None]]
 
 
 class AuditEventInfo(TypedDict):
-    "Info attached to each Audit Event."
+    """Info attached to each audit callback event.
+
+    See `audit_callback` in `Command.set` for more information.
+    """
 
     runner: Runner
     "Reference to the Runner object."

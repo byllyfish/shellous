@@ -1,8 +1,11 @@
 """Implements DefaultChildWatcher.
 
-Design Goals:
-    1. Independent of any running event loop.
-    2. Zero-cost until used.
+DefaultChildWatcher is an experimental child watcher implementation. With the
+the asyncio child watcher API being deprecated in Python 3.12, this code should
+not be relied upon other than for testing purposes.
+
+DefaultChildWatcher uses pidfd's on Linux and KQueue on MacOS/FreeBSD. If 
+neither is available, it falls back to blocking on waitpid in a thread.
 
 References:
     - https://developer.apple.com/library/archive/technotes/tn2050/_index.html
