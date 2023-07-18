@@ -13,7 +13,7 @@ from shellous import sh
 from shellous.log import log_method
 
 if sys.platform != "win32":
-    from shellous import DefaultChildWatcher
+    from shellous.watcher import DefaultChildWatcher
 
 pytestmark = pytest.mark.skipif(sys.platform == "win32", reason="Unix")
 

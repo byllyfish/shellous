@@ -16,10 +16,6 @@ from .pty_util import cbreak, cooked, raw
 from .result import Result, ResultError
 from .runner import PipeRunner, Runner
 
-if sys.platform != "win32":
-    from .watcher import DefaultChildWatcher
-
-
 if sys.version_info[:3] in [(3, 10, 9), (3, 11, 1)]:
     # Warn about these specific Python releases: 3.10.9 and 3.11.1
     # These releases have a known race condition.
@@ -55,6 +51,5 @@ __all__ = [
     "ResultError",
     "Runner",
     "PipeRunner",
-    "DefaultChildWatcher",
     "AuditEventInfo",
 ]
