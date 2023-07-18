@@ -1,5 +1,6 @@
 "Unit tests for shellous module (Windows)."
 
+import os
 import sys
 from pathlib import Path
 
@@ -60,7 +61,7 @@ async def test_empty_env_echo(echo):
 async def test_empty_env_system_root():
     "Test running a command with just SYSTEM_ROOT env var."
     cmd = sh(sys.executable, "-c", "print('test1')")
-    result = await cmd.set(inherit_env=False).env(SystemRoot=...)
+    result = await cmd.set(inherit_env=False).env(SystemRoot=os.environ["SystemRoot"])
     assert result == "test1\r\n"
 
 

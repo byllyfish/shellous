@@ -14,12 +14,7 @@ from .command import AuditEventInfo, CmdContext, Command, Options
 from .pipeline import Pipeline
 from .pty_util import cbreak, cooked, raw
 from .result import Result, ResultError
-from .runner import (
-    AUDIT_EVENT_SUBPROCESS_SPAWN,
-    UNLAUNCHED_EXIT_CODE,
-    PipeRunner,
-    Runner,
-)
+from .runner import PipeRunner, Runner
 
 if sys.platform != "win32":
     from .watcher import DefaultChildWatcher
@@ -61,7 +56,5 @@ __all__ = [
     "Runner",
     "PipeRunner",
     "DefaultChildWatcher",
-    "AUDIT_EVENT_SUBPROCESS_SPAWN",
     "AuditEventInfo",
-    "UNLAUNCHED_EXIT_CODE",
 ]

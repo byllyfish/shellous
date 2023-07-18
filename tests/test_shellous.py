@@ -13,16 +13,17 @@ from pathlib import Path
 import asyncstdlib as asl
 import pytest
 
-from shellous import UNLAUNCHED_EXIT_CODE, Result, ResultError, sh
+from shellous import Result, ResultError, sh
 from shellous.harvest import harvest_results
+from shellous.runner import CANCELLED_EXIT_CODE
 
 # 4MB + 1: Much larger than necessary.
 # See https://github.com/python/cpython/blob/main/Lib/test/support/__init__.py
 PIPE_MAX_SIZE = 4 * 1024 * 1024 + 1
 
 # On Windows, the exit_code of a terminated process is 1.
-CANCELLED_EXIT_CODE = -15 if sys.platform != "win32" else 1
-KILL_EXIT_CODE = -9 if sys.platform != "win32" else 1
+_ABORT_EXIT_CODE = -15 if sys.platform != "win32" else 1
+_KILL_EXIT_CODE = -9 if sys.platform != "win32" else 1
 
 
 def _is_uvloop():
@@ -256,7 +257,7 @@ async def test_echo_cancel_incomplete(echo_cmd):
 
     assert exc_info.type is ResultError
     assert exc_info.value.result == Result(
-        exit_code=CANCELLED_EXIT_CODE,
+        exit_code=_ABORT_EXIT_CODE,
         output_bytes=b"abc",
         error_bytes=b"",
         cancelled=True,
@@ -289,7 +290,7 @@ async def test_echo_cancel_stringio_incomplete(echo_cmd):
     assert buf.getvalue() == "abc"
     assert exc_info.type is ResultError
     assert exc_info.value.result == Result(
-        exit_code=CANCELLED_EXIT_CODE,
+        exit_code=_ABORT_EXIT_CODE,
         output_bytes=b"",
         error_bytes=b"",
         cancelled=True,
@@ -839,7 +840,7 @@ async def test_quick_cancel(echo_cmd):
         await task
 
     assert exc_info.value.result == Result(
-        exit_code=UNLAUNCHED_EXIT_CODE,
+        exit_code=CANCELLED_EXIT_CODE,
         output_bytes=b"",
         error_bytes=b"",
         cancelled=True,
@@ -1116,7 +1117,7 @@ async def test_audit_pipe_cancel(echo_cmd, tr_cmd):
         ("start", "tr", None, ""),
         ("stop", "echo", 0, ""),
         ("signal", "tr", None, "SIGTERM"),
-        ("stop", "tr", CANCELLED_EXIT_CODE, ""),
+        ("stop", "tr", _ABORT_EXIT_CODE, ""),
     ]
 
 
@@ -1175,7 +1176,7 @@ async def test_command_with_timeout_incomplete_result(sleep_cmd):
     result = await sleep(10).set(timeout=0.1)
 
     assert result == Result(
-        exit_code=CANCELLED_EXIT_CODE,
+        exit_code=_ABORT_EXIT_CODE,
         output_bytes=b"",
         error_bytes=b"",
         cancelled=True,
@@ -1191,7 +1192,7 @@ async def test_command_with_timeout_incomplete_resulterror(sleep_cmd):
         await sleep(10).set(timeout=0.1)
 
     assert exc_info.value.result == Result(
-        exit_code=CANCELLED_EXIT_CODE,
+        exit_code=_ABORT_EXIT_CODE,
         output_bytes=b"",
         error_bytes=b"",
         cancelled=True,
@@ -1226,7 +1227,7 @@ async def test_wait_for_zero_seconds(sleep_cmd):
         # Eager task started but was cancelled before launching process.
         assert calls == [
             ("start", "sleep", None, ""),
-            ("stop", "sleep", UNLAUNCHED_EXIT_CODE, "CancelledError"),
+            ("stop", "sleep", CANCELLED_EXIT_CODE, "CancelledError"),
         ]
     else:
         # The task was cancelled before it even started, so there are no audit
@@ -1254,7 +1255,7 @@ async def test_timeout_zero_seconds(sleep_cmd):
     assert calls == [
         ("start", "sleep", None),
         ("signal", "sleep", None),
-        ("stop", "sleep", CANCELLED_EXIT_CODE),
+        ("stop", "sleep", _ABORT_EXIT_CODE),
     ]
 
 
@@ -1276,7 +1277,7 @@ async def test_timeout_negative_seconds(sleep_cmd):
     assert calls == [
         ("start", "sleep", None),
         ("signal", "sleep", None),
-        ("stop", "sleep", CANCELLED_EXIT_CODE),
+        ("stop", "sleep", _ABORT_EXIT_CODE),
     ]
 
 
@@ -1291,7 +1292,7 @@ async def test_command_timeout_incomplete_result(echo_cmd):
         await cmd
 
     assert exc_info.value.result == Result(
-        exit_code=CANCELLED_EXIT_CODE,
+        exit_code=_ABORT_EXIT_CODE,
         output_bytes=b"abc",
         error_bytes=b"",
         cancelled=True,
@@ -1313,7 +1314,7 @@ async def test_command_timeout_incomplete_result_exit_code(echo_cmd):
         await cmd
 
     assert exc_info.value.result == Result(
-        exit_code=CANCELLED_EXIT_CODE,
+        exit_code=_ABORT_EXIT_CODE,
         output_bytes=b"abc",
         error_bytes=b"",
         cancelled=True,
@@ -1322,7 +1323,7 @@ async def test_command_timeout_incomplete_result_exit_code(echo_cmd):
 
     # Test timeout, catch_cancelled_error, and exit_codes. You can't do this with
     # asyncio.wait_for; you have to use the timeout option.
-    cmd = cmd.set(exit_codes={CANCELLED_EXIT_CODE})
+    cmd = cmd.set(exit_codes={_ABORT_EXIT_CODE})
     result = await cmd
     assert result == "abc"
 

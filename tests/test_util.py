@@ -37,14 +37,6 @@ def test_coerce_env():
     result = coerce_env(dict(a="a", b=1))
     assert result == {"a": "a", "b": "1"}
 
-    # Test on Windows using SystemRoot env, otherwise test with PATH.
-    if "SystemRoot" in os.environ:
-        result = coerce_env(dict(SystemRoot=...))
-        assert result == {"SystemRoot": os.environ["SystemRoot"]}
-    else:
-        result = coerce_env(dict(PATH=...))
-        assert result == {"PATH": os.environ["PATH"]}
-
 
 def test_close_fds(tmp_path):
     "Test the close_fds() function."
