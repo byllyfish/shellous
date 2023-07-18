@@ -47,18 +47,8 @@ def encode_bytes(data: str, encoding: str) -> bytes:
 
 
 def coerce_env(env: dict[str, Any]) -> dict[str, str]:
-    """Utility function to coerce environment variables to string.
-
-    If the value of an environment variable is `...`, grab the value from the
-    parent environment.
-    """
-
-    def _coerce(key: str, value: Any):
-        if value is ...:
-            value = os.environ[key]
-        return str(value)
-
-    return {str(key): _coerce(key, value) for key, value in env.items()}
+    """Utility function to coerce environment variables to string."""
+    return {str(key): str(value) for key, value in env.items()}
 
 
 class SupportsClose(Protocol):

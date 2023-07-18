@@ -766,20 +766,6 @@ async def test_large_cat():
     assert result.output_bytes == data
 
 
-async def test_env_ellipsis_unix():
-    "Test using `...` in env method to grab value from global environment."
-    cmd = sh("env").set(inherit_env=False).env(PATH=...)
-    result = await cmd
-    assert result.startswith("PATH=")
-
-
-async def test_env_ellipsis_unix_wrong_case():
-    "Test using `...` in env method to grab value from global environment."
-    # Fails because actual env is named "PATH", not "path"
-    with pytest.raises(KeyError):
-        sh("env").set(inherit_env=False).env(path=...)
-
-
 async def test_process_substitution():
     """Test process substitution.
 
