@@ -236,7 +236,7 @@ class _RunOptions:
             stdin=stdin,
             stdout=stdout,
             stderr=stderr,
-            env=options.merge_env(),
+            env=options.runtime_env(),
             start_new_session=start_session,
             preexec_fn=preexec_fn,
         )

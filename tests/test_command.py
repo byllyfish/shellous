@@ -186,26 +186,30 @@ def test_command_env_init():
     cmd2 = ash("echo")
     assert cmd2.options.env == dict(A="1")
 
+    # The `env` method is additive.
     cmd3 = cmd2.env(B=2)
     assert cmd3.options.env == dict(A="1", B="2")
 
+    cmd4 = cmd3.env(A="3")
+    assert cmd4.options.env == dict(A="3", B="2")
 
-def test_options_merge_env():
-    "Test the internal Options class `merge_env` method."
+
+def test_options_runtime_env():
+    "Test the internal Options class `runtime_env` method."
     opts1 = Options()
     assert opts1.env is None
-    opts2 = opts1.set_env(dict(A=1))
+    opts2 = opts1.add_env(dict(A=1))
     opts3 = opts2.set(dict(inherit_env=False))
 
-    env1 = opts1.merge_env()
+    env1 = opts1.runtime_env()
     assert env1 is None
 
-    env2 = opts2.merge_env()
+    env2 = opts2.runtime_env()
     assert isinstance(env2, dict)
     assert "PATH" in env2
     assert env2["A"] == "1"
 
-    env3 = opts3.merge_env()
+    env3 = opts3.runtime_env()
     assert env3 == dict(A="1")
 
     sh2 = sh.env(B=2)
@@ -213,10 +217,40 @@ def test_options_merge_env():
     assert sh2.options.env == dict(B="2")
 
 
+def test_options_set_env():
+    "Test the Options class set(env=...) method."
+    opts = Options()
+    assert opts.env is None
+
+    opts = opts.set(dict(env={"A": "a"}))
+    assert opts.env == {"A": "a"}
+
+    opts = opts.set(dict(env={"B": 3}))
+    assert opts.env == {"B": "3"}
+
+    opts = opts.set(dict(env={}))
+    assert opts.env is None
+
+
+def test_command_set_env():
+    "Test the Command class set(env=...) method."
+    cmd1 = sh("echo")
+    assert cmd1.options.env is None
+
+    cmd1 = cmd1.set(env={"A": "a"})
+    assert cmd1.options.env == {"A": "a"}
+
+    cmd2 = cmd1.set(env={"B": 3})
+    assert cmd2.options.env == {"B": "3"}
+
+    cmd3 = cmd2.set(env={})
+    assert cmd3.options.env is None
+
+
 def test_options_hash_eq():
     "Test that the internal Options class is hashable."
     opts1 = Options()
-    opts2 = opts1.set_env(dict(A=1))
+    opts2 = opts1.add_env(dict(A=1))
     opts3 = opts2.set(dict(inherit_env=False))
 
     assert hash(opts1) is not None

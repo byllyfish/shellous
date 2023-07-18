@@ -165,7 +165,7 @@ class Options:  # pylint: disable=too-many-instance-attributes
     audit_callback: _AuditFnT = None
     "Function called to audit stages of process execution."
 
-    def merge_env(self) -> Optional[dict[str, str]]:
+    def runtime_env(self) -> Optional[dict[str, str]]:
         "@private Return our `env` merged with the global environment."
         if self.inherit_env:
             if not self.env:
@@ -217,7 +217,7 @@ class Options:  # pylint: disable=too-many-instance-attributes
             error_close=close,
         )
 
-    def set_env(self, updates: dict[str, Any]) -> "Options":
+    def add_env(self, updates: dict[str, Any]) -> "Options":
         "@private Return new options with augmented environment."
         new_env = EnvironmentDict(self.env, updates)
         return dataclasses.replace(self, env=new_env)
@@ -228,6 +228,13 @@ class Options:  # pylint: disable=too-many-instance-attributes
         See `Command.set` for option reference.
         """
         kwds = {key: value for key, value in kwds.items() if value is not _UNSET}
+        if "env" in kwds:
+            # The "env" property is stored as an `EnvironmentDict`.
+            new_env = kwds["env"]
+            if new_env:
+                kwds["env"] = EnvironmentDict(None, new_env)
+            else:
+                kwds["env"] = None
         return dataclasses.replace(self, **kwds)
 
     @overload
@@ -303,13 +310,14 @@ class CmdContext(Generic[_RT]):
 
     def env(self, **kwds: Any) -> "CmdContext[_RT]":
         """Return new context with augmented environment."""
-        new_options = self.options.set_env(kwds)
+        new_options = self.options.add_env(kwds)
         return CmdContext(new_options)
 
     def set(  # pylint: disable=unused-argument, too-many-locals
         self,
         *,
         path: Unset[Optional[str]] = _UNSET,
+        env: Unset[dict[str, Any]] = _UNSET,
         inherit_env: Unset[bool] = _UNSET,
         encoding: Unset[str] = _UNSET,
         _return_result: Unset[bool] = _UNSET,
@@ -440,14 +448,22 @@ class Command(Generic[_RT]):
         return Command(self.args, new_options)
 
     def env(self, **kwds: Any) -> "Command[_RT]":
-        """Return new command with augmented environment."""
-        new_options = self.options.set_env(kwds)
+        """Return new command with augmented environment.
+
+        The changes to the environment variables made by this method are
+        additive. For example, calling `cmd.env(A=1).env(B=2)` produces a
+        command with the environment set to `{"A": "1", "B": "2"}`.
+
+        To clear the environment, use the `cmd.set(env={})` method.
+        """
+        new_options = self.options.add_env(kwds)
         return Command(self.args, new_options)
 
     def set(  # pylint: disable=unused-argument, too-many-locals
         self,
         *,
         path: Unset[Optional[str]] = _UNSET,
+        env: Unset[dict[str, Any]] = _UNSET,
         inherit_env: Unset[bool] = _UNSET,
         encoding: Unset[str] = _UNSET,
         _return_result: Unset[bool] = _UNSET,
@@ -467,6 +483,19 @@ class Command(Generic[_RT]):
         audit_callback: Unset[_AuditFnT] = _UNSET,
     ) -> "Command[_RT]":
         """Return new command with custom options set.
+
+        **path** (str | None) default=None<br>
+        Search path for locating command executable. By default, `path` is None
+        which causes shellous to rely on the `PATH` environment variable.
+
+        **env** (dict[str, str]) default={}<br>
+        Set the environment variables for the subprocess. If `inherit_env` is
+        True, the subprocess will also inherit the environment variables
+        specified by the parent process.
+
+        Using `set(env=...)` will replace all environment variables using the
+        dictionary argument. You can also use the `env(...)` method to modify
+        the existing environment incrementally.
 
         **inherit_env** (bool) default=True<br>
         Subprocess should inherit the parent process environment. If this is

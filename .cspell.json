@@ -19,7 +19,8 @@
         "pidfd",
         "kqueue",
         "nohup",
-        "preexec"
+        "preexec",
+        "SIGTERM"
     ],
     "ignorePaths": [
         "tests/**"
