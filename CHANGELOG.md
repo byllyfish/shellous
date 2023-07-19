@@ -1,6 +1,15 @@
 Shellous Change Log
 ===================
 
+0.27.0
+------
+
+- [FEATURE] Add experimental `Prompt` class for working with interactive prompts in a co-process.
+- [API] The `DefaultChildWatcher` class has been downgraded to an experimental-only feature.
+- [API] The `AUDIT_EVENT_SUBPROCESS_SPAWN` and `UNLAUNCHED_EXIT_CODE` constants are no longer part of the public/documented API. Internally, they were renamed.
+- [LATERAL] The methods of the internal `Options` class are now deliberately marked private, as they are not part of the public/documented API.
+- [LATERAL] Removed support for using Ellipsis as a special value when setting environment variables.
+
 0.26.0
 ------
 
