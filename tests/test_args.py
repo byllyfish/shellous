@@ -14,7 +14,8 @@ from shellous import Command, sh
 def _not_supported(cmd: Command):
     cmd, arg = cmd.args
     return (
-        cmd == "echo" and re.match(r"<[<>_.a-zA-z ]+ at 0x[0-9a-f]+>", arg) is not None
+        cmd == "echo"
+        and re.match(r"<[<>_.a-z ]+ at 0x[0-9a-f]+>", arg, re.IGNORECASE) is not None
     )
 
 
