@@ -123,13 +123,13 @@ def test_nested_list_arg():
 
 def test_none_command():
     "Test passing None as command."
-    with pytest.raises(TypeError):
+    with pytest.raises(NotImplementedError):
         sh(None, "abc")
 
 
 def test_none_arg():
     "Test passing None as an argument."
-    with pytest.raises(TypeError):
+    with pytest.raises(NotImplementedError):
         sh("echo", None)
 
 

@@ -11,7 +11,6 @@ import enum
 import os
 import shutil
 import signal
-from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
 from types import TracebackType
@@ -24,6 +23,7 @@ from typing import (
     Coroutine,
     Generator,
     Generic,
+    Iterable,
     Optional,
     Sequence,
     TypedDict,
@@ -398,7 +398,7 @@ class Command(Generic[_RT]):
     ```
     """
 
-    args: "tuple[Union[str, bytes, Command[Any], shellous.Pipeline[Any]], ...]"
+    args: "tuple[Union[str, bytes, bytearray, os.PathLike[Any], Command[Any], shellous.Pipeline[Any]], ...]"
     "Command arguments including the program name as first argument."
 
     options: Options
@@ -727,22 +727,21 @@ class Command(Generic[_RT]):
 
 
 def coerce(args: Sequence[Any]) -> tuple[Any, ...]:
-    """Flatten lists and coerce arguments to string."""
+    """Flatten lists and coerce arguments to string/bytes."""
     result: list[Any] = []
     for arg in args:
         if isinstance(
             arg,
             (str, bytes, bytearray, os.PathLike, Command, shellous.Pipeline),
         ):
+            # Pass these types directly into the argument tuple "as is".
+            # Note that bytearray value remains mutable, even when it is in
+            # the command arguments tuple.
             result.append(arg)
         elif isinstance(arg, (list, tuple)):
             result.extend(coerce(arg))  # pyright: ignore[reportUnknownArgumentType]
-        elif isinstance(arg, (dict, set)):
+        elif isinstance(arg, (dict, set, type(Ellipsis), type(None))):
             raise NotImplementedError("syntax is reserved")
-        elif arg is Ellipsis:
-            raise NotImplementedError("syntax is reserved")
-        elif arg is None:
-            raise TypeError("None in argument list")
         else:
             result.append(str(arg))
     return tuple(result)

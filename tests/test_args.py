@@ -12,9 +12,10 @@ from shellous import Command, sh
 
 
 def _not_supported(cmd: Command):
-    cmd, arg = cmd.args
+    name, arg = cmd.args
+    assert isinstance(arg, str)
     return (
-        cmd == "echo"
+        name == "echo"
         and re.match(r"<[<>_.a-z ]+ at 0x[0-9a-f]+>", arg, re.IGNORECASE) is not None
     )
 
@@ -40,7 +41,7 @@ def test_numbers():
 
 def test_none():
     "None is not supported."
-    with pytest.raises(TypeError, match="None in argument list"):
+    with pytest.raises(NotImplementedError, match="syntax is reserved"):
         sh("echo", None)
 
 
