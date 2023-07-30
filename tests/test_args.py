@@ -22,8 +22,15 @@ def _not_supported(cmd: Command):
 
 def test_str_and_bytes():
     "Strings and bytes are handled correctly."
-    cmd = sh("echo", "a", b"b", bytearray(b"c"))
-    assert cmd.args == ("echo", "a", b"b", bytearray(b"c"))  # FIXME: mutable bytearray
+    cmd = sh("echo", "a", b"b")
+    assert cmd.args == ("echo", "a", b"b")
+
+
+def test_bytearray():
+    "Bytearray is converted to immutable bytes."
+    cmd = sh("echo", bytearray(b"abc"))
+    assert cmd.args == ("echo", b"abc")
+    assert isinstance(cmd.args[1], bytes)
 
 
 def test_memoryview():

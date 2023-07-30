@@ -245,10 +245,14 @@ class Options:  # pylint: disable=too-many-instance-attributes
         "@private Find the command with the given name and return its path."
 
     @overload
-    def which(self, name: str) -> Optional[str]:
+    def which(
+        self, name: Union[str, os.PathLike[Any]]
+    ) -> Optional[Union[str, os.PathLike[Any]]]:
         "@private Find the command with the given name and return its path."
 
-    def which(self, name: Union[str, bytes]) -> Optional[Union[str, bytes]]:
+    def which(
+        self, name: Union[str, bytes, os.PathLike[Any]]
+    ) -> Optional[Union[str, bytes, os.PathLike[Any]]]:
         "@private Find the command with the given name and return its path."
         return shutil.which(name, path=self.path)
 
@@ -398,7 +402,7 @@ class Command(Generic[_RT]):
     ```
     """
 
-    args: "tuple[Union[str, bytes, bytearray, os.PathLike[Any], Command[Any], shellous.Pipeline[Any]], ...]"
+    args: "tuple[Union[str, bytes, os.PathLike[Any], Command[Any], shellous.Pipeline[Any]], ...]"
     "Command arguments including the program name as first argument."
 
     options: Options
@@ -730,14 +734,10 @@ def coerce(args: Sequence[Any]) -> tuple[Any, ...]:
     """Flatten lists and coerce arguments to string/bytes."""
     result: list[Any] = []
     for arg in args:
-        if isinstance(
-            arg,
-            (str, bytes, bytearray, os.PathLike, Command, shellous.Pipeline),
-        ):
-            # Pass these types directly into the argument tuple "as is".
-            # Note that bytearray value remains mutable, even when it is in
-            # the command arguments tuple.
+        if isinstance(arg, (str, bytes, os.PathLike, Command, shellous.Pipeline)):
             result.append(arg)
+        elif isinstance(arg, bytearray):
+            result.append(bytes(arg))
         elif isinstance(arg, (list, tuple)):
             result.extend(coerce(arg))  # pyright: ignore[reportUnknownArgumentType]
         elif isinstance(arg, (dict, set, type(Ellipsis), type(None))):

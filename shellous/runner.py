@@ -79,7 +79,7 @@ class _RunOptions:
     encoding: str
     open_fds: list[Union[int, SupportsClose]]
     input_bytes: Optional[bytes]
-    pos_args: list[Union[str, bytes]]
+    pos_args: list[Union[str, bytes, os.PathLike[Any]]]
     kwd_args: dict[str, Any]
     subcmds: "list[Union[shellous.Command[Any], shellous.Pipeline[Any]]]"
     pty_fds: Optional[pty_util.PtyFds]
@@ -107,7 +107,9 @@ class _RunOptions:
             if _uses_process_substitution(self.command):
                 self.pos_args = self._setup_process_substitution()
             else:
-                self.pos_args = cast(list[Union[str, bytes]], list(self.command.args))
+                self.pos_args = cast(
+                    list[Union[str, bytes, os.PathLike[Any]]], list(self.command.args)
+                )
 
             self._setup_redirects()
             self._setup_pass_fds()
@@ -148,7 +150,7 @@ class _RunOptions:
             for subcmd in self.subcmds:
                 _cleanup(subcmd)
 
-    def _setup_process_substitution(self) -> list[Union[str, bytes]]:
+    def _setup_process_substitution(self) -> list[Union[str, bytes, os.PathLike[Any]]]:
         """Set up process substitution.
 
         Returns new command line arguments with /dev/fd path substitutions.
@@ -156,7 +158,7 @@ class _RunOptions:
         if sys.platform == "win32":
             raise RuntimeError("process substitution not supported")  # pragma: no cover
 
-        new_args: list[Union[str, bytes]] = []
+        new_args: list[Union[str, bytes, os.PathLike[Any]]] = []
         new_fds: list[int] = []
 
         for arg in self.command.args:
