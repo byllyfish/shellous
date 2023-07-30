@@ -432,14 +432,17 @@ async def test_arg_bytes(echo_cmd):
 
 async def test_arg_bytearray(echo_cmd):
     "Test passing a bytearray as an argument."
-    with pytest.raises(TypeError, match="expected str, bytes or os.PathLike"):
+    # The DeprecationWarning occurs on PyPy.
+    with pytest.raises(
+        (TypeError, DeprecationWarning), match="expected str, bytes or os.PathLike"
+    ):
         await echo_cmd(bytearray(b"abc"))
 
 
 async def test_arg_path(echo_cmd):
     "Test passing a path as an argument."
     result = await echo_cmd(Path("/tmp"))
-    assert result == "/tmp"
+    assert result == str(Path("/tmp"))
 
 
 async def test_redirect_stdout_bytearray(echo_cmd):
