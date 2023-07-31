@@ -82,6 +82,7 @@ class AuditEventInfo(TypedDict):
 
 
 _AuditFnT = Optional[Callable[[str, AuditEventInfo], None]]
+_CoerceArgFnT = Optional[Callable[[Any], Any]]
 
 
 @dataclass(frozen=True)
@@ -168,6 +169,9 @@ class Options:  # pylint: disable=too-many-instance-attributes
 
     audit_callback: _AuditFnT = None
     "Function called to audit stages of process execution."
+
+    coerce_arg: _CoerceArgFnT = None
+    "Function called to coerce top level arguments."
 
     def runtime_env(self) -> Optional[dict[str, str]]:
         "@private Return our `env` merged with the global environment."
@@ -343,6 +347,7 @@ class CmdContext(Generic[_RT]):
         pty: Unset[PtyAdapterOrBool] = _UNSET,
         close_fds: Unset[bool] = _UNSET,
         audit_callback: Unset[_AuditFnT] = _UNSET,
+        coerce_arg: Unset[_CoerceArgFnT] = _UNSET,
     ) -> "CmdContext[_RT]":
         """Return new context with custom options set.
 
@@ -356,7 +361,7 @@ class CmdContext(Generic[_RT]):
 
     def __call__(self, *args: Any) -> "Command[_RT]":
         "Construct a new command."
-        return Command(coerce(args), self.options)
+        return Command(coerce(args, self.options.coerce_arg), self.options)
 
     @property
     def result(self) -> "CmdContext[shellous.Result]":
@@ -489,6 +494,7 @@ class Command(Generic[_RT]):
         pty: Unset[PtyAdapterOrBool] = _UNSET,
         close_fds: Unset[bool] = _UNSET,
         audit_callback: Unset[_AuditFnT] = _UNSET,
+        coerce_arg: Unset[_CoerceArgFnT] = _UNSET,
     ) -> "Command[_RT]":
         """Return new command with custom options set.
 
@@ -613,6 +619,12 @@ class Command(Generic[_RT]):
         The primary use case for `audit_callback` is measuring how long each
         command takes to run and exporting this information to a metrics
         framework like Prometheus.
+
+        **coerce_arg** (Callable(arg) | None) default=None<br>
+        Specify a function to call on each command line argument. This function
+        can specify how to coerce unsupported argument types (e.g. dict) to
+        a sequence of strings. This function should return the original value
+        unchanged if there is no conversion needed.
         """
         kwargs = locals()
         del kwargs["self"]
@@ -672,7 +684,8 @@ class Command(Generic[_RT]):
         "Apply more arguments to the end of the command."
         if not args:
             return self
-        return Command(self.args + coerce(args), self.options)
+        new_args = self.args + coerce(args, self.options.coerce_arg)
+        return Command(new_args, self.options)
 
     def __str__(self) -> str:
         """Return string representation for command.
@@ -731,7 +744,7 @@ class Command(Generic[_RT]):
         )
 
 
-def coerce(args: Iterable[Any]) -> tuple[Any, ...]:
+def coerce(args: Iterable[Any], coerce_arg: _CoerceArgFnT) -> tuple[Any, ...]:
     """Flatten lists and coerce arguments to string/bytes.
 
     This function flattens sequence types. It leaves `Iterable` types alone
@@ -739,12 +752,17 @@ def coerce(args: Iterable[Any]) -> tuple[Any, ...]:
     """
     result: list[Any] = []
     for arg in args:
+        if coerce_arg is not None:
+            arg = coerce_arg(arg)
+
         if isinstance(arg, (str, bytes, os.PathLike, Command, shellous.Pipeline)):
             result.append(arg)
         elif isinstance(arg, (bytearray, memoryview)):
             result.append(bytes(arg))
         elif isinstance(arg, (list, tuple, reversed, enumerate, zip)):
-            result.extend(coerce(arg))  # pyright: ignore[reportUnknownArgumentType]
+            result.extend(
+                coerce(arg, None)  # pyright: ignore[reportUnknownArgumentType]
+            )
         elif isinstance(
             arg,
             (

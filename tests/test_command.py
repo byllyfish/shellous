@@ -299,6 +299,7 @@ def test_dataclasses():
         "cancel_signal",
         "cancel_timeout",
         "close_fds",
+        "coerce_arg",
         "encoding",
         "env",
         "error",

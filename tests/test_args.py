@@ -1,6 +1,7 @@
 "Unit tests for Command's arguments with common Python types."
 
 import re
+import shlex
 from collections.abc import Iterable, Iterator, Mapping
 from io import BytesIO, StringIO
 from ipaddress import ip_address, ip_network
@@ -229,3 +230,23 @@ class _TestIterator(Iterator):
         if not self._values:
             raise StopIteration
         return self._values.pop()
+
+
+def _coerce_dict(arg):
+    if isinstance(arg, dict):
+        return [(f"--{k}", v) for k, v in arg.items()]
+    return arg
+
+
+def test_coerce_arg_dict():
+    "Test coerce_arg setting with a dictionary."
+    sh1 = sh.set(coerce_arg=_coerce_dict)
+    cmd = sh1("echo", {"a": 1, "b": 2})
+    assert cmd.args == ("echo", "--a", "1", "--b", "2")
+
+
+def test_coerce_arg_shlex():
+    "Test coerce_arg setting with shlex.split function."
+    sh1 = sh.set(coerce_arg=shlex.split)
+    cmd = sh1('echo -x --a 1 --b 2 "some file"')
+    assert cmd.args == ("echo", "-x", "--a", "1", "--b", "2", "some file")
