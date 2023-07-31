@@ -6,6 +6,7 @@
 """
 
 import asyncio
+import collections.abc
 import dataclasses
 import enum
 import os
@@ -730,18 +731,33 @@ class Command(Generic[_RT]):
         )
 
 
-def coerce(args: Sequence[Any]) -> tuple[Any, ...]:
-    """Flatten lists and coerce arguments to string/bytes."""
+def coerce(args: Iterable[Any]) -> tuple[Any, ...]:
+    """Flatten lists and coerce arguments to string/bytes.
+
+    This function flattens sequence types. It leaves `Iterable` types alone
+    because some types like `IPv4Network` support iteration.
+    """
     result: list[Any] = []
     for arg in args:
         if isinstance(arg, (str, bytes, os.PathLike, Command, shellous.Pipeline)):
             result.append(arg)
-        elif isinstance(arg, bytearray):
+        elif isinstance(arg, (bytearray, memoryview)):
             result.append(bytes(arg))
-        elif isinstance(arg, (list, tuple)):
+        elif isinstance(arg, (list, tuple, reversed, enumerate, zip)):
             result.extend(coerce(arg))  # pyright: ignore[reportUnknownArgumentType]
-        elif isinstance(arg, (dict, set, type(Ellipsis), type(None))):
-            raise NotImplementedError("syntax is reserved")
+        elif isinstance(
+            arg,
+            (
+                collections.abc.Mapping,
+                collections.abc.Set,
+                collections.abc.Generator,
+                range,
+                type(None),
+                type(Ellipsis),
+            ),
+        ):
+            type_name = type(arg).__name__  # pyright: ignore[reportUnknownArgumentType]
+            raise TypeError(f"Type {type_name!r} is not supported")
         else:
             result.append(str(arg))
     return tuple(result)

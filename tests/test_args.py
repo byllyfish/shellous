@@ -37,7 +37,8 @@ def test_memoryview():
     "memoryview is handled correctly."
     buf = bytearray(b"abcdef")
     cmd = sh("echo", memoryview(buf))
-    assert _not_supported(cmd)
+    assert cmd.args == ("echo", b"abcdef")
+    assert isinstance(cmd.args[1], bytes)
 
 
 def test_numbers():
@@ -48,14 +49,20 @@ def test_numbers():
 
 def test_none():
     "None is not supported."
-    with pytest.raises(NotImplementedError, match="syntax is reserved"):
+    with pytest.raises(TypeError, match="not supported"):
         sh("echo", None)
+
+    with pytest.raises(TypeError, match="not supported"):
+        sh(None)
 
 
 def test_ellipsis():
     "Ellipsis is not supported."
-    with pytest.raises(NotImplementedError, match="syntax is reserved"):
+    with pytest.raises(TypeError, match="not supported"):
         sh("echo", ...)
+
+    with pytest.raises(TypeError, match="not supported"):
+        sh(...)
 
 
 def test_command_pipeline():
@@ -104,7 +111,7 @@ def test_tuple():
 
 def test_reverse_tuple():
     cmd = sh("echo", reversed((1, 2, 3)))
-    assert _not_supported(cmd)
+    assert cmd.args == ("echo", "3", "2", "1")
 
 
 def test_list():
@@ -120,33 +127,39 @@ def test_generator():
         for i in range(1, num + 1):
             yield i
 
-    cmd = sh("echo", agen(3))
-    assert _not_supported(cmd)
+    with pytest.raises(TypeError, match="not supported"):
+        sh("echo", agen(3))
 
 
 def test_range():
-    cmd = sh("echo", range(3))
-    assert cmd.args == ("echo", "range(0, 3)")  # FIXME: iterable
+    with pytest.raises(TypeError, match="not supported"):
+        sh("echo", range(3))
 
 
 def test_enumerate():
-    cmd = sh("echo", enumerate([1, 2, 3]))
-    assert _not_supported(cmd)
+    cmd = sh("echo", enumerate(["a", "b", "c"]))
+    assert cmd.args == ("echo", "0", "a", "1", "b", "2", "c")
+
+
+def test_zip():
+    names = ["-a", "-b", "-c"]
+    cmd = sh("echo", zip(names, (1, 2, 3)))
+    assert cmd.args == ("echo", "-a", "1", "-b", "2", "-c", "3")
 
 
 def test_dict():
-    with pytest.raises(NotImplementedError, match="syntax is reserved"):
+    with pytest.raises(TypeError, match="not supported"):
         sh("echo", dict(a=1))
 
 
 def test_set():
-    with pytest.raises(NotImplementedError, match="syntax is reserved"):
+    with pytest.raises(TypeError, match="not supported"):
         sh("echo", {1, 2, 3})
 
 
 def test_frozenset():
-    cmd = sh("echo", frozenset([1, 2, 3]))
-    assert cmd.args == ("echo", "frozenset({1, 2, 3})")  # FIXME: iterable
+    with pytest.raises(TypeError, match="not supported"):
+        sh("echo", frozenset([1, 2, 3]))
 
 
 def test_sorted_set():
@@ -169,8 +182,8 @@ def test_function():
 
 
 def test_mapping():
-    cmd = sh("echo", _TestMap(a=1, b=2))
-    assert _not_supported(cmd)
+    with pytest.raises(TypeError, match="not supported"):
+        sh("echo", _TestMap(a=1, b=2))
 
 
 def test_iterable():
