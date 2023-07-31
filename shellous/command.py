@@ -9,6 +9,7 @@ import asyncio
 import collections.abc
 import dataclasses
 import enum
+import io
 import os
 import shutil
 import signal
@@ -759,6 +760,8 @@ def coerce(args: Iterable[Any], coerce_arg: _CoerceArgFnT) -> tuple[Any, ...]:
             result.append(arg)
         elif isinstance(arg, (bytearray, memoryview)):
             result.append(bytes(arg))
+        elif isinstance(arg, (io.StringIO, io.BytesIO)):
+            result.append(arg.getvalue())
         elif isinstance(arg, (list, tuple, reversed, enumerate, zip)):
             result.extend(
                 coerce(arg, None)  # pyright: ignore[reportUnknownArgumentType]

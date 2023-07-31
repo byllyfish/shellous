@@ -12,7 +12,8 @@ import pytest
 from shellous import Command, sh
 
 
-def _not_supported(cmd: Command):
+def _str_not_implemented(cmd: Command):
+    "Match command arguments against a type that doesn't implement str()."
     name, arg = cmd.args
     assert isinstance(arg, str)
     return (
@@ -77,13 +78,13 @@ def test_command_pipeline():
 def test_stringio():
     "StringIO is handled correctly."
     cmd = sh("echo", StringIO("abc"))
-    assert _not_supported(cmd)
+    assert cmd.args == ("echo", "abc")
 
 
 def test_bytesio():
     "BytesIO is handled correctly."
     cmd = sh("echo", BytesIO(b"abc"))
-    assert _not_supported(cmd)
+    assert cmd.args == ("echo", b"abc")
 
 
 def test_path():
@@ -111,6 +112,7 @@ def test_tuple():
 
 
 def test_reverse_tuple():
+    "Test the built-in reversed function."
     cmd = sh("echo", reversed((1, 2, 3)))
     assert cmd.args == ("echo", "3", "2", "1")
 
@@ -133,38 +135,45 @@ def test_generator():
 
 
 def test_range():
+    "Test the built-in range function."
     with pytest.raises(TypeError, match="not supported"):
         sh("echo", range(3))
 
 
 def test_enumerate():
+    "Test the built-in enumerate function."
     cmd = sh("echo", enumerate(["a", "b", "c"]))
     assert cmd.args == ("echo", "0", "a", "1", "b", "2", "c")
 
 
 def test_zip():
+    "Test the built-in zip function."
     names = ["-a", "-b", "-c"]
     cmd = sh("echo", zip(names, (1, 2, 3)))
     assert cmd.args == ("echo", "-a", "1", "-b", "2", "-c", "3")
 
 
 def test_dict():
+    "Test a dictionary."
     with pytest.raises(TypeError, match="not supported"):
         sh("echo", dict(a=1))
 
 
 def test_set():
+    "Test a set."
     with pytest.raises(TypeError, match="not supported"):
         sh("echo", {1, 2, 3})
 
 
 def test_frozenset():
+    "Test a frozenset."
     with pytest.raises(TypeError, match="not supported"):
         sh("echo", frozenset([1, 2, 3]))
 
 
 def test_sorted_set():
-    cmd = sh("echo", sorted({1, 2, 3}))
+    "Test the result of the sorted function."
+    cmd = sh("echo", sorted({3, 1, 2}))
     assert cmd.args == ("echo", "1", "2", "3")
 
 
@@ -173,28 +182,33 @@ class _NoRepr:
 
 
 def test_class():
+    "Test a class without the default __repr__ and __str__."
     cmd = sh("echo", _NoRepr())
-    assert _not_supported(cmd)
+    assert _str_not_implemented(cmd)
 
 
 def test_function():
+    "Test a function."
     cmd = sh("echo", test_class)
-    assert _not_supported(cmd)
+    assert _str_not_implemented(cmd)
 
 
 def test_mapping():
+    "Test a custom mapping class."
     with pytest.raises(TypeError, match="not supported"):
         sh("echo", _TestMap(a=1, b=2))
 
 
 def test_iterable():
+    "Test a custom iterable."
     cmd = sh("echo", _TestIterable(1, 2, 3))
-    assert _not_supported(cmd)
+    assert _str_not_implemented(cmd)
 
 
 def test_iterator():
+    "Test a custom iterator."
     cmd = sh("echo", _TestIterator(1, 2, 3))
-    assert _not_supported(cmd)
+    assert _str_not_implemented(cmd)
 
 
 class _TestMap(Mapping):
@@ -239,7 +253,7 @@ def _coerce_dict(arg):
 
 
 def test_coerce_arg_dict():
-    "Test coerce_arg setting with a dictionary."
+    "Test `coerce_arg` option with a dictionary."
     sh1 = sh.set(coerce_arg=_coerce_dict)
     cmd = sh1("echo", {"a": 1, "b": 2})
     assert cmd.args == ("echo", "--a", "1", "--b", "2")
