@@ -303,7 +303,9 @@ class _RunOptions:
 
         if isinstance(output, os.PathLike):
             mode = "ab" if append else "wb"
-            stdout = open(cast(os.PathLike[str], output), mode=mode)
+            stdout = open(  # pylint: disable=consider-using-with
+                cast(os.PathLike[str], output), mode=mode
+            )
             self.open_fds.append(stdout)
         elif self.is_stderr_only and sys_stream == sys.stderr:
             assert output == Redirect.STDOUT
