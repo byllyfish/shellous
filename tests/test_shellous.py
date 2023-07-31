@@ -3,7 +3,6 @@
 # pylint: disable=redefined-outer-name,invalid-name
 
 import asyncio
-import contextlib
 import hashlib
 import io
 import logging
@@ -28,11 +27,11 @@ PIPE_MAX_SIZE = 4 * 1024 * 1024 + 1
 _ABORT_EXIT_CODE = -15 if sys.platform != "win32" else 1
 
 
-@contextlib.asynccontextmanager
-async def _limit_logging(level):
-    "Decorator to change shellous log level."
+@pytest.fixture
+async def _limit_logging():
+    "Fixture to change shellous log level."
     orig_level = LOGGER.level
-    LOGGER.setLevel(max(level, orig_level))
+    LOGGER.setLevel(max(logging.INFO, orig_level))
     try:
         yield
     finally:
@@ -139,8 +138,7 @@ async def test_bulk(bulk_cmd):
     assert value == "462d6c497b393d2c9e1584a7b4636592da837ef66cf4ff871dc937f3fe309459"
 
 
-@_limit_logging(logging.INFO)
-async def test_bulk_prompt(bulk_cmd):
+async def test_bulk_prompt(bulk_cmd, _limit_logging):
     """Test the Prompt class with bulk output.
 
     We MUST limit debug logging for this test! The Prompt class will log what
