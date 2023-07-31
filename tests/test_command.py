@@ -121,42 +121,13 @@ def test_nested_list_arg():
     assert cmd.args == ("echo", "-n", "arg1", "1", "2", "3", "(1+3j)")
 
 
-def test_none_command():
-    "Test passing None as command."
-    with pytest.raises(TypeError):
-        sh(None, "abc")
-
-
-def test_none_arg():
-    "Test passing None as an argument."
-    with pytest.raises(TypeError):
-        sh("echo", None)
-
-
-def test_ellipsis_as_arg():
-    """Test passing Ellipsis as an argument.
-
-    This syntax is reserved for argument insertion."""
-    with pytest.raises(NotImplementedError, match="reserved"):
-        sh("ls", ..., "some_file")
-
-
 def test_dict_arg():
     """Test passing a dictionary as an argument.
 
     This syntax is reserved for dict args feature.
     """
-    with pytest.raises(NotImplementedError, match="reserved"):
+    with pytest.raises(TypeError, match="not supported"):
         sh("echo", dict(a="b"))
-
-
-def test_set_type_as_arg():
-    """Test passing a set as an argument.
-
-    This syntax is reserved.
-    """
-    with pytest.raises(NotImplementedError, match="reserved"):
-        sh("echo", {0})
 
 
 def test_bytearray_arg():
@@ -328,6 +299,7 @@ def test_dataclasses():
         "cancel_signal",
         "cancel_timeout",
         "close_fds",
+        "coerce_arg",
         "encoding",
         "env",
         "error",

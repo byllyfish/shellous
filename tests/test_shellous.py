@@ -424,6 +424,24 @@ async def test_pipe_error_cmd2(echo_cmd, tr_cmd):
     )
 
 
+async def test_arg_bytes(echo_cmd):
+    "Test passing bytes as an argument."
+    result = await echo_cmd(b"abc")
+    assert result == "abc"
+
+
+async def test_arg_bytearray(echo_cmd):
+    "Test passing a bytearray as an argument."
+    result = await echo_cmd(bytearray(b"abc"))
+    assert result == "abc"
+
+
+async def test_arg_path(echo_cmd):
+    "Test passing a path as an argument."
+    result = await echo_cmd(Path("/tmp"))
+    assert result == str(Path("/tmp"))
+
+
 async def test_redirect_stdout_bytearray(echo_cmd):
     "Test redirecting stdout to bytearray."
     buf = bytearray()
