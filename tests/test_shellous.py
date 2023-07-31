@@ -15,6 +15,7 @@ import pytest
 
 from shellous import Result, ResultError, sh
 from shellous.harvest import harvest_results
+from shellous.prompt import Prompt
 from shellous.runner import CANCELLED_EXIT_CODE
 
 # 4MB + 1: Much larger than necessary.
@@ -124,6 +125,20 @@ async def test_bulk(bulk_cmd):
     assert len(result) == 4 * (1024 * 1024 + 1)
     value = hashlib.sha256(result.encode("latin1")).hexdigest()
     assert value == "462d6c497b393d2c9e1584a7b4636592da837ef66cf4ff871dc937f3fe309459"
+
+
+async def test_bulk_prompt(bulk_cmd):
+    "Test the Prompt class with bulk output."
+    cmd = bulk_cmd().encoding("latin1")
+
+    async with cmd.stdin(sh.CAPTURE).stdout(sh.CAPTURE) as run:
+        prompt = Prompt(run, ">>> ")
+        result = await prompt.receive(timeout=10.0)
+        assert len(result) == 4 * (1024 * 1024 + 1)
+        value = hashlib.sha256(result.encode("latin1")).hexdigest()
+        assert (
+            value == "462d6c497b393d2c9e1584a7b4636592da837ef66cf4ff871dc937f3fe309459"
+        )
 
 
 async def test_count(count_cmd):
@@ -533,6 +548,14 @@ async def test_redirect_stdin_unsupported_type(cat_cmd):
     "Test reading stdin from unsupported type."
     with pytest.raises(TypeError, match="unsupported input type"):
         await cat_cmd("abc").stdin(1 + 2j)
+
+
+async def test_redirect_sequence_stringio(echo_cmd, cat_cmd):
+    "Test reading/writing StringIO in sequence of commands."
+    buf = io.StringIO()
+    await echo_cmd("abc").stdout(buf)
+    result = await cat_cmd().stdin(buf)
+    assert result == "abc"
 
 
 async def test_broken_pipe():
