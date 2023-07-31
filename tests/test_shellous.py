@@ -3,6 +3,7 @@
 # pylint: disable=redefined-outer-name,invalid-name
 
 import asyncio
+import contextlib
 import hashlib
 import io
 import logging
@@ -15,6 +16,7 @@ import pytest
 
 from shellous import Result, ResultError, sh
 from shellous.harvest import harvest_results
+from shellous.log import LOGGER
 from shellous.prompt import Prompt
 from shellous.runner import CANCELLED_EXIT_CODE
 
@@ -24,7 +26,17 @@ PIPE_MAX_SIZE = 4 * 1024 * 1024 + 1
 
 # On Windows, the exit_code of a terminated process is 1.
 _ABORT_EXIT_CODE = -15 if sys.platform != "win32" else 1
-_KILL_EXIT_CODE = -9 if sys.platform != "win32" else 1
+
+
+@contextlib.asynccontextmanager
+async def _limit_logging(level):
+    "Decorator to change shellous log level."
+    orig_level = LOGGER.level
+    LOGGER.setLevel(max(level, orig_level))
+    try:
+        yield
+    finally:
+        LOGGER.setLevel(orig_level)
 
 
 def _is_uvloop():
@@ -127,8 +139,13 @@ async def test_bulk(bulk_cmd):
     assert value == "462d6c497b393d2c9e1584a7b4636592da837ef66cf4ff871dc937f3fe309459"
 
 
+@_limit_logging(logging.INFO)
 async def test_bulk_prompt(bulk_cmd):
-    "Test the Prompt class with bulk output."
+    """Test the Prompt class with bulk output.
+
+    We MUST limit debug logging for this test! The Prompt class will log what
+    it sends and receives. Logging large amounts of data stresses the CI system.
+    """
     cmd = bulk_cmd().set(encoding="latin1")
 
     async with cmd.stdin(sh.CAPTURE).stdout(sh.CAPTURE) as run:
