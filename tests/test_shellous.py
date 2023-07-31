@@ -129,7 +129,7 @@ async def test_bulk(bulk_cmd):
 
 async def test_bulk_prompt(bulk_cmd):
     "Test the Prompt class with bulk output."
-    cmd = bulk_cmd().encoding("latin1")
+    cmd = bulk_cmd().set(encoding="latin1")
 
     async with cmd.stdin(sh.CAPTURE).stdout(sh.CAPTURE) as run:
         prompt = Prompt(run, ">>> ")
