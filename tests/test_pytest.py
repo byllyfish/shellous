@@ -10,7 +10,10 @@ from shellous import Runner, sh
 
 @pytest.fixture
 async def echo_broken():
-    "This fixture fails because pytest doesn't preserve context vars."
+    """This fixture fails because pytest-asyncio doesn't preserve context vars.
+
+    https://github.com/pytest-dev/pytest-asyncio/issues/127
+    """
     async with sh("echo") as run:
         yield run
 
@@ -33,18 +36,18 @@ async def test_echo_workaround(echo_workaround):
 
 @contextlib.contextmanager
 def _preserve_contextvars():
-    "Context manager that copies the `ctxt_stack` context var."
+    "Context manager that copies the `context_stack` context var."
     old_context = contextvars.copy_context()
     yield
     new_context = contextvars.copy_context()
     for var in old_context:
-        if var.name.startswith("ctxt_") and var not in new_context:
+        if var.name.startswith("shellous.") and var not in new_context:
             var.set(old_context[var])
 
 
 @pytest.fixture
 async def echo_preserved():
-    "Another work-around explicitly copies the contextvars."
+    "Another work-around explicitly copies the contextvars (a bit hacky)."
     async with sh("echo") as run:
         with _preserve_contextvars():
             yield run

@@ -24,12 +24,9 @@ from .log import LOG_DETAIL, LOGGER, log_timer
 _T = TypeVar("_T")
 
 # Stores current stack of context managers for immutable Command objects.
-_CTXT_STACK = contextvars.ContextVar[
+_CONTEXT_STACKS = contextvars.ContextVar[
     Optional[dict[int, list[AsyncContextManager[_T]]]]
-](
-    "ctxt_stack",
-    default=None,
-)
+]("shellous.context_stacks", default=None)
 
 # True if OS is derived from BSD.
 BSD_FREEBSD = sys.platform.startswith("freebsd")
@@ -153,13 +150,13 @@ async def uninterrupted(coro: Coroutine[Any, Any, _T]) -> _T:
 
 async def context_aenter(scope: int, ctxt_manager: AsyncContextManager[_T]) -> _T:
     "Enter an async context manager."
-    ctxt_stack = _CTXT_STACK.get()
-    if ctxt_stack is None:
-        ctxt_stack = defaultdict[int, list[Any]](list)
-        _CTXT_STACK.set(ctxt_stack)
+    ctxt_stacks = _CONTEXT_STACKS.get()
+    if ctxt_stacks is None:
+        ctxt_stacks = defaultdict[int, list[Any]](list)
+        _CONTEXT_STACKS.set(ctxt_stacks)
 
     result = await ctxt_manager.__aenter__()  # pylint: disable=unnecessary-dunder-call
-    stack = ctxt_stack[scope]
+    stack = ctxt_stacks[scope]
     stack.append(ctxt_manager)
 
     return result
@@ -172,16 +169,16 @@ async def context_aexit(
     exc_tb: Optional[TracebackType],
 ) -> Optional[bool]:
     "Exit an async context manager."
-    ctxt_stack = _CTXT_STACK.get()
-    if ctxt_stack is None:
-        raise RuntimeError("contextvar `ctxt_stack` is missing")
+    ctxt_stacks = _CONTEXT_STACKS.get()
+    if ctxt_stacks is None:
+        raise RuntimeError("context var `shellous.context_stacks` is missing")
 
-    stack = ctxt_stack[scope]
+    stack = ctxt_stacks[scope]
     ctxt_manager = stack.pop()
     if not stack:
-        del ctxt_stack[scope]
-    if not ctxt_stack:
-        _CTXT_STACK.set(None)
+        del ctxt_stacks[scope]
+    if not ctxt_stacks:
+        _CONTEXT_STACKS.set(None)
 
     return await ctxt_manager.__aexit__(exc_type, exc_value, exc_tb)
 
