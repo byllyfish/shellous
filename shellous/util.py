@@ -173,7 +173,8 @@ async def context_aexit(
 ) -> Optional[bool]:
     "Exit an async context manager."
     ctxt_stack = _CTXT_STACK.get()
-    assert ctxt_stack is not None  # (pyright)
+    if ctxt_stack is None:
+        raise RuntimeError("contextvar `ctxt_stack` is missing")
 
     stack = ctxt_stack[scope]
     ctxt_manager = stack.pop()
