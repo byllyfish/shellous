@@ -1,8 +1,5 @@
 "Unit tests for using shellous commands in a pytest fixture."
 
-import contextlib
-import contextvars
-
 import pytest
 
 from shellous import Runner, sh
@@ -11,6 +8,7 @@ from shellous import Runner, sh
 @pytest.fixture
 async def echo_broken():
     """This fixture fails because pytest-asyncio doesn't preserve context vars.
+    It also executes the context __aenter__ and __aexit__ in different tasks.
 
     https://github.com/pytest-dev/pytest-asyncio/issues/127
     """

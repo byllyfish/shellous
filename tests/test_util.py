@@ -115,10 +115,10 @@ class _TestContextHelpers:
 
     async def __aenter__(self):
         self.idx += 1
-        return await context_aenter(id(self), self._ctxt(self.idx))
+        return await context_aenter(self, self._ctxt(self.idx))
 
     async def __aexit__(self, *args):
-        return await context_aexit(id(self), *args)
+        return await context_aexit(self, *args)
 
     @contextlib.asynccontextmanager
     async def _ctxt(self, idx):
@@ -127,7 +127,19 @@ class _TestContextHelpers:
         self.log.append(f"exit {idx}")
 
 
-async def test_context_helpers():
+async def test_context_helpers_reentrant():
+    """Test context manager helper function re-entrancy."""
+    tc = _TestContextHelpers()
+
+    async with tc:
+        async with tc:
+            async with tc:
+                pass
+
+    assert tc.log == ["enter 1", "enter 2", "enter 3", "exit 3", "exit 2", "exit 1"]
+
+
+async def test_context_helpers_overlapping_tasks():
     """Test context manager helper functions are re-entrant even in overlapping
     tasks."""
     tc = _TestContextHelpers()
@@ -142,4 +154,6 @@ async def test_context_helpers():
     await task1
 
     # Note that child task outlives its parent task's context manager.
+    # We are storing state in a contextvar, which is shared between parent
+    # task and child task.
     assert tc.log == ["enter 1", "enter 2", "exit 1", "exit 2"]
