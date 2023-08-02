@@ -387,8 +387,8 @@ class Runner:
     """Runner is an asynchronous context manager that runs a command.
 
     ```
-    async with cmd.run() as run:
-        # process run.stdin, run.stdout, run.stderr (if not None)
+    async with Runner(cmd) as run:
+        # process streams: run.stdin, run.stdout, run.stderr (if not None)
     result = run.result()
     ```
     """

@@ -1,6 +1,7 @@
 "Unit tests for functions in util module."
 
 import asyncio
+import contextlib
 
 import pytest
 
@@ -8,6 +9,8 @@ from shellous.util import (
     EnvironmentDict,
     close_fds,
     coerce_env,
+    context_aenter,
+    context_aexit,
     decode_bytes,
     uninterrupted,
     verify_dev_fd,
@@ -103,3 +106,40 @@ def test_environment_dict():
     # EnvironmentDict is immutable.
     with pytest.raises(TypeError):
         d1["b"] = "2"  # pyright: ignore[reportGeneralTypeIssues]
+
+
+class _TestContextHelpers:
+    def __init__(self):
+        self.idx = 0
+        self.log = []
+
+    async def __aenter__(self):
+        self.idx += 1
+        return await context_aenter(id(self), self._ctxt(self.idx))
+
+    async def __aexit__(self, *args):
+        return await context_aexit(id(self), *args)
+
+    @contextlib.asynccontextmanager
+    async def _ctxt(self, idx):
+        self.log.append(f"enter {idx}")
+        yield self
+        self.log.append(f"exit {idx}")
+
+
+async def test_context_helpers():
+    """Test context manager helper functions are re-entrant even in overlapping
+    tasks."""
+    tc = _TestContextHelpers()
+
+    async def _task():
+        async with tc:
+            await asyncio.sleep(0.2)
+
+    async with tc:
+        task1 = asyncio.create_task(_task())
+        await asyncio.sleep(0.01)
+    await task1
+
+    # Note that child task outlives its parent task's context manager.
+    assert tc.log == ["enter 1", "enter 2", "exit 1", "exit 2"]

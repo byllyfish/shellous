@@ -22,10 +22,11 @@ from typing import (
 from .log import LOG_DETAIL, LOGGER, log_timer
 
 _T = TypeVar("_T")
+_Key = tuple[int, int]
 
 # Stores current stack of context managers for immutable Command objects.
 _CONTEXT_STACKS = contextvars.ContextVar[
-    Optional[dict[int, list[AsyncContextManager[_T]]]]
+    Optional[dict[_Key, list[AsyncContextManager[_T]]]]
 ]("shellous.context_stacks", default=None)
 
 # True if OS is derived from BSD.
@@ -152,11 +153,12 @@ async def context_aenter(scope: int, ctxt_manager: AsyncContextManager[_T]) -> _
     "Enter an async context manager."
     ctxt_stacks = _CONTEXT_STACKS.get()
     if ctxt_stacks is None:
-        ctxt_stacks = defaultdict[int, list[Any]](list)
+        ctxt_stacks = defaultdict[_Key, list[Any]](list)
         _CONTEXT_STACKS.set(ctxt_stacks)
 
     result = await ctxt_manager.__aenter__()  # pylint: disable=unnecessary-dunder-call
-    stack = ctxt_stacks[scope]
+    task = asyncio.current_task()
+    stack = ctxt_stacks[scope, id(task)]
     stack.append(ctxt_manager)
 
     return result
@@ -173,10 +175,11 @@ async def context_aexit(
     if ctxt_stacks is None:
         raise RuntimeError("context var `shellous.context_stacks` is missing")
 
-    stack = ctxt_stacks[scope]
-    ctxt_manager = stack.pop()
+    task = asyncio.current_task()
+    stack = ctxt_stacks[scope, id(task)]
+    ctxt_manager = stack.pop()  # FIXME: This can fail if exit task is different.
     if not stack:
-        del ctxt_stacks[scope]
+        del ctxt_stacks[scope, id(task)]
     if not ctxt_stacks:
         _CONTEXT_STACKS.set(None)
 
