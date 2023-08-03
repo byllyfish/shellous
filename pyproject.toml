@@ -27,7 +27,7 @@ python = "^3.9"
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.0"
 pytest-asyncio = "^0.21.1"
-pylint = "^2.17.4"
+pylint = "^2.17.5"
 black = "^23.7.0"
 coverage = "^7.2.7"
 pytest-dotenv = "^0.5.2"
@@ -35,8 +35,8 @@ pytest-randomly = "^3.13.0"
 pytest-timeout = "^2.1.0"
 pdoc = "^14.0.0"
 asyncstdlib = "^3.10.8"
-pyright = "^1.1.317"
-ruff = {version = "^0.0.278", markers = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'"}
+pyright = "^1.1.320"
+ruff = {version = "^0.0.282", markers = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'"}
 typing-extensions = "^4.7.1"
 
 [build-system]
