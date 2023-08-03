@@ -178,7 +178,7 @@ class Pipeline(Generic[_RT]):
 
     async def __aenter__(self) -> PipeRunner:
         "Enter the async context manager."
-        return await context_aenter(id(self), PipeRunner(self, capturing=True))
+        return await context_aenter(self, PipeRunner(self, capturing=True))
 
     async def __aexit__(
         self,
@@ -187,7 +187,7 @@ class Pipeline(Generic[_RT]):
         exc_tb: Optional[TracebackType],
     ) -> Optional[bool]:
         "Exit the async context manager."
-        return await context_aexit(id(self), exc_type, exc_value, exc_tb)
+        return await context_aexit(self, exc_type, exc_value, exc_tb)
 
     def __aiter__(self) -> AsyncIterator[str]:
         "Return async iterator to iterate over output lines."

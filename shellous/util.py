@@ -22,14 +22,12 @@ from typing import (
 from .log import LOG_DETAIL, LOGGER, log_timer
 
 _T = TypeVar("_T")
+_ContextKey = tuple[int, int]
 
 # Stores current stack of context managers for immutable Command objects.
-_CTXT_STACK = contextvars.ContextVar[
-    Optional[dict[int, list[AsyncContextManager[_T]]]]
-](
-    "ctxt_stack",
-    default=None,
-)
+_CONTEXT_STACKS = contextvars.ContextVar[
+    dict[_ContextKey, list[AsyncContextManager[_T]]]
+]("shellous.context_stacks")
 
 # True if OS is derived from BSD.
 BSD_FREEBSD = sys.platform.startswith("freebsd")
@@ -151,36 +149,38 @@ async def uninterrupted(coro: Coroutine[Any, Any, _T]) -> _T:
         raise
 
 
-async def context_aenter(scope: int, ctxt_manager: AsyncContextManager[_T]) -> _T:
+async def context_aenter(owner: object, ctxt_manager: AsyncContextManager[_T]) -> _T:
     "Enter an async context manager."
-    ctxt_stack = _CTXT_STACK.get()
-    if ctxt_stack is None:
-        ctxt_stack = defaultdict[int, list[Any]](list)
-        _CTXT_STACK.set(ctxt_stack)
-
     result = await ctxt_manager.__aenter__()  # pylint: disable=unnecessary-dunder-call
-    stack = ctxt_stack[scope]
+
+    ctxt_stacks = _CONTEXT_STACKS.get(None)
+    if ctxt_stacks is None:
+        ctxt_stacks = defaultdict[_ContextKey, list[Any]](list)
+        _CONTEXT_STACKS.set(ctxt_stacks)
+
+    key = (id(owner), id(asyncio.current_task()))
+    stack = ctxt_stacks[key]
     stack.append(ctxt_manager)
 
     return result
 
 
 async def context_aexit(
-    scope: int,
+    owner: object,
     exc_type: Optional[type[BaseException]],
     exc_value: Optional[BaseException],
     exc_tb: Optional[TracebackType],
 ) -> Optional[bool]:
     "Exit an async context manager."
-    ctxt_stack = _CTXT_STACK.get()
-    assert ctxt_stack is not None  # (pyright)
-
-    stack = ctxt_stack[scope]
-    ctxt_manager = stack.pop()
-    if not stack:
-        del ctxt_stack[scope]
-    if not ctxt_stack:
-        _CTXT_STACK.set(None)
+    try:
+        ctxt_stacks = _CONTEXT_STACKS.get()
+        key = (id(owner), id(asyncio.current_task()))
+        stack = ctxt_stacks[key]
+        ctxt_manager = stack.pop()
+        if not stack:
+            del ctxt_stacks[key]
+    except Exception as ex:
+        raise RuntimeError("context var `shellous.context_stacks` is corrupt") from ex
 
     return await ctxt_manager.__aexit__(exc_type, exc_value, exc_tb)
 
