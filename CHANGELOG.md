@@ -1,6 +1,15 @@
 Shellous Change Log
 ===================
 
+0.28.0
+------
+
+- [FEATURE] Add the `coerce_arg` option in `Command` and `CmdContext`. (#397)
+- [BUGFIX] Improve support for built-in sequence types like `range/zip/reversed` when used as command arguments.
+- [BUGFIX] Add support for using `StringIO` and `BytesIO` objects as command arguments.
+- [BUGFIX] `bytearray` is now coerced to bytes when used as an argument in a Command.
+- [BUGFIX] Fix subtle bug in `context_aenter/context_aexit` helpers when a re-entrant context manager overlaps in a parent/child task pair.
+
 0.27.0
 ------
 
