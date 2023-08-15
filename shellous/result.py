@@ -83,7 +83,7 @@ def convert_result_list(
     return Result(
         exit_code=key_result.exit_code,
         output_bytes=last.output_bytes,
-        error_bytes=last.error_bytes,
+        error_bytes=key_result.error_bytes,
         cancelled=cancelled,
         encoding=last.encoding,
     )
