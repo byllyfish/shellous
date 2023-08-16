@@ -1186,6 +1186,16 @@ async def test_multiple_pipe(echo_cmd, cat_cmd):
     assert result == "xyz"
 
 
+async def test_pipe_fail_stderr(error_cmd, cat_cmd):
+    "Test stderr from failing command in pipe (Issue #459)."
+    pipe = error_cmd.env(SHELLOUS_EXIT_CODE="19").stderr(sh.BUFFER) | cat_cmd
+    try:
+        await pipe
+    except ResultError as ex:
+        assert ex.result.exit_code == 19
+        assert ex.result.error_bytes == b"1" * 1024
+
+
 async def test_command_with_timeout_expiring(sleep_cmd):
     "Test a command with a timeout option."
     with pytest.raises(asyncio.TimeoutError):
