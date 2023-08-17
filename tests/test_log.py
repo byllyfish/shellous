@@ -4,13 +4,7 @@ import logging
 
 import pytest
 
-from shellous.log import (
-    _LOG_IGNORE_STEPIN,
-    _LOG_IGNORE_STEPOUT,
-    SHELLOUS_DEBUG,
-    log_method,
-    log_timer,
-)
+from shellous.log import SHELLOUS_DEBUG, log_method, log_timer
 
 _LOG_LEVEL = logging.INFO if SHELLOUS_DEBUG else logging.DEBUG
 
@@ -33,14 +27,6 @@ class _Tester:
         for i in range(2):
             yield i
 
-    @log_method(_LOG_IGNORE_STEPOUT)
-    async def demo5(self):
-        pass
-
-    @log_method(_LOG_IGNORE_STEPIN)
-    async def demo6(self):
-        pass
-
     def __repr__(self):
         return "<self>"
 
@@ -56,8 +42,6 @@ async def test_log_method(caplog):
         await tester.demo3()
     async for _ in tester.demo4():
         pass
-    await tester.demo5()
-    await tester.demo6()
 
     assert caplog.record_tuples == [
         ("shellous", _LOG_LEVEL, "_Tester.demo1 stepin <self>"),
@@ -66,8 +50,6 @@ async def test_log_method(caplog):
         ("shellous", _LOG_LEVEL, "_Tester.demo3 stepout <self> ex=ValueError(1)"),
         ("shellous", _LOG_LEVEL, "_Tester.demo4 stepin <self>"),
         ("shellous", _LOG_LEVEL, "_Tester.demo4 stepout <self> ex=None"),
-        ("shellous", _LOG_LEVEL, "_Tester.demo5 stepin <self>"),
-        ("shellous", _LOG_LEVEL, "_Tester.demo6 stepout <self> ex=None"),
     ]
 
 

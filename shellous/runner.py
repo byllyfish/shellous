@@ -13,7 +13,7 @@ import shellous
 import shellous.redirect as redir
 from shellous import pty_util
 from shellous.harvest import harvest, harvest_results
-from shellous.log import LOG_DETAIL, LOG_ENTER, LOG_EXIT, LOGGER, log_method, log_timer
+from shellous.log import LOG_DETAIL, LOGGER, log_method, log_timer
 from shellous.redirect import Redirect
 from shellous.result import (
     RESULT_STDERR_LIMIT,
@@ -594,7 +594,7 @@ class Runner:
                 LOGGER.error("%r failed to kill process %r", self, self._proc)
                 raise RuntimeError(f"Unable to kill process {self._proc!r}") from ex
 
-    @log_method(LOG_ENTER)
+    @log_method(LOG_DETAIL)
     async def __aenter__(self):
         "Set up redirections and launch subprocess."
         self._audit_callback("start")
@@ -821,7 +821,7 @@ class Runner:
 
         return stream
 
-    @log_method(LOG_EXIT)
+    @log_method(LOG_DETAIL)
     async def __aexit__(
         self,
         _exc_type: Union[type[BaseException], None],
@@ -1037,7 +1037,7 @@ class PipeRunner:
             self._cancelled = True
         self._tasks.clear()  # clear all tasks when done
 
-    @log_method(LOG_ENTER)
+    @log_method(LOG_DETAIL)
     async def __aenter__(self):
         "Set up redirections and launch pipeline."
         try:
@@ -1049,7 +1049,7 @@ class PipeRunner:
             await self._wait(kill=True)
             raise
 
-    @log_method(LOG_EXIT)
+    @log_method(LOG_DETAIL)
     async def __aexit__(
         self,
         _exc_type: Union[type[BaseException], None],

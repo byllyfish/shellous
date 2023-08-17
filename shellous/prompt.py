@@ -5,7 +5,7 @@ import re
 from typing import Optional
 
 from shellous.harvest import harvest_results
-from shellous.log import LOGGER
+from shellous.log import LOG_DETAIL, LOGGER
 from shellous.runner import Runner
 from shellous.util import decode_bytes, encode_bytes
 
@@ -65,7 +65,8 @@ class Prompt:
         assert stdin is not None
 
         data = encode_bytes(input_text, self._encoding) + b"\n"
-        LOGGER.debug("Prompt[pid=%s] send: %r", self._runner.pid, data)
+        if LOG_DETAIL:
+            LOGGER.debug("Prompt[pid=%s] send: %r", self._runner.pid, data)
         stdin.write(data)
 
         # Drain our write to stdin and wait for prompt from stdout.
@@ -107,7 +108,8 @@ class Prompt:
         assert stdout is not None
 
         buf = await _read_until(stdout, self._prompt_bytes)
-        LOGGER.debug("Prompt[pid=%s] receive: %r", self._runner.pid, buf)
+        if LOG_DETAIL:
+            LOGGER.debug("Prompt[pid=%s] receive: %r", self._runner.pid, buf)
 
         # Replace CR-LF or CR with LF.
         if self._normalize_newlines:

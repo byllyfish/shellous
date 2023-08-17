@@ -1,4 +1,4 @@
-"Defines package-wide logger."
+"Defines package-wide logger and log scaffolding for development."
 
 import asyncio
 import functools
@@ -10,7 +10,7 @@ import sys
 import threading
 import time
 from contextlib import contextmanager
-from typing import Any, Callable, Union
+from typing import Any, Callable
 
 # Type Alias.
 _ANYFN = Callable[..., Any]
@@ -19,25 +19,14 @@ _ANYFN = Callable[..., Any]
 LOGGER = logging.getLogger(__package__)
 
 _PYTHON_VERSION = platform.python_implementation() + platform.python_version()
-_LOG_IGNORE_STEPIN = -1
-_LOG_IGNORE_STEPOUT = -2
 
-# If SHELLOUS_DEBUG option is enabled, use detailed logging. Otherwise, we
-# just log command's inbound stepin and outbound stepout.
+# If SHELLOUS_DEBUG option is enabled, specific methods are decorated with
+# helper methods that log function entry and exit. We also activate detailed
+# logging.
+SHELLOUS_DEBUG = bool(os.environ.get("SHELLOUS_DEBUG"))
 
-SHELLOUS_DEBUG = os.environ.get("SHELLOUS_DEBUG")
-
-
-if SHELLOUS_DEBUG:
-    _logger_info = LOGGER.info
-    LOG_ENTER = True
-    LOG_EXIT = True
-    LOG_DETAIL = True
-else:
-    _logger_info = LOGGER.debug
-    LOG_ENTER = _LOG_IGNORE_STEPOUT  # pyright: ignore[reportConstantRedefinition]
-    LOG_EXIT = _LOG_IGNORE_STEPIN  # pyright: ignore[reportConstantRedefinition]
-    LOG_DETAIL = False  # pyright: ignore[reportConstantRedefinition]
+LOG_DETAIL = SHELLOUS_DEBUG
+_logger_info = LOGGER.info if SHELLOUS_DEBUG else LOGGER.debug
 
 
 def _exc():
@@ -45,7 +34,7 @@ def _exc():
     return sys.exc_info()[1]
 
 
-def log_method(enabled: Union[bool, int]) -> Callable[[_ANYFN], _ANYFN]:
+def log_method(enabled: bool) -> Callable[[_ANYFN], _ANYFN]:
     """`log_method` logs when an async method call is entered and exited.
 
     <method-name> stepin <self>
@@ -57,36 +46,37 @@ def log_method(enabled: Union[bool, int]) -> Callable[[_ANYFN], _ANYFN]:
     """
 
     def _decorator(func: _ANYFN) -> _ANYFN:
-        "Decorator to log method call entry and exit."
+        """Decorator to log method call entry and exit.
+
+        This method is a no-op when `enabled` is false.
+        """
         if not enabled:
             return func
 
         is_asyncgen = inspect.isasyncgenfunction(func)
         assert is_asyncgen or inspect.iscoroutinefunction(
             func
-        ), f"Expected {func!r} to be coroutine or asyncgen"
+        ), f"Expected {func!r} to be coroutine or async generator"
 
         if "." in func.__qualname__ and is_asyncgen:
             # Use _asyncgen_wrapper which includes value of `self` arg.
             @functools.wraps(func)
             async def _asyncgen_wrapper(*args: Any, **kwargs: Any):
-                if enabled != _LOG_IGNORE_STEPIN:
-                    _logger_info(
-                        "%s stepin %r",
-                        func.__qualname__,
-                        args[0],
-                    )
+                _logger_info(
+                    "%s stepin %r",
+                    func.__qualname__,
+                    args[0],
+                )
                 try:
                     async for i in func(*args, **kwargs):
                         yield i
                 finally:
-                    if enabled != _LOG_IGNORE_STEPOUT:
-                        _logger_info(
-                            "%s stepout %r ex=%r",
-                            func.__qualname__,
-                            args[0],
-                            _exc(),
-                        )
+                    _logger_info(
+                        "%s stepout %r ex=%r",
+                        func.__qualname__,
+                        args[0],
+                        _exc(),
+                    )
 
             return _asyncgen_wrapper
 
@@ -94,32 +84,30 @@ def log_method(enabled: Union[bool, int]) -> Callable[[_ANYFN], _ANYFN]:
             # Use _method_wrapper which includes value of `self` arg.
             @functools.wraps(func)
             async def _method_wrapper(*args: Any, **kwargs: Any):
-                if enabled != _LOG_IGNORE_STEPIN:
-                    if func.__name__ == "__aenter__":
-                        plat_info = f" ({_platform_info()})"
-                    else:
-                        plat_info = ""
-                    _logger_info(
-                        "%s stepin %r%s",
-                        func.__qualname__,
-                        args[0],
-                        plat_info,
-                    )
+                if func.__name__ == "__aenter__":
+                    plat_info = f" ({_platform_info()})"
+                else:
+                    plat_info = ""
+                _logger_info(
+                    "%s stepin %r%s",
+                    func.__qualname__,
+                    args[0],
+                    plat_info,
+                )
                 try:
                     return await func(*args, **kwargs)
                 finally:
-                    if enabled != _LOG_IGNORE_STEPOUT:
-                        if func.__name__ == "__aexit__":
-                            more_info = f" exc_value={args[2]!r}"
-                        else:
-                            more_info = ""
-                        _logger_info(
-                            "%s stepout %r ex=%r%s",
-                            func.__qualname__,
-                            args[0],
-                            _exc(),
-                            more_info,
-                        )
+                    if func.__name__ == "__aexit__":
+                        more_info = f" exc_value={args[2]!r}"
+                    else:
+                        more_info = ""
+                    _logger_info(
+                        "%s stepout %r ex=%r%s",
+                        func.__qualname__,
+                        args[0],
+                        _exc(),
+                        more_info,
+                    )
 
             return _method_wrapper
 
@@ -127,35 +115,31 @@ def log_method(enabled: Union[bool, int]) -> Callable[[_ANYFN], _ANYFN]:
             # Use _function_wrapper which ignores arguments.
             @functools.wraps(func)
             async def _asyncgen_function_wrapper(*args: Any, **kwargs: Any):
-                if enabled != _LOG_IGNORE_STEPIN:
-                    _logger_info("%s stepin", func.__qualname__)
+                _logger_info("%s stepin", func.__qualname__)
                 try:
                     async for item in func(*args, **kwargs):
                         yield item
                 finally:
-                    if enabled != _LOG_IGNORE_STEPOUT:
-                        _logger_info(
-                            "%s stepout ex=%r",
-                            func.__qualname__,
-                            _exc(),
-                        )
+                    _logger_info(
+                        "%s stepout ex=%r",
+                        func.__qualname__,
+                        _exc(),
+                    )
 
             return _asyncgen_function_wrapper
 
         # Use _function_wrapper which ignores arguments.
         @functools.wraps(func)
         async def _function_wrapper(*args: Any, **kwargs: Any):
-            if enabled != _LOG_IGNORE_STEPIN:
-                _logger_info("%s stepin", func.__qualname__)
+            _logger_info("%s stepin", func.__qualname__)
             try:
                 return await func(*args, **kwargs)
             finally:
-                if enabled != _LOG_IGNORE_STEPOUT:
-                    _logger_info(
-                        "%s stepout ex=%r",
-                        func.__qualname__,
-                        _exc(),
-                    )
+                _logger_info(
+                    "%s stepout ex=%r",
+                    func.__qualname__,
+                    _exc(),
+                )
 
         return _function_wrapper
 
