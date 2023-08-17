@@ -1,4 +1,4 @@
-"Defines package-wide logger."
+"Defines package-wide logger and log scaffolding for development."
 
 import asyncio
 import functools
@@ -20,22 +20,13 @@ LOGGER = logging.getLogger(__package__)
 
 _PYTHON_VERSION = platform.python_implementation() + platform.python_version()
 
-# If SHELLOUS_DEBUG option is enabled, use detailed logging. Otherwise, we
-# just log command's inbound stepin and outbound stepout.
-
+# If SHELLOUS_DEBUG option is enabled, specific methods are decorated with
+# helper methods that log function entry and exit. We also activate detailed
+# logging.
 SHELLOUS_DEBUG = bool(os.environ.get("SHELLOUS_DEBUG"))
 
-
-if SHELLOUS_DEBUG:
-    _logger_info = LOGGER.info
-    LOG_ENTER = True
-    LOG_EXIT = True
-    LOG_DETAIL = True
-else:
-    _logger_info = LOGGER.debug
-    LOG_ENTER = False  # pyright: ignore[reportConstantRedefinition]
-    LOG_EXIT = False  # pyright: ignore[reportConstantRedefinition]
-    LOG_DETAIL = False  # pyright: ignore[reportConstantRedefinition]
+LOG_DETAIL = SHELLOUS_DEBUG
+_logger_info = LOGGER.info if SHELLOUS_DEBUG else LOGGER.debug
 
 
 def _exc():
@@ -55,14 +46,17 @@ def log_method(enabled: bool) -> Callable[[_ANYFN], _ANYFN]:
     """
 
     def _decorator(func: _ANYFN) -> _ANYFN:
-        "Decorator to log method call entry and exit."
+        """Decorator to log method call entry and exit.
+
+        This method is a no-op when `enabled` is false.
+        """
         if not enabled:
             return func
 
         is_asyncgen = inspect.isasyncgenfunction(func)
         assert is_asyncgen or inspect.iscoroutinefunction(
             func
-        ), f"Expected {func!r} to be coroutine or asyncgen"
+        ), f"Expected {func!r} to be coroutine or async generator"
 
         if "." in func.__qualname__ and is_asyncgen:
             # Use _asyncgen_wrapper which includes value of `self` arg.
