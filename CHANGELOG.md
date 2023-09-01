@@ -1,6 +1,13 @@
 Shellous Change Log
 ===================
 
+0.29.0
+------
+
+- [BUGFIX] Report standard error when a pipeline sub-command fails. (#459)
+- [LATERAL] Reduce debug logging so it only occurs when SHELLOUS_DEBUG environment variable is set.
+- [LATERAL] Fix Windows CI tests for Python 3.11.5.
+
 0.28.0
 ------
 
