@@ -1,6 +1,6 @@
 # Async Processes and Pipelines
 
-[![PyPI](https://img.shields.io/pypi/v/shellous)](https://pypi.org/project/shellous/) [![docs](https://img.shields.io/badge/-documentation-informational)](https://byllyfish.github.io/shellous/shellous.html) [![CI](https://github.com/byllyfish/shellous/actions/workflows/ci.yml/badge.svg)](https://github.com/byllyfish/shellous/actions/workflows/ci.yml) [![codecov](https://codecov.io/gh/byllyfish/shellous/branch/main/graph/badge.svg?token=W44NZE89AW)](https://codecov.io/gh/byllyfish/shellous) [![Downloads](https://pepy.tech/badge/shellous)](https://pepy.tech/project/shellous)
+[![PyPI](https://img.shields.io/pypi/v/shellous)](https://pypi.org/project/shellous/) [![docs](https://img.shields.io/badge/-documentation-informational)](https://byllyfish.github.io/shellous/shellous.html) [![CI](https://github.com/byllyfish/shellous/actions/workflows/ci.yml/badge.svg)](https://github.com/byllyfish/shellous/actions/workflows/ci.yml) [![codecov](https://codecov.io/gh/byllyfish/shellous/branch/main/graph/badge.svg?token=W44NZE89AW)](https://codecov.io/gh/byllyfish/shellous) [![Downloads](https://static.pepy.tech/badge/shellous)](https://pepy.tech/project/shellous)
 
 **shellous** provides a concise API for running subprocesses using [asyncio](https://docs.python.org/3/library/asyncio.html). It is 
 similar to and inspired by [sh](https://pypi.org/project/sh/).
@@ -432,4 +432,23 @@ You can also create a context object that specifies all return values are `Resul
 >>> rsh = sh.result
 >>> await rsh("echo", "whatever")
 Result(exit_code=0, output_bytes=b'whatever\n', error_bytes=b'', cancelled=False, encoding='utf-8')
+```
+
+## Type Hints
+
+Shellous fully supports PEP 484 type hints.
+
+### Commands
+
+Commands are generic on the return type, either `str` or `Result`. You will type
+a command object as `Command[str]` or `Command[Result]`.
+
+```python
+from shellous import sh, Command, Result
+
+cmd1: Command[str] = sh("echo", "abc")
+# When you `await cmd1`, the result is a `str` object.
+
+cmd2: Command[Result] = sh.result("echo", "abc")
+# When you `await cmd2`, the result is a `Result` object.
 ```
