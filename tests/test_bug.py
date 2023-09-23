@@ -43,10 +43,11 @@ async def test_bug():
     except BrokenPipeError:
         print("BrokenPipe")
     except Exception as ex:
-        print("Exception!", ex)
+        print("Exception!", repr(ex))
         raise
     finally:
         # Fix "ResourceWarning: unclosed" message on Windows.
         await proc.wait()
         proc._transport.close()  # pyright: ignore[reportGeneralTypeIssues]
         print("Done.", repr(proc))
+        await asyncio.sleep(0.1)
