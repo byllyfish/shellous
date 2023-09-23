@@ -565,7 +565,8 @@ class Runner:
         "Send a signal to the process."
         assert self._proc is not None  # (pyright)
 
-        LOGGER.debug("Runner.signal %r signal=%r", self, sig)
+        if LOG_DETAIL:
+            LOGGER.debug("Runner.signal %r signal=%r", self, sig)
         self._audit_callback("signal", signal=sig)
 
         if sig is None:

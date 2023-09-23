@@ -96,7 +96,7 @@ def wait_pid(pid: int, *, block: bool = False) -> Optional[int]:
         result_pid, status = os.waitpid(pid, options)
     except ChildProcessError as ex:
         # Set status to 255 if process not found.
-        LOGGER.warning("wait_pid(%r) status is 255 ex=%r", pid, ex)
+        LOGGER.warning("wait_pid(%r) status not found (255) ex=%r", pid, ex)
         return 255
 
     if LOG_DETAIL:
@@ -126,11 +126,12 @@ def poll_wait_pid(proc: Process) -> bool:
     if status is None:
         return False
 
-    LOGGER.debug(
-        "process %r exited with returncode %r (wait_pid)",
-        proc.pid,
-        status,
-    )
+    if LOG_DETAIL:
+        LOGGER.debug(
+            "process %r exited with returncode %r (wait_pid)",
+            proc.pid,
+            status,
+        )
 
     proc._transport._returncode = status  # type: ignore
     proc._transport._proc.returncode = status  # type: ignore
