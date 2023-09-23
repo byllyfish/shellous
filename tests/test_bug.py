@@ -49,5 +49,4 @@ async def test_bug():
         # Fix "ResourceWarning: unclosed" message on Windows.
         await proc.wait()
         proc._transport.close()  # pyright: ignore[reportGeneralTypeIssues]
-        print("Done.", repr(proc))
-        await asyncio.sleep(0.1)
+        await asyncio.sleep(0.1)  # On Python 3.9/Win32, close must complete.
