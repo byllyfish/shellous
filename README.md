@@ -164,18 +164,18 @@ result = run.result()
 ```
 
 If we didn't specify that stdin/stdout are `sh.CAPTURE`, the streams `run.stdin` and `run.stdout` would be 
-`None`.
+`None`. The streams `run.stdout` and `run.stderr` are `asyncio.StreamReader` objects. The stream `run.stdin`
+is an `asyncio.StreamWriter` object.
 
 The return value of `run.result()` is always a `Result` object. Depending on the command settings, this 
 function may raise a `ResultError` on a non-zero exit code. If you don't call `run.result()`, the result
 is ignored.  
 
-When reading or writing individual streams, you are responsible for managing reads and writes so they don't
-deadlock. The above example is contrived. All streams on the `run` object are `asyncio.StreamReader` and 
-`asyncio.StreamWriter` objects.
+> :warning: When reading or writing individual streams, you are responsible for managing reads and writes so they don't
+deadlock. You may use `run.create_task` to schedule a concurrent task.
 
 You can also use `async with` to run a server. When you do so, you must tell the server
-to stop; the context manager normally waits for standard output to close.
+to stop using `run.cancel()`. Otherwise, the context manager will wait forever for the process to exit.
 
 ```python
 async with sh("some-server") as run:
@@ -193,7 +193,8 @@ with `|`.
 To redirect to or from a file, use a `pathlib.Path` object. Alternatively, you can redirect input/output
 to a StringIO object, an open file, a Logger, or use a special redirection constant like `sh.DEVNULL`.
 
-**IMPORTANT**: When combining the redirect operators with `await`, you must use parentheses. Remember that `await` has higher precedence than `|` and `>>`.
+> :warning: When combining the redirect operators with `await`, you must use parentheses; `await` has higher
+precedence than `|` and `>>`.
 
 ### Redirecting Standard Input
 
@@ -260,14 +261,14 @@ Shellous supports different STDOUT behavior when using different Python types.
 | Path | Write output to the file path specified by `Path`.  | 
 | bytearray | Write output to a mutable byte array. | 
 | File, StringIO, ByteIO | Write output to an open file object. | 
-| int | Write output to existing file descriptor at its current position. 🔹 | 
-| logging.Logger | Log each line of output. 🔹 | 
-| asyncio.StreamWriter | Write output to `StreamWriter`. 🔹 | 
-| sh.CAPTURE | Capture output for `async with`. 🔹 | 
-| sh.DEVNULL | Write output to `/dev/null`. 🔹 | 
-| sh.INHERIT  | Write output to existing `sys.stdout` or `sys.stderr`. 🔹 | 
+| int | Write output to existing file descriptor at its current position. ◆ | 
+| logging.Logger | Log each line of output. ◆ | 
+| asyncio.StreamWriter | Write output to `StreamWriter`. ◆ | 
+| sh.CAPTURE | Capture output for `async with`. ◆ | 
+| sh.DEVNULL | Write output to `/dev/null`. ◆ | 
+| sh.INHERIT  | Write output to existing `sys.stdout` or `sys.stderr`. ◆ | 
 
-🔹 For these types, there is no difference between using `|` and `>>`.
+◆ For these types, there is no difference between using `|` and `>>`.
 
 Shellous does **not** support redirecting standard output/error to a plain `str` or `bytes` object. 
 If you intend to redirect output to a file, you must use a `pathlib.Path` object.
@@ -442,6 +443,8 @@ Shellous fully supports PEP 484 type hints.
 
 Commands are generic on the return type, either `str` or `Result`. You will type
 a command object as `Command[str]` or `Command[Result]`.
+
+Use the `result` modifier to obtain a `Command[Result]` from a `Command[str]`.
 
 ```python
 from shellous import sh, Command, Result
