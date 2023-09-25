@@ -23,7 +23,7 @@ _CANCELLED_EXIT_CODE = -15
 _IS_ALPINE = os.path.exists("/etc/alpine-release")
 
 # True if we're running on Python 3.10.9 or later.
-_IS_PY3_NO_FD_COUNT = sys.version_info[:3] >= (3, 10, 9)
+_IS_PY3_NO_FD_COUNT = (3, 10, 9) <= sys.version_info[:3] < (3, 11, 0)
 
 
 def _is_uvloop() -> bool:
