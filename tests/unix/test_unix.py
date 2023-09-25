@@ -1692,14 +1692,15 @@ async def test_limited_file_descriptors(report_children):
     "Test running out of file descriptors."
     cmds = [sh("sleep", "1").stderr(sh.DEVNULL)] * 2
 
-    with _limited_descriptors(13):
-        with pytest.raises(
-            OSError, match="Too many open files|No file descriptors available"
-        ):
-            await harvest(*cmds)
+    for fd_max in range(11, 14):
+        with _limited_descriptors(fd_max):
+            with pytest.raises(
+                OSError, match="Too many open files|No file descriptors available"
+            ):
+                await harvest(*cmds)
 
-    # Yield time for any killed processes to be reaped.
-    await asyncio.sleep(0.025)
+        # Yield time for any killed processes to be reaped.
+        await asyncio.sleep(0.025)
 
 
 async def test_simultaneous_context_manager():
