@@ -1,6 +1,13 @@
 Shellous Change Log
 ===================
 
+0.30.0
+------
+
+- [LATERAL] Improve documentation and add security policy to the GitHub repository.
+- [LATERAL] Fix two more log messages so they only appear when the SHELLOUS_DEBUG environment variable is set.
+- [LATERAL] Improve reliability of CI testing on Windows.
+
 0.29.0
 ------
 
