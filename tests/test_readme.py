@@ -86,7 +86,8 @@ def test_parse_readme():
         'await sh("echo", 1, 2, [3, 4, (5, 6)])',
         'echo = sh("echo", "-n")',
         'await echo("abc")',
-        'async def exclaim(word: str) -> str:\n  return await sh("echo", "-n", f"{word}!!")\n',
+        "from shellous import Command",
+        'def exclaim(word: str) -> Command[str]:\n  return sh("echo", "-n", f"{word}!!")\n',
         'await exclaim("Oh")',
         'await echo.result("abc")',
         'await sh("cat", "does_not_exist")',
@@ -130,6 +131,10 @@ def test_parse_readme():
         'await sh_audit("echo", "goodbye")',
         "rsh = sh.result",
         'await rsh("echo", "whatever")',
+        'cmd = sh("echo").set(encoding="latin1")',
+        "cmd.options.encoding",
+        'cmd = sh("echo").env(ENV1="a", ENV2="b").env(ENV2=3)',
+        "cmd.options.env",
     ]
 
 

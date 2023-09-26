@@ -22,8 +22,8 @@ _CANCELLED_EXIT_CODE = -15
 # True if we're running on alpine linux.
 _IS_ALPINE = os.path.exists("/etc/alpine-release")
 
-# True if we're running on Python 3.10.9 or later.
-_IS_PY3_NO_FD_COUNT = sys.version_info[:3] >= (3, 10, 9)
+# True if we're running on Python 3.11.3 or earlier (gh-87474).
+_IS_PY3_NO_FD_COUNT = sys.version_info[:3] <= (3, 11, 3)
 
 
 def _is_uvloop() -> bool:
@@ -1594,7 +1594,7 @@ async def test_open_file_descriptors():
             "0r FIFO pipe\n1w FIFO pipe\n2u CHR /dev/null\n",  # py3.11/18.04
         )
     elif sys.platform.startswith("freebsd"):
-        assert result == "0u unix \n1u PIPE \n2u VCHR /dev/null\n"
+        assert result == "0u PIPE \n1u PIPE \n2u VCHR /dev/null\n"
     else:
         assert result in (
             "0u unix \n1 PIPE \n2u CHR /dev/null\n",
@@ -1620,7 +1620,7 @@ async def test_open_file_descriptors_unclosed_fds():
             "0r FIFO pipe\n1w FIFO pipe\n2u CHR /dev/null\n",  # py3.11/18.04
         )
     elif sys.platform.startswith("freebsd"):
-        assert result == "0u unix \n1u PIPE \n2u VCHR /dev/null\n"
+        assert result == "0u PIPE \n1u PIPE \n2u VCHR /dev/null\n"
     else:
         assert result in (
             "0u unix \n1 PIPE \n2u CHR /dev/null\n",
@@ -1692,14 +1692,15 @@ async def test_limited_file_descriptors(report_children):
     "Test running out of file descriptors."
     cmds = [sh("sleep", "1").stderr(sh.DEVNULL)] * 2
 
-    with _limited_descriptors(13):
-        with pytest.raises(
-            OSError, match="Too many open files|No file descriptors available"
-        ):
-            await harvest(*cmds)
+    for fd_max in range(11, 14):
+        with _limited_descriptors(fd_max):
+            with pytest.raises(
+                OSError, match="Too many open files|No file descriptors available"
+            ):
+                await harvest(*cmds)
 
-    # Yield time for any killed processes to be reaped.
-    await asyncio.sleep(0.025)
+        # Yield time for any killed processes to be reaped.
+        await asyncio.sleep(0.025)
 
 
 async def test_simultaneous_context_manager():
