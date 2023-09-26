@@ -1594,7 +1594,7 @@ async def test_open_file_descriptors():
             "0r FIFO pipe\n1w FIFO pipe\n2u CHR /dev/null\n",  # py3.11/18.04
         )
     elif sys.platform.startswith("freebsd"):
-        assert result == "0u unix \n1u PIPE \n2u VCHR /dev/null\n"
+        assert result == "0u PIPE \n1u PIPE \n2u VCHR /dev/null\n"
     else:
         assert result in (
             "0u unix \n1 PIPE \n2u CHR /dev/null\n",
@@ -1620,7 +1620,7 @@ async def test_open_file_descriptors_unclosed_fds():
             "0r FIFO pipe\n1w FIFO pipe\n2u CHR /dev/null\n",  # py3.11/18.04
         )
     elif sys.platform.startswith("freebsd"):
-        assert result == "0u unix \n1u PIPE \n2u VCHR /dev/null\n"
+        assert result == "0u PIPE \n1u PIPE \n2u VCHR /dev/null\n"
     else:
         assert result in (
             "0u unix \n1 PIPE \n2u CHR /dev/null\n",
