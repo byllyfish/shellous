@@ -19,10 +19,10 @@ asyncio.run(main())
 ## Benefits
 
 - Run programs asynchronously in a single line.
-- Redirect stdin, stdout and stderr to files, memory buffers or loggers.
-- Construct [pipelines](https://en.wikipedia.org/wiki/Pipeline_(Unix)) and use [process substitution](https://en.wikipedia.org/wiki/Process_substitution).
+- Redirect stdin, stdout and stderr to files, memory buffers, async streams or loggers.
 - Set timeouts and reliably cancel running processes.
 - Run a program with a pseudo-terminal (pty).
+- Construct [pipelines](https://en.wikipedia.org/wiki/Pipeline_(Unix)) and use [process substitution](https://en.wikipedia.org/wiki/Process_substitution) directly from Python (no shell required).
 - Runs on Linux, MacOS, FreeBSD and Windows.
 - Monitor processes being started and stopped with `audit_callback` API.
 
@@ -30,8 +30,8 @@ asyncio.run(main())
 
 - Requires Python 3.9 or later.
 - Requires an asyncio event loop.
-- Process substitution requires a Unix system with /dev/fd support.
 - Pseudo-terminals require a Unix system.
+- Process substitution requires a Unix system with /dev/fd support.
 
 ## Running a Command
 
@@ -60,6 +60,7 @@ converted to a string. If an argument is a list or tuple, it is flattened recurs
 ```
 
 A command does not run until you `await` it. When you run a command using `await`, it returns the value of the standard output interpreted as a UTF-8 string.
+It is safe to `await` the same command object more than once.
 
 Here, we create our own echo command with "-n" to omit the newline. Note, `echo("abc")` will run the same command as `echo -n "abc"`.
 
@@ -73,16 +74,18 @@ Commands are **immutable** objects that represent a program invocation: program 
 variables, redirection operators and other settings. When you use a method to modify a `Command`, you are
 returning a new `Command` object. The original object is unchanged.
 
-It is often convenient to wrap your commands in a function. This idiom provides better type
-safety for the command arguments.
+You can wrap your commands in a function to improve type safety:
 
 ```pycon
->>> async def exclaim(word: str) -> str:
-...   return await sh("echo", "-n", f"{word}!!")
+>>> from shellous import Command
+>>> def exclaim(word: str) -> Command[str]:
+...   return sh("echo", "-n", f"{word}!!")
 ... 
 >>> await exclaim("Oh")
 'Oh!!'
 ```
+
+The type hint `Command[str]` indicates that the command returns a `str`.
 
 ### Results
 
@@ -106,9 +109,11 @@ else:
 You can retrieve the string value of the standard error using the `.error` property. (By default, only the 
 first 1024 bytes of standard error is stored.)
 
+If a command was terminated by a signal, the `exit_code` will be the negative *signal* number.
+
 ### ResultError
 
-When a command fails, it raises a `ResultError` exception:
+If you are not using the `.result` modifier and a command fails, it raises a `ResultError` exception:
 
 ```pycon
 >>> await sh("cat", "does_not_exist")
@@ -127,7 +132,7 @@ normal. To do this, you can set the `exit_codes` option:
 ''
 ```
 
-If there is a problem launching a process, shellous can also raise a separate `FileNotFoundError` or  `PermissionError`.
+If there is a problem launching a process, shellous can also raise a separate `FileNotFoundError` or  `PermissionError` exception.
 
 ### Async For
 
@@ -319,7 +324,8 @@ However, the default redirections are adjusted when using a pseudo-terminal (pty
 
 ## Pipelines
 
-You can create a pipeline by combining commands using the `|` operator.
+You can create a pipeline by combining commands using the `|` operator. A pipeline feeds the standard out of one process into the next process as standard input. Here is the shellous
+equivalent to the bash command: `ls | grep README`
 
 ```pycon
 >>> pipe = sh("ls") | sh("grep", "README")
@@ -334,6 +340,8 @@ A pipeline returns a `Result` if the last command in the pipeline has the `.resu
 >>> await pipe
 Result(exit_code=0, output_bytes=b'README.md\n', error_bytes=b'', cancelled=False, encoding='utf-8')
 ```
+
+Error reporting for a pipeline is implemented similar to using the `-o pipefail` shell option.
 
 ## Process Substitution (Unix Only)
 
@@ -410,7 +418,7 @@ Shellous provides three built-in helper functions: `shellous.cooked()`, `shellou
 
 ## Context Objects
 
-You can store shared command settings in an immutable context object. To create a new 
+You can store shared command settings in an immutable context object (CmdContext). To create a new 
 context object, specify your changes to the default context **sh**:
 
 ```pycon
@@ -435,14 +443,77 @@ You can also create a context object that specifies all return values are `Resul
 Result(exit_code=0, output_bytes=b'whatever\n', error_bytes=b'', cancelled=False, encoding='utf-8')
 ```
 
-## Type Hints
+## Options
+
+Both `Command` and `CmdContext` support options to control their runtime behavior. Some of these options (timeout,
+pty, audit_callback, and exit_codes) have been described above. See the `shellous.Options` class for
+more information.
+
+You can retrieve an option from `cmd` with `cmd.options.<option>`. For example, use `cmd.options.encoding` to obtain the encoding:
+
+```pycon
+>>> cmd = sh("echo").set(encoding="latin1")
+>>> cmd.options.encoding
+'latin1'
+```
+
+`Command` and `CmdContext` use the `.set()` method to specify most options:
+
+| Option | Description |
+| --- | --- |
+| path | Search path to use instead of the `PATH` environment variable. |
+| env | Additional environment variables to pass to the command. |
+| inherit_env | True if command should inherit the environment variables from the current process. (Default=True) |
+| encoding | Text encoding of input/output streams. (Default=UTF-8) |
+| exit_codes | Set of exit codes that do not raise a `ResultError`. (DEFAULT={0}) |
+| timeout | Timeout in seconds to wait before cancelling the process. |
+| cancel_timeout | Timeout in seconds to wait for a cancelled process to exit before forcefully terminating it. (Default=3s) |
+| cancel_signal | The signal sent to a process when it is cancelled. (Default=SIGTERM) |
+| alt_name | Alternate name for the process used for debug logging. |
+| pass_fds | Additional file descriptors to pass to the process. |
+| pass_fds_close | True if descriptors in `pass_fds` should be closed after the process is launched. |
+| pty | Used to allocate a pseudo-terminal (PTY). |
+| close_fds | True if process should close all file descriptors when it starts. |
+| audit_callback | Provide function to audit stages of process execution. |
+| coerce_arg | Provide function to coerce `Command` arguments to strings when `str()` is not sufficient. |
+
+### env
+
+Use the `env()` method to **add** to the list of environment variables. The `env()` method supports keyword parameters.
+You can call `env()` more than once and the effect is additive.
+
+```pycon
+>>> cmd = sh("echo").env(ENV1="a", ENV2="b").env(ENV2=3)
+>>> cmd.options.env
+{'ENV1': 'a', 'ENV2': '3'}
+```
+
+Use the `env` option with `set()` when you want to **replace all** the environment variables. 
+
+### input, output, error
+
+When you apply a redirection operator to a `Command` or `CmdContext`, the redirection targets
+are also stored in the `Options` object. To change these, use the `.stdin()`, `.stdout()`, or `.stderr()` methods or the redirection operator `|`.
+
+| Option | Description |
+| --- | --- |
+| input | The redirection target for standard input. |
+| input_close | True if standard input should be closed after the process is launched. |
+| output | The redirection target for standard output. |
+| output_append | True if standard output should be open for append. |
+| output_close | True if standard output should be closed after the process is launched. |
+| error | The redirection target for standard error. |
+| error_append | True if standard error should be open for append. |
+| error_close | True if standard error should be closed after the process is launched. |
+
+## Type Checking
 
 Shellous fully supports PEP 484 type hints.
 
 ### Commands
 
-Commands are generic on the return type, either `str` or `Result`. You will type
-a command object as `Command[str]` or `Command[Result]`.
+Commands are generic on the return type, either `str` or `Result`. You will specify the
+type of a command object as `Command[str]` or `Command[Result]`.
 
 Use the `result` modifier to obtain a `Command[Result]` from a `Command[str]`.
 
@@ -454,4 +525,18 @@ cmd1: Command[str] = sh("echo", "abc")
 
 cmd2: Command[Result] = sh.result("echo", "abc")
 # When you `await cmd2`, the result is a `Result` object.
+```
+
+### CmdContext
+
+The `CmdContext` class is also generic on either `str` or `Result`.
+
+```python
+from shellous import sh, CmdContext, Result
+
+sh1: CmdContext[str] = sh.set(path="/bin:/usr/bin")
+# When you use `sh1` to create commands, it produces `Command[str]` object with the given path.
+
+sh2: CmdContext[Result] = sh.result.set(path="/bin:/usr/bin")
+# When you use `sh2` to create commands, it produces `Command[Result]` objects with the given path.
 ```
