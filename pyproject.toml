@@ -14,6 +14,7 @@ classifiers = [
   "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
   "Framework :: AsyncIO",
 ]
 
@@ -39,6 +40,12 @@ pyright = "^1.1.320"
 ruff = {version = "^0.0.292", markers = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'"}
 typing-extensions = "^4.7.1"
 
+[tool.poetry.group.uvloop]
+optional = true
+
+[tool.poetry.group.uvloop.dependencies]
+uvloop = "^0.17.0"
+
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
@@ -46,7 +53,7 @@ build-backend = "poetry.core.masonry.api"
 [tool.pytest.ini_options]
 filterwarnings = [
   "error",
-  'ignore:.*(ChildWatcher|get_child_watcher|set_child_watcher|deprecated and will be removed in Python 3.14):DeprecationWarning',  # 3.12-dev
+  'ignore:.*(ChildWatcher|get_child_watcher|set_child_watcher|deprecated and will be removed in Python 3.14):DeprecationWarning',  # 3.12
 ]
 env_files = ["tests/tests.env"]
 addopts = '--timeout=20 --color=yes --log-cli-format="%(created).03f %(levelname)s %(name)s %(message)s" --log-level=INFO --log-file-format="%(created).03f %(levelname)s %(name)s %(message)s"'

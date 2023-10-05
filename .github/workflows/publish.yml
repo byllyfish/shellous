@@ -27,8 +27,8 @@ jobs:
           python-version: 3.9
       - name: Install dependencies
         run: |
-          python3 -m pip install --upgrade setuptools wheel
-          python3 -m pip install poetry
+          python3 -m pip install --require-hashes --upgrade setuptools wheel
+          python3 -m pip install --require-hashes poetry
       - name: Build package
         run: |
           # Delete lines in README.md that match "__REL_LINK__".
