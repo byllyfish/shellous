@@ -47,7 +47,7 @@ jobs:
       run: |
         pip3 install --require-hashes -r ./ci/requirements-dev.txt
     - name: Lint
-      if: matrix.python-version != '3.12'
+      if: matrix.python-version != '3.13-dev'
       run: |
         ruff check --exit-zero .
         pylint -v --fail-under 9.5 shellous
@@ -61,7 +61,7 @@ jobs:
           pytest -vv -s --durations=20 --log-cli-level=DEBUG --last-failed
         fi
     - name: Run Code Coverage (Linux and MacOS)
-      if: (matrix.os == 'ubuntu-22.04' || matrix.os == 'macos-12') && matrix.python-version != '3.12'
+      if: (matrix.os == 'ubuntu-22.04' || matrix.os == 'macos-12') && matrix.python-version != '3.13-dev'
       run: |
         # Run coverage.
         coverage run --source shellous -m pytest
@@ -72,12 +72,12 @@ jobs:
       env:
         SHELLOUS_CODE_COVERAGE: 1
     - name: Upload Code Coverage
-      if: (matrix.os == 'ubuntu-22.04' || matrix.os == 'macos-12') && matrix.python-version != '3.12'
+      if: (matrix.os == 'ubuntu-22.04' || matrix.os == 'macos-12') && matrix.python-version != '3.13-dev'
       uses: codecov/codecov-action@eaaf4bedf32dbdc6b720b63067d99c4d77d6047d # v3.1.4
       with:
         verbose: true
     - name: Run Tests with uvloop (Linux and MacOS)
-      if: (matrix.os == 'ubuntu-22.04' || matrix.os == 'macos-12') && matrix.python-version != '3.12'
+      if: (matrix.os == 'ubuntu-22.04' || matrix.os == 'macos-12') && matrix.python-version != '3.13-dev'
       run: |
         pip3 install --require-hashes -r ./ci/requirements-uvloop.txt
         # Ignore ResourceWarning with uvloop for now (TODO).
@@ -124,7 +124,7 @@ jobs:
       env:
         SHELLOUS_CHILDWATCHER_TYPE: "default"
     - name: Verify Types
-      if: matrix.python-version != '3.12'
+      if: matrix.python-version != '3.13-dev'
       run: |
         PYTHONPATH=. pyright --verifytypes shellous || echo "::warning title=Pyright Warning::Verify types failed"
     - name: Format Check
