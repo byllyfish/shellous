@@ -45,7 +45,6 @@ jobs:
         check-latest: true
     - name: Install dependencies
       run: |
-        pip3 install --require-hashes -U setuptools wheel
         pip3 install --require-hashes -r ./ci/requirements-dev.txt
     - name: Lint
       if: matrix.python-version != '3.12-dev'
@@ -80,7 +79,7 @@ jobs:
     - name: Run Tests with uvloop (Linux and MacOS)
       if: (matrix.os == 'ubuntu-22.04' || matrix.os == 'macos-12') && matrix.python-version != '3.12-dev'
       run: |
-        pip3 install --require-hashes uvloop
+        pip3 install --require-hashes -r ./ci/requirements-uvloop.txt
         # Ignore ResourceWarning with uvloop for now (TODO).
         if ! pytest -vv -s --log-cli-level=DEBUG -W ignore::ResourceWarning; then
           echo "::warning title=uvloop Warning::Re-running failed tests in $BUILD_NAME"
@@ -201,7 +200,6 @@ jobs:
         python-version: ${{ matrix.pypy-version }}
     - name: Install dependencies
       run: |
-        pip3 install --require-hashes -U setuptools wheel
         pip3 install --require-hashes -r ./ci/requirements-dev.txt
     - name: Run Tests
       run: |
