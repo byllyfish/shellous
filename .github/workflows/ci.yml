@@ -139,7 +139,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        image-tag: ['python:3.10-alpine', 'python:3.11-alpine']
+        image-tag: ['python:3.10-alpine', 'python:3.11-alpine', 'python:3.12-alpine']
 
     container:
       image: ${{ matrix.image-tag }}
