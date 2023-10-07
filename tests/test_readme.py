@@ -27,7 +27,12 @@ async def run_asyncio_repl(cmds, logfile=None):
     )
 
     async with repl as run:
-        prompt = Prompt(run, _PROMPT, default_timeout=5.0, normalize_newlines=True)
+        prompt = Prompt(
+            run,
+            default_prompt=_PROMPT,
+            default_timeout=5.0,
+            normalize_newlines=True,
+        )
 
         # Customize the python REPL prompt to make it easier to detect. The
         # initial output of the REPL will include the old ">>> " prompt which

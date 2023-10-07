@@ -147,7 +147,7 @@ async def test_bulk_prompt(bulk_cmd, _limit_logging):
     cmd = bulk_cmd().set(encoding="latin1")
 
     async with cmd.stdin(sh.CAPTURE).stdout(sh.CAPTURE) as run:
-        prompt = Prompt(run, ">>> ")
+        prompt = Prompt(run, default_prompt=">>> ")
         result = await prompt.receive(timeout=10.0)
         assert len(result) == 4 * (1024 * 1024 + 1)
         value = hashlib.sha256(result.encode("latin1")).hexdigest()

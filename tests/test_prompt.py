@@ -50,7 +50,11 @@ async def test_prompt_python_pty():
     cmd = sh(sys.executable).stdin(sh.CAPTURE).stdout(sh.CAPTURE).stderr(sh.STDOUT)
 
     async with cmd.set(pty=_NO_ECHO) as run:
-        repl = Prompt(run, _PS1, default_timeout=3.0)
+        repl = Prompt(
+            run,
+            default_prompt=_PS1,
+            default_timeout=3.0,
+        )
 
         greeting = await repl.receive()
         assert "Python" in greeting
@@ -73,7 +77,12 @@ async def test_prompt_python_interactive():
     )
 
     async with cmd as run:
-        repl = Prompt(run, _PS1, default_timeout=3.0, normalize_newlines=True)
+        repl = Prompt(
+            run,
+            default_prompt=_PS1,
+            default_timeout=3.0,
+            normalize_newlines=True,
+        )
 
         greeting = await repl.receive()
         assert "Python" in greeting
@@ -94,7 +103,7 @@ async def test_prompt_python_interactive_ps1():
     )
 
     async with cmd as run:
-        repl = Prompt(run, alt_ps1, normalize_newlines=True)
+        repl = Prompt(run, default_prompt=alt_ps1, normalize_newlines=True)
 
         greeting = await repl.send(f"import sys; sys.ps1='{alt_ps1}'")
         assert _PS1 in greeting
@@ -115,7 +124,7 @@ async def test_prompt_python_timeout():
     )
 
     async with cmd as run:
-        repl = Prompt(run, _PS1)
+        repl = Prompt(run, default_prompt=_PS1)
 
         greeting = await repl.receive()
         assert "Python" in greeting
@@ -135,7 +144,7 @@ async def test_prompt_python_missing_newline():
     )
 
     async with cmd as run:
-        repl = Prompt(run, _PS1, normalize_newlines=True)
+        repl = Prompt(run, default_prompt=_PS1, normalize_newlines=True)
 
         greeting = await repl.receive()
         assert "Python" in greeting
@@ -160,7 +169,7 @@ async def test_prompt_unix_shell():
     )
 
     async with cmd.env(PS1="$", TERM="dumb") as run:
-        repl = Prompt(run, "$")
+        repl = Prompt(run, default_prompt="$")
 
         greeting = await repl.receive()
         if _IS_FREEBSD:
@@ -193,7 +202,7 @@ async def test_prompt_unix_shell_echo():
     )
 
     async with cmd.env(PS1="$", TERM="dumb") as run:
-        repl = Prompt(run, "$")
+        repl = Prompt(run, default_prompt="$")
 
         greeting = await repl.receive()
         if _IS_FREEBSD:
@@ -226,7 +235,7 @@ async def test_prompt_unix_shell_interactive():
     )
 
     async with cmd.env(PS1="$", TERM="dumb") as run:
-        repl = Prompt(run, "$")
+        repl = Prompt(run, default_prompt="$")
 
         greeting = await repl.receive()
         assert "job control" in greeting  # expect message about job control
@@ -256,7 +265,7 @@ async def test_prompt_asyncio_repl():
     )
 
     async with cmd as run:
-        repl = Prompt(run, ">>> ", normalize_newlines=True)
+        repl = Prompt(run, default_prompt=">>> ", normalize_newlines=True)
 
         greeting = await repl.receive()
         assert "asyncio" in greeting

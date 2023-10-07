@@ -34,14 +34,15 @@ class Prompt:
 
     _runner: Runner
     _encoding: str
-    _prompt_bytes: bytes
+    _default_prompt: bytes
     _default_timeout: Optional[float]
+    _normalize_newlines: bool
 
     def __init__(
         self,
         runner: Runner,
-        prompt: str,
         *,
+        default_prompt: str,
         default_timeout: Optional[float] = None,
         normalize_newlines: bool = False,
     ):
@@ -50,7 +51,7 @@ class Prompt:
 
         self._runner = runner
         self._encoding = runner.command.options.encoding
-        self._prompt_bytes = encode_bytes(prompt, self._encoding)
+        self._default_prompt = encode_bytes(default_prompt, self._encoding)
         self._default_timeout = default_timeout
         self._normalize_newlines = normalize_newlines
 
@@ -107,7 +108,7 @@ class Prompt:
         stdout = self._runner.stdout
         assert stdout is not None
 
-        buf = await _read_until(stdout, self._prompt_bytes)
+        buf = await _read_until(stdout, self._default_prompt)
         if LOG_DETAIL:
             LOGGER.debug("Prompt[pid=%s] receive: %r", self._runner.pid, buf)
 
@@ -116,8 +117,8 @@ class Prompt:
             buf = _EOL_REGEX.sub(b"\n", buf)
 
         # Clean up the output to remove the prompt, then return as string.
-        if buf.endswith(self._prompt_bytes):
-            buf = buf[0 : -len(self._prompt_bytes)]
+        if buf.endswith(self._default_prompt):
+            buf = buf[0 : -len(self._default_prompt)]
 
         return decode_bytes(buf, self._encoding)
 
