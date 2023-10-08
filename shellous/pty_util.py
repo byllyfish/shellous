@@ -174,7 +174,7 @@ async def _open_pty_streams(parent_fd: int, child_fd: ChildFd):
         _orig_close()
         reader_transport.close()
 
-    writer_transport.close, _orig_close = _close, writer_transport.close  # type: ignore
+    writer_transport.close, _orig_close = _close, writer_transport.close
 
     return reader, writer
 

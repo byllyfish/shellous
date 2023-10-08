@@ -610,9 +610,10 @@ async def test_pipeline_async_context_manager():
     assert result == b"A"
     assert run.name == "tr|cat"
     assert (
-        repr(run) == "<PipeRunner 'tr|cat' results=["
-        "Result(exit_code=0, output_bytes=b'', error_bytes=b'', cancelled=False, encoding='utf-8'), "
-        "Result(exit_code=0, output_bytes=b'', error_bytes=b'', cancelled=False, encoding='utf-8')]>"
+        repr(run)
+        == "<PipeRunner 'tr|cat' results=["
+        + "Result(exit_code=0, output_bytes=b'', error_bytes=b'', cancelled=False, encoding='utf-8'), "
+        + "Result(exit_code=0, output_bytes=b'', error_bytes=b'', cancelled=False, encoding='utf-8')]>"
     )
 
 

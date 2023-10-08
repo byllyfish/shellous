@@ -117,7 +117,7 @@ class _RunOptions:
             # If executable does not include an absolute/relative directory,
             # resolve it using PATH.
             executable = self.pos_args[0]
-            if not os.path.dirname(executable):  # type: ignore (path)
+            if not os.path.dirname(executable):
                 found_executable = _cmd.options.which(executable)
                 if found_executable is None:
                     raise FileNotFoundError(executable)
@@ -266,7 +266,7 @@ class _RunOptions:
         input_bytes = None
 
         if isinstance(input_, (bytes, bytearray)):
-            input_bytes = input_
+            input_bytes = bytes(input_)
         elif isinstance(input_, Path):
             stdin = open(input_, "rb")  # pylint: disable=consider-using-with
             self.open_fds.append(stdin)
