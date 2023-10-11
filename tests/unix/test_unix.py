@@ -1036,7 +1036,13 @@ async def test_pty():
         run.stdin.close()
 
     assert result == b"abc\r\nABC\r\n"
-    assert run.result().exit_code == -1
+
+    # Exit code of PTY process differs on FreeBSD...
+    exit_status = run.result().exit_code
+    if sys.platform.startswith("freebsd"):
+        assert exit_status == 0
+    else:
+        assert exit_status == -1
 
 
 @pytest.mark.skipif(_is_uvloop(), reason="uvloop")
