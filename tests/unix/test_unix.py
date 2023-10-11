@@ -1024,9 +1024,10 @@ async def test_pty():
     "Test the `pty` option."
     cmd = sh("tr", "[:lower:]", "[:upper:]").stdin(sh.CAPTURE).set(pty=True)
 
-    async with cmd.stdout(sh.CAPTURE) as run:
+    async with cmd.stdout(sh.CAPTURE).result as run:
         assert run.stdin is not None
         assert run.stdout is not None
+        assert isinstance(run.pty_fd, int)
 
         run.stdin.write(b"abc\n")
         await run.stdin.drain()
@@ -1035,6 +1036,28 @@ async def test_pty():
         run.stdin.close()
 
     assert result == b"abc\r\nABC\r\n"
+    assert run.result().exit_code == -1
+
+
+@pytest.mark.skipif(_is_uvloop(), reason="uvloop")
+async def test_pty_eof():
+    "Test the `pty_eof` property."
+    cmd = sh("tr", "[:lower:]", "[:upper:]").stdin(sh.CAPTURE).set(pty=True)
+
+    async with cmd.stdout(sh.CAPTURE) as run:
+        assert run.stdin is not None
+        assert run.stdout is not None
+        assert run.pty_eof is not None
+        assert run.pty_eof == b"\x04"
+
+        run.stdin.write(b"abc\n")
+        await run.stdin.drain()
+        await asyncio.sleep(0.1)
+        result = await run.stdout.read(1024)
+        run.stdin.write(run.pty_eof)
+
+    assert result == b"abc\r\nABC\r\n"
+    assert run.result().exit_code == 0
 
 
 @pytest.mark.skipif(_is_uvloop(), reason="uvloop")
@@ -1053,6 +1076,7 @@ async def test_pty_ctermid():
     async with cmd.stdout(sh.CAPTURE) as run:
         assert run.stdin is not None
         assert run.stdout is not None
+        assert run.pty_fd is not None
 
         result = await run.stdout.read(1024)
         run.stdin.close()

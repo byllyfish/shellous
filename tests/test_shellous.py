@@ -926,10 +926,13 @@ async def test_redirect_to_arbitrary_tuple():
 async def test_command_context_manager_default():
     "Test running a command using its context manager."
     async with sh("echo", "hello") as run:
-        # By default, context manager does not capture any streams.
+        # By default, context manager does not capture any streams,
+        # and we're not in a PTY.
         assert run.stdin is None
         assert run.stdout is None
         assert run.stderr is None
+        assert run.pty_fd is None
+        assert run.pty_eof is None
 
     assert run.result().output == "hello\n"
 

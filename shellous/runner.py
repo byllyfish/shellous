@@ -451,6 +451,28 @@ class Runner:
         "Return True if the command was cancelled."
         return self._cancelled
 
+    @property
+    def pty_fd(self) -> Optional[int]:
+        """The file descriptor used to communicate with the child PTY process.
+
+        Returns None if the process is not using a PTY.
+        """
+        pty_fds = self._options.pty_fds
+        if pty_fds is not None:
+            return pty_fds.parent_fd
+        return None
+
+    @property
+    def pty_eof(self) -> Optional[bytes]:
+        """Byte sequence used to indicate EOF when written to the PTY child.
+
+        Returns None if process is not using a PTY.
+        """
+        pty_fds = self._options.pty_fds
+        if pty_fds is not None:
+            return pty_fds.eof
+        return None
+
     def result(self) -> Result:
         "Check process exit code and raise a ResultError if necessary."
         code = self.returncode
