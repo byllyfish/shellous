@@ -116,7 +116,6 @@ async def test_prompt_python_interactive_ps1():
     assert run.result().exit_code == 0
 
 
-@_requires_pty
 async def test_prompt_python_timeout():
     "Test the prompt class with the Python REPL."
     cmd = (
@@ -277,5 +276,38 @@ async def test_prompt_asyncio_repl():
         assert result == "hello\n"
 
         repl.close()
+
+    assert run.result().exit_code == 0
+
+
+@_requires_pty
+async def test_prompt_unix_eof():
+    "Test the prompt class with a shell (PTY default cooked mode)."
+    cmd = (
+        sh("sh")
+        .stdin(sh.CAPTURE)
+        .stdout(sh.CAPTURE)
+        .stderr(sh.STDOUT)
+        .set(pty=True, inherit_env=False)
+    )
+
+    async with cmd.env(PS1="> ", TERM="dumb") as run:
+        repl = Prompt(run, default_prompt="> ")
+
+        greeting = await repl.receive()
+        if _IS_FREEBSD:
+            # FIXME: FreeBSD is complaining that it can't access tty?
+            assert "job control" in greeting
+        else:
+            assert greeting == ""
+
+        result = await repl.send("echo 123")
+        if _IS_ALPINE:
+            # Alpine is including terminal escape chars.
+            assert result == "\x1b[6necho 123\r\n123\r\n"
+        else:
+            assert result == "echo 123\r\n123\r\n"
+
+        repl.close()  # In PTY mode, this sends ^D to close....
 
     assert run.result().exit_code == 0

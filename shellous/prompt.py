@@ -149,8 +149,16 @@ class Prompt:
 
     def close(self) -> None:
         "Close stdin to end the prompt session."
-        assert self._runner.stdin is not None
-        self._runner.stdin.close()
+        stdin = self._runner.stdin
+        assert stdin is not None
+
+        if self._runner.pty_eof is not None:
+            assert self._runner.pty_eof
+            # Write EOF twice; once to end the current line, and the second
+            # time to signal the end.
+            stdin.write(self._runner.pty_eof * 2)
+        else:
+            stdin.close()
 
     async def _read_to_prompt(self, prompt: Union[str, _Cue, None]) -> str:
         "Read all data up to the prompt and return it (after removing prompt)."
