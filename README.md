@@ -464,7 +464,7 @@ You can retrieve an option from `cmd` with `cmd.options.<option>`. For example, 
 | path | Search path to use instead of the `PATH` environment variable. |
 | env | Additional environment variables to pass to the command. |
 | inherit_env | True if command should inherit the environment variables from the current process. (Default=True) |
-| encoding | Text encoding of input/output streams. (Default=UTF-8) |
+| encoding | Text encoding of input/output streams. You can specify an error handling scheme by including it after a space, e.g. "ascii backslashreplace". (Default="utf-8 strict") |
 | exit_codes | Set of exit codes that do not raise a `ResultError`. (DEFAULT={0}) |
 | timeout | Timeout in seconds to wait before cancelling the process. |
 | cancel_timeout | Timeout in seconds to wait for a cancelled process to exit before forcefully terminating it. (Default=3s) |

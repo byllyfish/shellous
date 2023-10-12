@@ -21,8 +21,8 @@ if sys.version_info[:3] in [(3, 10, 9), (3, 11, 1)]:
     # These releases have a known race condition.
     warnings.warn(  # pragma: no cover
         "Python 3.10.9 and Python 3.11.1 are unreliable with respect to "
-        "asyncio subprocesses. Consider a newer Python release: 3.10.10+ "
-        "or 3.11.2+. (https://github.com/python/cpython/issues/100133)",
+        + "asyncio subprocesses. Consider a newer Python release: 3.10.10+ "
+        + "or 3.11.2+. (https://github.com/python/cpython/issues/100133)",
         RuntimeWarning,
     )
 

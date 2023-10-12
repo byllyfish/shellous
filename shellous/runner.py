@@ -117,7 +117,7 @@ class _RunOptions:
             # If executable does not include an absolute/relative directory,
             # resolve it using PATH.
             executable = self.pos_args[0]
-            if not os.path.dirname(executable):  # type: ignore (path)
+            if not os.path.dirname(executable):
                 found_executable = _cmd.options.which(executable)
                 if found_executable is None:
                     raise FileNotFoundError(executable)
@@ -266,7 +266,7 @@ class _RunOptions:
         input_bytes = None
 
         if isinstance(input_, (bytes, bytearray)):
-            input_bytes = input_
+            input_bytes = bytes(input_)
         elif isinstance(input_, Path):
             stdin = open(input_, "rb")  # pylint: disable=consider-using-with
             self.open_fds.append(stdin)
@@ -450,6 +450,28 @@ class Runner:
     def cancelled(self) -> bool:
         "Return True if the command was cancelled."
         return self._cancelled
+
+    @property
+    def pty_fd(self) -> Optional[int]:
+        """The file descriptor used to communicate with the child PTY process.
+
+        Returns None if the process is not using a PTY.
+        """
+        pty_fds = self._options.pty_fds
+        if pty_fds is not None:
+            return pty_fds.parent_fd
+        return None
+
+    @property
+    def pty_eof(self) -> Optional[bytes]:
+        """Byte sequence used to indicate EOF when written to the PTY child.
+
+        Returns None if process is not using a PTY.
+        """
+        pty_fds = self._options.pty_fds
+        if pty_fds is not None:
+            return pty_fds.eof
+        return None
 
     def result(self) -> Result:
         "Check process exit code and raise a ResultError if necessary."

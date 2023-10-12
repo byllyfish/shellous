@@ -62,7 +62,7 @@ _UNSET = _UnsetEnum.UNSET
 _T = TypeVar("_T")
 Unset = Union[_T, _UnsetEnum]
 
-_RedirectT = Any  # type: ignore
+_RedirectT = Any
 _PreexecFnT = Optional[Callable[[], None]]
 
 
@@ -719,7 +719,7 @@ class Command(Generic[_RT]):
 
     def __ror__(self, lhs: StdinType) -> "Command[_RT]":
         "Bitwise or operator is used to build pipelines."
-        if isinstance(lhs, STDIN_TYPES):
+        if isinstance(lhs, STDIN_TYPES):  # pyright: ignore[reportUnnecessaryIsInstance]
             return self.stdin(lhs)
         return NotImplemented
 

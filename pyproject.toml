@@ -80,6 +80,19 @@ strict = [
   "shellous/*.py",
 ]
 
+# Enable other pyright checks, not enabled by `strict`.
+# https://github.com/microsoft/pyright/blob/main/docs/configuration.md#diagnostic-rule-defaults
+
+reportCallInDefaultInitializer = true
+# reportImplicitOverride = true
+reportImplicitStringConcatenation = true
+# reportMissingSuperCall = true
+reportPropertyTypeMismatch = true
+reportShadowedImports = true
+reportUninitializedInstanceVariable = true
+reportUnnecessaryTypeIgnoreComment = true
+# reportUnusedCallResult = true
+
 [tool.black]
 required-version = "23.9.1"
 

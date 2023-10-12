@@ -147,7 +147,7 @@ async def test_bulk_prompt(bulk_cmd, _limit_logging):
     cmd = bulk_cmd().set(encoding="latin1")
 
     async with cmd.stdin(sh.CAPTURE).stdout(sh.CAPTURE) as run:
-        prompt = Prompt(run, ">>> ")
+        prompt = Prompt(run, default_prompt=">>> ")
         result = await prompt.receive(timeout=10.0)
         assert len(result) == 4 * (1024 * 1024 + 1)
         value = hashlib.sha256(result.encode("latin1")).hexdigest()
@@ -917,19 +917,22 @@ async def test_pty_echo_exit_code(echo_cmd):
 async def test_redirect_to_arbitrary_tuple():
     "Test redirection to an arbitrary tuple."
     with pytest.raises(TypeError, match="unsupported"):
-        await sh("echo").stdout((1, 2))  # type: ignore
+        await sh("echo").stdout((1, 2))
 
     with pytest.raises(TypeError, match="unsupported"):
-        await (sh("echo") | (1, 2))  # type: ignore
+        await (sh("echo") | (1, 2))  # pyright: ignore[reportGeneralTypeIssues]
 
 
 async def test_command_context_manager_default():
     "Test running a command using its context manager."
     async with sh("echo", "hello") as run:
-        # By default, context manager does not capture any streams.
+        # By default, context manager does not capture any streams,
+        # and we're not in a PTY.
         assert run.stdin is None
         assert run.stdout is None
         assert run.stderr is None
+        assert run.pty_fd is None
+        assert run.pty_eof is None
 
     assert run.result().output == "hello\n"
 

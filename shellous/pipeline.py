@@ -147,12 +147,14 @@ class Pipeline(Generic[_RT]):
         return NotImplemented
 
     def __ror__(self, lhs: StdinType) -> "Pipeline[_RT]":
-        if isinstance(lhs, STDIN_TYPES):
+        if isinstance(lhs, STDIN_TYPES):  # pyright: ignore[reportUnnecessaryIsInstance]
             return self.stdin(lhs)
         return NotImplemented
 
     def __rshift__(self, rhs: StdoutType) -> "Pipeline[_RT]":
-        if isinstance(rhs, STDOUT_TYPES):
+        if isinstance(
+            rhs, STDOUT_TYPES
+        ):  # pyright: ignore[reportUnnecessaryIsInstance]
             return self.stdout(rhs, append=True)
         if isinstance(rhs, (str, bytes)):
             raise TypeError(

@@ -1,8 +1,15 @@
 "Unit tests for using shellous commands in a pytest fixture."
 
+import os
+
 import pytest
 
 from shellous import Runner, sh
+
+
+def _coverage():
+    "Return true if we are running under coverage."
+    return os.environ.get("COVERAGE_RUN", None) is not None
 
 
 @pytest.fixture
@@ -16,6 +23,7 @@ async def echo_broken():
         yield run
 
 
+@pytest.mark.skipif(_coverage(), reason="coverage")
 @pytest.mark.xfail(raises=RuntimeError)
 async def test_echo_broken(echo_broken):
     assert echo_broken.command.args[0] == "echo"

@@ -26,7 +26,7 @@ _ContextKey = tuple[int, int]
 
 # Stores current stack of context managers for immutable Command objects.
 _CONTEXT_STACKS = contextvars.ContextVar[
-    dict[_ContextKey, list[AsyncContextManager[_T]]]
+    dict[_ContextKey, list[AsyncContextManager[Any]]]
 ]("shellous.context_stacks")
 
 # True if OS is derived from BSD.
@@ -92,7 +92,7 @@ def wait_pid(pid: int, *, block: bool = False) -> Optional[int]:
 
     try:
         # os.WNOHANG is not available on Windows.
-        options = 0 if block else os.WNOHANG  # type: ignore
+        options = 0 if block else os.WNOHANG
         result_pid, status = os.waitpid(pid, options)
     except ChildProcessError as ex:
         # Set status to 255 if process not found.
@@ -107,7 +107,7 @@ def wait_pid(pid: int, *, block: bool = False) -> Optional[int]:
 
     # Convert os.waitpid status to an exit status.
     try:
-        status = os.waitstatus_to_exitcode(status)  # type: ignore
+        status = os.waitstatus_to_exitcode(status)
     except ValueError:  # pragma: no cover
         # waitstatus_to_exitcode can theoretically raise a ValueError if
         # the status is not understood. In this case, we do what

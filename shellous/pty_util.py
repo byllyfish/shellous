@@ -174,7 +174,7 @@ async def _open_pty_streams(parent_fd: int, child_fd: ChildFd):
         _orig_close()
         reader_transport.close()
 
-    writer_transport.close, _orig_close = _close, writer_transport.close  # type: ignore
+    writer_transport.close, _orig_close = _close, writer_transport.close
 
     return reader, writer
 
@@ -218,13 +218,19 @@ def cooked(
         if rows_int or cols_int:
             _set_term_size(fdesc, rows_int, cols_int)
         if not echo:
-            _set_term_echo(fdesc, False)
+            set_term_echo(fdesc, False)
         assert _get_eof(fdesc) == b"\x04"
 
     return _pty_set_canonical
 
 
-def _set_term_echo(fdesc: int, echo: bool):
+def get_term_echo(fdesc: int) -> bool:
+    "Return true if terminal driver is in echo mode."
+    attrs = termios.tcgetattr(fdesc)
+    return (attrs[_LFLAG] & termios.ECHO) != 0
+
+
+def set_term_echo(fdesc: int, echo: bool):
     "Set pseudo-terminal echo."
     attrs = termios.tcgetattr(fdesc)
     curr_echo = (attrs[_LFLAG] & termios.ECHO) != 0
