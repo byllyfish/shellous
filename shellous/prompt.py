@@ -5,6 +5,7 @@ import enum
 import re
 from typing import Optional, Union
 
+from shellous import pty_util
 from shellous.harvest import harvest_results
 from shellous.log import LOG_DETAIL, LOGGER
 from shellous.runner import Runner
@@ -70,6 +71,31 @@ class Prompt:
         self._default_timeout = default_timeout
         self._normalize_newlines = normalize_newlines
 
+    @property
+    def run(self) -> Runner:
+        "The runner object for the process."
+        return self._runner
+
+    @property
+    def echo(self) -> bool:
+        """True if TTY is in echo mode.
+
+        If the runner is not using a PTY, return False.
+        """
+        if self._runner.pty_fd is None:
+            return False
+        return pty_util.get_term_echo(self._runner.pty_fd)
+
+    @echo.setter
+    def echo(self, value: bool) -> None:
+        """Set echo mode for the PTY.
+
+        Raise an error if the runner is not using a PTY.
+        """
+        if self._runner.pty_fd is None:
+            raise RuntimeError("Cannot set echo mode. Not running in a PTY.")
+        pty_util.set_term_echo(self._runner.pty_fd, value)
+
     async def send(
         self,
         input_text: str,
@@ -77,7 +103,7 @@ class Prompt:
         end: Optional[str] = None,
         prompt: Union[str, _Cue, None] = _Cue.DEFAULT,
         timeout: Optional[float] = None,
-        delay: Optional[float] = None,
+        noecho: bool = False,
     ) -> str:
         """Write some input text to stdin, then await the response from stdout."""
         stdin = self._runner.stdin
@@ -86,13 +112,17 @@ class Prompt:
         if end is None:
             end = self._default_end
 
-        if delay is not None:
-            await asyncio.sleep(delay)
+        if noecho:
+            await self._wait_noecho()
 
         data = encode_bytes(input_text + end, self._encoding)
-        if LOG_DETAIL:
-            LOGGER.debug("Prompt[pid=%s] send: %r", self._runner.pid, data)
         stdin.write(data)
+
+        if LOG_DETAIL:
+            if noecho:
+                LOGGER.debug("Prompt[pid=%s] send: [[HIDDEN]]", self._runner.pid)
+            else:
+                LOGGER.debug("Prompt[pid=%s] send: %r", self._runner.pid, data)
 
         # Drain our write to stdin and wait for prompt from stdout.
         cancelled, (result, _) = await harvest_results(
@@ -134,7 +164,7 @@ class Prompt:
         Use the `expect` method when you need to read up to a prompt that
         varies.
 
-        ```python
+        ```
         _, m = await cli.expect(re.compile(r'Login: |Password: |ftp> '))
         match m[0]:
             case "Login: ":
@@ -145,15 +175,14 @@ class Prompt:
                 result = await cli.send(command)
         ```
         """
-        ...  # TODO
+        raise NotImplementedError()  # TODO
 
     def close(self) -> None:
         "Close stdin to end the prompt session."
         stdin = self._runner.stdin
         assert stdin is not None
 
-        if self._runner.pty_eof is not None:
-            assert self._runner.pty_eof
+        if self._runner.pty_eof:
             # Write EOF twice; once to end the current line, and the second
             # time to signal the end.
             stdin.write(self._runner.pty_eof * 2)
@@ -210,6 +239,21 @@ class Prompt:
             buf = _normalize_eol(buf)
 
         return decode_bytes(buf, self._encoding)
+
+    async def _wait_noecho(self):
+        "Wait for terminal echo mode to be disabled."
+        if LOG_DETAIL:
+            LOGGER.debug(
+                "Prompt[pid=%s] wait for terminal echo mode to be disabled",
+                self._runner.pid,
+            )
+
+        for _ in range(4 * 30):
+            if not self.echo:
+                break
+            await asyncio.sleep(0.25)
+        else:
+            raise RuntimeError("Timed out: Terminal echo mode remains enabled.")
 
 
 async def _read_until(stream: asyncio.StreamReader, separator: bytes) -> bytes:
