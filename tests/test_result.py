@@ -40,10 +40,10 @@ def test_result_error():
 
 def test_result_signal():
     "Test the Result class with exit_code -1."
-    result = _new_result(-signal.SIGHUP)
+    result = _new_result(-signal.SIGINT)
     assert not result
-    assert result.exit_code == -1
-    assert result.exit_signal == signal.SIGHUP
+    assert result.exit_code == -signal.SIGINT
+    assert result.exit_signal == signal.SIGINT
 
 
 def test_result_signal_unknown():
