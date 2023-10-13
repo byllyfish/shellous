@@ -1,6 +1,7 @@
 "Implements support for Results."
 
 import asyncio
+import signal
 import sys
 from dataclasses import dataclass
 from typing import Optional, Union
@@ -29,7 +30,7 @@ class Result:
     "Concrete class for the result of a Command."
 
     exit_code: int
-    "Command's exit code."
+    "Command's exit status. If < 0, this is a negated signal number."
 
     output_bytes: bytes
     "Output of command as bytes. May be None if there is no output."
@@ -52,6 +53,13 @@ class Result:
     def error(self) -> str:
         "Error from command as a string (if it is not redirected)."
         return decode_bytes(self.error_bytes, self.encoding)
+
+    @property
+    def exit_signal(self) -> Optional[signal.Signals]:
+        "Signal that caused the command to exit, or None if no signal."
+        if self.exit_code >= 0:
+            return None
+        return signal.Signals(-self.exit_code)
 
     def __bool__(self) -> bool:
         "Return true if exit_code is 0."

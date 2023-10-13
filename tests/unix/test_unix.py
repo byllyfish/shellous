@@ -1031,18 +1031,19 @@ async def test_pty():
 
         run.stdin.write(b"abc\n")
         await run.stdin.drain()
-        await asyncio.sleep(0.1)
-        result = await run.stdout.read(1024)
+        await asyncio.sleep(0.25)  # Wait for output to accumulate...
+        output = await run.stdout.read(1024)
+        await asyncio.sleep(0.25)
         run.stdin.close()
 
-    assert result == b"abc\r\nABC\r\n"
+    assert output == b"abc\r\nABC\r\n"
 
     # Exit code of PTY process differs on FreeBSD...
-    exit_status = run.result().exit_code
+    result = run.result()
     if sys.platform.startswith("freebsd"):
-        assert exit_status == 0
+        assert result.exit_code == 0
     else:
-        assert exit_status == -1
+        assert result.exit_signal == signal.SIGHUP
 
 
 @pytest.mark.skipif(_is_uvloop(), reason="uvloop")
