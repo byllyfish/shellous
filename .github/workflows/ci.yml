@@ -126,7 +126,7 @@ jobs:
     - name: Verify Types
       if: matrix.python-version != '3.13-dev'
       run: |
-        PYTHONPATH=. pyright --verifytypes shellous || echo "::warning title=Pyright Warning::Verify types failed"
+        PYTHONPATH=. pyright --verifytypes shellous
     - name: Format Check
       run: |
         black --check .

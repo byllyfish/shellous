@@ -230,7 +230,7 @@ def get_term_echo(fdesc: int) -> bool:
     return (attrs[_LFLAG] & termios.ECHO) != 0
 
 
-def set_term_echo(fdesc: int, echo: bool):
+def set_term_echo(fdesc: int, echo: bool) -> None:
     "Set pseudo-terminal echo."
     attrs = termios.tcgetattr(fdesc)
     curr_echo = (attrs[_LFLAG] & termios.ECHO) != 0
