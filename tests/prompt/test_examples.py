@@ -4,7 +4,7 @@ from pathlib import Path
 from shellous import sh
 
 _DIR = Path(__file__).parent
-_PY = sh(sys.executable).stderr(sh.STDOUT)
+_PY = sh(sys.executable).env(PYTHONPATH=_DIR.parents[1])
 
 
 async def test_example1():
