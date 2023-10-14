@@ -7,7 +7,7 @@ from typing import Optional, Union
 
 from shellous import pty_util
 from shellous.harvest import harvest_results
-from shellous.log import LOG_DETAIL, LOGGER
+from shellous.log import LOG_PROMPT, LOGGER
 from shellous.runner import Runner
 from shellous.util import decode_bytes, encode_bytes
 
@@ -118,7 +118,7 @@ class Prompt:
         data = encode_bytes(input_text + end, self._encoding)
         stdin.write(data)
 
-        if LOG_DETAIL:
+        if LOG_PROMPT:
             if noecho:
                 LOGGER.debug("Prompt[pid=%s] send: [[HIDDEN]]", self._runner.pid)
             else:
@@ -186,6 +186,9 @@ class Prompt:
             # Write EOF twice; once to end the current line, and the second
             # time to signal the end.
             stdin.write(self._runner.pty_eof * 2)
+            if LOG_PROMPT:
+                LOGGER.debug("Prompt[pid=%s] send: [[EOF]]", self._runner.pid)
+
         else:
             stdin.close()
 
@@ -210,7 +213,7 @@ class Prompt:
         assert stdout is not None
 
         buf = await _read_until(stdout, prompt_bytes)
-        if LOG_DETAIL:
+        if LOG_PROMPT:
             LOGGER.debug("Prompt[pid=%s] receive: %r", self._runner.pid, buf)
 
         # Replace CR-LF or CR with LF.
@@ -231,7 +234,7 @@ class Prompt:
         assert stdout is not None
 
         buf = await stdout.read()
-        if LOG_DETAIL:
+        if LOG_PROMPT:
             LOGGER.debug("Prompt[pid=%s] receive: %r", self._runner.pid, buf)
 
         # Replace CR-LF or CR with LF.
@@ -242,9 +245,9 @@ class Prompt:
 
     async def _wait_noecho(self):
         "Wait for terminal echo mode to be disabled."
-        if LOG_DETAIL:
+        if LOG_PROMPT:
             LOGGER.debug(
-                "Prompt[pid=%s] wait for terminal echo mode to be disabled",
+                "Prompt[pid=%s] wait: noecho",
                 self._runner.pid,
             )
 
@@ -267,7 +270,7 @@ async def _read_until(stream: asyncio.StreamReader, separator: bytes) -> bytes:
         # Okay, we have to buffer.
         buf = bytearray(await stream.read(ex.consumed))
     except asyncio.CancelledError:
-        if LOG_DETAIL:
+        if LOG_PROMPT:
             LOGGER.debug(
                 "Prompt._read_until cancelled with buffer contents: %r",
                 stream._buffer,

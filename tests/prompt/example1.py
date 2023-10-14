@@ -1,6 +1,7 @@
 "Example program that runs the fake_prompter CLI."
 
 import asyncio
+import logging
 from pathlib import Path
 
 from shellous import sh
@@ -32,4 +33,5 @@ async def main():
     run.result()
 
 
+logging.basicConfig(level=logging.DEBUG)
 asyncio.run(main())

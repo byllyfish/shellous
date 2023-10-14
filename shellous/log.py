@@ -22,11 +22,15 @@ _PYTHON_VERSION = platform.python_implementation() + platform.python_version()
 
 # If SHELLOUS_DEBUG option is enabled, specific methods are decorated with
 # helper methods that log function entry and exit. We also activate detailed
-# logging.
+# logging. If SHELLOUS_PROMPT option is enabled, we activate just the Prompt
+# class logging.
+
 SHELLOUS_DEBUG = bool(os.environ.get("SHELLOUS_DEBUG"))
 
 LOG_DETAIL = SHELLOUS_DEBUG
-_logger_info = LOGGER.info if SHELLOUS_DEBUG else LOGGER.debug
+LOG_PROMPT = LOG_DETAIL or bool(os.environ.get("SHELLOUS_PROMPT"))
+
+_logger_info = LOGGER.info if LOG_DETAIL else LOGGER.debug
 
 
 def _exc():
