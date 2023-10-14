@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # This bash script is used to test the send/expect features
 # of the `shellous.Prompt` class.
