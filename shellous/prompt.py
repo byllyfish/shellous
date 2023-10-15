@@ -48,9 +48,11 @@ class Prompt:
 
     _runner: Runner
     _encoding: str
+    _default_end: str
     _default_prompt: bytes
     _default_timeout: Optional[float]
     _normalize_newlines: bool
+    _at_eof: bool = False
 
     def __init__(
         self,
@@ -75,6 +77,10 @@ class Prompt:
     def run(self) -> Runner:
         "The runner object for the process."
         return self._runner
+
+    @property
+    def at_eof(self) -> bool:
+        return self._at_eof
 
     @property
     def echo(self) -> bool:
@@ -105,9 +111,13 @@ class Prompt:
         timeout: Optional[float] = None,
         noecho: bool = False,
     ) -> str:
-        """Write some input text to stdin, then await the response from stdout."""
-        stdin = self._runner.stdin
-        assert stdin is not None
+        """Write some input text to stdin, then await the response from stdout.
+
+        Raises:
+            EOFError: if receive() has already reached EOF.
+        """
+        if self._at_eof:
+            raise EOFError("Prompt at EOF")
 
         if end is None:
             end = self._default_end
@@ -116,6 +126,9 @@ class Prompt:
             await self._wait_noecho()
 
         data = encode_bytes(input_text + end, self._encoding)
+
+        stdin = self._runner.stdin
+        assert stdin is not None
         stdin.write(data)
 
         if LOG_PROMPT:
@@ -143,6 +156,9 @@ class Prompt:
         timeout: Optional[float] = None,
     ) -> str:
         """Read from stdout up to the next prompt, or EOF if prompt not found."""
+        if self._at_eof:
+            raise EOFError("Prompt at EOF")
+
         cancelled, (result,) = await harvest_results(
             self._read_to_prompt(prompt),
             timeout=timeout or self._default_timeout,
@@ -175,6 +191,8 @@ class Prompt:
                 result = await cli.send(command)
         ```
         """
+        if self._at_eof:
+            raise EOFError("Prompt at EOF")
         raise NotImplementedError()  # TODO
 
     def close(self) -> None:
@@ -193,7 +211,10 @@ class Prompt:
             stdin.close()
 
     async def _read_to_prompt(self, prompt: Union[str, _Cue, None]) -> str:
-        "Read all data up to the prompt and return it (after removing prompt)."
+        """Read all data up to the prompt and return it (after removing prompt).
+
+        This method sets `at_eof` if we encounter EOF instead of the prompt.
+        """
         if not prompt:
             return ""
 
@@ -225,6 +246,8 @@ class Prompt:
         # Clean up the output to remove the prompt, then return as string.
         if buf.endswith(prompt_bytes):
             buf = buf[0 : -len(prompt_bytes)]
+        else:
+            self._at_eof = True
 
         return decode_bytes(buf, self._encoding)
 
@@ -240,6 +263,8 @@ class Prompt:
         # Replace CR-LF or CR with LF.
         if self._normalize_newlines:
             buf = _normalize_eol(buf)
+
+        self._at_eof = True
 
         return decode_bytes(buf, self._encoding)
 

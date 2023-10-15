@@ -12,6 +12,11 @@ CORRECT_PASSWORD="abc123"
 
 check="${1:-}"
 
+if [ "$check" = "--fail" ]; then
+    echo "Failure requested."
+    exit 1
+fi
+
 if [ "$check" = "--check" ] && [ $((RANDOM % 2)) -eq 0 ]; then
     read -p "Do you want to continue? [Yn] " -r _ignore
 fi
