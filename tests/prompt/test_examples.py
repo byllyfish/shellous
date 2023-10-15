@@ -1,3 +1,4 @@
+import asyncio
 import sys
 from pathlib import Path
 
@@ -16,9 +17,14 @@ async def test_example1():
     "Test the example1 program."
     err = bytearray()
 
-    result = await _PY.result(_DIR / "example1.py").env(SHELLOUS_PROMPT=1).stderr(err)
-    if err:
-        print(err.decode())
+    try:
+        result = (
+            await _PY.result(_DIR / "example1.py").env(SHELLOUS_PROMPT=1).stderr(err)
+        )
+    except asyncio.TimeoutError:
+        if err:
+            print(err.decode())
+            raise
 
     assert result
     assert result.output == "arbitrary\r\nYou typed: arbitrary\r\n\n"
