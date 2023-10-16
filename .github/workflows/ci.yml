@@ -156,7 +156,7 @@ jobs:
       - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4.1.0
       - name: Install Dependencies
         run: |
-          apk add --update gcc musl-dev python3-dev 
+          apk add --update gcc musl-dev python3-dev bash
           pip3 install --require-hashes -r ./ci/requirements-dev.txt
       - name: Run Tests
         run: |

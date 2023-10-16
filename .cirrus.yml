@@ -20,7 +20,7 @@ freebsd_task:
         image_family: freebsd-12-4
 
   install_script:
-    - pkg install -y python311 lsof
+    - pkg install -y python311 lsof bash
     - python3.11 -m venv .venv
     - . .venv/bin/activate && pip install -U pip setuptools wheel && pip install -r ./ci/requirements-dev.txt
     # We need to enable the /dev/fd file system on FreeBSD.
