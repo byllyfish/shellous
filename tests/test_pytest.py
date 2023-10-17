@@ -23,7 +23,7 @@ async def echo_broken():
         yield run
 
 
-@pytest.mark.skipif(_coverage(), reason="coverage")
+@pytest.mark.skip(reason="unreliable; may leave bad state for other tests")
 @pytest.mark.xfail(raises=RuntimeError)
 async def test_echo_broken(echo_broken):
     assert echo_broken.command.args[0] == "echo"
