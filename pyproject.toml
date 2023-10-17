@@ -44,7 +44,7 @@ typing-extensions = "^4.7.1"
 optional = true
 
 [tool.poetry.group.uvloop.dependencies]
-uvloop = "^0.17.0"
+uvloop = "^0.18.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

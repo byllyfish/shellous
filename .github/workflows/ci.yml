@@ -77,7 +77,7 @@ jobs:
       with:
         verbose: true
     - name: Run Tests with uvloop (Linux and MacOS)
-      if: (matrix.os == 'ubuntu-22.04' || matrix.os == 'macos-12') && matrix.python-version != '3.12'
+      if: (matrix.os == 'ubuntu-22.04' || matrix.os == 'macos-12') && matrix.python-version != '3.13-dev'
       run: |
         pip3 install --require-hashes -r ./ci/requirements-uvloop.txt
         # Ignore ResourceWarning with uvloop for now (TODO).
