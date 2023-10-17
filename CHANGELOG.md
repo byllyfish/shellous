@@ -4,10 +4,10 @@ Shellous Change Log
 0.31.0
 ------
 
-[API] Several API changes to the experimental `Prompt` class.
-[API] The `Result` class now has an `exit_signal` property that converts the `exit_code` value into a `Signals` enum.
-[LATERAL] Update CI settings for Python 3.12 release. Add pip --require-hashes to Github actions.
-[LATERAL] Apply security best practices to Github actions.
+- [API] Several API changes to the experimental `Prompt` class.
+- [API] The `Result` class now has an `exit_signal` property that converts the `exit_code` value into a `Signals` enum.
+- [LATERAL] Update CI settings for Python 3.12 release. Add pip --require-hashes to Github actions.
+- [LATERAL] Apply security best practices to Github actions.
 
 0.30.0
 ------
