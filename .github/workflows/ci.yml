@@ -131,6 +131,11 @@ jobs:
       run: |
         black --check .
         isort --check .
+    - name: Pipx test
+      run: |
+        pipx install poetry==1.6.1
+        pipx list --json
+        poetry --version
 
   build-alpine:
     runs-on: ubuntu-latest
