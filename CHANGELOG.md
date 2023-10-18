@@ -1,6 +1,11 @@
 Shellous Change Log
 ===================
 
+0.31.1
+------
+
+- [LATERAL] Fix issue with CI action that publishes the shellous package to PyPI.
+
 0.31.0
 ------
 
