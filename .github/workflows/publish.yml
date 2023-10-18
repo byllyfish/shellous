@@ -11,7 +11,7 @@ permissions:
 jobs:
 
   publish-package:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
       - name: Harden Runner
@@ -21,22 +21,19 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4.1.0
-      - name: Set up python-3.9
-        uses: actions/setup-python@65d7f2d534ac1bc67fcd62888c5f4f3d2cb2b236 # v4.7.1
-        with:
-          python-version: 3.9
-      - name: Install dependencies
+      - name: Install Poetry
         run: |
-          python3 -m pip install --require-hashes --upgrade setuptools wheel
-          python3 -m pip install --require-hashes poetry
+          pipx install poetry==1.6.1
+          poetry --version
       - name: Build package
         run: |
           # Delete lines in README.md that match "__REL_LINK__".
           sed -e '/__REL_LINK__/d' --in-place README.md
-          python3 -m poetry build
+          poetry build
       - name: Publish package to PyPI
         uses: pypa/gh-action-pypi-publish@b7f401de30cb6434a1e19f805ff006643653240e # release/v1
         with:
           user: __token__
           password: ${{ secrets.SHELLOUS_PYPI_API_TOKEN }}
           verbose: true
+          print-hash: true

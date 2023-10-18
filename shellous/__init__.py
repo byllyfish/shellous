@@ -5,7 +5,7 @@
 # pylint: disable=cyclic-import
 # pyright: reportUnusedImport=false
 
-__version__ = "0.31.0"
+__version__ = "0.31.1"
 
 import sys
 import warnings
