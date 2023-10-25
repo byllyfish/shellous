@@ -26,25 +26,25 @@ classifiers = [
 python = "^3.9"
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^7.4.0"
+asyncstdlib = "^3.10.9"
+black = "^23.10.1"
+coverage = "^7.3.2"
+pdoc = "^14.1.0"
+pylint = "^3.0.2"
+pyright = "^1.1.332"
+pytest = "^7.4.3"
 pytest-asyncio = "^0.21.1"
-pylint = "^3.0.0"
-black = "^23.7.0"
-coverage = "^7.2.7"
 pytest-dotenv = "^0.5.2"
-pytest-randomly = "^3.13.0"
-pytest-timeout = "^2.1.0"
-pdoc = "^14.0.0"
-asyncstdlib = "^3.10.8"
-pyright = "^1.1.320"
-ruff = {version = "^0.0.292", markers = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'"}
-typing-extensions = "^4.7.1"
+pytest-randomly = "^3.15.0"
+pytest-timeout = "^2.2.0"
+ruff = {version = "^0.1.2", markers = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'"}
+typing-extensions = "^4.8.0"
 
 [tool.poetry.group.uvloop]
 optional = true
 
 [tool.poetry.group.uvloop.dependencies]
-uvloop = "^0.18.0"
+uvloop = "^0.19.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -94,7 +94,7 @@ reportUnnecessaryTypeIgnoreComment = true
 # reportUnusedCallResult = true
 
 [tool.black]
-required-version = "23.9.1"
+required-version = "23.10.1"
 
 [tool.isort]
 profile = "black"

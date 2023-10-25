@@ -33,7 +33,7 @@ def _is_uvloop() -> bool:
 
 def _is_codecov() -> bool:
     "Return true if we're running code coverage."
-    return bool(os.environ.get("SHELLOUS_CODE_COVERAGE"))
+    return bool(os.environ.get("COVERAGE_RUN"))
 
 
 def _is_lsof_unsupported() -> bool:

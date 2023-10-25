@@ -23,7 +23,7 @@ _PYPY = platform.python_implementation() == "PyPy"
 # launches it, this perturbs the testing environment. I have seen this with
 # processes launched using the VSCode Terminal.
 
-if not os.environ.get("SHELLOUS_CODE_COVERAGE"):
+if not os.environ.get("COVERAGE_RUN"):
     os.closerange(3, 600)
 
 childwatcher_type = os.environ.get("SHELLOUS_CHILDWATCHER_TYPE")
