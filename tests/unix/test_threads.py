@@ -95,6 +95,8 @@ def run_in_thread(child_watcher_name="ThreadedChildWatcher"):
                 child_watcher = DefaultChildWatcher()
             else:
                 child_watcher = getattr(asyncio, child_watcher_name)()
+
+            saved_child_watcher = asyncio.get_child_watcher()
             asyncio.set_child_watcher(child_watcher)
 
             if child_watcher_name in ("FastChildWatcher", "SafeChildWatcher"):
@@ -118,6 +120,8 @@ def run_in_thread(child_watcher_name="ThreadedChildWatcher"):
                 with EventLoopThread() as thread:
                     fut = thread.future(coro(*args, **kwargs))
                     fut.result()
+
+            asyncio.set_child_watcher(saved_child_watcher)
 
         return _wrap
 

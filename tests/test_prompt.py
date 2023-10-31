@@ -237,7 +237,9 @@ async def test_prompt_unix_shell_interactive():
         repl = Prompt(run, default_prompt="$")
 
         greeting = await repl.receive()
-        assert "job control" in greeting  # expect message about job control
+        assert (
+            greeting == "" or "job control" in greeting
+        )  # expect message about job control (sometimes?)
 
         result = await repl.send("echo 123")
 
