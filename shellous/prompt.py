@@ -1,7 +1,9 @@
 "Implements the Prompt utility class."
 
 import asyncio
+import codecs
 import enum
+import io
 import re
 from typing import Optional, Union
 
@@ -18,6 +20,15 @@ class _Cue(enum.Enum):
     "Alternate prompt types."
     DEFAULT = enum.auto()
     EOF = enum.auto()
+
+
+def _get_decoder(encoding: str, normalize_newlines: bool) -> codecs.IncrementalDecoder:
+    enc = encoding.split(maxsplit=1)
+    decoder_class = codecs.getincrementaldecoder(enc[0])
+    decoder = decoder_class(*enc[1:])
+    if normalize_newlines:
+        decoder = io.IncrementalNewlineDecoder(decoder, translate=True)
+    return decoder
 
 
 class Prompt:
@@ -52,6 +63,8 @@ class Prompt:
     _default_prompt: bytes
     _default_timeout: Optional[float]
     _normalize_newlines: bool
+    _decoder: codecs.IncrementalDecoder
+    _pending: str = ""
     _at_eof: bool = False
 
     def __init__(
@@ -72,6 +85,7 @@ class Prompt:
         self._default_prompt = encode_bytes(default_prompt, self._encoding)
         self._default_timeout = default_timeout
         self._normalize_newlines = normalize_newlines
+        self._decoder = _get_decoder(self._encoding, normalize_newlines)
 
     @property
     def run(self) -> Runner:
@@ -174,7 +188,7 @@ class Prompt:
         pattern: re.Pattern[str],
         *,
         timeout: Optional[float] = None,
-    ) -> tuple[str, re.Match[str]]:
+    ) -> tuple[str, Optional[re.Match[str]]]:
         """Read from stdout until the regular expression matches.
 
         Use the `expect` method when you need to read up to a prompt that
@@ -182,6 +196,8 @@ class Prompt:
 
         ```
         _, m = await cli.expect(re.compile(r'Login: |Password: |ftp> '))
+        if m is None:
+            raise EOFError()
         match m[0]:
             case "Login: ":
                 await cli.send(user, prompt=None)
@@ -193,7 +209,20 @@ class Prompt:
         """
         if self._at_eof:
             raise EOFError("Prompt at EOF")
-        raise NotImplementedError()  # TODO
+
+        if self._pending:
+            result = self._search_pending(pattern)
+            if result is not None:
+                return result
+
+        cancelled, (result,) = await harvest_results(
+            self._read_to_pattern(pattern),
+            timeout=timeout or self._default_timeout,
+        )
+        if cancelled:
+            raise asyncio.CancelledError()
+
+        return result
 
     def close(self) -> None:
         "Close stdin to end the prompt session."
@@ -237,22 +266,20 @@ class Prompt:
         if LOG_PROMPT:
             LOGGER.debug("Prompt[pid=%s] receive: %r", self._runner.pid, buf)
 
-        # Replace CR-LF or CR with LF.
-        if self._normalize_newlines:
-            buf = _normalize_eol(buf)
-
-        # TODO: Test case where prompt itself contains a CR-LF...
-
         # Clean up the output to remove the prompt, then return as string.
         if buf.endswith(prompt_bytes):
             buf = buf[0 : -len(prompt_bytes)]
         else:
             self._at_eof = True
 
+        # Replace CR-LF or CR with LF.
+        if self._normalize_newlines:
+            buf = _normalize_eol(buf)
+
         return decode_bytes(buf, self._encoding)
 
     async def _read_to_eof(self) -> str:
-        "Read all data to the end."
+        "Read all data to the end. Only called by _read_to_prompt()."
         stdout = self._runner.stdout
         assert stdout is not None
 
@@ -267,6 +294,76 @@ class Prompt:
         self._at_eof = True
 
         return decode_bytes(buf, self._encoding)
+
+    async def _read_to_pattern(
+        self,
+        pattern: Optional[re.Pattern[str]],
+    ) -> tuple[str, Optional[re.Match[str]]]:
+        """Read text up to part that matches pattern.
+
+        If `pattern` is None, read all data until EOF.
+
+        Returns 2-tuple with (text, match). `match` is None if there is no
+        match because we've reached EOF.
+        """
+        stdout = self._runner.stdout
+        assert stdout is not None
+
+        while True:
+            assert not self._at_eof
+
+            _initial_len = len(self._pending)
+
+            # Read chunk and check for EOF.
+            chunk = await stdout.read(4096)
+            if not chunk:
+                self._at_eof = True
+
+            if LOG_PROMPT:
+                LOGGER.debug("Prompt[pid=%s] receive: %r", self._runner.pid, chunk)
+
+            # Decode eligible bytes into our buffer.
+            data = self._decoder.decode(chunk, final=self._at_eof)
+            if not data and not self._at_eof:
+                continue
+            self._pending += data
+
+            result = self._search_pending(pattern)
+            if result is not None:
+                return result
+
+            assert len(self._pending) > _initial_len
+
+    def _search_pending(
+        self,
+        pattern: Optional[re.Pattern[str]],
+    ) -> Optional[tuple[str, Optional[re.Match[str]]]]:
+        """Search pending buffer for pattern."""
+        if pattern is not None:
+            # Search our `_pending` buffer for the pattern. If we find a match,
+            # we return it and prepare any unread data in the buffer for the
+            # next "_read" call.
+            found = pattern.search(self._pending)
+            if found:
+                if LOG_PROMPT:
+                    LOGGER.debug("Prompt[pid=%s] found: %r", self._runner.pid, found)
+                result = self._pending[0 : found.start(0)]
+                self._pending = self._pending[found.end(0) :]
+                return (result, found)
+
+        if self._at_eof:
+            # Pattern doesn't match anything and we've reached EOF.
+            if LOG_PROMPT:
+                LOGGER.debug(
+                    "Prompt[pid=%s] at_eof: %d chars pending",
+                    self._runner.pid,
+                    len(self._pending),
+                )
+            result = self._pending
+            self._pending = ""
+            return (result, None)
+
+        return None
 
     async def _wait_noecho(self):
         "Wait for terminal echo mode to be disabled."

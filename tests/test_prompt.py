@@ -3,6 +3,7 @@
 import asyncio
 import os
 import platform
+import re
 import sys
 
 import pytest
@@ -311,5 +312,68 @@ async def test_prompt_unix_eof():
             assert result == "echo 123\r\n123\r\n"
 
         repl.close()  # In PTY mode, this sends ^D to close....
+
+    assert run.result().exit_code == 0
+
+
+def _escape(s: str) -> str:
+    "Escape the white space in the string."
+    return s.encode("unicode-escape").decode()
+
+
+async def test_prompt_python_ps1_newline():
+    "Test the Python REPL but change the prompt to something that has CR-LF."
+    ps1 = "<<\r\n>>"
+    ps1_esc = _escape(ps1)
+
+    cmd = (
+        sh(sys.executable, "-i").stdin(sh.CAPTURE).stdout(sh.CAPTURE).stderr(sh.STDOUT)
+    )
+
+    async with cmd as run:
+        repl = Prompt(run, default_prompt=ps1, normalize_newlines=True)
+
+        greeting = await repl.send(f"import sys; sys.ps1='{ps1_esc}'", timeout=3.0)
+        assert _PS1 in greeting
+
+        result = await repl.send("print('def')")
+        assert result == "def\n"
+
+        await repl.send("exit()")
+
+    assert run.result().exit_code == 0
+
+
+async def test_prompt_asyncio_repl_expect():
+    "Test the prompt class with the asyncio REPL and the expect() function."
+    cmd = (
+        sh(sys.executable, "-m", "asyncio")
+        .stdin(sh.CAPTURE)
+        .stdout(sh.CAPTURE)
+        .stderr(sh.STDOUT)
+    )
+
+    prompt = re.compile(">>> ")
+
+    async with cmd as run:
+        repl = Prompt(run, normalize_newlines=True, default_timeout=3.0)
+
+        greeting, x = await repl.expect(prompt)
+        assert "asyncio" in greeting
+        assert x[0] == ">>> "
+
+        extra, x = await repl.expect(prompt)
+        assert "import asyncio" in extra
+        assert x[0] == ">>> "
+
+        await repl.send("print('hello')", prompt=None)
+        result, x = await repl.expect(prompt)
+        assert result == "hello\n"
+        assert x[0] == ">>> "
+
+        repl.close()
+        result, x = await repl.expect(prompt)
+        assert result == "\nexiting asyncio REPL...\n"
+        assert x is None
 
     assert run.result().exit_code == 0
