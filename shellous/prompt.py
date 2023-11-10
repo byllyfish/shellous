@@ -63,6 +63,7 @@ class Prompt:
     _default_prompt: bytes
     _default_timeout: Optional[float]
     _normalize_newlines: bool
+    _chunk_size: int
     _decoder: codecs.IncrementalDecoder
     _pending: str = ""
     _at_eof: bool = False
@@ -75,6 +76,7 @@ class Prompt:
         default_prompt: str = "",
         default_timeout: Optional[float] = None,
         normalize_newlines: bool = False,
+        chunk_size: int = 4096,
     ):
         assert runner.stdin is not None
         assert runner.stdout is not None
@@ -85,6 +87,7 @@ class Prompt:
         self._default_prompt = encode_bytes(default_prompt, self._encoding)
         self._default_timeout = default_timeout
         self._normalize_newlines = normalize_newlines
+        self._chunk_size = chunk_size
         self._decoder = _get_decoder(self._encoding, normalize_newlines)
 
     @property
@@ -308,6 +311,7 @@ class Prompt:
         """
         stdout = self._runner.stdout
         assert stdout is not None
+        assert self._chunk_size > 0
 
         while True:
             assert not self._at_eof
@@ -315,7 +319,7 @@ class Prompt:
             _initial_len = len(self._pending)
 
             # Read chunk and check for EOF.
-            chunk = await stdout.read(4096)
+            chunk = await stdout.read(self._chunk_size)
             if not chunk:
                 self._at_eof = True
 
