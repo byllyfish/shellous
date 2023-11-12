@@ -404,8 +404,7 @@ async def test_prompt_python_ps1_unicode():
         assert m[0] == ps1
 
         await repl.send("exit()")
-        result, m = await repl.expect(None)
+        result = await repl.read_all()
         assert result == ""
-        assert m is None
 
     assert run.result().exit_code == 0

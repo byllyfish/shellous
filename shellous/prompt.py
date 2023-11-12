@@ -188,44 +188,75 @@ class Prompt:
 
     async def expect(
         self,
-        pattern: re.Pattern[str],
+        prompt: Union[str, re.Pattern[str], None] = None,
         *,
         timeout: Optional[float] = None,
     ) -> tuple[str, Optional[re.Match[str]]]:
         """Read from stdout until the regular expression matches.
 
-        Use the `expect` method when you need to read up to a prompt that
-        varies.
+
+        A `prompt` is usually a regular expression object. If `prompt` is a
+        string, the string must match exactly. If `prompt` is None or missing,
+        we use the default prompt.
 
         ```
         _, m = await cli.expect(re.compile(r'Login: |Password: |ftp> '))
-        if m is None:
-            raise EOFError()
-        match m[0]:
-            case "Login: ":
-                await cli.send(user, prompt=None)
-            case "Password: ":
-                await cli.send(password, prompt=None)
-            case "ftp> ":
-                result = await cli.send(command)
+        if m:
+            match m[0]:
+                case "Login: ":
+                    await cli.send(user)
+                case "Password: ":
+                    await cli.send(password)
+                case "ftp> ":
+                    await cli.send(command)
         ```
         """
-        if self._at_eof:
-            raise EOFError("Prompt at EOF")
+        assert prompt is not None  # TODO
+
+        if isinstance(prompt, str):
+            prompt = re.compile(re.escape(prompt))
 
         if self._pending:
-            result = self._search_pending(pattern)
+            result = self._search_pending(prompt)
             if result is not None:
                 return result
 
+        if self._at_eof:
+            raise EOFError("Prompt at EOF")
+
         cancelled, (result,) = await harvest_results(
-            self._read_to_pattern(pattern),
+            self._read_to_pattern(prompt),
             timeout=timeout or self._default_timeout,
         )
         if cancelled:
             raise asyncio.CancelledError()
 
         return result
+
+    async def read_all(
+        self,
+        timeout: Optional[float] = None,
+    ) -> str:
+        """Read all characters until EOF.
+
+        When we are at EOF, return "".
+        """
+        if self._pending:
+            result = self._search_pending(None)
+            if result is not None:
+                return result[0]
+
+        if self._at_eof:
+            return ""
+
+        cancelled, (result,) = await harvest_results(
+            self._read_to_pattern(None),
+            timeout=timeout or self._default_timeout,
+        )
+        if cancelled:
+            raise asyncio.CancelledError()
+
+        return result[0]
 
     def close(self) -> None:
         "Close stdin to end the prompt session."
