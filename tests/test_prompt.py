@@ -164,7 +164,7 @@ async def test_prompt_python_timeout():
         # Show we can still run expect() on the new buffer.
         found, m = await repl.expect(re.compile("l.*?>", re.DOTALL))
         assert found == "he"
-        assert m[0] == "llo\n>"
+        assert m and m[0] == "llo\n>"
         assert repl.pending == ">> |"
 
         await repl.command("exit()")
@@ -404,18 +404,18 @@ async def test_prompt_asyncio_repl_expect():
 
         greeting, x = await repl.expect(prompt)
         assert "asyncio" in greeting
-        assert x[0] == ">>> "
+        assert x and x[0] == ">>> "
         # There will likely be data in `repl.pending`.
 
         extra, x = await repl.expect(prompt)
         assert "import asyncio" in extra
-        assert x[0] == ">>> "
+        assert x and x[0] == ">>> "
         assert repl.pending == ""
 
         await repl.send("print('hello')")
         result, x = await repl.expect(prompt)
         assert result == "hello\n"
-        assert x[0] == ">>> "
+        assert x and x[0] == ">>> "
 
         repl.close()
         result, x = await repl.expect(prompt)
@@ -445,12 +445,12 @@ async def test_prompt_python_ps1_unicode():
 
         greeting, m = await repl.expect(prompt)
         assert _PS1 in greeting
-        assert m[0] == ps1
+        assert m and m[0] == ps1
 
         await repl.send("print('def')")
         result, m = await repl.expect(prompt)
         assert result == "def\n"
-        assert m[0] == ps1
+        assert m and m[0] == ps1
 
         await repl.send("exit()")
         result = await repl.read_all()
