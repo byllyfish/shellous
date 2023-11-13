@@ -37,6 +37,9 @@ else:
 
 _NO_ECHO = cooked(echo=False)
 
+# Alpine is including some terminal escapes.
+_TERM_ESCAPES = "\x1b[6n" if _IS_ALPINE else ""
+
 _requires_unix = pytest.mark.skipif(sys.platform == "win32", reason="requires unix")
 
 _requires_pty = pytest.mark.skipif(
@@ -247,14 +250,12 @@ async def test_prompt_unix_shell_echo():
             assert "job control" in greeting
         else:
             assert greeting == ""
-        assert repl.pending == ""
+
+        # Alpine is including terminal escape chars.
+        assert repl.pending == f"{_TERM_ESCAPES}"
 
         result = await repl.command("echo 123")
-        if _IS_ALPINE:
-            # Alpine is including terminal escape chars.
-            assert result == "\x1b[6necho 123\r\n123\r\n"
-        else:
-            assert result == "echo 123\r\n123\r\n"
+        assert result == f"{_TERM_ESCAPES}echo 123\r\n123\r\n"
 
         await repl.command("exit")
         assert repl.at_eof
@@ -344,14 +345,12 @@ async def test_prompt_unix_eof():
             assert "job control" in greeting
         else:
             assert greeting == ""
-        assert repl.pending == ""
+
+        # Alpine is including terminal escape chars.
+        assert repl.pending == f"{_TERM_ESCAPES}"
 
         result = await repl.command("echo 123")
-        if _IS_ALPINE:
-            # Alpine is including terminal escape chars.
-            assert result == "\x1b[6necho 123\r\n123\r\n"
-        else:
-            assert result == "echo 123\r\n123\r\n"
+        assert result == f"{_TERM_ESCAPES}echo 123\r\n123\r\n"
 
         repl.close()  # In PTY mode, this sends ^D to close....
 
