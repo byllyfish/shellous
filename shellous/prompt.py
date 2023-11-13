@@ -11,7 +11,7 @@ from shellous import pty_util
 from shellous.harvest import harvest_results
 from shellous.log import LOG_PROMPT, LOGGER
 from shellous.runner import Runner
-from shellous.util import decode_bytes, encode_bytes
+from shellous.util import encode_bytes
 
 _EOL_REGEX = re.compile(rb"\r\n|\r")
 
@@ -103,6 +103,10 @@ class Prompt:
         return self._at_eof
 
     @property
+    def pending(self) -> str:
+        return self._pending
+
+    @property
     def echo(self) -> bool:
         """True if TTY is in echo mode.
 
@@ -127,8 +131,8 @@ class Prompt:
         input_text: str,
         *,
         end: Optional[str] = None,
-        timeout: Optional[float] = None,
         no_echo: bool = False,
+        timeout: Optional[float] = None,
     ) -> None:
         """Write some input text to stdin, then await the response from stdout.
 
@@ -215,6 +219,7 @@ class Prompt:
 
     async def read_all(
         self,
+        *,
         timeout: Optional[float] = None,
     ) -> str:
         """Read all characters until EOF.
@@ -242,12 +247,15 @@ class Prompt:
         self,
         input_text: str,
         *,
+        end: Optional[str] = None,
+        no_echo: bool = False,
+        prompt: Union[str, re.Pattern[str], None] = None,
         timeout: Optional[float] = None,
     ) -> str:
         "Send some input and receive the response up to the next prompt."
         # TODO: These can be done in separate tasks to avoid potential deadlock.
-        await self.send(input_text, timeout=timeout)
-        result, _ = await self.expect(timeout=timeout)
+        await self.send(input_text, end=end, no_echo=no_echo, timeout=timeout)
+        result, _ = await self.expect(prompt, timeout=timeout)
         return result
 
     def close(self) -> None:
@@ -283,12 +291,21 @@ class Prompt:
         while True:
             assert not self._at_eof
 
-            _initial_len = len(self._pending)
+            _prev_len = len(self._pending)  # debug check
 
-            # Read chunk and check for EOF.
-            chunk = await stdout.read(self._chunk_size)
-            if not chunk:
-                self._at_eof = True
+            try:
+                # Read chunk and check for EOF.
+                chunk = await stdout.read(self._chunk_size)
+                if not chunk:
+                    self._at_eof = True
+            except asyncio.CancelledError:
+                if LOG_PROMPT:
+                    LOGGER.debug(
+                        "Prompt[pid=%s] receive cancelled: pending=%r",
+                        self._runner.pid,
+                        self._pending,
+                    )
+                raise
 
             if LOG_PROMPT:
                 LOGGER.debug("Prompt[pid=%s] receive: %r", self._runner.pid, chunk)
@@ -303,7 +320,7 @@ class Prompt:
             if result is not None:
                 return result
 
-            assert len(self._pending) > _initial_len
+            assert len(self._pending) > _prev_len  # debug check
 
     def _search_pending(
         self,

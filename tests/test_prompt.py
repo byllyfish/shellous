@@ -124,13 +124,30 @@ async def test_prompt_python_timeout():
     )
 
     async with cmd as run:
-        repl = Prompt(run, default_prompt=_PS1)
+        repl = Prompt(run, default_prompt=_PS1, default_timeout=2.0)
 
         greeting, _ = await repl.expect()
         assert "Python" in greeting
 
+        # Send a command, but don't wait long enough.
         with pytest.raises(asyncio.TimeoutError):
-            await repl.command("import time; time.sleep(1)", timeout=0.1)
+            await repl.command("import time; time.sleep(1)", timeout=0.2)
+
+        # Wait for actual prompt to return.
+        await repl.expect(timeout=1.0)
+
+        # Send a command and wait for a never prompt.
+        with pytest.raises(asyncio.TimeoutError):
+            await repl.command("print('hello')", prompt="xxxxx", timeout=0.2)
+
+        # Check the contents of the `pending` buffer.
+        assert repl.pending == "hello\n>>> "
+
+        # Show we can still run expect() on the new buffer.
+        found, m = await repl.expect(re.compile("l.*?>", re.DOTALL))
+        assert found == "he"
+        assert m[0] == "llo\n>"
+        assert repl.pending == ">> "
 
         await repl.command("exit()")
 
