@@ -123,10 +123,18 @@ async def test_prompt_python_timeout():
         sh(sys.executable, "-i").stdin(sh.CAPTURE).stdout(sh.CAPTURE).stderr(sh.STDOUT)
     )
 
-    async with cmd as run:
-        repl = Prompt(run, default_prompt=_PS1, default_timeout=2.0)
+    # Adjust the Python prompt because PyPy3 and Python3 have different prompts.
+    ps1_alt = ">>> |"
 
-        greeting, _ = await repl.expect()
+    async with cmd as run:
+        repl = Prompt(
+            run,
+            default_prompt=ps1_alt,
+            default_timeout=2.0,
+            normalize_newlines=True,
+        )
+
+        greeting = await repl.command(f"import sys; sys.ps1='{ps1_alt}'")
         assert "Python" in greeting
 
         # Send a command, but don't wait long enough.
@@ -141,13 +149,13 @@ async def test_prompt_python_timeout():
             await repl.command("print('hello')", prompt="xxxxx", timeout=0.2)
 
         # Check the contents of the `pending` buffer.
-        assert repl.pending == "hello\n>>> "
+        assert repl.pending == "hello\n>>> |"
 
         # Show we can still run expect() on the new buffer.
         found, m = await repl.expect(re.compile("l.*?>", re.DOTALL))
         assert found == "he"
         assert m[0] == "llo\n>"
-        assert repl.pending == ">> "
+        assert repl.pending == ">> |"
 
         await repl.command("exit()")
 
