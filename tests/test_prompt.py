@@ -59,6 +59,7 @@ async def test_prompt_python_pty():
 
         greeting, _ = await repl.expect()
         assert "Python" in greeting
+        assert repl.pending == ""
 
         result = await repl.command("print('abc')")
         if _IS_MACOS and _IS_GITHUB_ACTIONS:
@@ -67,6 +68,7 @@ async def test_prompt_python_pty():
             assert result == "abc\r\n"
 
         await repl.command("exit()")
+        assert repl.at_eof
 
     assert run.result().exit_code == 0
 
@@ -87,11 +89,13 @@ async def test_prompt_python_interactive():
 
         greeting, _ = await repl.expect()
         assert "Python" in greeting
+        assert repl.pending == ""
 
         result = await repl.command("print('abc')")
         assert result == "abc\n"
 
         await repl.command("exit()")
+        assert repl.at_eof
 
     assert run.result().exit_code == 0
 
@@ -108,11 +112,13 @@ async def test_prompt_python_interactive_ps1():
 
         greeting = await repl.command(f"import sys; sys.ps1='{alt_ps1}'")
         assert _PS1 in greeting
+        assert repl.pending == ""
 
         result = await repl.command("print('def')")
         assert result == "def\n"
 
         await repl.command("exit()")
+        assert repl.at_eof
 
     assert run.result().exit_code == 0
 
@@ -136,6 +142,7 @@ async def test_prompt_python_timeout():
 
         greeting = await repl.command(f"import sys; sys.ps1='{ps1_alt}'")
         assert "Python" in greeting
+        assert repl.pending == ""
 
         # Send a command, but don't wait long enough.
         with pytest.raises(asyncio.TimeoutError):
@@ -158,6 +165,7 @@ async def test_prompt_python_timeout():
         assert repl.pending == ">> |"
 
         await repl.command("exit()")
+        assert repl.at_eof
 
     assert run.result().exit_code == 0
 
@@ -173,11 +181,13 @@ async def test_prompt_python_missing_newline():
 
         greeting, _ = await repl.expect()
         assert "Python" in greeting
+        assert repl.pending == ""
 
         result = await repl.command("print(3, end='.')")
         assert result == "3."
 
         await repl.command("exit()")
+        assert repl.at_eof
 
     assert run.result().exit_code == 0
 
@@ -202,6 +212,7 @@ async def test_prompt_unix_shell():
             assert "job control" in greeting
         else:
             assert greeting == ""
+        assert repl.pending == ""
 
         result = await repl.command("echo 123")
         if _IS_FREEBSD:
@@ -211,6 +222,7 @@ async def test_prompt_unix_shell():
             assert result == "123\r\n"
 
         await repl.command("exit")
+        assert repl.at_eof
 
     assert run.result().exit_code == 0
 
@@ -235,6 +247,7 @@ async def test_prompt_unix_shell_echo():
             assert "job control" in greeting
         else:
             assert greeting == ""
+        assert repl.pending == ""
 
         result = await repl.command("echo 123")
         if _IS_ALPINE:
@@ -244,6 +257,7 @@ async def test_prompt_unix_shell_echo():
             assert result == "echo 123\r\n123\r\n"
 
         await repl.command("exit")
+        assert repl.at_eof
 
     assert run.result().exit_code == 0
 
@@ -266,6 +280,7 @@ async def test_prompt_unix_shell_interactive():
         assert (
             greeting == "" or "job control" in greeting
         )  # expect message about job control (sometimes?)
+        assert repl.pending == ""
 
         result = await repl.command("echo 123")
 
@@ -278,6 +293,7 @@ async def test_prompt_unix_shell_interactive():
             assert result == "123\n"
 
         await repl.command("exit")
+        assert repl.at_eof
 
     assert run.result().exit_code == 0
 
@@ -328,6 +344,7 @@ async def test_prompt_unix_eof():
             assert "job control" in greeting
         else:
             assert greeting == ""
+        assert repl.pending == ""
 
         result = await repl.command("echo 123")
         if _IS_ALPINE:
@@ -358,15 +375,16 @@ async def test_prompt_python_ps1_newline():
 
     async with cmd as run:
         repl = Prompt(run, default_prompt=ps1_normalized, normalize_newlines=True)
-        print(repl._default_prompt)
 
         greeting = await repl.command(f"import sys; sys.ps1='{ps1_esc}'", timeout=3.0)
         assert _PS1 in greeting
+        assert repl.pending == ""
 
         result = await repl.command("print('def')")
         assert result == "def\n"
 
         await repl.command("exit()")
+        assert repl.at_eof
 
     assert run.result().exit_code == 0
 
@@ -388,10 +406,12 @@ async def test_prompt_asyncio_repl_expect():
         greeting, x = await repl.expect(prompt)
         assert "asyncio" in greeting
         assert x[0] == ">>> "
+        # There will likely be data in `repl.pending`.
 
         extra, x = await repl.expect(prompt)
         assert "import asyncio" in extra
         assert x[0] == ">>> "
+        assert repl.pending == ""
 
         await repl.send("print('hello')")
         result, x = await repl.expect(prompt)
@@ -402,6 +422,7 @@ async def test_prompt_asyncio_repl_expect():
         result, x = await repl.expect(prompt)
         assert result == "\nexiting asyncio REPL...\n"
         assert x is None
+        assert repl.at_eof
 
     assert run.result().exit_code == 0
 
@@ -421,6 +442,8 @@ async def test_prompt_python_ps1_unicode():
         repl = Prompt(run, normalize_newlines=True, chunk_size=1)
 
         await repl.send(f"import sys; sys.ps1='{ps1_esc}'", timeout=3.0)
+        assert repl.pending == ""
+
         greeting, m = await repl.expect(prompt)
         assert _PS1 in greeting
         assert m[0] == ps1
@@ -433,5 +456,6 @@ async def test_prompt_python_ps1_unicode():
         await repl.send("exit()")
         result = await repl.read_all()
         assert result == ""
+        assert repl.at_eof
 
     assert run.result().exit_code == 0
