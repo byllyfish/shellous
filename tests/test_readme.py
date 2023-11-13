@@ -37,23 +37,23 @@ async def run_asyncio_repl(cmds, logfile=None):
         # Customize the python REPL prompt to make it easier to detect. The
         # initial output of the REPL will include the old ">>> " prompt which
         # we can ignore.
-        await prompt.send(f"import sys; sys.ps1 = '{_PROMPT}'; sys.ps2 = ''")
+        await prompt.command(f"import sys; sys.ps1 = '{_PROMPT}'; sys.ps2 = ''")
 
         # Optionally redirect logging to a file.
-        await prompt.send("import shellous.log, logging")
+        await prompt.command("import shellous.log, logging")
         if logfile:
-            await prompt.send("shellous.log.LOGGER.setLevel(logging.DEBUG)")
-            await prompt.send(
+            await prompt.command("shellous.log.LOGGER.setLevel(logging.DEBUG)")
+            await prompt.command(
                 f"logging.basicConfig(filename='{logfile}', level=logging.DEBUG)"
             )
         else:
             # I don't want random logging messages to confuse the output.
-            await prompt.send("shellous.log.LOGGER.setLevel(logging.ERROR)")
+            await prompt.command("shellous.log.LOGGER.setLevel(logging.ERROR)")
 
         output = []
         for cmd in cmds:
             LOGGER.info("  repl: %r", cmd)
-            out = await prompt.send(cmd)
+            out = await prompt.command(cmd)
             output.append(out.rstrip("\n"))
             # Give tasks a chance to get started.
             if ".create_task(" in cmd:

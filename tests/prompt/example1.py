@@ -19,18 +19,17 @@ async def main():
     cmd = sh(_DIR / "fake_prompter.sh", opts).stdin(sh.CAPTURE).stdout(sh.CAPTURE)
 
     async with cmd.set(pty=True) as run:
-        cli = Prompt(
-            run,
-            default_prompt="prompt> ",
-            default_timeout=10.0,
-        )
+        cli = Prompt(run, default_timeout=10.0)
 
-        await cli.receive(prompt="Name: ")
-        await cli.send("friend", prompt="Password: ")
-        await cli.send("abc123", noecho=True)
+        await cli.expect("Name: ")
+        await cli.send("friend")
+        await cli.expect("Password: ")
+        await cli.send("abc123", no_echo=True)
+        await cli.expect("prompt> ")
 
         # Send a command and print the response.
-        response = await cli.send("arbitrary")
+        await cli.send("arbitrary")
+        response, _ = await cli.expect("prompt> ")
         print(response)
 
         cli.close()
