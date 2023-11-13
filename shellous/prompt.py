@@ -2,7 +2,6 @@
 
 import asyncio
 import codecs
-import enum
 import io
 import re
 from typing import Optional, Union
@@ -12,23 +11,6 @@ from shellous.harvest import harvest_results
 from shellous.log import LOG_PROMPT, LOGGER
 from shellous.runner import Runner
 from shellous.util import encode_bytes
-
-_EOL_REGEX = re.compile(rb"\r\n|\r")
-
-
-class _Cue(enum.Enum):
-    "Alternate prompt types."
-    DEFAULT = enum.auto()
-    EOF = enum.auto()
-
-
-def _get_decoder(encoding: str, normalize_newlines: bool) -> codecs.IncrementalDecoder:
-    enc = encoding.split(maxsplit=1)
-    decoder_class = codecs.getincrementaldecoder(enc[0])
-    decoder = decoder_class(*enc[1:])
-    if normalize_newlines:
-        decoder = io.IncrementalNewlineDecoder(decoder, translate=True)
-    return decoder
 
 
 class Prompt:
@@ -46,16 +28,14 @@ class Prompt:
 
     async with cmd.env(PS1="??? ") as run:
         cli = Prompt(run, prompt="??? ")
-        greeting = await cli.receive()
+        greeting, _ = await cli.expect()
 
-        result = await cli.send("echo hello")
+        result = await cli.command("echo hello")
         assert result == "hello\n"
 
         cli.close()
     ```
     """
-
-    EOF = _Cue.EOF
 
     _runner: Runner
     _encoding: str
@@ -91,7 +71,7 @@ class Prompt:
         self._default_timeout = default_timeout
         self._normalize_newlines = normalize_newlines
         self._chunk_size = chunk_size
-        self._decoder = _get_decoder(self._encoding, normalize_newlines)
+        self._decoder = _decoder(self._encoding, normalize_newlines)
 
     @property
     def run(self) -> Runner:
@@ -100,10 +80,12 @@ class Prompt:
 
     @property
     def at_eof(self) -> bool:
-        return self._at_eof
+        "True if the prompt reader is at the end of file."
+        return self._at_eof and not self._pending
 
     @property
     def pending(self) -> str:
+        """Characters in the `pending` buffer."""
         return self._pending
 
     @property
@@ -134,14 +116,7 @@ class Prompt:
         no_echo: bool = False,
         timeout: Optional[float] = None,
     ) -> None:
-        """Write some input text to stdin, then await the response from stdout.
-
-        Raises:
-            EOFError: if receive() has already reached EOF.
-        """
-        if self._at_eof:
-            raise EOFError("Prompt at EOF")
-
+        """Write some input text to stdin."""
         if end is None:
             end = self._default_end
 
@@ -176,10 +151,12 @@ class Prompt:
     ) -> tuple[str, Optional[re.Match[str]]]:
         """Read from stdout until the regular expression matches.
 
-
         A `prompt` is usually a regular expression object. If `prompt` is a
         string, the string must match exactly. If `prompt` is None or missing,
         we use the default prompt.
+
+        To match multiple patterns, use the regular expression alternation
+        syntax:
 
         ```
         _, m = await cli.expect(re.compile(r'Login: |Password: |ftp> '))
@@ -253,6 +230,9 @@ class Prompt:
         timeout: Optional[float] = None,
     ) -> str:
         "Send some input and receive the response up to the next prompt."
+        if self._at_eof:
+            raise EOFError("Prompt at EOF")
+
         # TODO: These can be done in separate tasks to avoid potential deadlock.
         await self.send(input_text, end=end, no_echo=no_echo, timeout=timeout)
         result, _ = await self.expect(prompt, timeout=timeout)
@@ -357,7 +337,7 @@ class Prompt:
         "Wait for terminal echo mode to be disabled."
         if LOG_PROMPT:
             LOGGER.debug(
-                "Prompt[pid=%s] wait: noecho",
+                "Prompt[pid=%s] wait: no_echo",
                 self._runner.pid,
             )
 
@@ -367,3 +347,13 @@ class Prompt:
             await asyncio.sleep(0.25)
         else:
             raise RuntimeError("Timed out: Terminal echo mode remains enabled.")
+
+
+def _decoder(encoding: str, normalize_newlines: bool) -> codecs.IncrementalDecoder:
+    "Construct an incremental decoder for the specified encoding settings."
+    enc = encoding.split(maxsplit=1)
+    decoder_class = codecs.getincrementaldecoder(enc[0])
+    decoder = decoder_class(*enc[1:])
+    if normalize_newlines:
+        decoder = io.IncrementalNewlineDecoder(decoder, translate=True)
+    return decoder
