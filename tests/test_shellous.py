@@ -148,7 +148,7 @@ async def test_bulk_prompt(bulk_cmd, _limit_logging):
 
     async with cmd.stdin(sh.CAPTURE).stdout(sh.CAPTURE) as run:
         prompt = Prompt(run, default_prompt=">>> ")
-        result = await prompt.receive(timeout=10.0)
+        result = await prompt.read_all(timeout=10.0)
         assert len(result) == 4 * (1024 * 1024 + 1)
         value = hashlib.sha256(result.encode("latin1")).hexdigest()
         assert (

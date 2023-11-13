@@ -60,7 +60,7 @@ class Prompt:
     _runner: Runner
     _encoding: str
     _default_end: str
-    _default_prompt: bytes
+    _default_prompt: Optional[re.Pattern[str]]
     _default_timeout: Optional[float]
     _normalize_newlines: bool
     _chunk_size: int
@@ -73,7 +73,7 @@ class Prompt:
         runner: Runner,
         *,
         default_end: str = "\n",
-        default_prompt: str = "",
+        default_prompt: Union[str, re.Pattern[str], None] = None,
         default_timeout: Optional[float] = None,
         normalize_newlines: bool = False,
         chunk_size: int = 4096,
@@ -81,10 +81,13 @@ class Prompt:
         assert runner.stdin is not None
         assert runner.stdout is not None
 
+        if isinstance(default_prompt, str):
+            default_prompt = re.compile(re.escape(default_prompt))
+
         self._runner = runner
         self._encoding = runner.command.options.encoding
         self._default_end = default_end
-        self._default_prompt = encode_bytes(default_prompt, self._encoding)
+        self._default_prompt = default_prompt
         self._default_timeout = default_timeout
         self._normalize_newlines = normalize_newlines
         self._chunk_size = chunk_size
@@ -124,10 +127,9 @@ class Prompt:
         input_text: str,
         *,
         end: Optional[str] = None,
-        prompt: Union[str, _Cue, None] = _Cue.DEFAULT,
         timeout: Optional[float] = None,
-        noecho: bool = False,
-    ) -> str:
+        no_echo: bool = False,
+    ) -> None:
         """Write some input text to stdin, then await the response from stdout.
 
         Raises:
@@ -139,8 +141,8 @@ class Prompt:
         if end is None:
             end = self._default_end
 
-        if noecho:
-            await self._wait_noecho()
+        if no_echo:
+            await self._wait_no_echo()
 
         data = encode_bytes(input_text + end, self._encoding)
 
@@ -149,42 +151,18 @@ class Prompt:
         stdin.write(data)
 
         if LOG_PROMPT:
-            if noecho:
+            if no_echo:
                 LOGGER.debug("Prompt[pid=%s] send: [[HIDDEN]]", self._runner.pid)
             else:
                 LOGGER.debug("Prompt[pid=%s] send: %r", self._runner.pid, data)
 
-        # Drain our write to stdin and wait for prompt from stdout.
-        cancelled, (result, _) = await harvest_results(
-            self._read_to_prompt(prompt),
+        # Drain our write to stdin.
+        cancelled, _ = await harvest_results(
             stdin.drain(),
             timeout=timeout or self._default_timeout,
         )
         if cancelled:
             raise asyncio.CancelledError()
-
-        assert isinstance(result, str)
-        return result
-
-    async def receive(
-        self,
-        *,
-        prompt: Union[str, _Cue] = _Cue.DEFAULT,
-        timeout: Optional[float] = None,
-    ) -> str:
-        """Read from stdout up to the next prompt, or EOF if prompt not found."""
-        if self._at_eof:
-            raise EOFError("Prompt at EOF")
-
-        cancelled, (result,) = await harvest_results(
-            self._read_to_prompt(prompt),
-            timeout=timeout or self._default_timeout,
-        )
-        if cancelled:
-            raise asyncio.CancelledError()
-
-        assert isinstance(result, str)
-        return result
 
     async def expect(
         self,
@@ -211,10 +189,12 @@ class Prompt:
                     await cli.send(command)
         ```
         """
-        assert prompt is not None  # TODO
-
         if isinstance(prompt, str):
             prompt = re.compile(re.escape(prompt))
+        elif prompt is None:
+            prompt = self._default_prompt
+            if prompt is None:
+                raise TypeError("prompt is required when default prompt is not set")
 
         if self._pending:
             result = self._search_pending(prompt)
@@ -258,6 +238,18 @@ class Prompt:
 
         return result[0]
 
+    async def command(
+        self,
+        input_text: str,
+        *,
+        timeout: Optional[float] = None,
+    ) -> str:
+        "Send some input and receive the response up to the next prompt."
+        # TODO: These can be done in separate tasks to avoid potential deadlock.
+        await self.send(input_text, timeout=timeout)
+        result, _ = await self.expect(timeout=timeout)
+        return result
+
     def close(self) -> None:
         "Close stdin to end the prompt session."
         stdin = self._runner.stdin
@@ -272,62 +264,6 @@ class Prompt:
 
         else:
             stdin.close()
-
-    async def _read_to_prompt(self, prompt: Union[str, _Cue, None]) -> str:
-        """Read all data up to the prompt and return it (after removing prompt).
-
-        This method sets `at_eof` if we encounter EOF instead of the prompt.
-        """
-        if not prompt:
-            return ""
-
-        if prompt == _Cue.EOF:
-            return await self._read_to_eof()
-
-        if prompt == _Cue.DEFAULT:
-            prompt_bytes = self._default_prompt
-        else:
-            prompt_bytes = encode_bytes(prompt, self._encoding)
-
-        # If the prompt is "", do not read *anything*.
-        if not prompt_bytes:
-            return ""
-
-        stdout = self._runner.stdout
-        assert stdout is not None
-
-        buf = await _read_until(stdout, prompt_bytes)
-        if LOG_PROMPT:
-            LOGGER.debug("Prompt[pid=%s] receive: %r", self._runner.pid, buf)
-
-        # Clean up the output to remove the prompt, then return as string.
-        if buf.endswith(prompt_bytes):
-            buf = buf[0 : -len(prompt_bytes)]
-        else:
-            self._at_eof = True
-
-        # Replace CR-LF or CR with LF.
-        if self._normalize_newlines:
-            buf = _normalize_eol(buf)
-
-        return decode_bytes(buf, self._encoding)
-
-    async def _read_to_eof(self) -> str:
-        "Read all data to the end. Only called by _read_to_prompt()."
-        stdout = self._runner.stdout
-        assert stdout is not None
-
-        buf = await stdout.read()
-        if LOG_PROMPT:
-            LOGGER.debug("Prompt[pid=%s] receive: %r", self._runner.pid, buf)
-
-        # Replace CR-LF or CR with LF.
-        if self._normalize_newlines:
-            buf = _normalize_eol(buf)
-
-        self._at_eof = True
-
-        return decode_bytes(buf, self._encoding)
 
     async def _read_to_pattern(
         self,
@@ -400,7 +336,7 @@ class Prompt:
 
         return None
 
-    async def _wait_noecho(self):
+    async def _wait_no_echo(self):
         "Wait for terminal echo mode to be disabled."
         if LOG_PROMPT:
             LOGGER.debug(
@@ -414,39 +350,3 @@ class Prompt:
             await asyncio.sleep(0.25)
         else:
             raise RuntimeError("Timed out: Terminal echo mode remains enabled.")
-
-
-async def _read_until(stream: asyncio.StreamReader, separator: bytes) -> bytes:
-    "Read all data until the separator."
-    try:
-        # Most reads can complete without buffering.
-        return await stream.readuntil(separator)
-    except asyncio.IncompleteReadError as ex:
-        return ex.partial
-    except asyncio.LimitOverrunError as ex:
-        # Okay, we have to buffer.
-        buf = bytearray(await stream.read(ex.consumed))
-    except asyncio.CancelledError:
-        if LOG_PROMPT:
-            LOGGER.debug(
-                "Prompt._read_until cancelled with buffer contents: %r",
-                stream._buffer,
-            )
-        raise
-
-    while True:
-        try:
-            buf.extend(await stream.readuntil(separator))
-        except asyncio.IncompleteReadError as ex:
-            buf.extend(ex.partial)
-        except asyncio.LimitOverrunError as ex:
-            buf.extend(await stream.read(ex.consumed))
-            continue
-        break
-
-    return bytes(buf)
-
-
-def _normalize_eol(buf: bytes) -> bytes:
-    """Normalize end of lines."""
-    return _EOL_REGEX.sub(b"\n", buf)
