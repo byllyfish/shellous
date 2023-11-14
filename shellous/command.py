@@ -7,10 +7,12 @@
 
 import asyncio
 import collections.abc
+import contextlib
 import dataclasses
 import enum
 import io
 import os
+import re
 import shutil
 import signal
 from dataclasses import dataclass, field
@@ -18,6 +20,7 @@ from pathlib import Path
 from types import TracebackType
 from typing import (
     Any,
+    AsyncGenerator,
     AsyncIterator,
     Callable,
     ClassVar,
@@ -36,6 +39,7 @@ from typing import (
 )
 
 import shellous
+from shellous.prompt import Prompt
 from shellous.pty_util import PtyAdapterOrBool
 from shellous.redirect import (
     STDIN_TYPES,
@@ -653,6 +657,33 @@ class Command(Generic[_RT]):
             Coroutine[Any, Any, _RT],
             Runner.run_command(self, _run_future=_run_future),
         )
+
+    @contextlib.asynccontextmanager
+    async def prompt(
+        self,
+        prompt: Union[str, re.Pattern[str], None] = None,
+        *,
+        end: Optional[str] = None,
+        timeout: Optional[float] = None,
+        normalize_newlines: bool = False,
+        chunk_size: Optional[int] = None,
+    ) -> AsyncGenerator[Any, Prompt]:
+        "Run command using the send/expect API."
+        cmd = self.stdin(Redirect.CAPTURE).stdout(Redirect.CAPTURE)
+
+        async with Runner(cmd) as run:
+            cli = Prompt(
+                run,
+                default_prompt=prompt,
+                default_end=end,
+                default_timeout=timeout,
+                normalize_newlines=normalize_newlines,
+                chunk_size=chunk_size,
+            )
+            yield cli
+            cli.close()
+
+        run.result()
 
     def __await__(self) -> "Generator[Any, None, _RT]":
         "Run process and return the standard output."

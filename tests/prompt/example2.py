@@ -1,6 +1,6 @@
 """Example program that runs the fake_prompter CLI.
 
-This example uses the legacy/original API.
+This example uses the new simplified API.
 """
 
 import asyncio
@@ -9,7 +9,6 @@ import sys
 from pathlib import Path
 
 from shellous import sh
-from shellous.prompt import Prompt
 
 _DIR = Path(__file__).parent
 
@@ -19,11 +18,9 @@ async def main():
     if len(sys.argv) == 2:
         opts = (sys.argv[1],)
 
-    cmd = sh(_DIR / "fake_prompter.sh", opts).stdin(sh.CAPTURE).stdout(sh.CAPTURE)
+    cmd = sh(_DIR / "fake_prompter.sh", opts).set(pty=True)
 
-    async with cmd.set(pty=True) as run:
-        cli = Prompt(run, default_timeout=10.0)
-
+    async with cmd.prompt(timeout=10.0) as cli:
         await cli.expect("Name: ")
         await cli.send("friend")
         await cli.expect("Password: ")
@@ -34,10 +31,6 @@ async def main():
         await cli.send("arbitrary")
         response, _ = await cli.expect("prompt> ")
         print(response)
-
-        cli.close()
-
-    run.result()
 
 
 logging.basicConfig(level=logging.DEBUG)

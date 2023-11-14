@@ -52,14 +52,20 @@ class Prompt:
         self,
         runner: Runner,
         *,
-        default_end: str = "\n",
+        default_end: Optional[str] = None,
         default_prompt: Union[str, re.Pattern[str], None] = None,
         default_timeout: Optional[float] = None,
         normalize_newlines: bool = False,
-        chunk_size: int = 4096,
+        chunk_size: Optional[int] = None,
     ):
         assert runner.stdin is not None
         assert runner.stdout is not None
+
+        if default_end is None:
+            default_end = "\n"  # FIXME: use os.linesep?
+
+        if chunk_size is None:
+            chunk_size = 4096
 
         if isinstance(default_prompt, str):
             default_prompt = re.compile(re.escape(default_prompt))
@@ -85,7 +91,7 @@ class Prompt:
 
     @property
     def pending(self) -> str:
-        """Characters in the `pending` buffer."""
+        """Characters still unread in the `pending` buffer."""
         return self._pending
 
     @property
