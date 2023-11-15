@@ -1,5 +1,6 @@
 "Test example programs that use the Prompt class."
 
+import os
 import sys
 from pathlib import Path
 
@@ -7,8 +8,12 @@ import pytest
 
 from shellous import sh
 
-pytestmark = pytest.mark.skipif(sys.platform == "win32", reason="Unix")
+# True if we're using uvloop.
+_IS_UVLOOP = os.environ.get("SHELLOUS_LOOP_TYPE") == "uvloop"
 
+pytestmark = pytest.mark.skipif(
+    sys.platform == "win32" or _IS_UVLOOP, reason="requires pty"
+)
 
 _DIR = Path(__file__).parent
 _PY = sh(sys.executable).env(PYTHONPATH=_DIR.parents[1]).set(timeout=10.0)
@@ -53,7 +58,7 @@ async def test_no_echo():
 
 
 async def test_fail():
-    "Test the example1 program when it fails."
+    "Test the prompt when the program fails."
     cmd = sh(_DIR / "fake_prompter.sh").set(pty=True)
 
     async with cmd.result("--fail").prompt() as cli:
