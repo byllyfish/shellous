@@ -12,6 +12,7 @@ from shellous import sh
 from shellous.prompt import Prompt
 
 _DIR = Path(__file__).parent
+_FAKE_PROMPTER = _DIR / "fake_prompter.sh"
 
 
 async def main():
@@ -19,7 +20,7 @@ async def main():
     if len(sys.argv) == 2:
         opts = (sys.argv[1],)
 
-    cmd = sh(_DIR / "fake_prompter.sh", opts).stdin(sh.CAPTURE).stdout(sh.CAPTURE)
+    cmd = sh(_FAKE_PROMPTER, opts).stdin(sh.CAPTURE).stdout(sh.CAPTURE)
 
     async with cmd.set(pty=True) as run:
         cli = Prompt(run, default_timeout=10.0)
@@ -37,7 +38,7 @@ async def main():
 
         cli.close()
 
-    run.result()
+    run.result()  # To check exit status...
 
 
 logging.basicConfig(level=logging.DEBUG)

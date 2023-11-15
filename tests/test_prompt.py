@@ -450,4 +450,4 @@ async def test_prompt_python_ps1_unicode():
         assert result == ""
         assert repl.at_eof
 
-    # assert repl.result.exit_code == 0
+    assert repl.result.exit_code == 0

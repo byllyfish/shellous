@@ -20,7 +20,6 @@ from pathlib import Path
 from types import TracebackType
 from typing import (
     Any,
-    AsyncGenerator,
     AsyncIterator,
     Callable,
     ClassVar,
@@ -667,7 +666,7 @@ class Command(Generic[_RT]):
         timeout: Optional[float] = None,
         normalize_newlines: bool = False,
         chunk_size: Optional[int] = None,
-    ) -> AsyncGenerator[Any, Prompt]:
+    ) -> AsyncIterator[Prompt]:
         "Run command using the send/expect API."
         cmd = self.stdin(Redirect.CAPTURE).stdout(Redirect.CAPTURE)
 
@@ -683,7 +682,7 @@ class Command(Generic[_RT]):
             yield cli
             cli.close()
 
-        run.result()
+        cli._finish_()  # pyright: ignore[reportPrivateUsage]
 
     def __await__(self) -> "Generator[Any, None, _RT]":
         "Run process and return the standard output."

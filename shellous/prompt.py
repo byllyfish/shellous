@@ -9,8 +9,12 @@ from typing import Optional, Union
 from shellous import pty_util
 from shellous.harvest import harvest_results
 from shellous.log import LOG_PROMPT, LOGGER
+from shellous.result import Result, ResultError
 from shellous.runner import Runner
 from shellous.util import encode_bytes
+
+_DEFAULT_LINE_END = "\n"
+_DEFAULT_CHUNK_SIZE = 4096
 
 
 class Prompt:
@@ -47,6 +51,7 @@ class Prompt:
     _decoder: codecs.IncrementalDecoder
     _pending: str = ""
     _at_eof: bool = False
+    _result: Optional[Result] = None
 
     def __init__(
         self,
@@ -62,10 +67,10 @@ class Prompt:
         assert runner.stdout is not None
 
         if default_end is None:
-            default_end = "\n"  # FIXME: use os.linesep?
+            default_end = _DEFAULT_LINE_END
 
         if chunk_size is None:
-            chunk_size = 4096
+            chunk_size = _DEFAULT_CHUNK_SIZE
 
         if isinstance(default_prompt, str):
             default_prompt = re.compile(re.escape(default_prompt))
@@ -78,11 +83,6 @@ class Prompt:
         self._normalize_newlines = normalize_newlines
         self._chunk_size = chunk_size
         self._decoder = _decoder(self._encoding, normalize_newlines)
-
-    @property
-    def run(self) -> Runner:
-        "The runner object for the process."
-        return self._runner
 
     @property
     def at_eof(self) -> bool:
@@ -113,6 +113,11 @@ class Prompt:
         if self._runner.pty_fd is None:
             raise RuntimeError("Cannot set echo mode. Not running in a PTY.")
         pty_util.set_term_echo(self._runner.pty_fd, value)
+
+    @property
+    def result(self) -> Optional[Result]:
+        "The `Result` of the command, or None if it has not exited yet."
+        return self._result
 
     async def send(
         self,
@@ -258,6 +263,14 @@ class Prompt:
 
         else:
             stdin.close()
+
+    def _finish_(self) -> None:
+        "Internal method called when process exits to fetch the `Result` and cache it."
+        try:
+            self._result = self._runner.result()
+        except ResultError as ex:
+            self._result = ex.result
+            raise
 
     async def _read_to_pattern(
         self,
