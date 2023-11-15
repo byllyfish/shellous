@@ -9,7 +9,6 @@ import sys
 import pytest
 
 from shellous import cooked, sh
-from shellous.prompt import Prompt
 
 # True if we are running on PyPy.
 _IS_PYPY = platform.python_implementation() == "PyPy"
@@ -51,15 +50,9 @@ _requires_pty = pytest.mark.skipif(
 @_requires_pty
 async def test_prompt_python_pty():
     "Test the prompt class with the Python REPL (PTY)."
-    cmd = sh(sys.executable).stdin(sh.CAPTURE).stdout(sh.CAPTURE).stderr(sh.STDOUT)
+    cmd = sh(sys.executable).stderr(sh.STDOUT).set(pty=_NO_ECHO)
 
-    async with cmd.set(pty=_NO_ECHO) as run:
-        repl = Prompt(
-            run,
-            default_prompt=_PS1,
-            default_timeout=3.0,
-        )
-
+    async with cmd.prompt(_PS1, timeout=3.0) as repl:
         greeting, _ = await repl.expect()
         assert "Python" in greeting
         assert repl.pending == ""
@@ -73,23 +66,14 @@ async def test_prompt_python_pty():
         await repl.command("exit()")
         assert repl.at_eof
 
-    assert run.result().exit_code == 0
+    assert repl.result.exit_code == 0
 
 
 async def test_prompt_python_interactive():
     "Test the prompt class with the Python REPL (non-PTY using -i)."
-    cmd = (
-        sh(sys.executable, "-i").stdin(sh.CAPTURE).stdout(sh.CAPTURE).stderr(sh.STDOUT)
-    )
+    cmd = sh(sys.executable, "-i").stderr(sh.STDOUT)
 
-    async with cmd as run:
-        repl = Prompt(
-            run,
-            default_prompt=_PS1,
-            default_timeout=3.0,
-            normalize_newlines=True,
-        )
-
+    async with cmd.prompt(_PS1, timeout=3.0, normalize_newlines=True) as repl:
         greeting, _ = await repl.expect()
         assert "Python" in greeting
         assert repl.pending == ""
@@ -100,19 +84,15 @@ async def test_prompt_python_interactive():
         await repl.command("exit()")
         assert repl.at_eof
 
-    assert run.result().exit_code == 0
+    assert repl.result.exit_code == 0
 
 
 async def test_prompt_python_interactive_ps1():
     "Test the Python REPL but change the prompt to something unique."
     alt_ps1 = "????"
-    cmd = (
-        sh(sys.executable, "-i").stdin(sh.CAPTURE).stdout(sh.CAPTURE).stderr(sh.STDOUT)
-    )
+    cmd = sh(sys.executable, "-i").stderr(sh.STDOUT)
 
-    async with cmd as run:
-        repl = Prompt(run, default_prompt=alt_ps1, normalize_newlines=True)
-
+    async with cmd.prompt(alt_ps1, normalize_newlines=True) as repl:
         greeting = await repl.command(f"import sys; sys.ps1='{alt_ps1}'")
         assert _PS1 in greeting
         assert repl.pending == ""
@@ -123,26 +103,17 @@ async def test_prompt_python_interactive_ps1():
         await repl.command("exit()")
         assert repl.at_eof
 
-    assert run.result().exit_code == 0
+    assert repl.result.exit_code == 0
 
 
 async def test_prompt_python_timeout():
     "Test the prompt class with the Python REPL."
-    cmd = (
-        sh(sys.executable, "-i").stdin(sh.CAPTURE).stdout(sh.CAPTURE).stderr(sh.STDOUT)
-    )
+    cmd = sh(sys.executable, "-i").stderr(sh.STDOUT)
 
     # Adjust the Python prompt because PyPy3 and Python3 have different prompts.
     ps1_alt = ">>> |"
 
-    async with cmd as run:
-        repl = Prompt(
-            run,
-            default_prompt=ps1_alt,
-            default_timeout=2.0,
-            normalize_newlines=True,
-        )
-
+    async with cmd.prompt(ps1_alt, timeout=2.0, normalize_newlines=True) as repl:
         greeting = await repl.command(f"import sys; sys.ps1='{ps1_alt}'")
         assert "Python" in greeting
         assert repl.pending == ""
@@ -170,18 +141,14 @@ async def test_prompt_python_timeout():
         await repl.command("exit()")
         assert repl.at_eof
 
-    assert run.result().exit_code == 0
+    assert repl.result.exit_code == 0
 
 
 async def test_prompt_python_missing_newline():
     "Test the prompt class with the Python REPL."
-    cmd = (
-        sh(sys.executable, "-i").stdin(sh.CAPTURE).stdout(sh.CAPTURE).stderr(sh.STDOUT)
-    )
+    cmd = sh(sys.executable, "-i").stderr(sh.STDOUT)
 
-    async with cmd as run:
-        repl = Prompt(run, default_prompt=_PS1, normalize_newlines=True)
-
+    async with cmd.prompt(_PS1, normalize_newlines=True) as repl:
         greeting, _ = await repl.expect()
         assert "Python" in greeting
         assert repl.pending == ""
@@ -192,23 +159,15 @@ async def test_prompt_python_missing_newline():
         await repl.command("exit()")
         assert repl.at_eof
 
-    assert run.result().exit_code == 0
+    assert repl.result.exit_code == 0
 
 
 @_requires_pty
 async def test_prompt_unix_shell():
     "Test the prompt class with a shell (PTY no echo)."
-    cmd = (
-        sh("sh")
-        .stdin(sh.CAPTURE)
-        .stdout(sh.CAPTURE)
-        .stderr(sh.STDOUT)
-        .set(pty=_NO_ECHO, inherit_env=False)
-    )
+    cmd = sh("sh").stderr(sh.STDOUT).set(pty=_NO_ECHO, inherit_env=False)
 
-    async with cmd.env(PS1="$", TERM="dumb") as run:
-        repl = Prompt(run, default_prompt="$")
-
+    async with cmd.env(PS1="$", TERM="dumb").prompt("$") as repl:
         greeting, _ = await repl.expect()
         if _IS_FREEBSD:
             # FIXME: FreeBSD is complaining that it can't access tty?
@@ -227,23 +186,15 @@ async def test_prompt_unix_shell():
         await repl.command("exit")
         assert repl.at_eof
 
-    assert run.result().exit_code == 0
+    assert repl.result.exit_code == 0
 
 
 @_requires_pty
 async def test_prompt_unix_shell_echo():
     "Test the prompt class with a shell (PTY default cooked mode)."
-    cmd = (
-        sh("sh")
-        .stdin(sh.CAPTURE)
-        .stdout(sh.CAPTURE)
-        .stderr(sh.STDOUT)
-        .set(pty=True, inherit_env=False)
-    )
+    cmd = sh("sh").stderr(sh.STDOUT).set(pty=True, inherit_env=False)
 
-    async with cmd.env(PS1="$", TERM="dumb") as run:
-        repl = Prompt(run, default_prompt="$")
-
+    async with cmd.env(PS1="$", TERM="dumb").prompt("$") as repl:
         greeting, _ = await repl.expect()
         if _IS_FREEBSD:
             # FIXME: FreeBSD is complaining that it can't access tty?
@@ -260,23 +211,15 @@ async def test_prompt_unix_shell_echo():
         await repl.command("exit")
         assert repl.at_eof
 
-    assert run.result().exit_code == 0
+    assert repl.result.exit_code == 0
 
 
 @_requires_unix
 async def test_prompt_unix_shell_interactive():
     "Test the prompt class with an interactive shell (non-PTY, forced)."
-    cmd = (
-        sh("sh", "-i")
-        .stdin(sh.CAPTURE)
-        .stdout(sh.CAPTURE)
-        .stderr(sh.STDOUT)
-        .set(inherit_env=False)
-    )
+    cmd = sh("sh", "-i").stderr(sh.STDOUT).set(inherit_env=False)
 
-    async with cmd.env(PS1="$", TERM="dumb") as run:
-        repl = Prompt(run, default_prompt="$")
-
+    async with cmd.env(PS1="$", TERM="dumb").prompt("$") as repl:
         greeting, _ = await repl.expect()
         assert (
             greeting == "" or "job control" in greeting
@@ -296,21 +239,14 @@ async def test_prompt_unix_shell_interactive():
         await repl.command("exit")
         assert repl.at_eof
 
-    assert run.result().exit_code == 0
+    assert repl.result.exit_code == 0
 
 
 async def test_prompt_asyncio_repl():
     "Test the prompt class with the asyncio REPL."
-    cmd = (
-        sh(sys.executable, "-m", "asyncio")
-        .stdin(sh.CAPTURE)
-        .stdout(sh.CAPTURE)
-        .stderr(sh.STDOUT)
-    )
+    cmd = sh(sys.executable, "-m", "asyncio").stderr(sh.STDOUT)
 
-    async with cmd as run:
-        repl = Prompt(run, default_prompt=">>> ", normalize_newlines=True)
-
+    async with cmd.prompt(">>> ", normalize_newlines=True) as repl:
         greeting, _ = await repl.expect()
         assert "asyncio" in greeting
 
@@ -320,25 +256,15 @@ async def test_prompt_asyncio_repl():
         result = await repl.command("print('hello')")
         assert result == "hello\n"
 
-        repl.close()
-
-    assert run.result().exit_code == 0
+    assert repl.result.exit_code == 0
 
 
 @_requires_pty
 async def test_prompt_unix_eof():
     "Test the prompt class with a shell (PTY default cooked mode)."
-    cmd = (
-        sh("sh")
-        .stdin(sh.CAPTURE)
-        .stdout(sh.CAPTURE)
-        .stderr(sh.STDOUT)
-        .set(pty=True, inherit_env=False)
-    )
+    cmd = sh("sh").stderr(sh.STDOUT).set(pty=True, inherit_env=False)
 
-    async with cmd.env(PS1="> ", TERM="dumb") as run:
-        repl = Prompt(run, default_prompt="> ")
-
+    async with cmd.env(PS1="> ", TERM="dumb").prompt("> ") as repl:
         greeting, _ = await repl.expect()
         if _IS_FREEBSD:
             # FIXME: FreeBSD is complaining that it can't access tty?
@@ -352,9 +278,7 @@ async def test_prompt_unix_eof():
         result = await repl.command("echo 123")
         assert result == f"{_TERM_ESCAPES}echo 123\r\n123\r\n"
 
-        repl.close()  # In PTY mode, this sends ^D to close....
-
-    assert run.result().exit_code == 0
+    assert repl.result.exit_code == 0
 
 
 def _escape(s: str) -> str:
@@ -368,13 +292,9 @@ async def test_prompt_python_ps1_newline():
     ps1_esc = _escape(ps1)
     ps1_normalized = ps1.replace("\r\n", "\n")
 
-    cmd = (
-        sh(sys.executable, "-i").stdin(sh.CAPTURE).stdout(sh.CAPTURE).stderr(sh.STDOUT)
-    )
+    cmd = sh(sys.executable, "-i").stderr(sh.STDOUT)
 
-    async with cmd as run:
-        repl = Prompt(run, default_prompt=ps1_normalized, normalize_newlines=True)
-
+    async with cmd.prompt(ps1_normalized, normalize_newlines=True) as repl:
         greeting = await repl.command(f"import sys; sys.ps1='{ps1_esc}'", timeout=3.0)
         assert _PS1 in greeting
         assert repl.pending == ""
@@ -385,23 +305,16 @@ async def test_prompt_python_ps1_newline():
         await repl.command("exit()")
         assert repl.at_eof
 
-    assert run.result().exit_code == 0
+    assert repl.result.exit_code == 0
 
 
 async def test_prompt_asyncio_repl_expect():
     "Test the prompt class with the asyncio REPL and the expect() function."
-    cmd = (
-        sh(sys.executable, "-m", "asyncio")
-        .stdin(sh.CAPTURE)
-        .stdout(sh.CAPTURE)
-        .stderr(sh.STDOUT)
-    )
+    cmd = sh(sys.executable, "-m", "asyncio").stderr(sh.STDOUT)
 
     prompt = re.compile(">>> ")
 
-    async with cmd as run:
-        repl = Prompt(run, normalize_newlines=True, default_timeout=3.0)
-
+    async with cmd.prompt(normalize_newlines=True, timeout=3.0) as repl:
         greeting, x = await repl.expect(prompt)
         assert "asyncio" in greeting
         assert x and x[0] == ">>> "
@@ -423,7 +336,7 @@ async def test_prompt_asyncio_repl_expect():
         assert x is None
         assert repl.at_eof
 
-    assert run.result().exit_code == 0
+    assert repl.result.exit_code == 0
 
 
 async def test_prompt_python_ps1_unicode():
