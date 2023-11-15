@@ -15,11 +15,7 @@ _FAKE_PROMPTER = _DIR / "fake_prompter.sh"
 
 
 async def main():
-    opts = ()
-    if len(sys.argv) == 2:
-        opts = (sys.argv[1],)
-
-    cmd = sh(_FAKE_PROMPTER, opts).set(pty=True)
+    cmd = sh(_FAKE_PROMPTER).set(pty=True)
 
     async with cmd.prompt(timeout=10.0) as cli:
         await cli.expect("Name: ")

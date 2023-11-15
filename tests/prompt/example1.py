@@ -16,11 +16,7 @@ _FAKE_PROMPTER = _DIR / "fake_prompter.sh"
 
 
 async def main():
-    opts = ()
-    if len(sys.argv) == 2:
-        opts = (sys.argv[1],)
-
-    cmd = sh(_FAKE_PROMPTER, opts).stdin(sh.CAPTURE).stdout(sh.CAPTURE)
+    cmd = sh(_FAKE_PROMPTER).stdin(sh.CAPTURE).stdout(sh.CAPTURE)
 
     async with cmd.set(pty=True) as run:
         cli = Prompt(run, default_timeout=10.0)
