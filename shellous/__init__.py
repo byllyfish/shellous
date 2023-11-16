@@ -12,6 +12,7 @@ import warnings
 
 from .command import AuditEventInfo, CmdContext, Command, Options
 from .pipeline import Pipeline
+from .prompt import Prompt
 from .pty_util import cbreak, cooked, raw
 from .result import Result, ResultError
 from .runner import PipeRunner, Runner
@@ -44,6 +45,7 @@ __all__ = [
     "Command",
     "Options",
     "Pipeline",
+    "Prompt",
     "cbreak",
     "cooked",
     "raw",

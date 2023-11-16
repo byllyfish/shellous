@@ -1,5 +1,4 @@
 {
-    "python.formatting.provider": "none",
     "python.testing.pytestArgs": [
         "."
     ],
@@ -11,5 +10,6 @@
         },
         "editor.defaultFormatter": "ms-python.black-formatter",
         "editor.formatOnSave": true
-    }
+    },
+    "black-formatter.importStrategy": "fromEnvironment"
 }

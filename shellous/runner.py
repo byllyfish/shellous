@@ -441,8 +441,9 @@ class Runner:
             return None
         code = self._proc.returncode
         if code == _UNKNOWN_EXIT_CODE and self._last_signal is not None:
-            # Rarely after sending a SIGTERM, waitpid fails to locate the child
+            # After sending a signal, `waitpid` may fail to locate the child
             # process. In this case, map the status to the last signal we sent.
+            # For more on this, see https://github.com/python/cpython/issues/87744
             return -self._last_signal  # pylint: disable=invalid-unary-operand-type
         return code
 
