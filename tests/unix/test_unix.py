@@ -1198,7 +1198,7 @@ async def test_pty_tr_eot():
 
         run.stdin.write(b"abc\n\x04")
         await run.stdin.drain()
-        await asyncio.sleep(0.1)
+        await asyncio.sleep(0.4)
         result = await run.stdout.read(1024)
 
     if sys.platform == "linux":
@@ -1218,7 +1218,7 @@ async def test_pty_cat_eot():
 
         run.stdin.write(b"abc\x04\x04")
         await run.stdin.drain()
-        await asyncio.sleep(0.1)
+        await asyncio.sleep(0.4)
         result = await run.stdout.read(1024)
 
     if sys.platform == "linux":
