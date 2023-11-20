@@ -20,8 +20,10 @@ asyncio.run(main())
 
 - Run programs asynchronously in a single line.
 - Redirect stdin, stdout and stderr to files, memory buffers, async streams or loggers.
+- Iterate asynchronously over subprocess output.
 - Set timeouts and reliably cancel running processes.
 - Run a program with a pseudo-terminal (pty).
+- Use send() and expect() to manually control a subprocess.
 - Construct [pipelines](https://en.wikipedia.org/wiki/Pipeline_(Unix)) and use [process substitution](https://en.wikipedia.org/wiki/Process_substitution) directly from Python (no shell required).
 - Runs on Linux, MacOS, FreeBSD and Windows.
 - Monitor processes being started and stopped with `audit_callback` API.
@@ -154,8 +156,13 @@ async for line in sh("tail", "-f", "/var/log/syslog"):
 
 ### Async With
 
-You can use a command as an asynchronous context manager. Use `async with` when you need byte-by-byte
-control over the individual process streams: stdin, stdout and stderr. To control a standard stream, you
+You can use a command as an asynchronous context manager. There are two ways to run a program using
+a context manager: a low-level API and a high-level API.
+
+#### Byte-by-Byte (Low Level)
+
+Use `async with` directly when you need byte-by-byte
+control over the individual streams: stdin, stdout and stderr. To control a standard stream, you
 must tell shellous to "capture" it (For more on this, see [Redirection](#redirection).)
 
 ```python
@@ -168,13 +175,13 @@ async with cmd as run:
 result = run.result()
 ```
 
-If we didn't specify that stdin/stdout are `sh.CAPTURE`, the streams `run.stdin` and `run.stdout` would be 
-`None`. The streams `run.stdout` and `run.stderr` are `asyncio.StreamReader` objects. The stream `run.stdin`
-is an `asyncio.StreamWriter` object.
+The streams `run.stdout` and `run.stderr` are `asyncio.StreamReader` objects. The stream `run.stdin`
+is an `asyncio.StreamWriter` object. If we didn't specify that stdin/stdout are `sh.CAPTURE`, the 
+streams `run.stdin` and `run.stdout` would be 
+`None`. 
 
-The return value of `run.result()` is always a `Result` object. Depending on the command settings, this 
-function may raise a `ResultError` on a non-zero exit code. If you don't call `run.result()`, the result
-is ignored.  
+The return value of `run.result()` is a `Result` object. Depending on the command settings, this 
+function may raise a `ResultError` on a non-zero exit code.
 
 > :warning: When reading or writing individual streams, you are responsible for managing reads and writes so they don't
 deadlock. You may use `run.create_task` to schedule a concurrent task.
@@ -188,6 +195,25 @@ async with sh("some-server") as run:
     # Manually signal the server to stop.
     run.cancel()
 ```
+
+#### Prompt with Send/Expect (High Level API)
+
+Use the `prompt()` method to control a process using `send` and `expect`. The `prompt()`
+method returns an asynchronous context manager (the `Prompt` class) that facilitates reading and 
+writing strings and matching regular expressions.
+
+```python
+cmd = sh("cat").set(pty=True)
+async with cmd.prompt() as client:
+  await client.send("abc")
+  output, _ = await client.expect("\r\n")
+  print(output)
+
+assert client.result.exit_code == 0
+```
+
+The **Prompt** API automatically captures `stdin` and `stdout`. The API also invokes `result()` 
+automatically. You can obtain the exit status using the `result` property.
 
 ## Redirection
 
