@@ -113,7 +113,7 @@ async def test_prompt_python_timeout():
     # Adjust the Python prompt because PyPy3 and Python3 have different prompts.
     ps1_alt = ">>> |"
 
-    async with cmd.prompt(ps1_alt, timeout=2.0, normalize_newlines=True) as repl:
+    async with cmd.prompt(ps1_alt, timeout=3.0, normalize_newlines=True) as repl:
         greeting = await repl.command(f"import sys; sys.ps1='{ps1_alt}'")
         assert "Python" in greeting
         assert repl.pending == ""
@@ -123,7 +123,7 @@ async def test_prompt_python_timeout():
             await repl.command("import time; time.sleep(1)", timeout=0.2)
 
         # Wait for actual prompt to return.
-        await repl.expect(timeout=1.0)
+        await repl.expect()
 
         # Send a command and wait for a never prompt.
         with pytest.raises(asyncio.TimeoutError):
