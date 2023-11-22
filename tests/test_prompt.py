@@ -406,3 +406,16 @@ async def test_prompt_grep():
         _, m = await cli.expect("b")
         assert cli.pending == "\n"
         assert m.start() == 4194305
+
+
+async def test_prompt_grep_broken_pipe():
+    "Test the prompt context manager with a large grep send/expect."
+    cmd = sh("grep", "--line-buffered", "b").set(timeout=8.0)
+
+    with pytest.raises(BrokenPipeError):
+        async with cmd.prompt() as cli:
+            # FIXME: This should be made to work by continuing to read()
+            # inside the send.
+            await cli.send("a" * PIPE_MAX_SIZE + "b")
+            await cli.send("a" * PIPE_MAX_SIZE + "b")
+            _, m = await cli.expect("b")
