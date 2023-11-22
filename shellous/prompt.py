@@ -14,7 +14,7 @@ from shellous.runner import Runner
 from shellous.util import encode_bytes
 
 _DEFAULT_LINE_END = "\n"
-_DEFAULT_CHUNK_SIZE = 4096
+_DEFAULT_CHUNK_SIZE = 16384
 
 
 class Prompt:
@@ -144,7 +144,21 @@ class Prompt:
             if no_echo:
                 LOGGER.debug("Prompt[pid=%s] send: [[HIDDEN]]", self._runner.pid)
             else:
-                LOGGER.debug("Prompt[pid=%s] send: %r", self._runner.pid, data)
+                data_len = len(data)
+                if data_len >= 2048:
+                    LOGGER.debug(
+                        "Prompt[pid=%s] send: [%d B] %r...",
+                        self._runner.pid,
+                        data_len,
+                        data[:2048],
+                    )
+                else:
+                    LOGGER.debug(
+                        "Prompt[pid=%s] send: [%d B] %r",
+                        self._runner.pid,
+                        data_len,
+                        data,
+                    )
 
         # Drain our write to stdin.
         cancelled, _ = await harvest_results(
@@ -307,7 +321,21 @@ class Prompt:
                 raise
 
             if LOG_PROMPT:
-                LOGGER.debug("Prompt[pid=%s] receive: %r", self._runner.pid, chunk)
+                chunk_len = len(chunk)
+                if chunk_len >= 2048:
+                    LOGGER.debug(
+                        "Prompt[pid=%s] receive: [%d B] %r...",
+                        self._runner.pid,
+                        chunk_len,
+                        chunk[:2048],
+                    )
+                else:
+                    LOGGER.debug(
+                        "Prompt[pid=%s] receive: [%d B] %r",
+                        self._runner.pid,
+                        chunk_len,
+                        chunk,
+                    )
 
             # Decode eligible bytes into our buffer.
             data = self._decoder.decode(chunk, final=self._at_eof)

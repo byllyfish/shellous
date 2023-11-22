@@ -10,6 +10,8 @@ import pytest
 
 from shellous import cooked, sh
 
+from .test_shellous import PIPE_MAX_SIZE, bulk_cmd, python_script
+
 # True if we are running on PyPy.
 _IS_PYPY = platform.python_implementation() == "PyPy"
 
@@ -364,3 +366,30 @@ async def test_prompt_python_ps1_unicode():
         assert repl.at_eof
 
     assert repl.result.exit_code == 0
+
+
+async def test_prompt_deadlock_antipattern(bulk_cmd):
+    """Use the prompt context manager but don't read from stdout.
+
+    Similar to test_shellous.py `test_stdout_deadlock_antipattern`
+    """
+
+    async def _antipattern():
+        async with bulk_cmd.set(timeout=3.0).prompt() as cli:
+            # ... and we don't read from stdout at all.
+            pass
+
+    with pytest.raises(asyncio.TimeoutError):
+        # The _antipattern function must time out.
+        await _antipattern()
+
+
+async def test_prompt_grep():
+    "Test the prompt context manager with a large grep send/expect."
+    cmd = sh("grep", "--line-buffered", "b").set(timeout=8.0)
+
+    async with cmd.prompt() as cli:
+        await cli.send("a" * PIPE_MAX_SIZE + "b")
+        _, m = await cli.expect("b")
+        assert cli.pending == "\n"
+        assert m.start() == 4194305
