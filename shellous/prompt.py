@@ -161,12 +161,14 @@ class Prompt:
                     )
 
         # Drain our write to stdin.
-        cancelled, _ = await harvest_results(
+        cancelled, ex = await harvest_results(
             stdin.drain(),
             timeout=timeout or self._default_timeout,
         )
         if cancelled:
             raise asyncio.CancelledError()
+        elif isinstance(ex[0], Exception):
+            raise ex[0]
 
     async def expect(
         self,

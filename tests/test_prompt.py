@@ -384,6 +384,19 @@ async def test_prompt_deadlock_antipattern(bulk_cmd):
         await _antipattern()
 
 
+async def test_prompt_broken_pipe():
+    """Test broken pipe error for large data passed to stdin.
+
+    We expect our process (Python) to fail with a broken pipe because `cmd`
+    doesn't read its standard input.
+    """
+    cmd = sh(sys.executable, "-c", "pass")
+
+    with pytest.raises(BrokenPipeError):
+        async with cmd.prompt() as cli:
+            await cli.send("a" * PIPE_MAX_SIZE)
+
+
 async def test_prompt_grep():
     "Test the prompt context manager with a large grep send/expect."
     cmd = sh("grep", "--line-buffered", "b").set(timeout=8.0)
