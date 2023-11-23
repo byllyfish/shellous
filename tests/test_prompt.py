@@ -1,6 +1,7 @@
 "Unit tests for the Prompt class."
 
 import asyncio
+import contextlib
 import os
 import platform
 import re
@@ -394,7 +395,8 @@ async def test_prompt_broken_pipe():
 
     with pytest.raises(BrokenPipeError):
         async with cmd.prompt() as cli:
-            await cli.send("a" * PIPE_MAX_SIZE)
+            with contextlib.suppress(ConnectionResetError):
+                await cli.send("a" * PIPE_MAX_SIZE)
 
 
 async def test_prompt_grep():
@@ -415,7 +417,8 @@ async def test_prompt_grep_broken_pipe():
     with pytest.raises(BrokenPipeError):
         async with cmd.prompt() as cli:
             # FIXME: This should be made to work by continuing to read()
-            # inside the send.
+            # inside the send. On Windows, there is no BrokenPipeError?
             await cli.send("a" * PIPE_MAX_SIZE + "b")
             await cli.send("a" * PIPE_MAX_SIZE + "b")
             _, m = await cli.expect("b")
+            cli.close()
