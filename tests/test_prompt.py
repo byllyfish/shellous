@@ -410,8 +410,7 @@ async def test_prompt_grep():
         assert m.start() == 4194305
 
 
-@_requires_unix
-async def test_prompt_grep_broken_pipe():
+async def test_prompt_grep_read_during_send():
     "Test the prompt context manager with a large grep send/expect."
     cmd = sh("grep", "--line-buffered", "b").set(timeout=8.0)
 
@@ -419,3 +418,23 @@ async def test_prompt_grep_broken_pipe():
         await cli.send("a" * PIPE_MAX_SIZE + "b")
         await cli.send("a" * PIPE_MAX_SIZE + "b")
         await cli.expect("b")
+        # If we try to stop here, there is still data unread in the pipe. The
+        # grep process will not exit until we read it all. See
+        # `test_prompt_grep_unread_data`.
+        await cli.expect("b")
+        assert cli.pending == "\n"
+
+
+async def test_prompt_grep_unread_data():
+    "Test the prompt context manager with a large grep send/expect."
+    cmd = sh("grep", "--line-buffered", "b").set(timeout=8.0)
+
+    with pytest.raises(asyncio.TimeoutError):
+        async with cmd.prompt() as cli:
+            await cli.send("a" * PIPE_MAX_SIZE + "b")
+            await cli.send("a" * PIPE_MAX_SIZE + "b")
+            await cli.expect("b")
+            # Note: There is still unread data in the pipe. The process will
+            # not exit until we read it all. At this time, the `Prompt`
+            # __aexit__ method does not implement a read_all() so we get a
+            # timeout waiting for the process to exit.
