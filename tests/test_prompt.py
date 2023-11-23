@@ -410,6 +410,7 @@ async def test_prompt_grep():
         assert m.start() == 4194305
 
 
+@_requires_unix
 async def test_prompt_grep_broken_pipe():
     "Test the prompt context manager with a large grep send/expect."
     cmd = sh("grep", "--line-buffered", "b").set(timeout=8.0)
@@ -421,4 +422,3 @@ async def test_prompt_grep_broken_pipe():
             await cli.send("a" * PIPE_MAX_SIZE + "b")
             await cli.send("a" * PIPE_MAX_SIZE + "b")
             await cli.expect("b")
-            cli.close()
