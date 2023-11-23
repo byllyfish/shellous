@@ -9,12 +9,13 @@ from typing import Optional, Union
 from shellous import pty_util
 from shellous.harvest import harvest_results
 from shellous.log import LOG_PROMPT, LOGGER
-from shellous.result import Result, ResultError
+from shellous.result import Result
 from shellous.runner import Runner
 from shellous.util import encode_bytes
 
 _DEFAULT_LINE_END = "\n"
 _DEFAULT_CHUNK_SIZE = 16384
+_LOG_LIMIT = 1024
 
 
 class Prompt:
@@ -145,12 +146,12 @@ class Prompt:
                 LOGGER.debug("Prompt[pid=%s] send: [[HIDDEN]]", self._runner.pid)
             else:
                 data_len = len(data)
-                if data_len >= 2048:
+                if data_len >= _LOG_LIMIT:
                     LOGGER.debug(
                         "Prompt[pid=%s] send: [%d B] %r...",
                         self._runner.pid,
                         data_len,
-                        data[:2048],
+                        data[:_LOG_LIMIT],
                     )
                 else:
                     LOGGER.debug(
@@ -162,7 +163,7 @@ class Prompt:
 
         # Drain our write to stdin.
         cancelled, ex = await harvest_results(
-            stdin.drain(),
+            self._drain(stdin),
             timeout=timeout or self._default_timeout,
         )
         if cancelled:
@@ -260,7 +261,6 @@ class Prompt:
         if self._at_eof:
             raise EOFError("Prompt at EOF")
 
-        # TODO: These can be done in separate tasks to avoid potential deadlock.
         await self.send(input_text, end=end, no_echo=no_echo, timeout=timeout)
         result, _ = await self.expect(prompt, timeout=timeout)
         return result
@@ -284,11 +284,7 @@ class Prompt:
 
     def _finish_(self) -> None:
         "Internal method called when process exits to fetch the `Result` and cache it."
-        try:
-            self._result = self._runner.result()
-        except ResultError as ex:
-            self._result = ex.result
-            raise
+        self._result = self._runner.result(check=False)
 
     async def _read_to_pattern(
         self,
@@ -326,12 +322,12 @@ class Prompt:
 
             if LOG_PROMPT:
                 chunk_len = len(chunk)
-                if chunk_len >= 2048:
+                if chunk_len >= _LOG_LIMIT:
                     LOGGER.debug(
                         "Prompt[pid=%s] receive: [%d B] %r...",
                         self._runner.pid,
                         chunk_len,
-                        chunk[:2048],
+                        chunk[:_LOG_LIMIT],
                     )
                 else:
                     LOGGER.debug(
@@ -383,6 +379,54 @@ class Prompt:
             return (result, None)
 
         return None
+
+    async def _drain(self, stream: asyncio.StreamWriter) -> None:
+        "Drain stream while reading into buffer concurrently."
+        read_task = asyncio.create_task(self._read_some())
+        try:
+            await stream.drain()
+
+        finally:
+            if not read_task.done():
+                read_task.cancel()
+                await read_task
+
+    async def _read_some(self) -> None:
+        "Read into buffer until cancelled or EOF. Used during _drain() only."
+        stdout = self._runner.stdout
+        assert stdout is not None
+        assert self._chunk_size > 0
+
+        while not self._at_eof:
+            # Yield time to other tasks; read() doesn't yield as long as there
+            # is data to read.
+            await asyncio.sleep(0)
+
+            # Read chunk and check for EOF.
+            chunk = await stdout.read(self._chunk_size)
+            if not chunk:
+                self._at_eof = True
+
+            if LOG_PROMPT:
+                chunk_len = len(chunk)
+                if chunk_len >= _LOG_LIMIT:
+                    LOGGER.debug(
+                        "Prompt[pid=%s] receive@drain: [%d B] %r...",
+                        self._runner.pid,
+                        chunk_len,
+                        chunk[:_LOG_LIMIT],
+                    )
+                else:
+                    LOGGER.debug(
+                        "Prompt[pid=%s] receive@drain: [%d B] %r",
+                        self._runner.pid,
+                        chunk_len,
+                        chunk,
+                    )
+
+            # Decode eligible bytes into our buffer.
+            data = self._decoder.decode(chunk, final=self._at_eof)
+            self._pending += data
 
     async def _wait_no_echo(self):
         "Wait for terminal echo mode to be disabled."

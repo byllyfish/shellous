@@ -670,19 +670,22 @@ class Command(Generic[_RT]):
         "Run command using the send/expect API."
         cmd = self.stdin(Redirect.CAPTURE).stdout(Redirect.CAPTURE)
 
-        async with Runner(cmd) as run:
-            cli = Prompt(
-                run,
-                default_prompt=prompt,
-                default_end=end,
-                default_timeout=timeout,
-                normalize_newlines=normalize_newlines,
-                chunk_size=chunk_size,
-            )
-            yield cli
-            cli.close()
-
-        cli._finish_()  # pyright: ignore[reportPrivateUsage]
+        cli = None
+        try:
+            async with Runner(cmd) as run:
+                cli = Prompt(
+                    run,
+                    default_prompt=prompt,
+                    default_end=end,
+                    default_timeout=timeout,
+                    normalize_newlines=normalize_newlines,
+                    chunk_size=chunk_size,
+                )
+                yield cli
+                cli.close()
+        finally:
+            if cli is not None:
+                cli._finish_()  # pyright: ignore[reportPrivateUsage]
 
     def __await__(self) -> "Generator[Any, None, _RT]":
         "Run process and return the standard output."
