@@ -420,5 +420,5 @@ async def test_prompt_grep_broken_pipe():
             # inside the send. On Windows, there is no BrokenPipeError?
             await cli.send("a" * PIPE_MAX_SIZE + "b")
             await cli.send("a" * PIPE_MAX_SIZE + "b")
-            _, m = await cli.expect("b")
+            await cli.expect("b")
             cli.close()

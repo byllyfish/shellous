@@ -279,6 +279,8 @@ class Prompt:
 
         else:
             stdin.close()
+            if LOG_PROMPT:
+                LOGGER.debug("Prompt[pid=%s] close", self._runner.pid)
 
     def _finish_(self) -> None:
         "Internal method called when process exits to fetch the `Result` and cache it."
