@@ -452,12 +452,16 @@ async def test_prompt_grep_pty():
         cli.echo = False
 
         await cli.send("a" * (_MAX_CANON - 2) + "b")
-        _, m = await cli.expect("b")
-        assert cli.pending.endswith("\r\n")  # MACOS: extra '\r' after 'b'?
-        assert m.start() == 1022
+        _, m = await cli.expect(r"b\r?\r\n")  # MACOS: extra '\r' after 'b'?
+        assert m.start() == _MAX_CANON - 2
 
         await cli.send("a" * (_MAX_CANON - 1) + "b")
-        _, m = await cli.expect("\x07")  # \x07 is BEL
+        try:
+            _, m = await cli.expect("\x07", timeout=2.0)  # \x07 is BEL
+        except asyncio.TimeoutError:
+            # Linux may not return BEL.
+            pass
+
         await cli.send(b"\x15", end="")  # \x15 is VKILL
         await cli.send("aaab")
         await cli.expect("b")
