@@ -438,3 +438,24 @@ async def test_prompt_grep_unread_data():
             # not exit until we read it all. At this time, the `Prompt`
             # __aexit__ method does not implement a read_all() so we get a
             # timeout waiting for the process to exit.
+
+
+@_requires_pty
+async def test_prompt_grep_pty():
+    "Test the prompt context manager with grep send/expect (PTY)."
+    cmd = sh("grep", "b").set(timeout=8.0, pty=True)
+
+    MAX_CANON = 1024
+    async with cmd.prompt() as cli:
+        cli.echo = False
+
+        await cli.send("a" * (MAX_CANON - 2) + "b")
+        _, m = await cli.expect("b")
+        assert cli.pending == "\r\r\n"
+        assert m.start() == 1022
+
+        await cli.send("a" * (MAX_CANON - 1) + "b")
+        _, m = await cli.expect("\x07")  # \x07 is BEL
+        await cli.send(b"\x15", end="")  # \x15 is VKILL
+        await cli.send("aaab")
+        await cli.expect("b")

@@ -15,7 +15,7 @@ from shellous.util import encode_bytes
 
 _DEFAULT_LINE_END = "\n"
 _DEFAULT_CHUNK_SIZE = 16384
-_LOG_LIMIT = 1024
+_LOG_LIMIT = 2100
 
 
 class Prompt:
@@ -122,7 +122,7 @@ class Prompt:
 
     async def send(
         self,
-        input_text: str,
+        input_text: Union[bytes, str],
         *,
         end: Optional[str] = None,
         no_echo: bool = False,
@@ -135,7 +135,10 @@ class Prompt:
         if no_echo:
             await self._wait_no_echo()
 
-        data = encode_bytes(input_text + end, self._encoding)
+        if isinstance(input_text, bytes):
+            data = input_text + encode_bytes(end, self._encoding)
+        else:
+            data = encode_bytes(input_text + end, self._encoding)
 
         stdin = self._runner.stdin
         assert stdin is not None
@@ -229,7 +232,7 @@ class Prompt:
     ) -> str:
         """Read all characters until EOF.
 
-        When we are at EOF, return "".
+        If we are already at EOF, return "".
         """
         if self._pending:
             result = self._search_pending(None)

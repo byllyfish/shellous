@@ -683,6 +683,7 @@ class Command(Generic[_RT]):
                 )
                 yield cli
                 cli.close()
+                # TODO: await cli.skip_all()
         finally:
             if cli is not None:
                 cli._finish_()  # pyright: ignore[reportPrivateUsage]
