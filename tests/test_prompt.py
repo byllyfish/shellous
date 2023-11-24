@@ -42,6 +42,9 @@ _NO_ECHO = cooked(echo=False)
 # Alpine is including some terminal escapes.
 _TERM_ESCAPES = "\x1b[6n" if _IS_ALPINE else ""
 
+# Guess termios MAX_CANON for pty boundary testing.
+_MAX_CANON = 1024 if _IS_FREEBSD or _IS_MACOS else 4096
+
 _requires_unix = pytest.mark.skipif(sys.platform == "win32", reason="requires unix")
 
 _requires_pty = pytest.mark.skipif(
@@ -445,16 +448,15 @@ async def test_prompt_grep_pty():
     "Test the prompt context manager with grep send/expect (PTY)."
     cmd = sh("grep", "b").set(timeout=8.0, pty=True)
 
-    MAX_CANON = 1024
     async with cmd.prompt() as cli:
         cli.echo = False
 
-        await cli.send("a" * (MAX_CANON - 2) + "b")
+        await cli.send("a" * (_MAX_CANON - 2) + "b")
         _, m = await cli.expect("b")
-        assert cli.pending == "\r\r\n"
+        assert cli.pending.endswith("\r\n")  # MACOS: extra '\r' after 'b'?
         assert m.start() == 1022
 
-        await cli.send("a" * (MAX_CANON - 1) + "b")
+        await cli.send("a" * (_MAX_CANON - 1) + "b")
         _, m = await cli.expect("\x07")  # \x07 is BEL
         await cli.send(b"\x15", end="")  # \x15 is VKILL
         await cli.send("aaab")
