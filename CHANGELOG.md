@@ -1,6 +1,16 @@
 Shellous Change Log
 ===================
 
+0.32.0
+------
+
+- [FEATURE] Add the `Command.prompt()` method to facilitate using the `Prompt` API.
+- [FEATURE] Refactor the `Prompt` helper class to support regular expression matching.
+- [FEATURE] The `Prompt.expect()` method can match on a regular expression in the output stream. 
+- [API] The `Prompt.send()` method no longer returns a response. If you want to send a string to a process and wait for the response, use the `Prompt.command()` method instead.
+- [API] The `receive()` method has been removed. Use `expect()` instead.
+- [BUGFIX] Fix a potential deadlock issue in `Prompt.send()` by continuing to read pending input from the subprocess concurrently.
+
 0.31.1
 ------
 
