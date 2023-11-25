@@ -42,11 +42,8 @@ _NO_ECHO = cooked(echo=False)
 # Alpine is including some terminal escapes.
 _TERM_ESCAPES = "\x1b[6n" if _IS_ALPINE else ""
 
-# Fetch termios MAX_CANON for pty boundary testing.
-if sys.platform != "win32":
-    _MAX_CANON = os.fpathconf(0, "PC_MAX_CANON")
-else:
-    _MAX_CANON = -1  # unused
+# Guess termios MAX_CANON for pty boundary testing.
+_MAX_CANON = 1024 if _IS_FREEBSD or _IS_MACOS else 4096
 
 _requires_unix = pytest.mark.skipif(sys.platform == "win32", reason="requires unix")
 
