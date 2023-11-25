@@ -42,8 +42,11 @@ _NO_ECHO = cooked(echo=False)
 # Alpine is including some terminal escapes.
 _TERM_ESCAPES = "\x1b[6n" if _IS_ALPINE else ""
 
-# Guess termios MAX_CANON for pty boundary testing.
-_MAX_CANON = 1024 if _IS_FREEBSD or _IS_MACOS else 4096
+# Fetch termios MAX_CANON for pty boundary testing.
+if sys.platform != "win32":
+    _MAX_CANON = os.fpathconf(0, "PC_MAX_CANON")
+else:
+    _MAX_CANON = -1  # unused
 
 _requires_unix = pytest.mark.skipif(sys.platform == "win32", reason="requires unix")
 
@@ -447,6 +450,7 @@ async def test_prompt_grep_unread_data():
 async def test_prompt_grep_pty():
     "Test the prompt context manager with grep send/expect (PTY)."
     cmd = sh("grep", "b").set(timeout=8.0, pty=True)
+    print(f"using _MAX_CANON = {_MAX_CANON}")
 
     async with cmd.prompt() as cli:
         cli.echo = False

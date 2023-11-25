@@ -15,7 +15,7 @@ from shellous.util import encode_bytes
 
 _DEFAULT_LINE_END = "\n"
 _DEFAULT_CHUNK_SIZE = 16384
-_LOG_LIMIT = 2100
+_LOG_LIMIT = 2000
 
 
 class Prompt:
@@ -27,15 +27,23 @@ class Prompt:
       indicates that some new input is desired. In an interactive python
       session, the prompt is typically ">>> ".
 
+    You will usually create a `Prompt` class using the `prompt()` API.
+
     Example:
     ```
-    cmd = sh("sh").stderr(sh.STDOUT)
+    cmd = sh("sh").env(PS1="??? ").set(pty=True)
 
-    async with cmd.env(PS1="??? ").prompt("??? ") as cli:
+    async with cmd.prompt("??? ", timeout=3.0) as cli:
+        # Turn off terminal echo.
+        cli.echo = False
+
+        # Wait for initial prompt.
         greeting, _ = await cli.expect()
 
-        result = await cli.command("echo hello")
-        assert result == "hello\n"
+        # Send a command and wait for the response.
+        await cli.send("echo hello")
+        answer, _ = await cli.expect()
+        assert answer == "hello\r\n"
     ```
     """
 
