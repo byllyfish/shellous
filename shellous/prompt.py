@@ -29,16 +29,13 @@ class Prompt:
 
     Example:
     ```
-    cmd = sh("sh").stdin(sh.CAPTURE).stdout(sh.CAPTURE).stderr(sh.STDOUT)
+    cmd = sh("sh").stderr(sh.STDOUT)
 
-    async with cmd.env(PS1="??? ") as run:
-        cli = Prompt(run, prompt="??? ")
+    async with cmd.env(PS1="??? ").prompt("??? ") as cli:
         greeting, _ = await cli.expect()
 
         result = await cli.command("echo hello")
         assert result == "hello\n"
-
-        cli.close()
     ```
     """
 

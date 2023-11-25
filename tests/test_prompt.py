@@ -452,7 +452,7 @@ async def test_prompt_grep_pty():
         cli.echo = False
 
         await cli.send("a" * (_MAX_CANON - 2) + "b")
-        _, m = await cli.expect(r"b\r?\r\n")  # MACOS: extra '\r' after 'b'?
+        _, m = await cli.expect(re.compile(r"b\r?\r\n"))  # MACOS: extra '\r' after 'b'?
         assert m.start() == _MAX_CANON - 2
 
         await cli.send("a" * (_MAX_CANON - 1) + "b")
