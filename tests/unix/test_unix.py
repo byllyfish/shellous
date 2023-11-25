@@ -48,8 +48,7 @@ def _readouterr(capfd):
         "^\\d+\\.\\d+ \x1b\\[35mDEBUG\x1b\\[0m.*\n",
         "",
         out,
-        0,
-        re.MULTILINE,
+        flags=re.MULTILINE,
     )
     return (out, err)
 
