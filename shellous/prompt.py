@@ -9,12 +9,13 @@ from typing import Optional, Union
 from shellous import pty_util
 from shellous.harvest import harvest_results
 from shellous.log import LOG_PROMPT, LOGGER
-from shellous.result import Result, ResultError
+from shellous.result import Result
 from shellous.runner import Runner
 from shellous.util import encode_bytes
 
 _DEFAULT_LINE_END = "\n"
-_DEFAULT_CHUNK_SIZE = 4096
+_DEFAULT_CHUNK_SIZE = 16384
+_LOG_LIMIT = 2000
 
 
 class Prompt:
@@ -26,18 +27,23 @@ class Prompt:
       indicates that some new input is desired. In an interactive python
       session, the prompt is typically ">>> ".
 
+    You will usually create a `Prompt` class using the `prompt()` API.
+
     Example:
     ```
-    cmd = sh("sh").stdin(sh.CAPTURE).stdout(sh.CAPTURE).stderr(sh.STDOUT)
+    cmd = sh("sh").env(PS1="??? ").set(pty=True)
 
-    async with cmd.env(PS1="??? ") as run:
-        cli = Prompt(run, prompt="??? ")
+    async with cmd.prompt("??? ", timeout=3.0) as cli:
+        # Turn off terminal echo.
+        cli.echo = False
+
+        # Wait for initial prompt.
         greeting, _ = await cli.expect()
 
-        result = await cli.command("echo hello")
-        assert result == "hello\n"
-
-        cli.close()
+        # Send a command and wait for the response.
+        await cli.send("echo hello")
+        answer, _ = await cli.expect()
+        assert answer == "hello\r\n"
     ```
     """
 
@@ -121,7 +127,7 @@ class Prompt:
 
     async def send(
         self,
-        input_text: str,
+        input_text: Union[bytes, str],
         *,
         end: Optional[str] = None,
         no_echo: bool = False,
@@ -134,7 +140,10 @@ class Prompt:
         if no_echo:
             await self._wait_no_echo()
 
-        data = encode_bytes(input_text + end, self._encoding)
+        if isinstance(input_text, bytes):
+            data = input_text + encode_bytes(end, self._encoding)
+        else:
+            data = encode_bytes(input_text + end, self._encoding)
 
         stdin = self._runner.stdin
         assert stdin is not None
@@ -144,15 +153,31 @@ class Prompt:
             if no_echo:
                 LOGGER.debug("Prompt[pid=%s] send: [[HIDDEN]]", self._runner.pid)
             else:
-                LOGGER.debug("Prompt[pid=%s] send: %r", self._runner.pid, data)
+                data_len = len(data)
+                if data_len >= _LOG_LIMIT:
+                    LOGGER.debug(
+                        "Prompt[pid=%s] send: [%d B] %r...",
+                        self._runner.pid,
+                        data_len,
+                        data[:_LOG_LIMIT],
+                    )
+                else:
+                    LOGGER.debug(
+                        "Prompt[pid=%s] send: [%d B] %r",
+                        self._runner.pid,
+                        data_len,
+                        data,
+                    )
 
         # Drain our write to stdin.
-        cancelled, _ = await harvest_results(
-            stdin.drain(),
+        cancelled, ex = await harvest_results(
+            self._drain(stdin),
             timeout=timeout or self._default_timeout,
         )
         if cancelled:
             raise asyncio.CancelledError()
+        elif isinstance(ex[0], Exception):
+            raise ex[0]
 
     async def expect(
         self,
@@ -212,7 +237,7 @@ class Prompt:
     ) -> str:
         """Read all characters until EOF.
 
-        When we are at EOF, return "".
+        If we are already at EOF, return "".
         """
         if self._pending:
             result = self._search_pending(None)
@@ -244,7 +269,6 @@ class Prompt:
         if self._at_eof:
             raise EOFError("Prompt at EOF")
 
-        # TODO: These can be done in separate tasks to avoid potential deadlock.
         await self.send(input_text, end=end, no_echo=no_echo, timeout=timeout)
         result, _ = await self.expect(prompt, timeout=timeout)
         return result
@@ -263,14 +287,12 @@ class Prompt:
 
         else:
             stdin.close()
+            if LOG_PROMPT:
+                LOGGER.debug("Prompt[pid=%s] close", self._runner.pid)
 
     def _finish_(self) -> None:
         "Internal method called when process exits to fetch the `Result` and cache it."
-        try:
-            self._result = self._runner.result()
-        except ResultError as ex:
-            self._result = ex.result
-            raise
+        self._result = self._runner.result(check=False)
 
     async def _read_to_pattern(
         self,
@@ -307,7 +329,21 @@ class Prompt:
                 raise
 
             if LOG_PROMPT:
-                LOGGER.debug("Prompt[pid=%s] receive: %r", self._runner.pid, chunk)
+                chunk_len = len(chunk)
+                if chunk_len >= _LOG_LIMIT:
+                    LOGGER.debug(
+                        "Prompt[pid=%s] receive: [%d B] %r...",
+                        self._runner.pid,
+                        chunk_len,
+                        chunk[:_LOG_LIMIT],
+                    )
+                else:
+                    LOGGER.debug(
+                        "Prompt[pid=%s] receive: [%d B] %r",
+                        self._runner.pid,
+                        chunk_len,
+                        chunk,
+                    )
 
             # Decode eligible bytes into our buffer.
             data = self._decoder.decode(chunk, final=self._at_eof)
@@ -351,6 +387,54 @@ class Prompt:
             return (result, None)
 
         return None
+
+    async def _drain(self, stream: asyncio.StreamWriter) -> None:
+        "Drain stream while reading into buffer concurrently."
+        read_task = asyncio.create_task(self._read_some())
+        try:
+            await stream.drain()
+
+        finally:
+            if not read_task.done():
+                read_task.cancel()
+                await read_task
+
+    async def _read_some(self) -> None:
+        "Read into buffer until cancelled or EOF. Used during _drain() only."
+        stdout = self._runner.stdout
+        assert stdout is not None
+        assert self._chunk_size > 0
+
+        while not self._at_eof:
+            # Yield time to other tasks; read() doesn't yield as long as there
+            # is data to read.
+            await asyncio.sleep(0)
+
+            # Read chunk and check for EOF.
+            chunk = await stdout.read(self._chunk_size)
+            if not chunk:
+                self._at_eof = True
+
+            if LOG_PROMPT:
+                chunk_len = len(chunk)
+                if chunk_len >= _LOG_LIMIT:
+                    LOGGER.debug(
+                        "Prompt[pid=%s] receive@drain: [%d B] %r...",
+                        self._runner.pid,
+                        chunk_len,
+                        chunk[:_LOG_LIMIT],
+                    )
+                else:
+                    LOGGER.debug(
+                        "Prompt[pid=%s] receive@drain: [%d B] %r",
+                        self._runner.pid,
+                        chunk_len,
+                        chunk,
+                    )
+
+            # Decode eligible bytes into our buffer.
+            data = self._decoder.decode(chunk, final=self._at_eof)
+            self._pending += data
 
     async def _wait_no_echo(self):
         "Wait for terminal echo mode to be disabled."

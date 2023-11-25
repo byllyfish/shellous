@@ -204,6 +204,7 @@ writing strings and matching regular expressions.
 
 ```python
 cmd = sh("cat").set(pty=True)
+
 async with cmd.prompt() as client:
   await client.send("abc")
   output, _ = await client.expect("\r\n")
@@ -212,8 +213,7 @@ async with cmd.prompt() as client:
 assert client.result.exit_code == 0
 ```
 
-The **Prompt** API automatically captures `stdin` and `stdout`. The API also invokes `result()` 
-automatically. You can obtain the exit status using the `result` property.
+The `prompt()` API automatically captures `stdin` and `stdout`.
 
 ## Redirection
 

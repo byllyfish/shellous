@@ -474,10 +474,11 @@ class Runner:
             return pty_fds.eof
         return None
 
-    def result(self) -> Result:
+    def result(self, *, check: bool = True) -> Result:
         "Check process exit code and raise a ResultError if necessary."
         code = self.returncode
-        assert code is not None
+        if code is None:
+            raise TypeError("Runner.result(): Process has not exited")
 
         result = Result(
             exit_code=code,
@@ -486,6 +487,9 @@ class Runner:
             cancelled=self._cancelled,
             encoding=self._options.encoding,
         )
+
+        if not check:
+            return result
 
         return check_result(
             result,

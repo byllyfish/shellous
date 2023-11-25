@@ -1,6 +1,7 @@
 "Unit tests for the Prompt class."
 
 import asyncio
+import contextlib
 import os
 import platform
 import re
@@ -9,6 +10,8 @@ import sys
 import pytest
 
 from shellous import cooked, sh
+
+from .test_shellous import PIPE_MAX_SIZE, bulk_cmd, python_script
 
 # True if we are running on PyPy.
 _IS_PYPY = platform.python_implementation() == "PyPy"
@@ -38,6 +41,9 @@ _NO_ECHO = cooked(echo=False)
 
 # Alpine is including some terminal escapes.
 _TERM_ESCAPES = "\x1b[6n" if _IS_ALPINE else ""
+
+# Guess termios MAX_CANON for pty boundary testing.
+_MAX_CANON = 1024 if _IS_FREEBSD or _IS_MACOS else 4096
 
 _requires_unix = pytest.mark.skipif(sys.platform == "win32", reason="requires unix")
 
@@ -364,3 +370,99 @@ async def test_prompt_python_ps1_unicode():
         assert repl.at_eof
 
     assert repl.result.exit_code == 0
+
+
+async def test_prompt_deadlock_antipattern(bulk_cmd):
+    """Use the prompt context manager but don't read from stdout.
+
+    Similar to test_shellous.py `test_stdout_deadlock_antipattern`
+    """
+
+    async def _antipattern():
+        async with bulk_cmd.set(timeout=3.0).prompt() as cli:
+            # ... and we don't read from stdout at all.
+            pass
+
+    with pytest.raises(asyncio.TimeoutError):
+        # The _antipattern function must time out.
+        await _antipattern()
+
+
+async def test_prompt_broken_pipe():
+    """Test broken pipe error for large data passed to stdin.
+
+    We expect our process (Python) to fail with a broken pipe because `cmd`
+    doesn't read its standard input.
+    """
+    cmd = sh(sys.executable, "-c", "pass")
+
+    with pytest.raises(BrokenPipeError):
+        async with cmd.prompt() as cli:
+            with contextlib.suppress(ConnectionResetError):
+                await cli.send("a" * PIPE_MAX_SIZE)
+
+
+async def test_prompt_grep():
+    "Test the prompt context manager with a large grep send/expect."
+    cmd = sh("grep", "--line-buffered", "b").set(timeout=8.0)
+
+    async with cmd.prompt() as cli:
+        await cli.send("a" * PIPE_MAX_SIZE + "b")
+        _, m = await cli.expect("b")
+        assert cli.pending == "\n"
+        assert m.start() == 4194305
+
+
+async def test_prompt_grep_read_during_send():
+    "Test the prompt context manager with a large grep send/expect."
+    cmd = sh("grep", "--line-buffered", "b").set(timeout=8.0)
+
+    async with cmd.prompt() as cli:
+        await cli.send("a" * PIPE_MAX_SIZE + "b")
+        await cli.send("a" * PIPE_MAX_SIZE + "b")
+        await cli.expect("b")
+        # If we try to stop here, there is still data unread in the pipe. The
+        # grep process will not exit until we read it all. See
+        # `test_prompt_grep_unread_data`.
+        await cli.expect("b")
+        assert cli.pending == "\n"
+
+
+async def test_prompt_grep_unread_data():
+    "Test the prompt context manager with a large grep send/expect."
+    cmd = sh("grep", "--line-buffered", "b").set(timeout=8.0)
+
+    with pytest.raises(asyncio.TimeoutError):
+        async with cmd.prompt() as cli:
+            await cli.send("a" * PIPE_MAX_SIZE + "b")
+            await cli.send("a" * PIPE_MAX_SIZE + "b")
+            await cli.expect("b")
+            # Note: There is still unread data in the pipe. The process will
+            # not exit until we read it all. At this time, the `Prompt`
+            # __aexit__ method does not implement a read_all() so we get a
+            # timeout waiting for the process to exit.
+
+
+@_requires_pty
+async def test_prompt_grep_pty():
+    "Test the prompt context manager with grep send/expect (PTY)."
+    cmd = sh("grep", "b").set(timeout=8.0, pty=True)
+    print(f"using _MAX_CANON = {_MAX_CANON}")
+
+    async with cmd.prompt() as cli:
+        cli.echo = False
+
+        await cli.send("a" * (_MAX_CANON - 2) + "b")
+        _, m = await cli.expect(re.compile(r"b\r?\r\n"))  # MACOS: extra '\r' after 'b'?
+        assert m.start() == _MAX_CANON - 2
+
+        await cli.send("a" * (_MAX_CANON - 1) + "b")
+        try:
+            _, m = await cli.expect("\x07", timeout=2.0)  # \x07 is BEL
+        except asyncio.TimeoutError:
+            # Linux may not return BEL.
+            pass
+
+        await cli.send(b"\x15", end="")  # \x15 is VKILL
+        await cli.send("aaab")
+        await cli.expect("b")
