@@ -43,7 +43,10 @@ _NO_ECHO = cooked(echo=False)
 _TERM_ESCAPES = "\x1b[6n" if _IS_ALPINE else ""
 
 # Guess termios MAX_CANON for pty boundary testing.
-_MAX_CANON = 1024 if _IS_FREEBSD or _IS_MACOS else 4096
+if _IS_FREEBSD or _IS_MACOS:
+    _MAX_CANON = os.fpathconf(0, "PC_MAX_CANON")
+else:
+    _MAX_CANON = 4096  # Linux
 
 _requires_unix = pytest.mark.skipif(sys.platform == "win32", reason="requires unix")
 
