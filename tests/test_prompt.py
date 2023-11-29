@@ -42,6 +42,13 @@ _NO_ECHO = cooked(echo=False)
 # Alpine is including some terminal escapes.
 _TERM_ESCAPES = "\x1b[6n" if _IS_ALPINE else ""
 
+if _IS_MACOS:
+    _MAX_CANON = 1024
+elif _IS_FREEBSD:
+    _MAX_CANON = 1920
+else:
+    _MAX_CANON = 4096
+
 _requires_unix = pytest.mark.skipif(sys.platform == "win32", reason="requires unix")
 
 _requires_pty = pytest.mark.skipif(
@@ -448,21 +455,14 @@ async def test_prompt_grep_pty():
     async with cmd.prompt() as cli:
         cli.echo = False
 
-        # Determine MAX_CANON for the PTY.
-        fd = cli.runner.pty_fd
-        assert fd is not None
-        if _IS_FREEBSD or _IS_MACOS:
-            max_canon = os.fpathconf(fd, "PC_MAX_CANON")
-        else:
-            max_canon = 4096
-        print(f"using max_canon = {max_canon}")
+        print(f"assuming max_canon = {_MAX_CANON}")
 
-        await cli.send("a" * (max_canon - 2) + "b")
+        await cli.send("a" * (_MAX_CANON - 2) + "b")
         _, m = await cli.expect(re.compile(r"b\r?\r\n"))  # MACOS: extra '\r' after 'b'?
-        assert m.start() == max_canon - 2
+        assert m.start() == _MAX_CANON - 2
         assert cli.pending == ""
 
-        await cli.send("a" * (max_canon - 1) + "b")
+        await cli.send("a" * (_MAX_CANON - 1) + "b")
         try:
             _, m = await cli.expect("\x07", timeout=2.0)  # \x07 is BEL
         except asyncio.TimeoutError:
