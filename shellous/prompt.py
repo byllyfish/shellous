@@ -21,23 +21,22 @@ _LOG_LIMIT = 2000
 class Prompt:
     """Utility class to help with an interactive prompt session.
 
-    This is an **experimental** API.
+    When you are controlling to a co-process you will usually `send` some
+    text to it, and then `expect` a response. The `expect` operation can use
+    a regular expression to match different types of responses.
 
-    - A `prompt` is a text string that marks the end of some output, and
-      indicates that some new input is desired. In an interactive python
-      session, the prompt is typically ">>> ".
+    Create a new `Prompt` instance using the `prompt()` API.
 
-    You will usually create a `Prompt` class using the `prompt()` API.
-
-    Example:
     ```
+    # In this example, we are using a default prompt of "??? ".
+    # Setting PS1 tells the shell to use this as the shell prompt.
     cmd = sh("sh").env(PS1="??? ").set(pty=True)
 
     async with cmd.prompt("??? ", timeout=3.0) as cli:
         # Turn off terminal echo.
         cli.echo = False
 
-        # Wait for initial prompt.
+        # Wait for greeting and initial prompt.
         greeting, _ = await cli.expect()
 
         # Send a command and wait for the response.
@@ -102,9 +101,12 @@ class Prompt:
 
     @property
     def echo(self) -> bool:
-        """True if TTY is in echo mode.
+        """True if PTY is in echo mode.
 
-        If the runner is not using a PTY, return False.
+        If the runner is not using a PTY, always return False.
+
+        When the process is using a PTY, you can enable/disable echo mode by
+        setting `.echo` to True/False.
         """
         if self._runner.pty_fd is None:
             return False
@@ -227,6 +229,8 @@ class Prompt:
         )
         if cancelled:
             raise asyncio.CancelledError()
+        if isinstance(result, Exception):
+            raise result
 
         return result
 
