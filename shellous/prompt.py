@@ -127,6 +127,11 @@ class Prompt:
         "The `Result` of the command, or None if it has not exited yet."
         return self._result
 
+    @property
+    def runner(self) -> Runner:
+        "The process runner."
+        return self._runner
+
     async def send(
         self,
         input_text: Union[bytes, str],
