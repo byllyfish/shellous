@@ -184,7 +184,6 @@ jobs:
 
     env:
       SHELLOUS_DEBUG: 1
-      BUILD_NAME: build (${{ matrix.pypy-version }})
 
     steps:
     - name: Harden Runner
@@ -207,3 +206,27 @@ jobs:
         pytest -vv -s --log-cli-level=DEBUG -W ignore::pytest.PytestUnraisableExceptionWarning
       env:
         SHELLOUS_CHILDWATCHER_TYPE: "default"
+
+  build-13:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20  # stop runaway job after 20 minutes
+    env:
+      SHELLOUS_DEBUG: 1
+
+    steps:
+    - name: Harden Runner
+      uses: step-security/harden-runner@eb238b55efaa70779f274895e782ed17c84f2895 # v2.6.1
+      with:
+        egress-policy: audit
+    - name: Checkout
+      uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+    - name: Set up Python 3.13
+      uses: actions/setup-python@65d7f2d534ac1bc67fcd62888c5f4f3d2cb2b236 # v4.7.1
+      with:
+        python-version: '3.13-dev'
+    - name: Install dependencies
+      run: |
+        pip3 install --require-hashes -r ./ci/requirements-dev.txt
+    - name: Run Tests
+      run: |
+        pytest -vv -s --log-cli-level=DEBUG

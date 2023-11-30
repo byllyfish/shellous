@@ -48,8 +48,7 @@ def _readouterr(capfd):
         "^\\d+\\.\\d+ \x1b\\[35mDEBUG\x1b\\[0m.*\n",
         "",
         out,
-        0,
-        re.MULTILINE,
+        flags=re.MULTILINE,
     )
     return (out, err)
 
@@ -1159,6 +1158,22 @@ _STTY_FREEBSD_13 = (
     b"\tstatus = ^T; stop = ^S; susp = ^Z; time = 0; werase = ^W;\r\n"
 )
 
+_STTY_FREEBSD_14 = (
+    b"speed 9600 baud; 0 rows; 0 columns;\r\n"
+    b"lflags: icanon isig iexten echo echoe -echok echoke -echonl echoctl\r\n"
+    b"\t-echoprt -altwerase -noflsh -tostop -flusho -pendin -nokerninfo\r\n"
+    b"\t-extproc\r\n"
+    b"iflags: -istrip icrnl -inlcr -igncr ixon -ixoff ixany imaxbel -ignbrk\r\n"
+    b"\tbrkint -inpck -ignpar -parmrk -iutf8\r\n"
+    b"oflags: opost onlcr -ocrnl tab0 -onocr -onlret\r\n"
+    b"cflags: cread cs8 -parenb -parodd hupcl -clocal -cstopb -crtscts -dsrflow\r\n"
+    b"\t-dtrflow -mdmbuf rtsdtr\r\n"
+    b"cchars: discard = ^O; dsusp = ^Y; eof = ^D; eol = <undef>;\r\n"
+    b"\teol2 = <undef>; erase = ^?; erase2 = ^H; intr = ^C; kill = ^U;\r\n"
+    b"\tlnext = ^V; min = 1; quit = ^\\; reprint = ^R; start = ^Q;\r\n"
+    b"\tstatus = ^T; stop = ^S; susp = ^Z; time = 0; werase = ^W;\r\n"
+)
+
 
 @pytest.mark.skipif(_is_uvloop() or _IS_ALPINE, reason="uvloop,alpine")
 async def test_pty_stty_all(tmp_path):
@@ -1182,7 +1197,7 @@ async def test_pty_stty_all(tmp_path):
     if sys.platform == "linux":
         assert buf == _STTY_LINUX
     elif sys.platform.startswith("freebsd"):
-        assert buf == _STTY_FREEBSD_12 or buf == _STTY_FREEBSD_13
+        assert buf in (_STTY_FREEBSD_12, _STTY_FREEBSD_13, _STTY_FREEBSD_14)
     else:
         assert buf == _STTY_DARWIN
 

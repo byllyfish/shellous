@@ -42,8 +42,12 @@ _NO_ECHO = cooked(echo=False)
 # Alpine is including some terminal escapes.
 _TERM_ESCAPES = "\x1b[6n" if _IS_ALPINE else ""
 
-# Guess termios MAX_CANON for pty boundary testing.
-_MAX_CANON = 1024 if _IS_FREEBSD or _IS_MACOS else 4096
+if _IS_MACOS:
+    _MAX_CANON = 1024
+elif _IS_FREEBSD:
+    _MAX_CANON = 1920
+else:
+    _MAX_CANON = 4096
 
 _requires_unix = pytest.mark.skipif(sys.platform == "win32", reason="requires unix")
 
@@ -447,22 +451,53 @@ async def test_prompt_grep_unread_data():
 async def test_prompt_grep_pty():
     "Test the prompt context manager with grep send/expect (PTY)."
     cmd = sh("grep", "b").set(timeout=8.0, pty=True)
-    print(f"using _MAX_CANON = {_MAX_CANON}")
 
     async with cmd.prompt() as cli:
         cli.echo = False
 
+        print(f"assuming max_canon = {_MAX_CANON}")
+
         await cli.send("a" * (_MAX_CANON - 2) + "b")
         _, m = await cli.expect(re.compile(r"b\r?\r\n"))  # MACOS: extra '\r' after 'b'?
         assert m.start() == _MAX_CANON - 2
+        assert cli.pending == ""
 
         await cli.send("a" * (_MAX_CANON - 1) + "b")
         try:
             _, m = await cli.expect("\x07", timeout=2.0)  # \x07 is BEL
         except asyncio.TimeoutError:
-            # Linux may not return BEL.
-            pass
+            # Linux may not return anything; IMAXBEL is disabled.
+            assert cli.pending == ""
 
         await cli.send(b"\x15", end="")  # \x15 is VKILL
         await cli.send("aaab")
         await cli.expect("b")
+
+
+async def test_prompt_grep_pending():
+    "Test the prompt context manager with grep and a \\Z to read pending data."
+    cmd = sh("grep", "--line-buffered", "b").set(timeout=8.0)
+
+    async with cmd.prompt() as cli:
+        # Send first line and receive part of the response.
+        await cli.send("abcdef")
+        data, m = await cli.expect("c")
+        assert data == "ab"
+        assert m[0] == "c"
+
+        # There is still pending data.
+        assert cli.pending == "def\n"
+
+        # Now send the second line.
+        await cli.send("ghbijk")
+
+        # Match end of pending buffer. This will not read any more data.
+        data, m = await cli.expect(re.compile(r"\Z"))
+        assert data == "def\n"
+        assert m[0] == ""
+        assert cli.pending == ""
+
+        # Now read the rest of the 2nd response.
+        data, m = await cli.expect("\n")
+        assert data == "ghbijk"
+        assert m[0] == "\n"
