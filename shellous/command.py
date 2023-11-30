@@ -662,7 +662,6 @@ class Command(Generic[_RT]):
         self,
         prompt: Union[str, re.Pattern[str], None] = None,
         *,
-        end: Optional[str] = None,
         timeout: Optional[float] = None,
         normalize_newlines: bool = False,
         chunk_size: Optional[int] = None,
@@ -676,14 +675,12 @@ class Command(Generic[_RT]):
                 cli = Prompt(
                     run,
                     default_prompt=prompt,
-                    default_end=end,
                     default_timeout=timeout,
                     normalize_newlines=normalize_newlines,
                     chunk_size=chunk_size,
                 )
                 yield cli
                 cli.close()
-                # TODO: await cli.skip_all()
         finally:
             if cli is not None:
                 cli._finish_()  # pyright: ignore[reportPrivateUsage]

@@ -48,7 +48,6 @@ class Prompt:
 
     _runner: Runner
     _encoding: str
-    _default_end: str
     _default_prompt: Optional[re.Pattern[str]]
     _default_timeout: Optional[float]
     _normalize_newlines: bool
@@ -62,7 +61,6 @@ class Prompt:
         self,
         runner: Runner,
         *,
-        default_end: Optional[str] = None,
         default_prompt: Union[str, re.Pattern[str], None] = None,
         default_timeout: Optional[float] = None,
         normalize_newlines: bool = False,
@@ -70,9 +68,6 @@ class Prompt:
     ):
         assert runner.stdin is not None
         assert runner.stdout is not None
-
-        if default_end is None:
-            default_end = _DEFAULT_LINE_END
 
         if chunk_size is None:
             chunk_size = _DEFAULT_CHUNK_SIZE
@@ -82,7 +77,6 @@ class Prompt:
 
         self._runner = runner
         self._encoding = runner.command.options.encoding
-        self._default_end = default_end
         self._default_prompt = default_prompt
         self._default_timeout = default_timeout
         self._normalize_newlines = normalize_newlines
@@ -136,14 +130,11 @@ class Prompt:
         self,
         input_text: Union[bytes, str],
         *,
-        end: Optional[str] = None,
+        end: str = _DEFAULT_LINE_END,
         no_echo: bool = False,
         timeout: Optional[float] = None,
     ) -> None:
         """Write some input text to stdin."""
-        if end is None:
-            end = self._default_end
-
         if no_echo:
             await self._wait_no_echo()
 
@@ -269,7 +260,7 @@ class Prompt:
         self,
         input_text: str,
         *,
-        end: Optional[str] = None,
+        end: str = _DEFAULT_LINE_END,
         no_echo: bool = False,
         prompt: Union[str, re.Pattern[str], None] = None,
         timeout: Optional[float] = None,
