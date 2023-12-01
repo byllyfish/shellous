@@ -369,7 +369,7 @@ async def test_prompt_python_ps1_unicode():
         assert m and m[0] == ps1
 
         await repl.send("exit()")
-        result = await repl.read_all()
+        result, _ = await repl.expect(...)
         assert result == ""
         assert repl.at_eof
 

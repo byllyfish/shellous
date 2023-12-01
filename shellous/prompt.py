@@ -4,7 +4,10 @@ import asyncio
 import codecs
 import io
 import re
-from typing import Optional, Union
+from typing import TYPE_CHECKING, Optional, Union
+
+if TYPE_CHECKING:
+    from types import EllipsisType  # requires python 3.10
 
 from shellous import pty_util
 from shellous.harvest import harvest_results
@@ -179,7 +182,7 @@ class Prompt:
 
     async def expect(
         self,
-        prompt: Union[str, re.Pattern[str], None] = None,
+        prompt: Union[str, re.Pattern[str], "EllipsisType", None] = None,
         *,
         timeout: Optional[float] = None,
     ) -> tuple[str, Optional[re.Match[str]]]:
@@ -204,6 +207,9 @@ class Prompt:
                     await cli.send(command)
         ```
         """
+        if prompt is ...:
+            return await self.read_all(), None
+
         if isinstance(prompt, str):
             prompt = re.compile(re.escape(prompt))
         elif prompt is None:
@@ -262,7 +268,7 @@ class Prompt:
         *,
         end: str = _DEFAULT_LINE_END,
         no_echo: bool = False,
-        prompt: Union[str, re.Pattern[str], None] = None,
+        prompt: Union[str, re.Pattern[str], "EllipsisType", None] = None,
         timeout: Optional[float] = None,
     ) -> str:
         "Send some input and receive the response up to the next prompt."
