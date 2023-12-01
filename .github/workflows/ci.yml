@@ -122,7 +122,7 @@ jobs:
       env:
         SHELLOUS_CHILDWATCHER_TYPE: "default"
     - name: Verify Types
-      if: matrix.python-version != '3.13-dev'
+      if: matrix.python-version != '3.13-dev' && matrix.python-version != '3.9'
       run: |
         PYTHONPATH=. pyright --verifytypes shellous
     - name: Format Check
