@@ -18,7 +18,9 @@ from shellous.util import encode_bytes
 
 _DEFAULT_LINE_END = "\n"
 _DEFAULT_CHUNK_SIZE = 16384
+
 _LOG_LIMIT = 2000
+_LOG_LIMIT_END = 30
 
 
 class Prompt:
@@ -131,7 +133,7 @@ class Prompt:
 
     async def send(
         self,
-        input_text: Union[bytes, str],
+        text: Union[bytes, str],
         *,
         end: str = _DEFAULT_LINE_END,
         no_echo: bool = False,
@@ -141,34 +143,17 @@ class Prompt:
         if no_echo:
             await self._wait_no_echo()
 
-        if isinstance(input_text, bytes):
-            data = input_text + encode_bytes(end, self._encoding)
+        if isinstance(text, bytes):
+            data = text + encode_bytes(end, self._encoding)
         else:
-            data = encode_bytes(input_text + end, self._encoding)
+            data = encode_bytes(text + end, self._encoding)
 
         stdin = self._runner.stdin
         assert stdin is not None
         stdin.write(data)
 
         if LOG_PROMPT:
-            if no_echo:
-                LOGGER.debug("Prompt[pid=%s] send: [[HIDDEN]]", self._runner.pid)
-            else:
-                data_len = len(data)
-                if data_len >= _LOG_LIMIT:
-                    LOGGER.debug(
-                        "Prompt[pid=%s] send: [%d B] %r...",
-                        self._runner.pid,
-                        data_len,
-                        data[:_LOG_LIMIT],
-                    )
-                else:
-                    LOGGER.debug(
-                        "Prompt[pid=%s] send: [%d B] %r",
-                        self._runner.pid,
-                        data_len,
-                        data,
-                    )
+            self._log_send(data, no_echo)
 
         # Drain our write to stdin.
         cancelled, ex = await harvest_results(
@@ -244,6 +229,8 @@ class Prompt:
         """Read all characters until EOF.
 
         If we are already at EOF, return "".
+
+        Deprecated: Use `expect(...)`.
         """
         if self._pending:
             result = self._search_pending(None)
@@ -264,7 +251,7 @@ class Prompt:
 
     async def command(
         self,
-        input_text: str,
+        text: str,
         *,
         end: str = _DEFAULT_LINE_END,
         no_echo: bool = False,
@@ -275,7 +262,7 @@ class Prompt:
         if self._at_eof:
             raise EOFError("Prompt at EOF")
 
-        await self.send(input_text, end=end, no_echo=no_echo, timeout=timeout)
+        await self.send(text, end=end, no_echo=no_echo, timeout=timeout)
         result, _ = await self.expect(prompt, timeout=timeout)
         return result
 
@@ -335,21 +322,7 @@ class Prompt:
                 raise
 
             if LOG_PROMPT:
-                chunk_len = len(chunk)
-                if chunk_len >= _LOG_LIMIT:
-                    LOGGER.debug(
-                        "Prompt[pid=%s] receive: [%d B] %r...",
-                        self._runner.pid,
-                        chunk_len,
-                        chunk[:_LOG_LIMIT],
-                    )
-                else:
-                    LOGGER.debug(
-                        "Prompt[pid=%s] receive: [%d B] %r",
-                        self._runner.pid,
-                        chunk_len,
-                        chunk,
-                    )
+                self._log_receive(chunk)
 
             # Decode eligible bytes into our buffer.
             data = self._decoder.decode(chunk, final=self._at_eof)
@@ -422,21 +395,7 @@ class Prompt:
                 self._at_eof = True
 
             if LOG_PROMPT:
-                chunk_len = len(chunk)
-                if chunk_len >= _LOG_LIMIT:
-                    LOGGER.debug(
-                        "Prompt[pid=%s] receive@drain: [%d B] %r...",
-                        self._runner.pid,
-                        chunk_len,
-                        chunk[:_LOG_LIMIT],
-                    )
-                else:
-                    LOGGER.debug(
-                        "Prompt[pid=%s] receive@drain: [%d B] %r",
-                        self._runner.pid,
-                        chunk_len,
-                        chunk,
-                    )
+                self._log_receive(chunk, "@drain")
 
             # Decode eligible bytes into our buffer.
             data = self._decoder.decode(chunk, final=self._at_eof)
@@ -445,10 +404,7 @@ class Prompt:
     async def _wait_no_echo(self):
         "Wait for terminal echo mode to be disabled."
         if LOG_PROMPT:
-            LOGGER.debug(
-                "Prompt[pid=%s] wait: no_echo",
-                self._runner.pid,
-            )
+            LOGGER.debug("Prompt[pid=%s] wait: no_echo", self._runner.pid)
 
         for _ in range(4 * 30):
             if not self.echo:
@@ -456,6 +412,53 @@ class Prompt:
             await asyncio.sleep(0.25)
         else:
             raise RuntimeError("Timed out: Terminal echo mode remains enabled.")
+
+    def _log_send(self, data: bytes, no_echo: bool):
+        "Log data as it is being sent."
+        pid = self._runner.pid
+
+        if no_echo:
+            LOGGER.debug("Prompt[pid=%s] send: [[HIDDEN]]", pid)
+        else:
+            data_len = len(data)
+            if data_len > _LOG_LIMIT:
+                LOGGER.debug(
+                    "Prompt[pid=%s] send: [%d B] %r...%r",
+                    pid,
+                    data_len,
+                    data[: _LOG_LIMIT - _LOG_LIMIT_END],
+                    data[-_LOG_LIMIT_END:],
+                )
+            else:
+                LOGGER.debug(
+                    "Prompt[pid=%s] send: [%d B] %r",
+                    pid,
+                    data_len,
+                    data,
+                )
+
+    def _log_receive(self, data: bytes, tag: str = ""):
+        "Log data as it is being received."
+        pid = self._runner.pid
+        data_len = len(data)
+
+        if data_len > _LOG_LIMIT:
+            LOGGER.debug(
+                "Prompt[pid=%s] receive%s: [%d B] %r...%r",
+                pid,
+                tag,
+                data_len,
+                data[: _LOG_LIMIT - _LOG_LIMIT_END],
+                data[-_LOG_LIMIT_END:],
+            )
+        else:
+            LOGGER.debug(
+                "Prompt[pid=%s] receive%s: [%d B] %r",
+                pid,
+                tag,
+                data_len,
+                data,
+            )
 
 
 def _decoder(encoding: str, normalize_newlines: bool) -> codecs.IncrementalDecoder:
