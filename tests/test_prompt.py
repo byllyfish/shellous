@@ -501,3 +501,26 @@ async def test_prompt_grep_pending():
         data, m = await cli.expect("\n")
         assert data == "ghbijk"
         assert m[0] == "\n"
+
+
+async def test_prompt_grep_alternates():
+    "Test the prompt context manager with multiple pattern option."
+    cmd = sh("grep", "--line-buffered", "[bc]").set(timeout=8.0)
+
+    async with cmd.prompt(["b", "c"]) as cli:
+        await cli.send("a" * 10 + "b")
+        buf, m = await cli.expect()
+        assert cli.pending == "\n"
+        assert buf == "a" * 10
+        assert m[0] == "b"
+
+        await cli.send("d" * 10 + "c")
+        buf, m = await cli.expect()
+        assert cli.pending == "\n"
+        assert buf == "\n" + "d" * 10
+        assert m[0] == "c"
+
+        buf, m = await cli.expect(["a", "\n"])
+        assert cli.pending == ""
+        assert buf == ""
+        assert m[0] == "\n"

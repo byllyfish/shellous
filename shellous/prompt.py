@@ -66,7 +66,7 @@ class Prompt:
         self,
         runner: Runner,
         *,
-        default_prompt: Union[str, re.Pattern[str], None] = None,
+        default_prompt: Union[str, list[str], re.Pattern[str], None] = None,
         default_timeout: Optional[float] = None,
         normalize_newlines: bool = False,
         chunk_size: Optional[int] = None,
@@ -77,8 +77,8 @@ class Prompt:
         if chunk_size is None:
             chunk_size = _DEFAULT_CHUNK_SIZE
 
-        if isinstance(default_prompt, str):
-            default_prompt = re.compile(re.escape(default_prompt))
+        if isinstance(default_prompt, (str, list)):
+            default_prompt = _regex_compile_exact(default_prompt)
 
         self._runner = runner
         self._encoding = runner.command.options.encoding
@@ -86,7 +86,7 @@ class Prompt:
         self._default_timeout = default_timeout
         self._normalize_newlines = normalize_newlines
         self._chunk_size = chunk_size
-        self._decoder = _decoder(self._encoding, normalize_newlines)
+        self._decoder = _make_decoder(self._encoding, normalize_newlines)
 
     @property
     def at_eof(self) -> bool:
@@ -135,11 +135,36 @@ class Prompt:
         self,
         text: Union[bytes, str],
         *,
-        end: str = _DEFAULT_LINE_END,
+        end: Optional[str] = _DEFAULT_LINE_END,
         no_echo: bool = False,
         timeout: Optional[float] = None,
     ) -> None:
-        """Write some input text to stdin."""
+        """Write some `text` to co-process standard input and append a newline.
+
+        The `text` parameter is the string that you want to write. Use a `bytes`
+        object to send some raw bytes (e.g. to the terminal driver).
+
+        The default line ending is "\n". Use the `end` parameter to change the
+        line ending. To omit the line ending entirely, specify `end=None`.
+
+        Set `no_echo` to True when you are writing a password. When you set
+        `no_echo` to True, the `send` method will wait for terminal
+        echo mode to be disabled before writing the text. If shellous logging
+        is enabled, the sensitive information will **not** be logged.
+
+        Use the `timeout` parameter to override the default timeout. Normally,
+        this method will complete immediately. However, there are situations
+        where the co-process input pipeline fills and we have to wait for it to
+        drain.
+
+        When this method needs to wait for the co-process input pipe to drain,
+        this method will concurrently read from the output pipe into the pending
+        buffer. This is necessary to avoid a deadlock situation where everything
+        stops because neither process can make progress.
+        """
+        if end is None:
+            end = ""
+
         if no_echo:
             await self._wait_no_echo()
 
@@ -167,21 +192,59 @@ class Prompt:
 
     async def expect(
         self,
-        prompt: Union[str, re.Pattern[str], "EllipsisType", None] = None,
+        prompt: Union[str, list[str], re.Pattern[str], "EllipsisType", None] = None,
         *,
         timeout: Optional[float] = None,
     ) -> tuple[str, Optional[re.Match[str]]]:
-        """Read from stdout until the regular expression matches.
+        """Read from co-process standard output until `prompt` pattern matches.
 
-        A `prompt` is usually a regular expression object. If `prompt` is a
-        string, the string must match exactly. If `prompt` is None or missing,
-        we use the default prompt.
+        Returns a 2-tuple of (output, match) where `output` is the text *before*
+        the prompt pattern and `match` is a `re.Match` object for the prompt
+        text itself. If there is no match due to EOF, `match` will be None.
 
-        To match multiple patterns, use the regular expression alternation
-        syntax:
+        After this method returns, there may still be characters read from stdout
+        that remain in the `pending` buffer. These are the characters *after* the
+        prompt pattern that didn't match. You can examine these using the `pending`
+        property. Subsequent calls to expect will examine this buffer first
+        before reading new data from the output pipe.
+
+        If a timeout is reached while waiting for the prompt pattern, this
+        method will raise an `asyncio.TimeoutError` exception. You can catch
+        this exception and look in the `pending` buffer to see the data that
+        failed to match. You can call send()/expect() again after a timeout
+        to negotiate further with the co-process.
+
+        Once EOF has been reached, calling this method again will continue to
+        return ("", None).
+
+        By default, this method will use the default `timeout` for the `Prompt`
+        object if one is set. You can use the `timeout` parameter to specify
+        a custom timeout in seconds.
+
+        Prompt Patterns
+        ~~~~~~~~~~~~~~~
+
+        The `expect()` method supports matching fixed strings and regular
+        expressions. The type of the `prompt` parameter determines the type of
+        search.
+
+        None:
+            Use the default prompt pattern.
+        str:
+            Match the string exactly.
+        list[str]:
+            Match one of the strings exactly.
+        re.Pattern[str]:
+            Match the given regular expression.
+        Ellipsis:
+            Read all data until EOF.
+
+        When matching a regular expression, only a single Pattern object is
+        supported. To match multiple regular expressions, combine them into a
+        single pattern using *alternation* syntax (|).
 
         ```
-        _, m = await cli.expect(re.compile(r'Login: |Password: |ftp> '))
+        _, m = await cli.expect(["Login: ", "Password: ", "ftp> "])
         if m:
             match m[0]:
                 case "Login: ":
@@ -195,12 +258,12 @@ class Prompt:
         if prompt is ...:
             return await self.read_all(), None
 
-        if isinstance(prompt, str):
-            prompt = re.compile(re.escape(prompt))
-        elif prompt is None:
+        if prompt is None:
             prompt = self._default_prompt
             if prompt is None:
                 raise TypeError("prompt is required when default prompt is not set")
+        elif isinstance(prompt, (str, list)):
+            prompt = _regex_compile_exact(prompt)
 
         if self._pending:
             result = self._search_pending(prompt)
@@ -226,7 +289,7 @@ class Prompt:
         *,
         timeout: Optional[float] = None,
     ) -> str:
-        """Read all characters until EOF.
+        """Read from co-process stdout  characters until EOF.
 
         If we are already at EOF, return "".
 
@@ -461,7 +524,7 @@ class Prompt:
             )
 
 
-def _decoder(encoding: str, normalize_newlines: bool) -> codecs.IncrementalDecoder:
+def _make_decoder(encoding: str, normalize_newlines: bool) -> codecs.IncrementalDecoder:
     "Construct an incremental decoder for the specified encoding settings."
     enc = encoding.split(maxsplit=1)
     decoder_class = codecs.getincrementaldecoder(enc[0])
@@ -469,3 +532,11 @@ def _decoder(encoding: str, normalize_newlines: bool) -> codecs.IncrementalDecod
     if normalize_newlines:
         decoder = io.IncrementalNewlineDecoder(decoder, translate=True)
     return decoder
+
+
+def _regex_compile_exact(pattern: Union[str, list[str]]) -> re.Pattern[str]:
+    "Compile a regex that matches an exact string or set of strings."
+    if isinstance(pattern, list):
+        return re.compile("|".join(re.escape(s) for s in pattern))
+    else:
+        return re.compile(re.escape(pattern))
