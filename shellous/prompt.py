@@ -95,7 +95,7 @@ class Prompt:
 
     @property
     def pending(self) -> str:
-        """Characters still unread in the `pending` buffer."""
+        """Characters that still remain in the `pending` buffer."""
         return self._pending
 
     @property
@@ -104,8 +104,8 @@ class Prompt:
 
         If the runner is not using a PTY, always return False.
 
-        When the process is using a PTY, you can enable/disable echo mode by
-        setting `.echo` to True/False.
+        When the process is using a PTY, you can enable/disable terminal echo
+        mode by setting the `echo` property to True/False.
         """
         if self._runner.pty_fd is None:
             return False
@@ -123,7 +123,7 @@ class Prompt:
 
     @property
     def result(self) -> Optional[Result]:
-        "The `Result` of the command, or None if it has not exited yet."
+        "The `Result` of the command. Returns None if process has not exited yet."
         return self._result
 
     @property
@@ -153,8 +153,9 @@ class Prompt:
         is enabled, the sensitive information will **not** be logged.
 
         Use the `timeout` parameter to override the default timeout. Normally,
-        this method will complete immediately. However, there are situations
-        where the co-process input pipeline fills and we have to wait for it to
+        data is delivered immediately and this method returns making a trip
+        through the event loop. However, there are situations where the
+        co-process input pipeline fills and we have to wait for it to
         drain.
 
         When this method needs to wait for the co-process input pipe to drain,
@@ -228,32 +229,72 @@ class Prompt:
         expressions. The type of the `prompt` parameter determines the type of
         search.
 
-        None:
-            Use the default prompt pattern.
-        str:
-            Match the string exactly.
-        list[str]:
-            Match one of the strings exactly.
-        re.Pattern[str]:
+        `None`:
+            Use the default prompt pattern. If there is no default prompt,
+            raise a TypeError.
+        `str`:
+            Match this string exactly.
+        `list[str]`:
+            Match one of these strings exactly.
+        `re.Pattern[str]`:
             Match the given regular expression.
-        Ellipsis:
-            Read all data until EOF.
+        `...`:
+            Read all data until end of stream (EOF).
 
         When matching a regular expression, only a single Pattern object is
         supported. To match multiple regular expressions, combine them into a
-        single pattern using *alternation* syntax (|).
+        single regular expression using *alternation* syntax (|).
+
+        The `expect()` method returns a 2-tuple (output, match). The `match`
+        is the result of the regular expression search (re.Match). If you
+        specify your prompt as a string or list of strings, it is still compiled
+        into a regular expression that produce an `re.Match` object. You can
+        examine the `match` object to determine the prompt string found.
+
+        This method conducts a regular expression search on streaming data. The
+        `expect()` method reads a new chunk of data into the `pending` buffer
+        and then searches it. You must be careful in writing a regular
+        expression so that the search is agnostic to how the incoming chunks of
+        data arrive. Instead of using `greedy` RE modifiers such as `*`, `+`,
+        and `{m,n}`, use the `minimal` versions: `*?`, `+?`, and `{m,n}?`.
+
+        It is best to use the `expect()` method to search for a trailing
+        delimiter or prompt, read the relevant data into a variable, and then
+        examine that variable in depth with a separate parser or regular
+        expression.
+
+        Examples
+        ~~~~~~~~
+
+        Expect an exact string:
+
+        ```
+        _, m = await cli.expect("ftp> ")
+        if m:
+            await cli.send(command)
+            response, _ = await cli.expect("ftp> ")
+        ```
+
+        Expect a choice of strings:
 
         ```
         _, m = await cli.expect(["Login: ", "Password: ", "ftp> "])
         if m:
             match m[0]:
                 case "Login: ":
-                    await cli.send(user)
+                    await cli.send(login)
                 case "Password: ":
                     await cli.send(password)
                 case "ftp> ":
                     await cli.send(command)
         ```
+
+        Read until EOF:
+
+        ```
+        data, _ = await cli.expect(...)
+        ```
+
         """
         if prompt is ...:
             return await self.read_all(), None
