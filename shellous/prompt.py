@@ -4,7 +4,10 @@ import asyncio
 import codecs
 import io
 import re
-from typing import Optional, Union
+from typing import TYPE_CHECKING, Optional, Union
+
+if TYPE_CHECKING:
+    from types import EllipsisType  # requires python 3.10
 
 from shellous import pty_util
 from shellous.harvest import harvest_results
@@ -15,7 +18,9 @@ from shellous.util import encode_bytes
 
 _DEFAULT_LINE_END = "\n"
 _DEFAULT_CHUNK_SIZE = 16384
+
 _LOG_LIMIT = 2000
+_LOG_LIMIT_END = 30
 
 
 class Prompt:
@@ -48,7 +53,6 @@ class Prompt:
 
     _runner: Runner
     _encoding: str
-    _default_end: str
     _default_prompt: Optional[re.Pattern[str]]
     _default_timeout: Optional[float]
     _normalize_newlines: bool
@@ -62,8 +66,7 @@ class Prompt:
         self,
         runner: Runner,
         *,
-        default_end: Optional[str] = None,
-        default_prompt: Union[str, re.Pattern[str], None] = None,
+        default_prompt: Union[str, list[str], re.Pattern[str], None] = None,
         default_timeout: Optional[float] = None,
         normalize_newlines: bool = False,
         chunk_size: Optional[int] = None,
@@ -71,23 +74,19 @@ class Prompt:
         assert runner.stdin is not None
         assert runner.stdout is not None
 
-        if default_end is None:
-            default_end = _DEFAULT_LINE_END
-
         if chunk_size is None:
             chunk_size = _DEFAULT_CHUNK_SIZE
 
-        if isinstance(default_prompt, str):
-            default_prompt = re.compile(re.escape(default_prompt))
+        if isinstance(default_prompt, (str, list)):
+            default_prompt = _regex_compile_exact(default_prompt)
 
         self._runner = runner
         self._encoding = runner.command.options.encoding
-        self._default_end = default_end
         self._default_prompt = default_prompt
         self._default_timeout = default_timeout
         self._normalize_newlines = normalize_newlines
         self._chunk_size = chunk_size
-        self._decoder = _decoder(self._encoding, normalize_newlines)
+        self._decoder = _make_decoder(self._encoding, normalize_newlines)
 
     @property
     def at_eof(self) -> bool:
@@ -96,7 +95,7 @@ class Prompt:
 
     @property
     def pending(self) -> str:
-        """Characters still unread in the `pending` buffer."""
+        """Characters that still remain in the `pending` buffer."""
         return self._pending
 
     @property
@@ -105,8 +104,8 @@ class Prompt:
 
         If the runner is not using a PTY, always return False.
 
-        When the process is using a PTY, you can enable/disable echo mode by
-        setting `.echo` to True/False.
+        When the process is using a PTY, you can enable/disable terminal echo
+        mode by setting the `echo` property to True/False.
         """
         if self._runner.pty_fd is None:
             return False
@@ -124,7 +123,7 @@ class Prompt:
 
     @property
     def result(self) -> Optional[Result]:
-        "The `Result` of the command, or None if it has not exited yet."
+        "The `Result` of the command. Returns None if process has not exited yet."
         return self._result
 
     @property
@@ -134,47 +133,53 @@ class Prompt:
 
     async def send(
         self,
-        input_text: Union[bytes, str],
+        text: Union[bytes, str],
         *,
-        end: Optional[str] = None,
+        end: Optional[str] = _DEFAULT_LINE_END,
         no_echo: bool = False,
         timeout: Optional[float] = None,
     ) -> None:
-        """Write some input text to stdin."""
+        """Write some `text` to co-process standard input and append a newline.
+
+        The `text` parameter is the string that you want to write. Use a `bytes`
+        object to send some raw bytes (e.g. to the terminal driver).
+
+        The default line ending is "\n". Use the `end` parameter to change the
+        line ending. To omit the line ending entirely, specify `end=None`.
+
+        Set `no_echo` to True when you are writing a password. When you set
+        `no_echo` to True, the `send` method will wait for terminal
+        echo mode to be disabled before writing the text. If shellous logging
+        is enabled, the sensitive information will **not** be logged.
+
+        Use the `timeout` parameter to override the default timeout. Normally,
+        data is delivered immediately and this method returns making a trip
+        through the event loop. However, there are situations where the
+        co-process input pipeline fills and we have to wait for it to
+        drain.
+
+        When this method needs to wait for the co-process input pipe to drain,
+        this method will concurrently read from the output pipe into the pending
+        buffer. This is necessary to avoid a deadlock situation where everything
+        stops because neither process can make progress.
+        """
         if end is None:
-            end = self._default_end
+            end = ""
 
         if no_echo:
             await self._wait_no_echo()
 
-        if isinstance(input_text, bytes):
-            data = input_text + encode_bytes(end, self._encoding)
+        if isinstance(text, bytes):
+            data = text + encode_bytes(end, self._encoding)
         else:
-            data = encode_bytes(input_text + end, self._encoding)
+            data = encode_bytes(text + end, self._encoding)
 
         stdin = self._runner.stdin
         assert stdin is not None
         stdin.write(data)
 
         if LOG_PROMPT:
-            if no_echo:
-                LOGGER.debug("Prompt[pid=%s] send: [[HIDDEN]]", self._runner.pid)
-            else:
-                data_len = len(data)
-                if data_len >= _LOG_LIMIT:
-                    LOGGER.debug(
-                        "Prompt[pid=%s] send: [%d B] %r...",
-                        self._runner.pid,
-                        data_len,
-                        data[:_LOG_LIMIT],
-                    )
-                else:
-                    LOGGER.debug(
-                        "Prompt[pid=%s] send: [%d B] %r",
-                        self._runner.pid,
-                        data_len,
-                        data,
-                    )
+            self._log_send(data, no_echo)
 
         # Drain our write to stdin.
         cancelled, ex = await harvest_results(
@@ -188,37 +193,118 @@ class Prompt:
 
     async def expect(
         self,
-        prompt: Union[str, re.Pattern[str], None] = None,
+        prompt: Union[str, list[str], re.Pattern[str], "EllipsisType", None] = None,
         *,
         timeout: Optional[float] = None,
     ) -> tuple[str, Optional[re.Match[str]]]:
-        """Read from stdout until the regular expression matches.
+        """Read from co-process standard output until `prompt` pattern matches.
 
-        A `prompt` is usually a regular expression object. If `prompt` is a
-        string, the string must match exactly. If `prompt` is None or missing,
-        we use the default prompt.
+        Returns a 2-tuple of (output, match) where `output` is the text *before*
+        the prompt pattern and `match` is a `re.Match` object for the prompt
+        text itself. If there is no match due to EOF, `match` will be None.
 
-        To match multiple patterns, use the regular expression alternation
-        syntax:
+        After this method returns, there may still be characters read from stdout
+        that remain in the `pending` buffer. These are the characters *after* the
+        prompt pattern that didn't match. You can examine these using the `pending`
+        property. Subsequent calls to expect will examine this buffer first
+        before reading new data from the output pipe.
+
+        If a timeout is reached while waiting for the prompt pattern, this
+        method will raise an `asyncio.TimeoutError` exception. You can catch
+        this exception and look in the `pending` buffer to see the data that
+        failed to match. You can call send()/expect() again after a timeout
+        to negotiate further with the co-process.
+
+        Once EOF has been reached, calling this method again will continue to
+        return ("", None).
+
+        By default, this method will use the default `timeout` for the `Prompt`
+        object if one is set. You can use the `timeout` parameter to specify
+        a custom timeout in seconds.
+
+        Prompt Patterns
+        ~~~~~~~~~~~~~~~
+
+        The `expect()` method supports matching fixed strings and regular
+        expressions. The type of the `prompt` parameter determines the type of
+        search.
+
+        `None`:
+            Use the default prompt pattern. If there is no default prompt,
+            raise a TypeError.
+        `str`:
+            Match this string exactly.
+        `list[str]`:
+            Match one of these strings exactly.
+        `re.Pattern[str]`:
+            Match the given regular expression.
+        `...`:
+            Read all data until end of stream (EOF).
+
+        When matching a regular expression, only a single Pattern object is
+        supported. To match multiple regular expressions, combine them into a
+        single regular expression using *alternation* syntax (|).
+
+        The `expect()` method returns a 2-tuple (output, match). The `match`
+        is the result of the regular expression search (re.Match). If you
+        specify your prompt as a string or list of strings, it is still compiled
+        into a regular expression that produce an `re.Match` object. You can
+        examine the `match` object to determine the prompt string found.
+
+        This method conducts a regular expression search on streaming data. The
+        `expect()` method reads a new chunk of data into the `pending` buffer
+        and then searches it. You must be careful in writing a regular
+        expression so that the search is agnostic to how the incoming chunks of
+        data arrive. Instead of using `greedy` RE modifiers such as `*`, `+`,
+        and `{m,n}`, use the `minimal` versions: `*?`, `+?`, and `{m,n}?`.
+
+        It is best to use the `expect()` method to search for a trailing
+        delimiter or prompt, read the relevant data into a variable, and then
+        examine that variable in depth with a separate parser or regular
+        expression.
+
+        Examples
+        ~~~~~~~~
+
+        Expect an exact string:
 
         ```
-        _, m = await cli.expect(re.compile(r'Login: |Password: |ftp> '))
+        _, m = await cli.expect("ftp> ")
+        if m:
+            await cli.send(command)
+            response, _ = await cli.expect("ftp> ")
+        ```
+
+        Expect a choice of strings:
+
+        ```
+        _, m = await cli.expect(["Login: ", "Password: ", "ftp> "])
         if m:
             match m[0]:
                 case "Login: ":
-                    await cli.send(user)
+                    await cli.send(login)
                 case "Password: ":
                     await cli.send(password)
                 case "ftp> ":
                     await cli.send(command)
         ```
+
+        Read until EOF:
+
+        ```
+        data, _ = await cli.expect(...)
+        ```
+
         """
-        if isinstance(prompt, str):
-            prompt = re.compile(re.escape(prompt))
-        elif prompt is None:
+        if prompt is ...:
+            return await self.read_all(), None
+
+        if prompt is None:
             prompt = self._default_prompt
             if prompt is None:
                 raise TypeError("prompt is required when default prompt is not set")
+        elif isinstance(prompt, (str, list)):
+            prompt = _regex_compile_exact(prompt)
 
         if self._pending:
             result = self._search_pending(prompt)
@@ -226,7 +312,7 @@ class Prompt:
                 return result
 
         if self._at_eof:
-            raise EOFError("Prompt at EOF")
+            return ("", None)
 
         cancelled, (result,) = await harvest_results(
             self._read_to_pattern(prompt),
@@ -244,9 +330,11 @@ class Prompt:
         *,
         timeout: Optional[float] = None,
     ) -> str:
-        """Read all characters until EOF.
+        """Read from co-process stdout  characters until EOF.
 
         If we are already at EOF, return "".
+
+        Deprecated: Use `expect(...)`.
         """
         if self._pending:
             result = self._search_pending(None)
@@ -267,18 +355,18 @@ class Prompt:
 
     async def command(
         self,
-        input_text: str,
+        text: str,
         *,
-        end: Optional[str] = None,
+        end: str = _DEFAULT_LINE_END,
         no_echo: bool = False,
-        prompt: Union[str, re.Pattern[str], None] = None,
+        prompt: Union[str, re.Pattern[str], "EllipsisType", None] = None,
         timeout: Optional[float] = None,
     ) -> str:
         "Send some input and receive the response up to the next prompt."
         if self._at_eof:
-            raise EOFError("Prompt at EOF")
+            raise EOFError("Prompt has reached EOF already")
 
-        await self.send(input_text, end=end, no_echo=no_echo, timeout=timeout)
+        await self.send(text, end=end, no_echo=no_echo, timeout=timeout)
         result, _ = await self.expect(prompt, timeout=timeout)
         return result
 
@@ -338,21 +426,7 @@ class Prompt:
                 raise
 
             if LOG_PROMPT:
-                chunk_len = len(chunk)
-                if chunk_len >= _LOG_LIMIT:
-                    LOGGER.debug(
-                        "Prompt[pid=%s] receive: [%d B] %r...",
-                        self._runner.pid,
-                        chunk_len,
-                        chunk[:_LOG_LIMIT],
-                    )
-                else:
-                    LOGGER.debug(
-                        "Prompt[pid=%s] receive: [%d B] %r",
-                        self._runner.pid,
-                        chunk_len,
-                        chunk,
-                    )
+                self._log_receive(chunk)
 
             # Decode eligible bytes into our buffer.
             data = self._decoder.decode(chunk, final=self._at_eof)
@@ -425,21 +499,7 @@ class Prompt:
                 self._at_eof = True
 
             if LOG_PROMPT:
-                chunk_len = len(chunk)
-                if chunk_len >= _LOG_LIMIT:
-                    LOGGER.debug(
-                        "Prompt[pid=%s] receive@drain: [%d B] %r...",
-                        self._runner.pid,
-                        chunk_len,
-                        chunk[:_LOG_LIMIT],
-                    )
-                else:
-                    LOGGER.debug(
-                        "Prompt[pid=%s] receive@drain: [%d B] %r",
-                        self._runner.pid,
-                        chunk_len,
-                        chunk,
-                    )
+                self._log_receive(chunk, "@drain")
 
             # Decode eligible bytes into our buffer.
             data = self._decoder.decode(chunk, final=self._at_eof)
@@ -448,10 +508,7 @@ class Prompt:
     async def _wait_no_echo(self):
         "Wait for terminal echo mode to be disabled."
         if LOG_PROMPT:
-            LOGGER.debug(
-                "Prompt[pid=%s] wait: no_echo",
-                self._runner.pid,
-            )
+            LOGGER.debug("Prompt[pid=%s] wait: no_echo", self._runner.pid)
 
         for _ in range(4 * 30):
             if not self.echo:
@@ -460,8 +517,55 @@ class Prompt:
         else:
             raise RuntimeError("Timed out: Terminal echo mode remains enabled.")
 
+    def _log_send(self, data: bytes, no_echo: bool):
+        "Log data as it is being sent."
+        pid = self._runner.pid
 
-def _decoder(encoding: str, normalize_newlines: bool) -> codecs.IncrementalDecoder:
+        if no_echo:
+            LOGGER.debug("Prompt[pid=%s] send: [[HIDDEN]]", pid)
+        else:
+            data_len = len(data)
+            if data_len > _LOG_LIMIT:
+                LOGGER.debug(
+                    "Prompt[pid=%s] send: [%d B] %r...%r",
+                    pid,
+                    data_len,
+                    data[: _LOG_LIMIT - _LOG_LIMIT_END],
+                    data[-_LOG_LIMIT_END:],
+                )
+            else:
+                LOGGER.debug(
+                    "Prompt[pid=%s] send: [%d B] %r",
+                    pid,
+                    data_len,
+                    data,
+                )
+
+    def _log_receive(self, data: bytes, tag: str = ""):
+        "Log data as it is being received."
+        pid = self._runner.pid
+        data_len = len(data)
+
+        if data_len > _LOG_LIMIT:
+            LOGGER.debug(
+                "Prompt[pid=%s] receive%s: [%d B] %r...%r",
+                pid,
+                tag,
+                data_len,
+                data[: _LOG_LIMIT - _LOG_LIMIT_END],
+                data[-_LOG_LIMIT_END:],
+            )
+        else:
+            LOGGER.debug(
+                "Prompt[pid=%s] receive%s: [%d B] %r",
+                pid,
+                tag,
+                data_len,
+                data,
+            )
+
+
+def _make_decoder(encoding: str, normalize_newlines: bool) -> codecs.IncrementalDecoder:
     "Construct an incremental decoder for the specified encoding settings."
     enc = encoding.split(maxsplit=1)
     decoder_class = codecs.getincrementaldecoder(enc[0])
@@ -469,3 +573,11 @@ def _decoder(encoding: str, normalize_newlines: bool) -> codecs.IncrementalDecod
     if normalize_newlines:
         decoder = io.IncrementalNewlineDecoder(decoder, translate=True)
     return decoder
+
+
+def _regex_compile_exact(pattern: Union[str, list[str]]) -> re.Pattern[str]:
+    "Compile a regex that matches an exact string or set of strings."
+    if isinstance(pattern, list):
+        return re.compile("|".join(re.escape(s) for s in pattern))
+    else:
+        return re.compile(re.escape(pattern))
