@@ -524,3 +524,30 @@ async def test_prompt_grep_alternates():
         assert cli.pending == ""
         assert buf == ""
         assert m[0] == "\n"
+
+
+async def test_prompt_grep_eof():
+    "Test the prompt context manager with expect after EOF."
+    cmd = sh("grep", "--line-buffered", "b").set(timeout=8.0)
+
+    async with cmd.prompt() as cli:
+        # Send some data and close pipe to stdin.
+        await cli.send("a" * 10 + "b")
+        cli.close()
+
+        # Read until EOF.
+        buf, m = await cli.expect(...)
+        assert m is None
+        assert buf == "a" * 10 + "b\n"
+        assert cli.pending == ""
+        assert cli.at_eof
+
+        # Try to read more after EOF.
+        buf, m = await cli.expect("xyz")
+        assert (buf, m) == ("", None)
+        buf, m = await cli.expect("abc")
+        assert (buf, m) == ("", None)
+
+        # Try to use the command() method after EOF.
+        with pytest.raises(EOFError, match="Prompt has reached EOF"):
+            await cli.command("ab")

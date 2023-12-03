@@ -312,7 +312,7 @@ class Prompt:
                 return result
 
         if self._at_eof:
-            raise EOFError("Prompt at EOF")
+            return ("", None)
 
         cancelled, (result,) = await harvest_results(
             self._read_to_pattern(prompt),
@@ -364,7 +364,7 @@ class Prompt:
     ) -> str:
         "Send some input and receive the response up to the next prompt."
         if self._at_eof:
-            raise EOFError("Prompt at EOF")
+            raise EOFError("Prompt has reached EOF already")
 
         await self.send(text, end=end, no_echo=no_echo, timeout=timeout)
         result, _ = await self.expect(prompt, timeout=timeout)
