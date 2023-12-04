@@ -4,9 +4,9 @@ import logging
 
 import pytest
 
-from shellous.log import SHELLOUS_DEBUG, log_method, log_timer
+from shellous.log import LOG_DETAIL, log_method, log_timer
 
-_LOG_LEVEL = logging.INFO if SHELLOUS_DEBUG else logging.DEBUG
+_LOG_LEVEL = logging.INFO if LOG_DETAIL else logging.DEBUG
 
 
 class _Tester:

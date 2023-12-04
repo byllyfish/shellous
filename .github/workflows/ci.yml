@@ -28,7 +28,7 @@ jobs:
         python-version: [ '3.9', '3.10', '3.11', '3.12' ]
 
     env:
-      SHELLOUS_DEBUG: 1
+      SHELLOUS_TRACE: all
       BUILD_NAME: build (${{ matrix.os }},${{ matrix.python-version }})
 
     steps:
@@ -142,7 +142,7 @@ jobs:
     container:
       image: ${{ matrix.image-tag }}
     env:
-      SHELLOUS_DEBUG: 1
+      SHELLOUS_TRACE: all
       BUILD_NAME: build (${{ matrix.image-tag }})
 
     steps:
@@ -183,7 +183,7 @@ jobs:
         pypy-version: [ 'pypy-3.9', 'pypy-3.10']
 
     env:
-      SHELLOUS_DEBUG: 1
+      SHELLOUS_TRACE: all
 
     steps:
     - name: Harden Runner
@@ -211,7 +211,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20  # stop runaway job after 20 minutes
     env:
-      SHELLOUS_DEBUG: 1
+      SHELLOUS_TRACE: all
 
     steps:
     - name: Harden Runner

@@ -20,15 +20,18 @@ LOGGER = logging.getLogger(__package__)
 
 _PYTHON_VERSION = platform.python_implementation() + platform.python_version()
 
-# If SHELLOUS_DEBUG option is enabled, specific methods are decorated with
-# helper methods that log function entry and exit. We also activate detailed
-# logging. If SHELLOUS_PROMPT option is enabled, we activate just the Prompt
-# class logging.
+# The the `SHELLOUS_TRACE` environment variable enables logging options. It is
+# a comma-delimited string with the following options:
+#
+#  - "detail": Enable the detailed logging method decorators.
+#  - "prompt": Enable logging of the Prompt class.
+#  - "all": Enable all logging options.
 
-SHELLOUS_DEBUG = bool(os.environ.get("SHELLOUS_DEBUG"))
+_TRACE = [s.strip().lower() for s in os.environ.get("SHELLOUS_TRACE", "").split(",")]
+_TRACE_ALL = "all" in _TRACE
 
-LOG_DETAIL = SHELLOUS_DEBUG
-LOG_PROMPT = LOG_DETAIL or bool(os.environ.get("SHELLOUS_PROMPT"))
+LOG_DETAIL = _TRACE_ALL or ("detail" in _TRACE)
+LOG_PROMPT = _TRACE_ALL or ("prompt" in _TRACE)
 
 _logger_info = LOGGER.info if LOG_DETAIL else LOGGER.debug
 
