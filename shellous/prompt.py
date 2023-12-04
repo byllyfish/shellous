@@ -380,12 +380,12 @@ class Prompt:
             # time to signal the end.
             stdin.write(self._runner.pty_eof * 2)
             if LOG_PROMPT:
-                LOGGER.debug("Prompt[pid=%s] send: [[EOF]]", self._runner.pid)
+                LOGGER.info("Prompt[pid=%s] send: [[EOF]]", self._runner.pid)
 
         else:
             stdin.close()
             if LOG_PROMPT:
-                LOGGER.debug("Prompt[pid=%s] close", self._runner.pid)
+                LOGGER.info("Prompt[pid=%s] close", self._runner.pid)
 
     def _finish_(self) -> None:
         "Internal method called when process exits to fetch the `Result` and cache it."
@@ -418,7 +418,7 @@ class Prompt:
                     self._at_eof = True
             except asyncio.CancelledError:
                 if LOG_PROMPT:
-                    LOGGER.debug(
+                    LOGGER.info(
                         "Prompt[pid=%s] receive cancelled: pending=%r",
                         self._runner.pid,
                         self._pending,
@@ -452,7 +452,7 @@ class Prompt:
             found = pattern.search(self._pending)
             if found:
                 if LOG_PROMPT:
-                    LOGGER.debug("Prompt[pid=%s] found: %r", self._runner.pid, found)
+                    LOGGER.info("Prompt[pid=%s] found: %r", self._runner.pid, found)
                 result = self._pending[0 : found.start(0)]
                 self._pending = self._pending[found.end(0) :]
                 return (result, found)
@@ -460,7 +460,7 @@ class Prompt:
         if self._at_eof:
             # Pattern doesn't match anything and we've reached EOF.
             if LOG_PROMPT:
-                LOGGER.debug(
+                LOGGER.info(
                     "Prompt[pid=%s] at_eof: %d chars pending",
                     self._runner.pid,
                     len(self._pending),
@@ -508,7 +508,7 @@ class Prompt:
     async def _wait_no_echo(self):
         "Wait for terminal echo mode to be disabled."
         if LOG_PROMPT:
-            LOGGER.debug("Prompt[pid=%s] wait: no_echo", self._runner.pid)
+            LOGGER.info("Prompt[pid=%s] wait: no_echo", self._runner.pid)
 
         for _ in range(4 * 30):
             if not self.echo:
@@ -522,11 +522,11 @@ class Prompt:
         pid = self._runner.pid
 
         if no_echo:
-            LOGGER.debug("Prompt[pid=%s] send: [[HIDDEN]]", pid)
+            LOGGER.info("Prompt[pid=%s] send: [[HIDDEN]]", pid)
         else:
             data_len = len(data)
             if data_len > _LOG_LIMIT:
-                LOGGER.debug(
+                LOGGER.info(
                     "Prompt[pid=%s] send: [%d B] %r...%r",
                     pid,
                     data_len,
@@ -534,7 +534,7 @@ class Prompt:
                     data[-_LOG_LIMIT_END:],
                 )
             else:
-                LOGGER.debug(
+                LOGGER.info(
                     "Prompt[pid=%s] send: [%d B] %r",
                     pid,
                     data_len,
@@ -547,7 +547,7 @@ class Prompt:
         data_len = len(data)
 
         if data_len > _LOG_LIMIT:
-            LOGGER.debug(
+            LOGGER.info(
                 "Prompt[pid=%s] receive%s: [%d B] %r...%r",
                 pid,
                 tag,
@@ -556,7 +556,7 @@ class Prompt:
                 data[-_LOG_LIMIT_END:],
             )
         else:
-            LOGGER.debug(
+            LOGGER.info(
                 "Prompt[pid=%s] receive%s: [%d B] %r",
                 pid,
                 tag,

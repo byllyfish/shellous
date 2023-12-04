@@ -566,3 +566,20 @@ sh1: CmdContext[str] = sh.set(path="/bin:/usr/bin")
 sh2: CmdContext[Result] = sh.result.set(path="/bin:/usr/bin")
 # When you use `sh2` to create commands, it produces `Command[Result]` objects with the given path.
 ```
+
+## Logging
+
+For verbose logging, shellous supports a `SHELLOUS_TRACE` environment variable. Set the
+value of `SHELLOUS_TRACE` to a comma-delimited list of options:
+
+- **detail**:  Enables detailed logging used to trace the steps of running a command.
+
+- **prompt**: Enables logging in the `Prompt` class when controlling a program
+using send/expect.
+
+- **all**: Enables all logging options.
+
+Shellous uses the built-in Python `logging` module. After enabling these options, 
+the `shellous` logger will display log messages at the `INFO` level.
+
+Without these options enabled, Shellous generates almost no log messages.
