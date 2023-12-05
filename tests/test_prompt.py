@@ -9,7 +9,7 @@ import sys
 
 import pytest
 
-from shellous import cooked, sh
+from shellous import Prompt, cooked, sh
 
 from .test_shellous import PIPE_MAX_SIZE, bulk_cmd, python_script
 
@@ -354,7 +354,15 @@ async def test_prompt_python_ps1_unicode():
 
     cmd = sh(sys.executable, "-i").stderr(sh.STDOUT)
 
-    async with cmd.prompt(ps1, normalize_newlines=True, chunk_size=1) as repl:
+    async with cmd.stdin(sh.CAPTURE).stdout(sh.CAPTURE) as runner:
+        # Use Prompt() constructor directly to access _chunk_size.
+        repl = Prompt(
+            runner,
+            default_prompt=ps1,
+            normalize_newlines=True,
+            _chunk_size=1,
+        )
+
         await repl.send(f"import sys; sys.ps1='{_escape(ps1)}'", timeout=3.0)
         assert repl.pending == ""
 
@@ -371,8 +379,6 @@ async def test_prompt_python_ps1_unicode():
         result = await repl.read_all()
         assert result == ""
         assert repl.at_eof
-
-    assert bool(repl.result)
 
 
 async def test_prompt_deadlock_antipattern(bulk_cmd):
@@ -550,3 +556,16 @@ async def test_prompt_grep_eof():
         # Try to use the command() method after EOF.
         with pytest.raises(EOFError, match="Prompt has reached EOF"):
             await cli.command("ab", allow_eof=True)
+
+
+async def test_prompt_normalize_newlines():
+    "Test the prompt context manager with `normalize_newlines` setting."
+    script = "import sys; sys.stdout.write(sys.stdin.read())"
+    cmd = sh(sys.executable, "-c", script)
+
+    async with cmd.prompt(normalize_newlines=True) as cli:
+        await cli.send("a\rb\nc\r\nd\r\r\ne\n\r\n\r", end=None)
+        cli.close()
+
+        result = await cli.read_all()
+        assert result == "a\nb\nc\nd\n\ne\n\n\n"

@@ -66,13 +66,10 @@ class Prompt:
         default_prompt: Union[str, list[str], re.Pattern[str], None] = None,
         default_timeout: Optional[float] = None,
         normalize_newlines: bool = False,
-        chunk_size: Optional[int] = None,
+        _chunk_size: int = _DEFAULT_CHUNK_SIZE,
     ):
         assert runner.stdin is not None
         assert runner.stdout is not None
-
-        if chunk_size is None:
-            chunk_size = _DEFAULT_CHUNK_SIZE
 
         if isinstance(default_prompt, (str, list)):
             default_prompt = _regex_compile_exact(default_prompt)
@@ -82,7 +79,7 @@ class Prompt:
         self._default_prompt = default_prompt
         self._default_timeout = default_timeout
         self._normalize_newlines = normalize_newlines
-        self._chunk_size = chunk_size
+        self._chunk_size = _chunk_size
         self._decoder = _make_decoder(self._encoding, normalize_newlines)
 
     @property
@@ -335,7 +332,12 @@ class Prompt:
         return self.read_pending()
 
     def read_pending(self) -> str:
-        "Read the contents of the pending buffer and empty it."
+        """Read the contents of the pending buffer and empty it.
+
+        This method does not fill the pending buffer with any new data from the
+        co-process output pipe. If the pending buffer is already empty, return
+        "".
+        """
         result = self._pending
         self._pending = ""
         return result
@@ -350,7 +352,18 @@ class Prompt:
         timeout: Optional[float] = None,
         allow_eof: bool = False,
     ) -> str:
-        "Send some input and receive the response up to the next prompt."
+        """Send some text to the co-process and return the response.
+
+        This method is equivalent to calling send() following by expect().
+        However, the return value is simpler; `command()` does not return the
+        `re.Match` object.
+
+        If you call this method *after* the co-process output pipe has already
+        returned EOF, raise `EOFError`.
+
+        If `allow_eof` is True, this method will read data up to EOF instead of
+        raising an EOFError.
+        """
         if self._at_eof:
             raise EOFError("Prompt has reached EOF")
 
@@ -453,7 +466,9 @@ class Prompt:
 
     async def _drain(self, stream: asyncio.StreamWriter) -> None:
         "Drain stream while reading into buffer concurrently."
-        read_task = asyncio.create_task(self._read_some(tag="@drain"))
+        read_task = asyncio.create_task(
+            self._read_some(tag="@drain", concurrent_cancel=True)
+        )
         try:
             await stream.drain()
 
@@ -462,7 +477,12 @@ class Prompt:
                 read_task.cancel()
                 await read_task
 
-    async def _read_some(self, *, tag: str = "") -> None:
+    async def _read_some(
+        self,
+        *,
+        tag: str = "",
+        concurrent_cancel: bool = False,
+    ) -> None:
         "Read into `pending` buffer until cancelled or EOF."
         stdout = self._runner.stdout
         assert stdout is not None
@@ -470,8 +490,10 @@ class Prompt:
 
         while not self._at_eof:
             # Yield time to other tasks; read() doesn't yield as long as there
-            # is data to read.
-            await asyncio.sleep(0)
+            # is data to read. We need to provide a cancel point when this
+            # method is called during `drain`.
+            if concurrent_cancel:
+                await asyncio.sleep(0)
 
             # Read chunk and check for EOF.
             chunk = await stdout.read(self._chunk_size)
