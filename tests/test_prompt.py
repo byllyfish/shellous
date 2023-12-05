@@ -73,10 +73,10 @@ async def test_prompt_python_pty():
         else:
             assert result == "abc\r\n"
 
-        await repl.command("exit()")
+        await repl.command("exit()", allow_eof=True)
         assert repl.at_eof
 
-    assert repl.result.exit_code == 0
+    assert bool(repl.result)
 
 
 async def test_prompt_python_interactive():
@@ -91,10 +91,10 @@ async def test_prompt_python_interactive():
         result = await repl.command("print('abc')")
         assert result == "abc\n"
 
-        await repl.command("exit()")
+        await repl.command("exit()", allow_eof=True)
         assert repl.at_eof
 
-    assert repl.result.exit_code == 0
+    assert bool(repl.result)
 
 
 async def test_prompt_python_interactive_ps1():
@@ -110,10 +110,10 @@ async def test_prompt_python_interactive_ps1():
         result = await repl.command("print('def')")
         assert result == "def\n"
 
-        await repl.command("exit()")
+        await repl.command("exit()", allow_eof=True)
         assert repl.at_eof
 
-    assert repl.result.exit_code == 0
+    assert bool(repl.result)
 
 
 async def test_prompt_python_timeout():
@@ -145,13 +145,13 @@ async def test_prompt_python_timeout():
         # Show we can still run expect() on the new buffer.
         found, m = await repl.expect(re.compile("l.*?>", re.DOTALL))
         assert found == "he"
-        assert m and m[0] == "llo\n>"
+        assert m[0] == "llo\n>"
         assert repl.pending == ">> |"
 
-        await repl.command("exit()")
+        await repl.command("exit()", allow_eof=True)
         assert repl.at_eof
 
-    assert repl.result.exit_code == 0
+    assert bool(repl.result)
 
 
 async def test_prompt_python_missing_newline():
@@ -166,10 +166,10 @@ async def test_prompt_python_missing_newline():
         result = await repl.command("print(3, end='.')")
         assert result == "3."
 
-        await repl.command("exit()")
+        await repl.command("exit()", allow_eof=True)
         assert repl.at_eof
 
-    assert repl.result.exit_code == 0
+    assert bool(repl.result)
 
 
 @_requires_pty
@@ -193,10 +193,10 @@ async def test_prompt_unix_shell():
         else:
             assert result == "123\r\n"
 
-        await repl.command("exit")
+        await repl.command("exit", allow_eof=True)
         assert repl.at_eof
 
-    assert repl.result.exit_code == 0
+    assert bool(repl.result)
 
 
 @_requires_pty
@@ -218,10 +218,10 @@ async def test_prompt_unix_shell_echo():
         result = await repl.command("echo 123")
         assert result == f"{_TERM_ESCAPES}echo 123\r\n123\r\n"
 
-        await repl.command("exit")
+        await repl.command("exit", allow_eof=True)
         assert repl.at_eof
 
-    assert repl.result.exit_code == 0
+    assert bool(repl.result)
 
 
 @_requires_unix
@@ -246,10 +246,10 @@ async def test_prompt_unix_shell_interactive():
         else:
             assert result == "123\n"
 
-        await repl.command("exit")
+        await repl.command("exit", allow_eof=True)
         assert repl.at_eof
 
-    assert repl.result.exit_code == 0
+    assert bool(repl.result)
 
 
 async def test_prompt_asyncio_repl():
@@ -266,7 +266,7 @@ async def test_prompt_asyncio_repl():
         result = await repl.command("print('hello')")
         assert result == "hello\n"
 
-    assert repl.result.exit_code == 0
+    assert bool(repl.result)
 
 
 @_requires_pty
@@ -288,7 +288,7 @@ async def test_prompt_unix_eof():
         result = await repl.command("echo 123")
         assert result == f"{_TERM_ESCAPES}echo 123\r\n123\r\n"
 
-    assert repl.result.exit_code == 0
+    assert bool(repl.result)
 
 
 def _escape(s: str) -> str:
@@ -312,10 +312,10 @@ async def test_prompt_python_ps1_newline():
         result = await repl.command("print('def')")
         assert result == "def\n"
 
-        await repl.command("exit()")
+        await repl.command("exit()", allow_eof=True)
         assert repl.at_eof
 
-    assert repl.result.exit_code == 0
+    assert bool(repl.result)
 
 
 async def test_prompt_asyncio_repl_expect():
@@ -327,26 +327,25 @@ async def test_prompt_asyncio_repl_expect():
     async with cmd.prompt(normalize_newlines=True, timeout=3.0) as repl:
         greeting, x = await repl.expect(prompt)
         assert "asyncio" in greeting
-        assert x and x[0] == ">>> "
+        assert x[0] == ">>> "
         # There will likely be data in `repl.pending`.
 
         extra, x = await repl.expect(prompt)
         assert "import asyncio" in extra
-        assert x and x[0] == ">>> "
+        assert x[0] == ">>> "
         assert repl.pending == ""
 
         await repl.send("print('hello')")
         result, x = await repl.expect(prompt)
         assert result == "hello\n"
-        assert x and x[0] == ">>> "
+        assert x[0] == ">>> "
 
         repl.close()
-        result, x = await repl.expect(prompt)
+        result = await repl.read_all()
         assert result == "\nexiting asyncio REPL...\n"
-        assert x is None
         assert repl.at_eof
 
-    assert repl.result.exit_code == 0
+    assert bool(repl.result)
 
 
 async def test_prompt_python_ps1_unicode():
@@ -361,19 +360,19 @@ async def test_prompt_python_ps1_unicode():
 
         greeting, m = await repl.expect()
         assert _PS1 in greeting
-        assert m and m[0] == ps1
+        assert m[0] == ps1
 
         await repl.send("print('def')")
         result, m = await repl.expect()
         assert result == "def\n"
-        assert m and m[0] == ps1
+        assert m[0] == ps1
 
         await repl.send("exit()")
-        result, _ = await repl.expect(...)
+        result = await repl.read_all()
         assert result == ""
         assert repl.at_eof
 
-    assert repl.result.exit_code == 0
+    assert bool(repl.result)
 
 
 async def test_prompt_deadlock_antipattern(bulk_cmd):
@@ -536,18 +535,18 @@ async def test_prompt_grep_eof():
         cli.close()
 
         # Read until EOF.
-        buf, m = await cli.expect(...)
-        assert m is None
+        buf = await cli.read_all()
         assert buf == "a" * 10 + "b\n"
         assert cli.pending == ""
         assert cli.at_eof
 
+        buf = await cli.read_all()
+        assert buf == ""
+
         # Try to read more after EOF.
-        buf, m = await cli.expect("xyz")
-        assert (buf, m) == ("", None)
-        buf, m = await cli.expect("abc")
-        assert (buf, m) == ("", None)
+        with pytest.raises(EOFError, match="Prompt has reached EOF"):
+            await cli.expect("xyz")
 
         # Try to use the command() method after EOF.
         with pytest.raises(EOFError, match="Prompt has reached EOF"):
-            await cli.command("ab")
+            await cli.command("ab", allow_eof=True)

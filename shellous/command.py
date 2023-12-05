@@ -660,7 +660,7 @@ class Command(Generic[_RT]):
     @contextlib.asynccontextmanager
     async def prompt(
         self,
-        prompt: Union[str, re.Pattern[str], None] = None,
+        prompt: Union[str, list[str], re.Pattern[str], None] = None,
         *,
         timeout: Optional[float] = None,
         normalize_newlines: bool = False,

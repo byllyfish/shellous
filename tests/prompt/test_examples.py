@@ -62,8 +62,10 @@ async def test_fail():
     cmd = sh(_DIR / "fake_prompter.sh").set(pty=True)
 
     async with cmd.result("--fail").prompt() as cli:
-        result, m = await cli.expect("*NOTHING*")
-        assert m is None
-        assert result == "Failure requested.\r\n"
+        try:
+            await cli.expect("*NOTHING*")
+        except EOFError:
+            assert cli.pending == "Failure requested.\r\n"
 
-    assert cli.result.exit_code == 1
+    assert not bool(cli.result)
+    assert cli.result is not None and cli.result.exit_code == 1

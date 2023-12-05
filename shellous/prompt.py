@@ -4,10 +4,7 @@ import asyncio
 import codecs
 import io
 import re
-from typing import TYPE_CHECKING, Optional, Union
-
-if TYPE_CHECKING:
-    from types import EllipsisType  # requires python 3.10
+from typing import Optional, Union
 
 from shellous import pty_util
 from shellous.harvest import harvest_results
@@ -193,30 +190,25 @@ class Prompt:
 
     async def expect(
         self,
-        prompt: Union[str, list[str], re.Pattern[str], "EllipsisType", None] = None,
+        prompt: Union[str, list[str], re.Pattern[str], None] = None,
         *,
         timeout: Optional[float] = None,
-    ) -> tuple[str, Optional[re.Match[str]]]:
+    ) -> tuple[str, re.Match[str]]:
         """Read from co-process standard output until `prompt` pattern matches.
 
         Returns a 2-tuple of (output, match) where `output` is the text *before*
         the prompt pattern and `match` is a `re.Match` object for the prompt
-        text itself. If there is no match due to EOF, `match` will be None.
+        text itself.
+
+        If `expect` reaches EOF or a timeout occurs before the prompt pattern
+        matches, it raises an `EOFError` or `asyncio.TimeoutError`. The unread
+        characters will be available in the `pending` buffer.
 
         After this method returns, there may still be characters read from stdout
         that remain in the `pending` buffer. These are the characters *after* the
-        prompt pattern that didn't match. You can examine these using the `pending`
-        property. Subsequent calls to expect will examine this buffer first
-        before reading new data from the output pipe.
-
-        If a timeout is reached while waiting for the prompt pattern, this
-        method will raise an `asyncio.TimeoutError` exception. You can catch
-        this exception and look in the `pending` buffer to see the data that
-        failed to match. You can call send()/expect() again after a timeout
-        to negotiate further with the co-process.
-
-        Once EOF has been reached, calling this method again will continue to
-        return ("", None).
+        prompt pattern. You can examine these using the `pending` property.
+        Subsequent calls to expect will examine this buffer first before
+        reading new data from the output pipe.
 
         By default, this method will use the default `timeout` for the `Prompt`
         object if one is set. You can use the `timeout` parameter to specify
@@ -229,7 +221,7 @@ class Prompt:
         expressions. The type of the `prompt` parameter determines the type of
         search.
 
-        `None`:
+        No argument or `None`:
             Use the default prompt pattern. If there is no default prompt,
             raise a TypeError.
         `str`:
@@ -238,8 +230,6 @@ class Prompt:
             Match one of these strings exactly.
         `re.Pattern[str]`:
             Match the given regular expression.
-        `...`:
-            Read all data until end of stream (EOF).
 
         When matching a regular expression, only a single Pattern object is
         supported. To match multiple regular expressions, combine them into a
@@ -248,20 +238,17 @@ class Prompt:
         The `expect()` method returns a 2-tuple (output, match). The `match`
         is the result of the regular expression search (re.Match). If you
         specify your prompt as a string or list of strings, it is still compiled
-        into a regular expression that produce an `re.Match` object. You can
-        examine the `match` object to determine the prompt string found.
+        into a regular expression that produces an `re.Match` object. You can
+        examine the `match` object to determine the prompt value found.
 
         This method conducts a regular expression search on streaming data. The
         `expect()` method reads a new chunk of data into the `pending` buffer
         and then searches it. You must be careful in writing a regular
         expression so that the search is agnostic to how the incoming chunks of
-        data arrive. Instead of using `greedy` RE modifiers such as `*`, `+`,
-        and `{m,n}`, use the `minimal` versions: `*?`, `+?`, and `{m,n}?`.
-
-        It is best to use the `expect()` method to search for a trailing
-        delimiter or prompt, read the relevant data into a variable, and then
-        examine that variable in depth with a separate parser or regular
-        expression.
+        data arrive. Consider including a boundary condition at the end of your pattern.
+        For example, instead of searching for the open-ended pattern`[a-z]+`,
+        search for the pattern `[a-z]+[^a-z]` which ends with a non-letter
+        character.
 
         Examples
         ~~~~~~~~
@@ -269,36 +256,37 @@ class Prompt:
         Expect an exact string:
 
         ```
-        _, m = await cli.expect("ftp> ")
-        if m:
-            await cli.send(command)
-            response, _ = await cli.expect("ftp> ")
+        await cli.expect("ftp> ")
+        await cli.send(command)
+        response, _ = await cli.expect("ftp> ")
         ```
 
         Expect a choice of strings:
 
         ```
         _, m = await cli.expect(["Login: ", "Password: ", "ftp> "])
-        if m:
-            match m[0]:
-                case "Login: ":
-                    await cli.send(login)
-                case "Password: ":
-                    await cli.send(password)
-                case "ftp> ":
-                    await cli.send(command)
+        match m[0]:
+            case "Login: ":
+                await cli.send(login)
+            case "Password: ":
+                await cli.send(password)
+            case "ftp> ":
+                await cli.send(command)
         ```
 
         Read until EOF:
 
         ```
-        data, _ = await cli.expect(...)
+        data = await cli.read_all()
         ```
 
-        """
-        if prompt is ...:
-            return await self.read_all(), None
+        Read the contents of the `pending` buffer without filling the buffer
+        with any new data from the co-process pipe:
 
+        ```
+        data = await cli.read_pending()
+        ```
+        """
         if prompt is None:
             prompt = self._default_prompt
             if prompt is None:
@@ -312,7 +300,7 @@ class Prompt:
                 return result
 
         if self._at_eof:
-            return ("", None)
+            raise EOFError("Prompt has reached EOF")
 
         cancelled, (result,) = await harvest_results(
             self._read_to_pattern(prompt),
@@ -330,28 +318,27 @@ class Prompt:
         *,
         timeout: Optional[float] = None,
     ) -> str:
-        """Read from co-process stdout  characters until EOF.
+        """Read from co-process output until EOF.
 
         If we are already at EOF, return "".
-
-        Deprecated: Use `expect(...)`.
         """
-        if self._pending:
-            result = self._search_pending(None)
-            if result is not None:
-                return result[0]
+        if not self._at_eof:
+            cancelled, (result,) = await harvest_results(
+                self._read_some(tag="@read_all"),
+                timeout=timeout or self._default_timeout,
+            )
+            if cancelled:
+                raise asyncio.CancelledError()
+            if isinstance(result, Exception):
+                raise result
 
-        if self._at_eof:
-            return ""
+        return self.read_pending()
 
-        cancelled, (result,) = await harvest_results(
-            self._read_to_pattern(None),
-            timeout=timeout or self._default_timeout,
-        )
-        if cancelled:
-            raise asyncio.CancelledError()
-
-        return result[0]
+    def read_pending(self) -> str:
+        "Read the contents of the pending buffer and empty it."
+        result = self._pending
+        self._pending = ""
+        return result
 
     async def command(
         self,
@@ -359,15 +346,22 @@ class Prompt:
         *,
         end: str = _DEFAULT_LINE_END,
         no_echo: bool = False,
-        prompt: Union[str, re.Pattern[str], "EllipsisType", None] = None,
+        prompt: Union[str, re.Pattern[str], None] = None,
         timeout: Optional[float] = None,
+        allow_eof: bool = False,
     ) -> str:
         "Send some input and receive the response up to the next prompt."
         if self._at_eof:
-            raise EOFError("Prompt has reached EOF already")
+            raise EOFError("Prompt has reached EOF")
 
         await self.send(text, end=end, no_echo=no_echo, timeout=timeout)
-        result, _ = await self.expect(prompt, timeout=timeout)
+        try:
+            result, _ = await self.expect(prompt, timeout=timeout)
+        except EOFError:
+            if not allow_eof:
+                raise
+            result = self.read_pending()
+
         return result
 
     def close(self) -> None:
@@ -393,22 +387,17 @@ class Prompt:
 
     async def _read_to_pattern(
         self,
-        pattern: Optional[re.Pattern[str]],
-    ) -> tuple[str, Optional[re.Match[str]]]:
-        """Read text up to part that matches pattern.
+        pattern: re.Pattern[str],
+    ) -> tuple[str, re.Match[str]]:
+        """Read text up to part that matches the pattern.
 
-        If `pattern` is None, read all data until EOF.
-
-        Returns 2-tuple with (text, match). `match` is None if there is no
-        match because we've reached EOF.
+        Returns 2-tuple with (text, match).
         """
         stdout = self._runner.stdout
         assert stdout is not None
         assert self._chunk_size > 0
 
-        while True:
-            assert not self._at_eof
-
+        while not self._at_eof:
             _prev_len = len(self._pending)  # debug check
 
             try:
@@ -438,42 +427,33 @@ class Prompt:
             if result is not None:
                 return result
 
-            assert len(self._pending) > _prev_len  # debug check
+            assert self._at_eof or len(self._pending) > _prev_len  # debug check
+
+        raise EOFError("Prompt has reached EOF")
 
     def _search_pending(
         self,
-        pattern: Optional[re.Pattern[str]],
-    ) -> Optional[tuple[str, Optional[re.Match[str]]]]:
-        """Search pending buffer for pattern."""
-        if pattern is not None:
-            # Search our `_pending` buffer for the pattern. If we find a match,
-            # we return it and prepare any unread data in the buffer for the
-            # next "_read" call.
-            found = pattern.search(self._pending)
-            if found:
-                if LOG_PROMPT:
-                    LOGGER.info("Prompt[pid=%s] found: %r", self._runner.pid, found)
-                result = self._pending[0 : found.start(0)]
-                self._pending = self._pending[found.end(0) :]
-                return (result, found)
+        pattern: re.Pattern[str],
+    ) -> Optional[tuple[str, re.Match[str]]]:
+        """Search our `pending` buffer for the pattern.
 
-        if self._at_eof:
-            # Pattern doesn't match anything and we've reached EOF.
+        If we find a match, we return the data up to the portion that matched
+        and leave the trailing data in the `pending` buffer. This method returns
+        (result, match) or None if there is no match.
+        """
+        found = pattern.search(self._pending)
+        if found:
             if LOG_PROMPT:
-                LOGGER.info(
-                    "Prompt[pid=%s] at_eof: %d chars pending",
-                    self._runner.pid,
-                    len(self._pending),
-                )
-            result = self._pending
-            self._pending = ""
-            return (result, None)
+                LOGGER.info("Prompt[pid=%s] found: %r", self._runner.pid, found)
+            result = self._pending[0 : found.start(0)]
+            self._pending = self._pending[found.end(0) :]
+            return (result, found)
 
         return None
 
     async def _drain(self, stream: asyncio.StreamWriter) -> None:
         "Drain stream while reading into buffer concurrently."
-        read_task = asyncio.create_task(self._read_some())
+        read_task = asyncio.create_task(self._read_some(tag="@drain"))
         try:
             await stream.drain()
 
@@ -482,8 +462,8 @@ class Prompt:
                 read_task.cancel()
                 await read_task
 
-    async def _read_some(self) -> None:
-        "Read into buffer until cancelled or EOF. Used during _drain() only."
+    async def _read_some(self, *, tag: str = "") -> None:
+        "Read into `pending` buffer until cancelled or EOF."
         stdout = self._runner.stdout
         assert stdout is not None
         assert self._chunk_size > 0
@@ -499,7 +479,7 @@ class Prompt:
                 self._at_eof = True
 
             if LOG_PROMPT:
-                self._log_receive(chunk, "@drain")
+                self._log_receive(chunk, tag)
 
             # Decode eligible bytes into our buffer.
             data = self._decoder.decode(chunk, final=self._at_eof)
