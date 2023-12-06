@@ -1,4 +1,4 @@
-# Poetry (version 1.7.1) export at Tue Dec  5 14:09:50 MST 2023
+# Poetry (version 1.7.1) export at Wed Dec  6 11:03:47 MST 2023
 astroid==3.0.1 ; python_version >= "3.9" and python_version < "4.0" \
     --hash=sha256:7d5895c9825e18079c5aeac0572bc2e4c83205c95d416e0b4fee8bc361d2d9ca \
     --hash=sha256:86b0bb7d7da0be1a7c4aedb7974e391b32d4ed89e33de6ed6902b4b15c97577e
@@ -182,9 +182,9 @@ pygments==2.17.2 ; python_version >= "3.9" and python_version < "4.0" \
 pylint==3.0.2 ; python_version >= "3.9" and python_version < "4.0" \
     --hash=sha256:0d4c286ef6d2f66c8bfb527a7f8a629009e42c99707dec821a03e1b51a4c1496 \
     --hash=sha256:60ed5f3a9ff8b61839ff0348b3624ceeb9e6c2a92c514d81c9cc273da3b6bcda
-pyright==1.1.338 ; python_version >= "3.9" and python_version < "4.0" \
-    --hash=sha256:132aa74d2d58d4d27a5b922672b5b4d2be7f3931e7276a2b231d15af6e45daad \
-    --hash=sha256:28231a3c81ec738b3e1b02489eea5b67fb425a9be0717a32b2e075984623b3ff
+pyright==1.1.339 ; python_version >= "3.9" and python_version < "4.0" \
+    --hash=sha256:581ce4e281575814380dd67a331e75c0ccdca31eb848005ee1ae46e7bfa8b4f9 \
+    --hash=sha256:662f3df170fdeda76fd21b158ab20c518dad99c2f14b0a7f84c2bfd60d5a8d2a
 pytest-asyncio==0.23.2 ; python_version >= "3.9" and python_version < "4.0" \
     --hash=sha256:c16052382554c7b22d48782ab3438d5b10f8cf7a4bdcae7f0f67f097d95beecc \
     --hash=sha256:ea9021364e32d58f0be43b91c6233fb8d2224ccef2398d6837559e587682808f
