@@ -20,8 +20,9 @@ async def main():
     async with cmd.prompt(timeout=10.0) as cli:
         # Read various prompts and send a response.
         while True:
-            _, m = await cli.expect(re.compile(r"\[Yn\] |Name: |Password: |prompt> "))
-            token = m[0] if m else ""
+            _, m = await cli.expect(["[Yn] ", "Name: ", "Password: ", "prompt> "])
+            token = m[0]
+
             if token == "Name: ":
                 await cli.send("friend")
             elif token == "Password: ":

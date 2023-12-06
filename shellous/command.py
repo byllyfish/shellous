@@ -660,13 +660,25 @@ class Command(Generic[_RT]):
     @contextlib.asynccontextmanager
     async def prompt(
         self,
-        prompt: Union[str, re.Pattern[str], None] = None,
+        prompt: Union[str, list[str], re.Pattern[str], None] = None,
         *,
         timeout: Optional[float] = None,
         normalize_newlines: bool = False,
-        chunk_size: Optional[int] = None,
     ) -> AsyncIterator[Prompt]:
-        "Run command using the send/expect API."
+        """Run command using the send/expect API.
+
+        This method should be called using `async with`. It returns a `Prompt`
+        object with send() and expect() methods.
+
+        You can optionally set a default `prompt`. This is used by `expect()`
+        when you don't provide another value.
+
+        Use the `timeout` parameter to set the default timeout for operations.
+
+        Set `normalize_newlines` to True to convert incoming CR and CR-LF to LF.
+        This conversion is done before matching with `expect()`. This option
+        does not affect strings sent with `send()`.
+        """
         cmd = self.stdin(Redirect.CAPTURE).stdout(Redirect.CAPTURE)
 
         cli = None
@@ -677,7 +689,6 @@ class Command(Generic[_RT]):
                     default_prompt=prompt,
                     default_timeout=timeout,
                     normalize_newlines=normalize_newlines,
-                    chunk_size=chunk_size,
                 )
                 yield cli
                 cli.close()
