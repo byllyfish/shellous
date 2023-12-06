@@ -459,7 +459,6 @@ async def test_prompt_grep_pty():
 
     async with cmd.prompt() as cli:
         cli.echo = False
-
         print(f"assuming max_canon = {_MAX_CANON}")
 
         await cli.send("a" * (_MAX_CANON - 2) + "b")
@@ -569,3 +568,51 @@ async def test_prompt_normalize_newlines():
 
         result = await cli.read_all()
         assert result == "a\nb\nc\nd\n\ne\n\n\n"
+
+
+@_requires_pty
+async def test_prompt_prompt_api_echo():
+    "Test the prompt context manager with Prompt.echo api."
+    async with sh("grep", "b").set(pty=True).prompt() as cli:
+        assert cli.echo
+        cli.echo = False
+        assert not cli.echo
+        cli.echo = True
+        assert cli.echo
+
+    async with sh("grep", "b").prompt() as cli:
+        assert not cli.echo
+        with pytest.raises(RuntimeError, match="Not running in a PTY"):
+            cli.echo = True
+        assert not cli.echo
+        with pytest.raises(RuntimeError, match="Not running in a PTY"):
+            cli.echo = False
+        assert not cli.echo
+
+
+async def test_prompt_api_edge_cases():
+    "Test the prompt context manager with some edge cases."
+    cmd = sh("grep", "--line-buffered", "b").set(timeout=8.0)
+
+    async with cmd.prompt() as cli:
+        # Test Prompt is required when no default prompt set.
+        with pytest.raises(TypeError, match="default prompt is not set"):
+            await cli.expect()
+
+        # Test cancelled send().
+        task = asyncio.create_task(cli.send("aaaaab"))
+        task.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+
+        # Test cancelled expect().
+        task = asyncio.create_task(cli.expect("\n"))
+        task.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+
+        # Test cancelled read_all().
+        task = asyncio.create_task(cli.read_all())
+        task.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await task
