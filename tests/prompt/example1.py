@@ -5,7 +5,6 @@ This example uses the legacy/original API.
 
 import asyncio
 import logging
-import sys
 from pathlib import Path
 
 from shellous import sh

@@ -1109,7 +1109,7 @@ class PipeRunner:
     @log_method(LOG_DETAIL)
     async def _start(self):
         "Set up redirection and launch pipeline."
-        open_fds = []
+        open_fds: list[int] = []
 
         try:
             stdin = None
