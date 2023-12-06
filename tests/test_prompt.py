@@ -560,7 +560,7 @@ async def test_prompt_grep_eof():
 
 async def test_prompt_normalize_newlines():
     "Test the prompt context manager with `normalize_newlines` setting."
-    script = "import sys; sys.stdout.write(sys.stdin.read())"
+    script = "import sys; sys.stdout.buffer.write(sys.stdin.buffer.read())"
     cmd = sh(sys.executable, "-c", script)
 
     async with cmd.prompt(normalize_newlines=True) as cli:
