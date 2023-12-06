@@ -182,7 +182,7 @@ class Prompt:
         )
         if cancelled:
             raise asyncio.CancelledError()
-        elif isinstance(ex[0], Exception):
+        if isinstance(ex[0], Exception):
             raise ex[0]
 
     async def expect(
@@ -581,5 +581,4 @@ def _regex_compile_exact(pattern: Union[str, list[str]]) -> re.Pattern[str]:
     "Compile a regex that matches an exact string or set of strings."
     if isinstance(pattern, list):
         return re.compile("|".join(re.escape(s) for s in pattern))
-    else:
-        return re.compile(re.escape(pattern))
+    return re.compile(re.escape(pattern))

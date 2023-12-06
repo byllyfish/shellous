@@ -388,7 +388,7 @@ async def test_prompt_deadlock_antipattern(bulk_cmd):
     """
 
     async def _antipattern():
-        async with bulk_cmd.set(timeout=3.0).prompt() as cli:
+        async with bulk_cmd.set(timeout=3.0).prompt() as _cli:
             # ... and we don't read from stdout at all.
             pass
 
