@@ -120,11 +120,6 @@ class Prompt:
         "The `Result` of the command. Returns None if process has not exited yet."
         return self._result
 
-    @property
-    def runner(self) -> Runner:
-        "The process runner."
-        return self._runner
-
     async def send(
         self,
         text: Union[bytes, str],
@@ -456,10 +451,15 @@ class Prompt:
         """
         found = pattern.search(self._pending)
         if found:
-            if LOG_PROMPT:
-                LOGGER.info("Prompt[pid=%s] found: %r", self._runner.pid, found)
             result = self._pending[0 : found.start(0)]
             self._pending = self._pending[found.end(0) :]
+            if LOG_PROMPT:
+                LOGGER.info(
+                    "Prompt[pid=%s] found: %r [%s CHARS PENDING]",
+                    self._runner.pid,
+                    found,
+                    len(self._pending),
+                )
             return (result, found)
 
         return None

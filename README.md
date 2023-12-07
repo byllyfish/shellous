@@ -209,11 +209,29 @@ async with cmd.prompt() as client:
   await client.send("abc")
   output, _ = await client.expect("\r\n")
   print(output)
-
-assert client.result.exit_code == 0
 ```
 
 The `prompt()` API automatically captures `stdin` and `stdout`.
+
+Here is another example of controlling a bash co-process running in a docker container.
+
+```python
+async def list_packages():
+    "Run bash in an ubuntu docker container and list packages."
+    bash_prompt = re.compile("root@[0-9a-f]+:/[^#]*# ")
+    cmd = sh("docker", "run", "-it", "--rm", "-e", "TERM=dumb", "ubuntu")
+
+    async with cmd.set(pty=True).prompt(bash_prompt, timeout=3) as cli:
+        # Read up to first prompt.
+        await cli.expect()
+
+        # Disable echo. The `command()` method combines send *and* expect methods.
+        await cli.command("stty -echo")
+
+        # Return list of packages.
+        result = await cli.command("apt-cache pkgnames")
+        return result.strip().split("\r\n")
+```
 
 ## Redirection
 
