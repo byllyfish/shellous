@@ -179,44 +179,36 @@ async def _open_pty_streams(parent_fd: int, child_fd: ChildFd):
     return reader, writer
 
 
-IntOrEllipsis = Union[int, type(...)]
-
-
-def raw(rows: IntOrEllipsis = 0, cols: IntOrEllipsis = 0) -> PtyAdapter:
+def raw(rows: int = 0, cols: int = 0) -> PtyAdapter:
     "Return a function that sets PtyOptions.child_fd to raw mode."
-    rows_int, cols_int = _inherit_term_size(rows, cols)
 
     def _pty_set_raw(fdesc: int):
         tty.setraw(fdesc)
-        if rows_int or cols_int:
-            _set_term_size(fdesc, rows_int, cols_int)
+        if rows or cols:
+            _set_term_size(fdesc, rows, cols)
         assert _get_eof(fdesc) == b""
 
     return _pty_set_raw
 
 
-def cbreak(rows: IntOrEllipsis = 0, cols: IntOrEllipsis = 0) -> PtyAdapter:
+def cbreak(rows: int = 0, cols: int = 0) -> PtyAdapter:
     "Return a function that sets PtyOptions.child_fd to cbreak mode."
-    rows_int, cols_int = _inherit_term_size(rows, cols)
 
     def _pty_set_cbreak(fdesc: int):
         tty.setcbreak(fdesc)
-        if rows_int or cols_int:
-            _set_term_size(fdesc, rows_int, cols_int)
+        if rows or cols:
+            _set_term_size(fdesc, rows, cols)
         assert _get_eof(fdesc) == b""
 
     return _pty_set_cbreak
 
 
-def cooked(
-    rows: IntOrEllipsis = 0, cols: IntOrEllipsis = 0, echo: bool = True
-) -> PtyAdapter:
+def cooked(rows: int = 0, cols: int = 0, echo: bool = True) -> PtyAdapter:
     "Return a function that leaves PtyOptions.child_fd in cooked mode."
-    rows_int, cols_int = _inherit_term_size(rows, cols)
 
     def _pty_set_canonical(fdesc: int):
-        if rows_int or cols_int:
-            _set_term_size(fdesc, rows_int, cols_int)
+        if rows or cols:
+            _set_term_size(fdesc, rows, cols)
         if not echo:
             set_term_echo(fdesc, False)
         assert _get_eof(fdesc) == b"\x04"
@@ -251,27 +243,6 @@ def _set_term_size(fdesc: int, rows: int, cols: int):
         fcntl.ioctl(fdesc, tty.TIOCSWINSZ, winsz)  # pyright: ignore
     except OSError as ex:
         LOGGER.warning("_set_term_size ex=%r", ex)
-
-
-def _inherit_term_size(rows: IntOrEllipsis, cols: IntOrEllipsis) -> tuple[int, int]:
-    "Override ... with terminal setting from current stdin."
-    if Ellipsis not in (rows, cols):
-        return rows, cols  # type: ignore
-
-    try:
-        zeros = struct.pack("HHHH", 0, 0, 0, 0)
-        winsz = fcntl.ioctl(_STDOUT_FILENO, tty.TIOCGWINSZ, zeros)  # pyright: ignore
-        winsz = struct.unpack("HHHH", winsz)
-    except (OSError, struct.error) as ex:
-        winsz = (0, 0, 0, 0)
-        LOGGER.warning("_inherit_term_size ex=%r", ex)
-
-    if rows is Ellipsis:
-        rows = winsz[0]
-    if cols is Ellipsis:
-        cols = winsz[1]
-
-    return rows, cols  # type: ignore
 
 
 def _get_eof(fdesc: int):

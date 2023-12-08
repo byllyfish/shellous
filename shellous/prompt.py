@@ -116,14 +116,24 @@ class Prompt:
         pty_util.set_term_echo(self._runner.pty_fd, value)
 
     @property
-    def result(self) -> Optional[Result]:
-        "The `Result` of the command. Returns None if process has not exited yet."
-        return self._result
+    def result(self) -> Result:
+        """The `Result` of the co-process when it exited.
 
-    @property
-    def runner(self) -> Runner:
-        "The process runner."
-        return self._runner
+        You can only retrieve this property *after* the `async with` block
+        exits where the co-process is running:
+
+        ```
+        async with cmd.prompt() as cli:
+            ...
+        # Access `cli.result` here.
+        ```
+
+        Inside the `async with` block, raise a RuntimeError because the process
+        has not exited yet.
+        """
+        if self._result is None:
+            raise RuntimeError("Prompt process is still running")
+        return self._result
 
     async def send(
         self,
@@ -456,10 +466,15 @@ class Prompt:
         """
         found = pattern.search(self._pending)
         if found:
-            if LOG_PROMPT:
-                LOGGER.info("Prompt[pid=%s] found: %r", self._runner.pid, found)
             result = self._pending[0 : found.start(0)]
             self._pending = self._pending[found.end(0) :]
+            if LOG_PROMPT:
+                LOGGER.info(
+                    "Prompt[pid=%s] found: %r [%s CHARS PENDING]",
+                    self._runner.pid,
+                    found,
+                    len(self._pending),
+                )
             return (result, found)
 
         return None

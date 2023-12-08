@@ -22,7 +22,7 @@ import threading
 from abc import abstractmethod
 from typing import Any, Callable, Coroutine, Optional, Protocol
 
-from shellous.log import LOGGER, log_thread
+from shellous.log import LOG_DETAIL, LOGGER, log_thread
 from shellous.util import close_fds, wait_pid
 
 assert sys.platform != "win32"
@@ -206,7 +206,7 @@ class KQueueStrategy(ChildStrategy):
             # Process is still dying. Spawn a task to poll it.
             self._tasks.create_task(_poll_dead_pid(pid, callback, args))
 
-    @log_thread(True)
+    @log_thread(LOG_DETAIL)
     def _run(self):
         "Event loop that handles kqueue events."
         try:
@@ -303,7 +303,7 @@ class EPollStrategy(ChildStrategy):
             pass
         self._tasks.create_task(_poll_dead_pid(pid, callback, args))
 
-    @log_thread(True)
+    @log_thread(LOG_DETAIL)
     def _run(self):
         "Event loop that handles epoll events."
         assert self._selfpipe is not None
@@ -392,7 +392,7 @@ class ThreadStrategy(ChildStrategy):
         self._pids[pid] = thread
         thread.start()
 
-    @log_thread(True)
+    @log_thread(LOG_DETAIL)
     def _reap_pid(
         self,
         pid: int,

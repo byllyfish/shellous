@@ -1269,16 +1269,6 @@ async def test_pty_raw_ls(ls):
         assert len(line.rstrip()) <= 40
 
 
-@pytest.mark.skipif(_is_uvloop() or _IS_ALPINE, reason="uvloop,alpine")
-async def test_pty_raw_size_inherited():
-    "Test the `pty` option in raw mode."
-    cmd = sh("stty", "size").set(pty=raw(rows=..., cols=...))
-    result = await cmd
-
-    rows, cols = (int(n) for n in result.rstrip().split())
-    assert rows >= 0 and cols >= 0
-
-
 @pytest.mark.skipif(_is_uvloop(), reason="uvloop")
 async def test_pty_cat_auto_eof():
     "Test the `pty` option with string input and auto-EOF."
