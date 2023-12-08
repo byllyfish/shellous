@@ -82,6 +82,13 @@ class Prompt:
         self._chunk_size = _chunk_size
         self._decoder = _make_decoder(self._encoding, normalize_newlines)
 
+        if LOG_PROMPT:
+            LOGGER.info(
+                "Prompt[pid=%s]: --- BEGIN --- name=%r",
+                self._runner.pid,
+                self._runner.name,
+            )
+
     @property
     def at_eof(self) -> bool:
         "True if the prompt reader is at the end of file."
@@ -407,6 +414,12 @@ class Prompt:
     def _finish_(self) -> None:
         "Internal method called when process exits to fetch the `Result` and cache it."
         self._result = self._runner.result(check=False)
+        if LOG_PROMPT:
+            LOGGER.info(
+                "Prompt[pid=%s]: --- END --- result=%r",
+                self._runner.pid,
+                self._result,
+            )
 
     async def _read_to_pattern(
         self,
