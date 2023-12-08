@@ -612,3 +612,28 @@ async def test_prompt_api_edge_cases():
         task.cancel()
         with pytest.raises(asyncio.CancelledError):
             await task
+
+
+async def test_prompt_pipeline():
+    "Test the prompt context manager on a pipeline."
+    pipe = sh("grep", "--line-buffered", "a") | sh("grep", "--line-buffered", "b")
+
+    async with pipe.prompt() as cli:
+        await cli.send("abc")
+        out, m = await cli.expect("b")
+        assert out == "a"
+        assert m[0] == "b"
+        assert cli.pending == "c\n"
+        cli.read_pending()
+
+        await cli.send("ac")
+        with pytest.raises(asyncio.TimeoutError):
+            await cli.expect("a", timeout=2)
+
+        await cli.send("bark")
+        out, m = await cli.expect(re.compile(r"([abc]+).*\n"))
+        assert out == ""
+        assert m[1] == "ba"
+        assert cli.pending == ""
+
+    assert cli.result.exit_code == 0
