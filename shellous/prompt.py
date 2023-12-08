@@ -116,8 +116,23 @@ class Prompt:
         pty_util.set_term_echo(self._runner.pty_fd, value)
 
     @property
-    def result(self) -> Optional[Result]:
-        "The `Result` of the command. Returns None if process has not exited yet."
+    def result(self) -> Result:
+        """The `Result` of the co-process when it exited.
+
+        You can only retrieve this property *after* the `async with` block
+        exits where the co-process is running:
+
+        ```
+        async with cmd.prompt() as cli:
+            ...
+        # Access `cli.result` here.
+        ```
+
+        Inside the `async with` block, raise a RuntimeError because the process
+        has not exited yet.
+        """
+        if self._result is None:
+            raise RuntimeError("Prompt process is still running")
         return self._result
 
     async def send(

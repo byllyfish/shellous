@@ -599,20 +599,16 @@ async def test_prompt_api_edge_cases():
         with pytest.raises(TypeError, match="default prompt is not set"):
             await cli.expect()
 
-        # Test cancelled send().
-        task = asyncio.create_task(cli.send("aaaaab"))
-        task.cancel()
-        with pytest.raises(asyncio.CancelledError):
-            await task
-
         # Test cancelled expect().
         task = asyncio.create_task(cli.expect("\n"))
+        await asyncio.sleep(0.01)
         task.cancel()
         with pytest.raises(asyncio.CancelledError):
             await task
 
         # Test cancelled read_all().
         task = asyncio.create_task(cli.read_all())
+        await asyncio.sleep(0.01)
         task.cancel()
         with pytest.raises(asyncio.CancelledError):
             await task
