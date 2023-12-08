@@ -1053,16 +1053,15 @@ class PipeRunner:
             return None
         return self._pid
 
-    def result(self, *, check: bool = False) -> Result:
+    def result(self, *, check: bool = True) -> Result:
         "Return `Result` object for PipeRunner."
         assert self._results is not None
-        assert not check
 
-        return check_result(
-            convert_result_list(self._results, self._cancelled),
-            self._pipe.options,
-            self._cancelled,
-        )
+        result = convert_result_list(self._results, self._cancelled)
+        if not check:
+            return result
+
+        return check_result(result, self._pipe.options, self._cancelled)
 
     def add_task(
         self,

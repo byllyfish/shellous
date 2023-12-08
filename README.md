@@ -231,7 +231,15 @@ async def list_packages():
         # Return list of packages.
         result = await cli.command("apt-cache pkgnames")
         return result.strip().split("\r\n")
+
+    # You can check the result object's exit code. You can only
+    # access `cli.result` outside the `async with` block.
+    assert cli.result.exit_code == 0
 ```
+
+The `prompt()` API does not raise a `ResultError` when a command exits with an error status. 
+Typically, you'll see an EOFError when you were expecting to read a response. You can check the
+exit status by retrieving the Prompt's `result` object outside of the `async with` block.
 
 ## Redirection
 

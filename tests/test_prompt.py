@@ -637,3 +637,16 @@ async def test_prompt_pipeline():
         assert cli.pending == ""
 
     assert cli.result.exit_code == 0
+
+
+async def test_prompt_pipeline_error():
+    "Test the prompt context manager on a pipeline with exit error."
+    pipe = sh("grep", "a") | sh("grep", "--no-such-option")
+
+    async with pipe.prompt() as cli:
+        await cli.send("abc")
+        with pytest.raises(EOFError):
+            await cli.expect("b")
+
+    assert cli.result.exit_code != 0
+    assert "--no-such-option" in cli.result.error
