@@ -377,7 +377,8 @@ equivalent to the bash command: `ls | grep README`
 'README.md\n'
 ```
 
-A pipeline returns a `Result` if the last command in the pipeline has the `.result` modifier.
+A pipeline returns a `Result` if the last command in the pipeline has the `.result` modifier. To set other
+options like `encoding` for a Pipeline, set them on the last command.
 
 ```pycon
 >>> pipe = sh("ls") | sh("grep", "README").result
@@ -386,6 +387,14 @@ Result(exit_code=0, output_bytes=b'README.md\n', error_bytes=b'', cancelled=Fals
 ```
 
 Error reporting for a pipeline is implemented similar to using the `-o pipefail` shell option.
+
+Pipelines support the same `await/async for/async with` operations that work on a single command, including
+the `Prompt` API.
+
+```pycon
+>>> [line.strip() async for line in pipe]
+['README.md']
+```
 
 ## Process Substitution (Unix Only)
 
