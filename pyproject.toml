@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "shellous"
-version = "0.32.0"
+version = "0.33.0"
 description = "Async Processes and Pipelines"
 license = "Apache-2.0"
 authors = ["Bill Fisher <william.w.fisher@gmail.com>"]
