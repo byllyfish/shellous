@@ -1,6 +1,8 @@
 "Implements support for Pipelines."
 
+import contextlib
 import dataclasses
+import re
 from dataclasses import dataclass
 from types import TracebackType
 from typing import (
@@ -17,9 +19,11 @@ from typing import (
 )
 
 import shellous
+from shellous.prompt import Prompt
 from shellous.redirect import (
     STDIN_TYPES,
     STDOUT_TYPES,
+    Redirect,
     StdinType,
     StdoutType,
     aiter_preflight,
@@ -55,7 +59,7 @@ class Pipeline(Generic[_RT]):
 
     @property
     def options(self) -> shellous.Options:
-        "Return last command's options."
+        "Return the last command's options."
         return self.commands[-1].options
 
     def stdin(self, input_: Any, *, close: bool = False) -> "Pipeline[_RT]":
@@ -97,6 +101,45 @@ class Pipeline(Generic[_RT]):
     def coro(self) -> Coroutine[Any, Any, _RT]:
         "Return coroutine object for pipeline."
         return cast(Coroutine[Any, Any, _RT], PipeRunner.run_pipeline(self))
+
+    @contextlib.asynccontextmanager
+    async def prompt(
+        self,
+        prompt: Union[str, list[str], re.Pattern[str], None] = None,
+        *,
+        timeout: Optional[float] = None,
+        normalize_newlines: bool = False,
+    ) -> AsyncIterator[Prompt]:
+        """Run pipeline using the send/expect API.
+
+        This method should be called using `async with`. It returns a `Prompt`
+        object with send() and expect() methods.
+
+        You can optionally set a default `prompt`. This is used by `expect()`
+        when you don't provide another value.
+
+        Use the `timeout` parameter to set the default timeout for operations.
+
+        Set `normalize_newlines` to True to convert incoming CR and CR-LF to LF.
+        This conversion is done before matching with `expect()`. This option
+        does not affect strings sent with `send()`.
+        """
+        cmd = self.stdin(Redirect.CAPTURE).stdout(Redirect.CAPTURE)
+
+        cli = None
+        try:
+            async with PipeRunner(cmd, capturing=True) as run:
+                cli = Prompt(
+                    run,
+                    default_prompt=prompt,
+                    default_timeout=timeout,
+                    normalize_newlines=normalize_newlines,
+                )
+                yield cli
+                cli.close()
+        finally:
+            if cli is not None:
+                cli._finish_()  # pyright: ignore[reportPrivateUsage]
 
     def _add(self, item: Union["shellous.Command[Any]", "Pipeline[Any]"]):
         if isinstance(item, shellous.Command):

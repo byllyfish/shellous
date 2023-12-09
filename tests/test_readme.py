@@ -118,6 +118,7 @@ def test_parse_readme():
         "await pipe",
         'pipe = sh("ls") | sh("grep", "README").result',
         "await pipe",
+        "[line.strip() async for line in pipe]",
         'cmd = sh("grep", "README", sh("ls"))',
         "await cmd",
         "buf = bytearray()",

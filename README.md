@@ -231,7 +231,15 @@ async def list_packages():
         # Return list of packages.
         result = await cli.command("apt-cache pkgnames")
         return result.strip().split("\r\n")
+
+    # You can check the result object's exit code. You can only
+    # access `cli.result` outside the `async with` block.
+    assert cli.result.exit_code == 0
 ```
+
+The `prompt()` API does not raise a `ResultError` when a command exits with an error status. 
+Typically, you'll see an EOFError when you were expecting to read a response. You can check the
+exit status by retrieving the Prompt's `result` object outside of the `async with` block.
 
 ## Redirection
 
@@ -377,7 +385,8 @@ equivalent to the bash command: `ls | grep README`
 'README.md\n'
 ```
 
-A pipeline returns a `Result` if the last command in the pipeline has the `.result` modifier.
+A pipeline returns a `Result` if the last command in the pipeline has the `.result` modifier. To set other
+options like `encoding` for a Pipeline, set them on the last command.
 
 ```pycon
 >>> pipe = sh("ls") | sh("grep", "README").result
@@ -386,6 +395,14 @@ Result(exit_code=0, output_bytes=b'README.md\n', error_bytes=b'', cancelled=Fals
 ```
 
 Error reporting for a pipeline is implemented similar to using the `-o pipefail` shell option.
+
+Pipelines support the same `await/async for/async with` operations that work on a single command, including
+the `Prompt` API.
+
+```pycon
+>>> [line.strip() async for line in pipe]
+['README.md']
+```
 
 ## Process Substitution (Unix Only)
 

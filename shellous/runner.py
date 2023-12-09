@@ -420,6 +420,11 @@ class Runner:
         return self.command.name
 
     @property
+    def options(self) -> "shellous.Options":
+        "Return options for process being run."
+        return self.command.options
+
+    @property
     def command(self) -> "shellous.Command[Any]":
         "Return the command being run."
         return self._options.command
@@ -1011,6 +1016,7 @@ class PipeRunner:
     _encoding: str
     _cancelled: bool = False
     _results: Optional[list[Union[BaseException, Result]]] = None
+    _pid: int = -1
 
     def __init__(self, pipe: "shellous.Pipeline[Any]", *, capturing: bool):
         """`capturing=True` indicates we are within an `async with` block and
@@ -1029,15 +1035,33 @@ class PipeRunner:
         "Return name of the pipeline."
         return self._pipe.name
 
-    def result(self) -> Result:
+    @property
+    def options(self) -> "shellous.Options":
+        """Return options for pipeline being run.
+
+        These are the options for the last command in the pipeline.
+        """
+        return self._pipe.options
+
+    @property
+    def pid(self) -> Optional[int]:
+        """Return the process ID for the first command in the pipeline.
+
+        The PID is only available when `capturing=True`.
+        """
+        if self._pid < 0:
+            return None
+        return self._pid
+
+    def result(self, *, check: bool = True) -> Result:
         "Return `Result` object for PipeRunner."
         assert self._results is not None
 
-        return check_result(
-            convert_result_list(self._results, self._cancelled),
-            self._pipe.options,
-            self._cancelled,
-        )
+        result = convert_result_list(self._results, self._cancelled)
+        if not check:
+            return result
+
+        return check_result(result, self._pipe.options, self._cancelled)
 
     def add_task(
         self,
@@ -1066,7 +1090,7 @@ class PipeRunner:
         self._tasks.clear()  # clear all tasks when done
 
     @log_method(LOG_DETAIL)
-    async def __aenter__(self):
+    async def __aenter__(self) -> "PipeRunner":
         "Set up redirections and launch pipeline."
         try:
             return await self._start()
@@ -1182,6 +1206,7 @@ class PipeRunner:
             last_ready.stdout,
             last_ready.stderr,
         )
+        self._pid = first_ready.pid
 
         return (stdin, stdout, stderr)
 

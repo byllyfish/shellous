@@ -10,7 +10,7 @@ from shellous import pty_util
 from shellous.harvest import harvest_results
 from shellous.log import LOG_PROMPT, LOGGER
 from shellous.result import Result
-from shellous.runner import Runner
+from shellous.runner import PipeRunner, Runner
 from shellous.util import encode_bytes
 
 _DEFAULT_LINE_END = "\n"
@@ -48,7 +48,7 @@ class Prompt:
     ```
     """
 
-    _runner: Runner
+    _runner: Union[Runner, PipeRunner]
     _encoding: str
     _default_prompt: Optional[re.Pattern[str]]
     _default_timeout: Optional[float]
@@ -75,12 +75,19 @@ class Prompt:
             default_prompt = _regex_compile_exact(default_prompt)
 
         self._runner = runner
-        self._encoding = runner.command.options.encoding
+        self._encoding = runner.options.encoding
         self._default_prompt = default_prompt
         self._default_timeout = default_timeout
         self._normalize_newlines = normalize_newlines
         self._chunk_size = _chunk_size
         self._decoder = _make_decoder(self._encoding, normalize_newlines)
+
+        if LOG_PROMPT:
+            LOGGER.info(
+                "Prompt[pid=%s]: --- BEGIN --- name=%r",
+                self._runner.pid,
+                self._runner.name,
+            )
 
     @property
     def at_eof(self) -> bool:
@@ -101,7 +108,7 @@ class Prompt:
         When the process is using a PTY, you can enable/disable terminal echo
         mode by setting the `echo` property to True/False.
         """
-        if self._runner.pty_fd is None:
+        if not isinstance(self._runner, Runner) or self._runner.pty_fd is None:
             return False
         return pty_util.get_term_echo(self._runner.pty_fd)
 
@@ -111,7 +118,7 @@ class Prompt:
 
         Raise an error if the runner is not using a PTY.
         """
-        if self._runner.pty_fd is None:
+        if not isinstance(self._runner, Runner) or self._runner.pty_fd is None:
             raise RuntimeError("Cannot set echo mode. Not running in a PTY.")
         pty_util.set_term_echo(self._runner.pty_fd, value)
 
@@ -392,7 +399,7 @@ class Prompt:
         stdin = self._runner.stdin
         assert stdin is not None
 
-        if self._runner.pty_eof:
+        if isinstance(self._runner, Runner) and self._runner.pty_eof:
             # Write EOF twice; once to end the current line, and the second
             # time to signal the end.
             stdin.write(self._runner.pty_eof * 2)
@@ -407,6 +414,12 @@ class Prompt:
     def _finish_(self) -> None:
         "Internal method called when process exits to fetch the `Result` and cache it."
         self._result = self._runner.result(check=False)
+        if LOG_PROMPT:
+            LOGGER.info(
+                "Prompt[pid=%s]: --- END --- result=%r",
+                self._runner.pid,
+                self._result,
+            )
 
     async def _read_to_pattern(
         self,
