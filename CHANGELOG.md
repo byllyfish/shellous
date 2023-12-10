@@ -1,6 +1,19 @@
 Shellous Change Log
 ===================
 
+0.33.0
+------
+
+- [FEATURE] Add the `Pipeline.prompt()` method so the `Prompt` API works in pipelines.
+- [FEATURE] Add the `Prompt.read_pending()` method to read and clear all data in the pending buffer.
+- [API] When `Prompt.expect()` doesn't match anything and we reach EOF, raise EOFError. The previous version returned a `match` of None.
+- [API] When `Prompt.command()` doesn't match, it will now raise EOFError. However, you can set the `allow_eof` argument to True to match EOF.
+- [API] The Prompt `chunk_size` argument is now private.
+- [API] Add `SHELLOUS_TRACE` environment variable for debug logging and tracing. This replaces the SHELLOUS_DEBUG and SHELLOUS_PROMPT environment variables.
+- [API] The `Prompt.result` property no longer returns an Optional. It raises a RuntimeError if the co-process is still running.
+- [API] The `Prompt.expect()` method no longer accepts an Ellipsis to match EOF. Use the `Prompt.read_all()` method to read until EOF.
+- [API] In the `cooked`, `cbreak`, `raw` utility methods, using the Ellipsis to inherit the terminal size is no longer supported.
+
 0.32.0
 ------
 
