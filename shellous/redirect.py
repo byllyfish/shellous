@@ -65,6 +65,9 @@ _DEFAULT_REDIRECTION: dict[tuple[int, bool], Union[bytes, Redirect]] = {
     (_STDERR, True): Redirect.STDOUT,
 }
 
+# Bytes of stderr to buffer by default when using `BUFFER` mode.
+DEFAULT_ERROR_LIMIT = 1024
+
 # Used in Command and Pipeline to implement operator overloading.
 STDIN_TYPES = (
     str,
@@ -246,6 +249,8 @@ async def copy_bytearray_limit(
     limit: int,
 ):
     "Copy limited number of bytes from source stream to dest bytearray."
+    assert limit >= 0
+
     while True:
         data = await source.read(_CHUNK_SIZE)
         if not data:

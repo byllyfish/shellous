@@ -305,6 +305,7 @@ def test_dataclasses():
         "error",
         "error_append",
         "error_close",
+        "error_limit",
         "exit_codes",
         "inherit_env",
         "input",
