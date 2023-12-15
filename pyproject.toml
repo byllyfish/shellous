@@ -94,7 +94,7 @@ reportUnnecessaryTypeIgnoreComment = true
 # reportUnusedCallResult = true
 
 [tool.black]
-required-version = "23.11.0"
+required-version = "23.12.0"
 
 [tool.isort]
 profile = "black"
