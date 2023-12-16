@@ -9,9 +9,6 @@ from typing import Optional, Union
 import shellous
 from shellous.util import decode_bytes
 
-# Limit number of bytes of stderr stored in Result object.
-RESULT_STDERR_LIMIT = 1024
-
 
 class ResultError(Exception):
     "Represents a non-zero exit status."

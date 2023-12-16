@@ -211,7 +211,7 @@ async with cmd.prompt() as client:
   print(output)
 ```
 
-The `prompt()` API automatically captures `stdin` and `stdout`.
+The `Prompt` API automatically captures `stdin` and `stdout`.
 
 Here is another example of controlling a bash co-process running in a docker container.
 
@@ -239,7 +239,7 @@ async def list_packages():
 
 The `prompt()` API does not raise a `ResultError` when a command exits with an error status. 
 Typically, you'll see an EOFError when you were expecting to read a response. You can check the
-exit status by retrieving the Prompt's `result` object outside of the `async with` block.
+exit status by retrieving the Prompt's `result` property outside of the `async with` block.
 
 ## Redirection
 
@@ -332,7 +332,9 @@ If you intend to redirect output to a file, you must use a `pathlib.Path` object
 
 ### Redirecting Standard Error
 
-By default, the first 1024 bytes of standard error is collected into the Result object.
+By default, the first 1024 bytes read from standard error are stored in the Result object.
+Any further bytes are discarded. You can change the 1024 byte limit using the `error_limit`
+option.
 
 To redirect standard error, use the `stderr` method. Standard error supports the
 same Python types as standard output. To append, set `append=True` in the `stderr` method.
@@ -358,7 +360,8 @@ Traceback (most recent call last):
 shellous.result.ResultError: Result(exit_code=1, output_bytes=b'', error_bytes=b'', cancelled=False, encoding='utf-8')
 ```
 
-If you redirect stderr, it will no longer be stored in the Result object.
+If you redirect stderr, it will no longer be stored in the Result object, and the `error_limit` option
+will not apply.
 
 ### Default Redirections
 
@@ -373,6 +376,8 @@ However, the default redirections are adjusted when using a pseudo-terminal (pty
 - Standard input is captured and ignored (CAPTURE).
 - Standard out is buffered and stored in the Result object (BUFFER).
 - Standard error is redirected to standard output (STDOUT).
+
+When you use the `Prompt` API, the standard input and standard output are automatically redirected to CAPTURE.
 
 ## Pipelines
 
@@ -537,6 +542,7 @@ You can retrieve an option from `cmd` with `cmd.options.<option>`. For example, 
 | close_fds | True if process should close all file descriptors when it starts. |
 | audit_callback | Provide function to audit stages of process execution. |
 | coerce_arg | Provide function to coerce `Command` arguments to strings when `str()` is not sufficient. |
+| error_limit | Maximum number of initial bytes of STDERR to store in `Result` object. (Default=1024) |
 
 ### env
 

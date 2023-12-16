@@ -15,12 +15,7 @@ from shellous import pty_util
 from shellous.harvest import harvest, harvest_results
 from shellous.log import LOG_DETAIL, LOGGER, log_method, log_timer
 from shellous.redirect import Redirect
-from shellous.result import (
-    RESULT_STDERR_LIMIT,
-    Result,
-    check_result,
-    convert_result_list,
-)
+from shellous.result import Result, check_result, convert_result_list
 from shellous.util import (
     BSD_DERIVED,
     SupportsClose,
@@ -664,10 +659,10 @@ class Runner:
                 stdin, stdout = opts.pty_fds.writer, opts.pty_fds.reader
 
             if stderr is not None:
-                limit = -1
+                limit = None
                 if opts.error_bytes is not None:
                     error = opts.error_bytes
-                    limit = RESULT_STDERR_LIMIT
+                    limit = opts.command.options.error_limit
                 elif opts.is_stderr_only:
                     assert stdout is None
                     assert opts.output_bytes is not None
@@ -679,7 +674,7 @@ class Runner:
                 )
 
             if stdout is not None:
-                limit = -1
+                limit = None
                 if opts.output_bytes is not None:
                     output = opts.output_bytes
                 else:
@@ -825,7 +820,7 @@ class Runner:
         sink: Any,
         encoding: str,
         tag: str,
-        limit: int = -1,
+        limit: Optional[int] = None,
     ) -> Optional[asyncio.StreamReader]:
         "Set up a task to write to custom output sink."
         if isinstance(sink, io.StringIO):
@@ -838,7 +833,7 @@ class Runner:
 
         if isinstance(sink, bytearray):
             # N.B. `limit` is only supported for bytearray.
-            if limit >= 0:
+            if limit is not None:
                 self.add_task(redir.copy_bytearray_limit(stream, sink, limit), tag)
             else:
                 self.add_task(redir.copy_bytearray(stream, sink), tag)

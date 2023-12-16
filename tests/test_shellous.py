@@ -171,6 +171,28 @@ async def test_error(error_cmd):
     assert result.error == "1" * 1024
 
 
+async def test_error_limit(error_cmd):
+    "Test setting an error_limit on stderr."
+    result = await error_cmd.stderr(sh.BUFFER).set(error_limit=2).result
+
+    assert result.exit_code == 0
+    assert result.output_bytes == b""
+    assert result.error_bytes == b"11"
+    assert result.output == ""
+    assert result.error == "11"
+
+
+async def test_error_limit_bytearray(error_cmd):
+    "Setting an error_limit on stderr should not affect bytearray redirect."
+    buf = bytearray()
+    result = await error_cmd.stderr(buf).set(error_limit=1).result
+
+    assert len(buf) == 4096
+    assert result.exit_code == 0
+    assert result.output_bytes == b""
+    assert result.error_bytes == b""
+
+
 async def test_error_bulk(error_cmd):
     # sh.BUFFER is used to override stderr(sh.INHERIT).
     result = await error_cmd("1").env(SHELLOUS_EXIT_CODE="13").stderr(sh.BUFFER).result

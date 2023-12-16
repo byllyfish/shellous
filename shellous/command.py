@@ -41,6 +41,7 @@ import shellous
 from shellous.prompt import Prompt
 from shellous.pty_util import PtyAdapterOrBool
 from shellous.redirect import (
+    DEFAULT_ERROR_LIMIT,
     STDIN_TYPES,
     STDOUT_TYPES,
     Redirect,
@@ -125,6 +126,9 @@ class Options:  # pylint: disable=too-many-instance-attributes
 
     error_close: bool = False
     "True if error object should be closed after subprocess launch."
+
+    error_limit: Optional[int] = DEFAULT_ERROR_LIMIT
+    "Bytes of stderr to buffer in memory (`sh.BUFFER`). None means unlimited."
 
     encoding: str = "utf-8"
     "Specifies encoding of input/output."
@@ -352,6 +356,7 @@ class CmdContext(Generic[_RT]):
         close_fds: Unset[bool] = _UNSET,
         audit_callback: Unset[_AuditFnT] = _UNSET,
         coerce_arg: Unset[_CoerceArgFnT] = _UNSET,
+        error_limit: Unset[Optional[int]] = _UNSET,
     ) -> "CmdContext[_RT]":
         """Return new context with custom options set.
 
@@ -499,6 +504,7 @@ class Command(Generic[_RT]):
         close_fds: Unset[bool] = _UNSET,
         audit_callback: Unset[_AuditFnT] = _UNSET,
         coerce_arg: Unset[_CoerceArgFnT] = _UNSET,
+        error_limit: Unset[Optional[int]] = _UNSET,
     ) -> "Command[_RT]":
         """Return new command with custom options set.
 
@@ -629,6 +635,14 @@ class Command(Generic[_RT]):
         can specify how to coerce unsupported argument types (e.g. dict) to
         a sequence of strings. This function should return the original value
         unchanged if there is no conversion needed.
+
+        **error_limit** (int | None) default=1024<br>
+        Specify the number of bytes to store when redirecting STDERR to BUFFER.
+        After reading up to `error_limit` bytes, shellous will continue to
+        read from stderr, but will not store any additional bytes. Setting
+        `error_limit` only affects the internal BUFFER; it has no effect when
+        using other redirection types.
+
         """
         kwargs = locals()
         del kwargs["self"]
