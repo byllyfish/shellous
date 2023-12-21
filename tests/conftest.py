@@ -112,7 +112,8 @@ async def report_orphan_tasks():
         if "<async_generator_athrow without __name__>" in repr(task)
     }
     if agen_tasks:
-        await asyncio.sleep(0)
+        # Make sure to yield enough time under code coverage.
+        await asyncio.sleep(0.05)
         extra_tasks = asyncio.all_tasks() - {asyncio.current_task()}
 
     if extra_tasks:
