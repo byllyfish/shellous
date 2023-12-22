@@ -17,6 +17,8 @@ if sys.platform != "win32":
 
 pytestmark = pytest.mark.skipif(sys.platform == "win32", reason="Unix")
 
+_IS_UVLOOP = os.environ.get("SHELLOUS_LOOP_TYPE") == "uvloop"
+
 
 class EventLoopThread(threading.Thread):
     "Thread with its own asyncio event loop."
@@ -168,6 +170,7 @@ async def test_thread_procsub():
     assert result == "abc\ndef\n"
 
 
+@pytest.mark.skipif(_IS_UVLOOP, reason="requires pty")
 @pytest.mark.xfail(XFAIL_CHILDWATCHER, reason="xfail_childwatcher")
 @run_in_thread(CHILD_WATCHER)
 async def test_thread_pty():
