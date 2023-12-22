@@ -26,64 +26,52 @@ _PYPY = platform.python_implementation() == "PyPy"
 if not os.environ.get("COVERAGE_RUN"):
     os.closerange(3, 600)
 
-childwatcher_type = os.environ.get("SHELLOUS_CHILDWATCHER_TYPE")
-loop_type = os.environ.get("SHELLOUS_LOOP_TYPE")
+_watcher_type = os.environ.get("SHELLOUS_CHILDWATCHER_TYPE")
+_loop_type = os.environ.get("SHELLOUS_LOOP_TYPE")
 
-if loop_type == "eager_task_factory":
-    assert sys.version_info[0:2] >= (3, 12), "requires python 3.12"
 
-    @pytest.fixture
-    def event_loop():
-        _init_child_watcher()
-        loop = asyncio.new_event_loop()
+class _CustomEventLoopPolicy(asyncio.DefaultEventLoopPolicy):
+    "Custom event loop policy for tests."
+
+    if sys.platform != "win32" and _loop_type == "uvloop":
+
+        def _loop_factory(self):
+            import uvloop  # pyright: ignore[reportMissingImports]
+
+            return uvloop.new_event_loop()
+
+    def __init__(self):
+        super().__init__()
+        watcher = self._get_watcher()
+        if watcher:
+            self.set_child_watcher(watcher)
+
+    def new_event_loop(self):
+        "Return a new event loop."
+        loop = super().new_event_loop()
         loop.set_debug(True)
-        loop.set_task_factory(asyncio.eager_task_factory)
-        yield loop
-        loop.close()
-        # Force garbage collection to flush out un-run __del__ methods.
-        del loop
-        gc.collect()
+        if _loop_type == "eager_task_factory":
+            assert sys.version_info[0:2] >= (3, 12), "requires python 3.12"
+            loop.set_task_factory(asyncio.eager_task_factory)
+        return loop
 
-elif sys.platform != "win32" and loop_type == "uvloop":
-    import uvloop  # pyright: ignore[reportMissingImports]
-
-    @pytest.fixture
-    def event_loop():  # pyright: ignore[reportGeneralTypeIssues]
-        loop = uvloop.new_event_loop()
-        loop.set_debug(True)
-        yield loop
-        loop.close()
-        # Force garbage collection to flush out un-run __del__ methods.
-        del loop
-        gc.collect()
-
-elif loop_type:
-    raise NotImplementedError
-
-else:
-
-    @pytest.fixture
-    def event_loop():
-        _init_child_watcher()
-        loop = asyncio.new_event_loop()
-        loop.set_debug(True)
-        yield loop
-        loop.close()
-        # Force garbage collection to flush out un-run __del__ methods.
-        del loop
-        gc.collect()
+    def _get_watcher(self):
+        "Construct a watcher, if requested."
+        if _watcher_type == "safe":
+            return asyncio.SafeChildWatcher()
+        elif _watcher_type == "pidfd":
+            return asyncio.PidfdChildWatcher()
+        elif _watcher_type == "default":
+            strategy = os.environ.get("SHELLOUS_THREADSTRATEGY") is not None
+            return DefaultChildWatcher(thread_strategy=strategy)
+        elif _watcher_type is not None:
+            raise NotImplementedError
+        return None
 
 
-def _init_child_watcher():
-    if childwatcher_type == "fast":
-        asyncio.set_child_watcher(asyncio.FastChildWatcher())
-    elif childwatcher_type == "safe":
-        asyncio.set_child_watcher(asyncio.SafeChildWatcher())
-    elif childwatcher_type == "pidfd":
-        asyncio.set_child_watcher(asyncio.PidfdChildWatcher())
-    elif childwatcher_type == "default":
-        thread_strategy = os.environ.get("SHELLOUS_THREADSTRATEGY") is not None
-        asyncio.set_child_watcher(DefaultChildWatcher(thread_strategy=thread_strategy))
+@pytest.fixture
+def event_loop_policy():
+    return _CustomEventLoopPolicy()
 
 
 @pytest.fixture(autouse=True)
@@ -150,7 +138,7 @@ def _check_open_fds():
 
 def _get_fds():
     "Return set of open file descriptors. (Not implemented on Windows)."
-    if sys.platform == "win32" or loop_type == "uvloop":
+    if sys.platform == "win32" or _loop_type == "uvloop":
         return set()
     return set(os.listdir("/dev/fd"))
 
