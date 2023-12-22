@@ -131,7 +131,6 @@ def run_in_thread(child_watcher_name="ThreadedChildWatcher"):
 
 
 _CHILD_WATCHER_MAP = {
-    "fast": "FastChildWatcher",
     "safe": "SafeChildWatcher",
     "pidfd": "PidfdChildWatcher",
     "default": "DefaultChildWatcher",
@@ -140,10 +139,7 @@ _CHILD_WATCHER_MAP = {
 _CW_TYPE = os.environ.get("SHELLOUS_CHILDWATCHER_TYPE", "<unset>")
 
 CHILD_WATCHER = _CHILD_WATCHER_MAP.get(_CW_TYPE, "ThreadedChildWatcher")
-XFAIL_CHILDWATCHER = CHILD_WATCHER in (
-    "SafeChildWatcher",
-    "FastChildWatcher",
-)
+XFAIL_CHILDWATCHER = CHILD_WATCHER in ("SafeChildWatcher",)
 
 
 @pytest.mark.xfail(XFAIL_CHILDWATCHER, reason="xfail_childwatcher")
