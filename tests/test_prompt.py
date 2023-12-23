@@ -403,7 +403,7 @@ async def test_prompt_broken_pipe():
     We expect our process (Python) to fail with a broken pipe because `cmd`
     doesn't read its standard input.
     """
-    cmd = sh(sys.executable, "-c", "pass")
+    cmd = sh(sys.executable, "-c", "import time; time.sleep(1)")
 
     with pytest.raises(BrokenPipeError):
         async with cmd.prompt() as cli:

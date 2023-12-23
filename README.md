@@ -527,21 +527,21 @@ You can retrieve an option from `cmd` with `cmd.options.<option>`. For example, 
 
 | Option | Description |
 | --- | --- |
-| path | Search path to use instead of the `PATH` environment variable. |
-| env | Additional environment variables to pass to the command. |
+| path | Search path to use instead of the `PATH` environment variable. (Default=None) |
+| env | Additional environment variables to pass to the command. (Default={}) |
 | inherit_env | True if command should inherit the environment variables from the current process. (Default=True) |
 | encoding | Text encoding of input/output streams. You can specify an error handling scheme by including it after a space, e.g. "ascii backslashreplace". (Default="utf-8 strict") |
-| exit_codes | Set of exit codes that do not raise a `ResultError`. (DEFAULT={0}) |
-| timeout | Timeout in seconds to wait before cancelling the process. |
+| exit_codes | Set of exit codes that do not raise a `ResultError`. (Default={0}) |
+| timeout | Timeout in seconds to wait before cancelling the process. (Default=None) |
 | cancel_timeout | Timeout in seconds to wait for a cancelled process to exit before forcefully terminating it. (Default=3s) |
 | cancel_signal | The signal sent to a process when it is cancelled. (Default=SIGTERM) |
-| alt_name | Alternate name for the process used for debug logging. |
-| pass_fds | Additional file descriptors to pass to the process. |
-| pass_fds_close | True if descriptors in `pass_fds` should be closed after the process is launched. |
-| pty | Used to allocate a pseudo-terminal (PTY). |
-| close_fds | True if process should close all file descriptors when it starts. |
-| audit_callback | Provide function to audit stages of process execution. |
-| coerce_arg | Provide function to coerce `Command` arguments to strings when `str()` is not sufficient. |
+| alt_name | Alternate name for the process used for debug logging. (Default=None) |
+| pass_fds | Additional file descriptors to pass to the process. (Default={}) |
+| pass_fds_close | True if descriptors in `pass_fds` should be closed after the child process is launched. (Default=False) |
+| pty | Used to allocate a pseudo-terminal (PTY). (Default=False) |
+| close_fds | True if process should close all file descriptors when it starts. This setting defaults to False to align with `posix_spawn` requirements. (Default=False) |
+| audit_callback | Provide function to audit stages of process execution. (Default=None) |
+| coerce_arg | Provide function to coerce `Command` arguments to strings when `str()` is not sufficient. (Default=None) |
 | error_limit | Maximum number of initial bytes of STDERR to store in `Result` object. (Default=1024) |
 
 ### env

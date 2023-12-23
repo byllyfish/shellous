@@ -17,6 +17,8 @@ if sys.platform != "win32":
 
 pytestmark = pytest.mark.skipif(sys.platform == "win32", reason="Unix")
 
+_IS_UVLOOP = os.environ.get("SHELLOUS_LOOP_TYPE") == "uvloop"
+
 
 class EventLoopThread(threading.Thread):
     "Thread with its own asyncio event loop."
@@ -129,7 +131,6 @@ def run_in_thread(child_watcher_name="ThreadedChildWatcher"):
 
 
 _CHILD_WATCHER_MAP = {
-    "fast": "FastChildWatcher",
     "safe": "SafeChildWatcher",
     "pidfd": "PidfdChildWatcher",
     "default": "DefaultChildWatcher",
@@ -138,10 +139,7 @@ _CHILD_WATCHER_MAP = {
 _CW_TYPE = os.environ.get("SHELLOUS_CHILDWATCHER_TYPE", "<unset>")
 
 CHILD_WATCHER = _CHILD_WATCHER_MAP.get(_CW_TYPE, "ThreadedChildWatcher")
-XFAIL_CHILDWATCHER = CHILD_WATCHER in (
-    "SafeChildWatcher",
-    "FastChildWatcher",
-)
+XFAIL_CHILDWATCHER = CHILD_WATCHER in ("SafeChildWatcher",)
 
 
 @pytest.mark.xfail(XFAIL_CHILDWATCHER, reason="xfail_childwatcher")
@@ -168,6 +166,7 @@ async def test_thread_procsub():
     assert result == "abc\ndef\n"
 
 
+@pytest.mark.skipif(_IS_UVLOOP, reason="requires pty")
 @pytest.mark.xfail(XFAIL_CHILDWATCHER, reason="xfail_childwatcher")
 @run_in_thread(CHILD_WATCHER)
 async def test_thread_pty():
