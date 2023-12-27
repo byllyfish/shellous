@@ -171,7 +171,7 @@ def _platform_info():
     try:
         # Child watcher is only implemented on Unix.
         with warnings.catch_warnings():
-            warnings.simplefilter('ignore', DeprecationWarning)
+            warnings.simplefilter("ignore", DeprecationWarning)
             child_watcher = asyncio.get_child_watcher().__class__.__name__
     except NotImplementedError:
         child_watcher = None
