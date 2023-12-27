@@ -1527,6 +1527,8 @@ async def test_pty_redirect_stdout_streamwriter():
         buf.write(await reader.read())
         _writer.close()
 
+    server = None
+    writer = None
     try:
         sock_path = "/tmp/__streamwriter__"
         server = await asyncio.start_unix_server(_hello, sock_path)
@@ -1537,6 +1539,7 @@ async def test_pty_redirect_stdout_streamwriter():
         assert buf.getvalue() == b"hello\r\n"
 
     finally:
+        assert writer is not None and server is not None
         writer.close()
         server.close()
         await server.wait_closed()

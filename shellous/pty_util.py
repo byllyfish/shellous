@@ -6,6 +6,7 @@ import contextvars
 import errno
 import os
 import struct
+import warnings
 from dataclasses import dataclass
 from typing import Any, Callable, NamedTuple, Optional, Union
 
@@ -262,7 +263,9 @@ _IGNORE_CHILD_PROCESS = contextvars.ContextVar("ignore_child_process", default=F
 
 def _patch_child_watcher():
     "Patch the current child watcher for `add_child_handler`."
-    watcher = asyncio.get_child_watcher()
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", DeprecationWarning)
+        watcher = asyncio.get_child_watcher()
 
     # Check flag to see if patch already exists.
     if hasattr(watcher, "_shellous_patched"):
