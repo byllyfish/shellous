@@ -9,6 +9,7 @@ import platform
 import sys
 import threading
 import time
+import warnings
 from contextlib import contextmanager
 from typing import Any, Callable
 
@@ -169,7 +170,8 @@ def _platform_info():
 
     try:
         # Child watcher is only implemented on Unix.
-        child_watcher = asyncio.get_child_watcher().__class__.__name__
+        with warnings.catch_warnings(action="ignore", category=DeprecationWarning):
+            child_watcher = asyncio.get_child_watcher().__class__.__name__
     except NotImplementedError:
         child_watcher = None
 
