@@ -10,7 +10,7 @@ permissions:
 
 jobs:
 
-  publish-package:
+  build-package:
     runs-on: ubuntu-22.04
 
     steps:
@@ -18,22 +18,41 @@ jobs:
         uses: step-security/harden-runner@eb238b55efaa70779f274895e782ed17c84f2895 # v2.6.1
         with:
           egress-policy: audit
-
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       - name: Install Poetry
         run: |
-          pipx install poetry==1.6.1
-          poetry --version
+          pipx install poetry==1.7.1
       - name: Build package
         run: |
-          # Delete lines in README.md that match "__REL_LINK__".
-          sed -e '/__REL_LINK__/d' --in-place README.md
+          poetry --version
           poetry build
+      - name: Upload packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: package_dists
+          path: dist/
+
+  publish-package:
+    runs-on: ubuntu-22.04
+    needs: build-package
+    environment: pypi
+    permissions:
+      # mandatory for trusted publishing
+      id-token: write
+
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@eb238b55efaa70779f274895e782ed17c84f2895 # v2.6.1
+        with:
+          egress-policy: audit
+      - name: Download packages
+        uses: actions/download-artifact@v4
+        with:
+          name: package_dists
+          path: dist/
       - name: Publish package to PyPI
         uses: pypa/gh-action-pypi-publish@2f6f737ca5f74c637829c0f5c3acd0e29ea5e8bf # release/v1
         with:
-          user: __token__
-          password: ${{ secrets.SHELLOUS_PYPI_API_TOKEN }}
           verbose: true
           print-hash: true
