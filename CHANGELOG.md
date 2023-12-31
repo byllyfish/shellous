@@ -1,6 +1,15 @@
 Shellous Change Log
 ===================
 
+0.34.0
+------
+
+- [FEATURE] Add `error_limit` option to customize the number of bytes of `stderr` that is buffered.
+- [BUGFIX] Catch `asyncio` deprecation warnings intended for Python 3.14.
+- [LATERAL] Update CI action that publishes shellous package to PyPI to use trusted publishing.
+- [LATERAL] Improve reliability of tests under code coverage.
+- [LATERAL] Replace deprecated `event_loop` fixture in asyncio tests.
+
 0.33.0
 ------
 
