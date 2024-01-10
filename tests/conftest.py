@@ -59,12 +59,12 @@ class _CustomEventLoopPolicy(asyncio.DefaultEventLoopPolicy):
         "Construct a watcher, if requested."
         if _watcher_type == "safe":
             return asyncio.SafeChildWatcher()
-        elif _watcher_type == "pidfd":
+        if _watcher_type == "pidfd":
             return asyncio.PidfdChildWatcher()
-        elif _watcher_type == "default":
+        if _watcher_type == "default":
             strategy = os.environ.get("SHELLOUS_THREADSTRATEGY") is not None
             return DefaultChildWatcher(thread_strategy=strategy)
-        elif _watcher_type is not None:
+        if _watcher_type is not None:
             raise NotImplementedError
         return None
 
