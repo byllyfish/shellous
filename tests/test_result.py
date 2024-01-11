@@ -53,4 +53,4 @@ def test_result_signal_unknown():
     assert result.exit_code == -1000
 
     with pytest.raises(ValueError, match="not a valid Signals"):
-        result.exit_signal
+        _ = result.exit_signal

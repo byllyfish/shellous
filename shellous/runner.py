@@ -767,10 +767,12 @@ class Runner:
         assert self._timer is None
         if timeout is not None:
             loop = asyncio.get_running_loop()
+            task = asyncio.current_task()
+            assert task is not None
             self._timer = loop.call_later(
                 timeout,
                 self._set_timer_expired,
-                asyncio.current_task(),
+                task,
             )
 
     def _set_timer_expired(self, main_task: asyncio.Task[Any]):
