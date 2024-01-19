@@ -19,6 +19,7 @@ import select
 import signal
 import sys
 import threading
+import time
 from abc import abstractmethod
 from typing import Any, Callable, Coroutine, Optional, Protocol
 
@@ -229,6 +230,12 @@ class KQueueStrategy(ChildStrategy):
         LOGGER.debug("_reap_pid pid=%r", pid)
 
         status = wait_pid(pid)
+        if status is None:
+            # Rarely, the non-blocking wait_pid() indicates the process is
+            # still running. Wait 75 milliseconds and try again. (GH-582)
+            time.sleep(0.075)
+            status = wait_pid(pid)
+
         if status is not None:
             _invoke_callback(callback, pid, status, args)
         else:
