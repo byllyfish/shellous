@@ -23,28 +23,30 @@ _LOG_LIMIT_END = 30
 class Prompt:
     """Utility class to help with an interactive prompt session.
 
-    When you are controlling to a co-process you will usually `send` some
-    text to it, and then `expect` a response. The `expect` operation can use
+    When you are controlling a co-process you will usually "send" some
+    text to it, and then "expect" a response. The "expect" operation can use
     a regular expression to match different types of responses.
 
     Create a new `Prompt` instance using the `prompt()` API.
 
     ```
     # In this example, we are using a default prompt of "??? ".
-    # Setting PS1 tells the shell to use this as the shell prompt.
+    # Setting the PS1 environment variable tells the shell to use this as
+    # the shell prompt.
     cmd = sh("sh").env(PS1="??? ").set(pty=True)
 
     async with cmd.prompt("??? ", timeout=3.0) as cli:
         # Turn off terminal echo.
         cli.echo = False
 
-        # Wait for greeting and initial prompt.
+        # Wait for greeting and initial prompt. Calling expect() with no
+        # argument will match the default prompt "??? ".
         greeting, _ = await cli.expect()
 
         # Send a command and wait for the response.
         await cli.send("echo hello")
         answer, _ = await cli.expect()
-        assert answer == "hello\r\n"
+        assert answer == "hello\\r\\n"
     ```
     """
 
