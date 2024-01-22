@@ -36,8 +36,8 @@ jobs:
       uses: step-security/harden-runner@eb238b55efaa70779f274895e782ed17c84f2895 # v2.6.1
       with:
         egress-policy: audit
-
-    - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+    - name: Checkout
+      uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
       with:
@@ -64,7 +64,7 @@ jobs:
       if: (matrix.os == 'ubuntu-22.04' || matrix.os == 'macos-12') && matrix.python-version != '3.13-dev'
       run: |
         # Run coverage.
-        coverage run --source shellous -m pytest
+        coverage run --source shellous -m pytest --log-cli-level=DEBUG
         # Re-run with coverage for shellous/watcher.py
         SHELLOUS_CHILDWATCHER_TYPE=default coverage run --source shellous -m pytest
         # Re-run with coverage for shellous/watcher.py and ThreadStrategy.
