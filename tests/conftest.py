@@ -13,6 +13,7 @@ import pytest
 
 from shellous import sh
 
+# pyright: reportPossiblyUnboundVariable=false
 if sys.platform != "win32":
     from shellous.watcher import DefaultChildWatcher
 
@@ -36,7 +37,7 @@ class _CustomEventLoopPolicy(asyncio.DefaultEventLoopPolicy):
     if sys.platform != "win32" and _loop_type == "uvloop":
 
         def _loop_factory(self):
-            import uvloop  # pyright: ignore[reportMissingImports]
+            import uvloop
 
             return uvloop.new_event_loop()
 
@@ -52,7 +53,9 @@ class _CustomEventLoopPolicy(asyncio.DefaultEventLoopPolicy):
         loop.set_debug(True)
         if _loop_type == "eager_task_factory":
             assert sys.version_info[0:2] >= (3, 12), "requires python 3.12"
-            loop.set_task_factory(asyncio.eager_task_factory)
+            loop.set_task_factory(
+                asyncio.eager_task_factory  # pyright: ignore[reportArgumentType]
+            )
         return loop
 
     def _get_watcher(self):

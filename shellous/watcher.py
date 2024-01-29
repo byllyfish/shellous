@@ -54,7 +54,9 @@ class ChildStrategy(Protocol):
         """
 
 
-class DefaultChildWatcher(asyncio.AbstractChildWatcher):
+class DefaultChildWatcher(
+    asyncio.AbstractChildWatcher  # pyright: ignore[reportDeprecated]
+):
     "Use platform-dependent strategy to monitor for exiting child processes."
 
     _strategy: Optional[ChildStrategy]

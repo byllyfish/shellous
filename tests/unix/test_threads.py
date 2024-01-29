@@ -94,7 +94,9 @@ def run_in_thread(child_watcher_name="ThreadedChildWatcher"):
         @functools.wraps(coro)
         def _wrap(*args, **kwargs):
             if child_watcher_name == "DefaultChildWatcher":
-                child_watcher = DefaultChildWatcher()
+                child_watcher = (
+                    DefaultChildWatcher()  # pyright: ignore[reportPossiblyUnboundVariable]
+                )
             else:
                 child_watcher = getattr(asyncio, child_watcher_name)()
 

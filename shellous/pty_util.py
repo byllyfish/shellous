@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from typing import Any, Callable, NamedTuple, Optional, Union
 
 # The following modules are not supported on Windows.
+# pyright: reportPossiblyUnboundVariable=false
 try:
     import fcntl
     import pty
@@ -265,7 +266,7 @@ def _patch_child_watcher():
     "Patch the current child watcher for `add_child_handler`."
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", DeprecationWarning)
-        watcher = asyncio.get_child_watcher()
+        watcher = asyncio.get_child_watcher()  # pyright: ignore[reportDeprecated]
 
     # Check flag to see if patch already exists.
     if hasattr(watcher, "_shellous_patched"):
