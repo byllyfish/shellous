@@ -23,10 +23,7 @@ def test_decode_bytes():
     assert decode_bytes(b"abc", "utf-8") == "abc"
 
     with pytest.raises(AttributeError):
-        assert (
-            decode_bytes(None, "utf-8")  # pyright: ignore[reportGeneralTypeIssues]
-            == ""
-        )
+        assert decode_bytes(None, "utf-8") == ""  # pyright: ignore[reportArgumentType]
 
     with pytest.raises(UnicodeDecodeError):
         decode_bytes(b"\x81", "utf-8")
@@ -105,7 +102,7 @@ def test_environment_dict():
 
     # EnvironmentDict is immutable.
     with pytest.raises(TypeError):
-        d1["b"] = "2"  # pyright: ignore[reportGeneralTypeIssues]
+        d1["b"] = "2"  # pyright: ignore[reportIndexIssue]
 
 
 class _TestContextHelpers:

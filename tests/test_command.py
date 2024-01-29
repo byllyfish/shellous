@@ -248,9 +248,9 @@ def test_percent_op_not_implemented():
     "Test the percent/modulo operator for concatenation."
     echo = sh("echo", "hello")
     with pytest.raises(TypeError):
-        assert None % echo  # pyright: ignore[reportGeneralTypeIssues]
+        assert None % echo  # pyright: ignore[reportOperatorIssue]
     with pytest.raises(TypeError):
-        assert echo % None  # pyright: ignore[reportGeneralTypeIssues]
+        assert echo % None  # pyright: ignore[reportOperatorIssue]
 
 
 def test_command_pickle():
@@ -342,7 +342,7 @@ def test_command_invalid_encoding():
         sh("echo").set(encoding="")
 
     with pytest.raises(TypeError, match="invalid encoding"):
-        sh("echo").set(encoding=None)  # pyright: ignore[reportGeneralTypeIssues]
+        sh("echo").set(encoding=None)  # pyright: ignore[reportArgumentType]
 
 
 def test_context_invalid_encoding():
@@ -351,7 +351,7 @@ def test_context_invalid_encoding():
         sh.set(encoding="")
 
     with pytest.raises(TypeError, match="invalid encoding"):
-        sh.set(encoding=None)  # pyright: ignore[reportGeneralTypeIssues]
+        sh.set(encoding=None)  # pyright: ignore[reportArgumentType]
 
 
 def test_context_redirects():
@@ -388,4 +388,4 @@ def test_context_redirects_invalid():
 def test_command_append():
     "Test command appending an invalid type."
     with pytest.raises(TypeError, match=">>"):
-        _ = sh("echo") >> (1 + 2j)  # pyright: ignore[reportGeneralTypeIssues]
+        _ = sh("echo") >> (1 + 2j)  # pyright: ignore[reportOperatorIssue]

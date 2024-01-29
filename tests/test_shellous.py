@@ -942,7 +942,7 @@ async def test_redirect_to_arbitrary_tuple():
         await sh("echo").stdout((1, 2))
 
     with pytest.raises(TypeError, match="unsupported"):
-        await (sh("echo") | (1, 2))  # pyright: ignore[reportGeneralTypeIssues]
+        await (sh("echo") | (1, 2))  # pyright: ignore[reportOperatorIssue]
 
 
 async def test_command_context_manager_default():
@@ -1568,4 +1568,4 @@ async def test_process_pool_executor(echo_cmd, report_children):
     # failures for open fd's and child processes.
     from multiprocessing import resource_tracker
 
-    resource_tracker._resource_tracker._stop()  # pyright: ignore[reportGeneralTypeIssues]
+    resource_tracker._resource_tracker._stop()  # pyright: ignore[reportAttributeAccessIssue]

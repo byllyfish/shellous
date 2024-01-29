@@ -53,4 +53,4 @@ async def test_bug():
     finally:
         # Fix "ResourceWarning: unclosed" message on Windows.
         await proc.wait()
-        proc._transport.close()  # pyright: ignore[reportGeneralTypeIssues]
+        proc._transport.close()  # pyright: ignore[reportAttributeAccessIssue]
