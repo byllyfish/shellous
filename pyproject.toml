@@ -26,18 +26,18 @@ classifiers = [
 python = "^3.9"
 
 [tool.poetry.group.dev.dependencies]
-asyncstdlib = "^3.10.9"
+asyncstdlib = "^3.12.0"
 black = "24.1.1"
-coverage = "^7.3.4"
-pdoc = "^14.3.0"
+coverage = "^7.4.1"
+pdoc = "^14.4.0"
 pylint = "^3.0.3"
-pyright = "^1.1.343"
-pytest = "^7.4.3"
-pytest-asyncio = "^0.23.2"
+pyright = "^1.1.349"
+pytest = "^7.4.4"
+pytest-asyncio = "^0.23.4"
 pytest-dotenv = "^0.5.2"
 pytest-randomly = "^3.15.0"
 pytest-timeout = "^2.2.0"
-ruff = {version = "^0.1.9", markers = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'"}
+ruff = {version = "^0.1.15", markers = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'"}
 typing-extensions = "^4.9.0"
 
 [tool.poetry.group.uvloop]
