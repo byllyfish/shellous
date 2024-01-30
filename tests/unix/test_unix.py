@@ -587,7 +587,7 @@ async def test_pipeline_async_iteration():
     "Use `async for` to read stdout line by line."
     echo = sh("echo", "-n", "line1\n", "line2\n", "line3")
     cat = sh("cat").stdout(sh.CAPTURE)
-    async with (echo | cat) as run:
+    async with echo | cat as run:
         result = [line async for line in run]
     assert result == ["line1\n", " line2\n", " line3"]
 
