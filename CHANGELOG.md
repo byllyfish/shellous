@@ -1,6 +1,13 @@
 Shellous Change Log
 ===================
 
+0.35.0
+------
+
+- [BUGFIX] Fix potential race condition in `DefaultChildWatcher`. (#582)
+- [LATERAL] Update development dependencies and fix pyright warnings.
+- [LATERAL] Update to black 24.1.1 code formatter.
+
 0.34.0
 ------
 
