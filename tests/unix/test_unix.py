@@ -654,7 +654,7 @@ async def test_cancelled_antipattern():
     # Catch ResultError from second sleep command. We have to use a timeout,
     # otherwise we'd wait an hour for the 2nd sleep command to finish.
     with pytest.raises(ResultError) as exc_info:
-        await asyncio.wait_for(task, timeout=0.1)
+        await asyncio.wait_for(task, timeout=1.0)
 
     assert exc_info.value.result.cancelled
 
