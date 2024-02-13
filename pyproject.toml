@@ -101,6 +101,9 @@ required-version = "24.2.0"
 profile = "black"
 
 [tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
 select = ["E", "F", "D202", "RET", "RUF", "W"]
 ignore = [
   "D300",   # Use triple double quotes `"""`
@@ -109,4 +112,3 @@ ignore = [
   "EM102",  # Exception must not use an f-string literal, assign to variable first
   "UP007",  # Use `X | Y` for type annotations
 ]
-line-length = 120
