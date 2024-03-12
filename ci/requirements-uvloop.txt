@@ -1,4 +1,4 @@
-# Poetry (version 1.7.1) export at Sat Feb 24 13:20:04 MST 2024
+# Poetry (version 1.8.2) export at Mon Mar 11 18:01:18 MST 2024
 uvloop==0.19.0 ; python_version >= "3.9" and python_version < "4.0" \
     --hash=sha256:0246f4fd1bf2bf702e06b0d45ee91677ee5c31242f39aab4ea6fe0c51aedd0fd \
     --hash=sha256:02506dc23a5d90e04d4f65c7791e65cf44bd91b37f24cfc3ef6cf2aff05dc7ec \
