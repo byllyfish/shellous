@@ -73,6 +73,7 @@ jobs:
       if: (matrix.os == 'ubuntu-22.04' || matrix.os == 'macos-12') && matrix.python-version != '3.13-dev'
       uses: codecov/codecov-action@54bcd8715eee62d40e33596ef5e8f0f48dbbccab # v4.1.0
       with:
+        token: ${{ secrets.SHELLOUS_CODECOV_TOKEN }}
         verbose: true
     - name: Run Tests with uvloop (Linux and MacOS)
       if: (matrix.os == 'ubuntu-22.04' || matrix.os == 'macos-13') && matrix.python-version != '3.13-dev'
