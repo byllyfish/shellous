@@ -28,7 +28,7 @@ python = "^3.9"
 
 [tool.poetry.group.dev.dependencies]
 asyncstdlib = "^3.12.1"
-black = "24.2.0"
+black = "24.3.0"
 coverage = "^7.4.4"
 pdoc = "^14.4.0"
 pylint = "^3.1.0"
@@ -95,7 +95,7 @@ reportUnnecessaryTypeIgnoreComment = true
 # reportUnusedCallResult = true
 
 [tool.black]
-required-version = "24.2.0"
+required-version = "24.3.0"
 
 [tool.isort]
 profile = "black"
