@@ -127,8 +127,7 @@ def test_generator():
     "Generators are flattened recursively."
 
     def agen(num):
-        for i in range(1, num + 1):
-            yield i
+        yield from range(1, num + 1)
 
     with pytest.raises(TypeError, match="not supported"):
         sh("echo", agen(3))

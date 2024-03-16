@@ -333,7 +333,7 @@ class CmdContext(Generic[_RT]):
         new_options = self.options.add_env(kwds)
         return CmdContext(new_options)
 
-    def set(  # pylint: disable=unused-argument, too-many-locals
+    def set(  # pylint: disable=unused-argument, too-many-locals, too-many-arguments
         self,
         *,
         path: Unset[Optional[str]] = _UNSET,
@@ -481,7 +481,7 @@ class Command(Generic[_RT]):
         new_options = self.options.add_env(kwds)
         return Command(self.args, new_options)
 
-    def set(  # pylint: disable=unused-argument, too-many-locals
+    def set(  # pylint: disable=unused-argument, too-many-locals, too-many-arguments
         self,
         *,
         path: Unset[Optional[str]] = _UNSET,
