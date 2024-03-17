@@ -57,7 +57,7 @@ async def test_redirect_textfile():
     with TemporaryDirectory() as tmpdir:
         tmp = Path(tmpdir) / "testfile"
 
-        with open(tmp, "w") as fp:
+        with open(tmp, "w", encoding="utf8") as fp:
             fp.write("12345")
             out = await (sh("echo", "abc") | fp)
 
@@ -70,7 +70,7 @@ async def test_redirect_textfile_append():
     with TemporaryDirectory() as tmpdir:
         tmp = Path(tmpdir) / "testfile"
 
-        with open(tmp, "w") as fp:
+        with open(tmp, "w", encoding="utf8") as fp:
             fp.write("12345")
             out = await (sh("echo", "abc") >> fp)
 
@@ -84,7 +84,7 @@ async def test_redirect_textfile_readwrite():
         tmp = Path(tmpdir) / "testfile"
         tmp.write_text("12345")
 
-        with open(tmp, "r+") as fp:
+        with open(tmp, "r+", encoding="utf8") as fp:
             out = await (sh("echo", "abc") | fp)
 
         assert out == ""
@@ -97,7 +97,7 @@ async def test_redirect_textfile_append_readwrite():
         tmp = Path(tmpdir) / "testfile"
         tmp.write_text("12345")
 
-        with open(tmp, "r+") as fp:
+        with open(tmp, "r+", encoding="utf8") as fp:
             out = await (sh("echo", "abc") >> fp)
 
         assert out == ""
