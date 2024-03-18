@@ -1,6 +1,11 @@
 Shellous Change Log
 ===================
 
+0.36.0
+------
+
+- [LATERAL] Update development dependencies and fix pylint issues.
+
 0.35.0
 ------
 
