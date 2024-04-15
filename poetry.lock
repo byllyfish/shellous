@@ -16,18 +16,19 @@ typing-extensions = {version = ">=4.0.0", markers = "python_version < \"3.11\""}
 
 [[package]]
 name = "asyncstdlib"
-version = "3.12.2"
+version = "3.12.3"
 description = "The missing async toolbox"
 optional = false
 python-versions = "~=3.8"
 files = [
-    {file = "asyncstdlib-3.12.2-py3-none-any.whl", hash = "sha256:343b4ae330a76a8ed05fc83a03e2756dcaa7bede0cf4c7f0ba4aa7112feddec4"},
-    {file = "asyncstdlib-3.12.2.tar.gz", hash = "sha256:3fea1eef246b68022c5bbaf6661db59f640ef54dd05fa1d0ac987e49b86a5529"},
+    {file = "asyncstdlib-3.12.3-py3-none-any.whl", hash = "sha256:ef4660462338fa30746fef4166dd01df22b07ab072b7eb1f52f10b2a974c8cf8"},
+    {file = "asyncstdlib-3.12.3.tar.gz", hash = "sha256:2acd0c04e205965cc2bb063b75370df92d207a3035bc4f83fb6b5686cffad7a0"},
 ]
 
 [package.extras]
 doc = ["sphinx", "sphinxcontrib-trio"]
-test = ["black", "coverage", "flake8", "flake8-2020", "flake8-bugbear", "mypy", "pytest", "pytest-cov", "typing-extensions"]
+test = ["black", "coverage", "flake8", "flake8-2020", "flake8-bugbear", "mypy", "pytest", "pytest-cov"]
+typetest = ["mypy", "pyright", "typing-extensions"]
 
 [[package]]
 name = "black"
