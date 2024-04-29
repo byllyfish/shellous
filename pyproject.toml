@@ -28,7 +28,7 @@ python = "^3.9"
 
 [tool.poetry.group.dev.dependencies]
 asyncstdlib = "^3.12.2"
-black = "24.3.0"
+black = "24.4.2"
 coverage = "^7.4.4"
 pdoc = "^14.4.0"
 pylint = "^3.1.0"
