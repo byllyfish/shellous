@@ -27,18 +27,18 @@ classifiers = [
 python = "^3.9"
 
 [tool.poetry.group.dev.dependencies]
-asyncstdlib = "^3.12.2"
-black = "24.3.0"
-coverage = "^7.4.4"
+asyncstdlib = "^3.12.3"
+black = "24.4.2"
+coverage = "^7.5.0"
 pdoc = "^14.4.0"
 pylint = "^3.1.0"
-pyright = "^1.1.358"
-pytest = "^8.1.1"
+pyright = "^1.1.360"
+pytest = "^8.2.0"
 pytest-asyncio = "^0.23.6"
 pytest-dotenv = "^0.5.2"
 pytest-randomly = "^3.15.0"
 pytest-timeout = "^2.3.1"
-ruff = {version = "^0.3.5", markers = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'"}
+ruff = {version = "^0.4.2", markers = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'"}
 typing-extensions = "^4.11.0"
 
 [tool.poetry.group.uvloop]
@@ -95,7 +95,7 @@ reportUnnecessaryTypeIgnoreComment = true
 # reportUnusedCallResult = true
 
 [tool.black]
-required-version = "24.3.0"
+required-version = "24.4.2"
 
 [tool.isort]
 profile = "black"
