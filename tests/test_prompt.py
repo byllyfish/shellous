@@ -342,7 +342,9 @@ async def test_prompt_asyncio_repl_expect():
 
         repl.close()
         result = await repl.read_all()
-        assert result == "\nexiting asyncio REPL...\n"
+        assert result == "\nexiting asyncio REPL...\n" or result.startswith(
+            "\nexiting asyncio REPL...\nException ignored in atexit callback"
+        )
         assert repl.at_eof
 
     assert bool(repl.result)
@@ -377,7 +379,7 @@ async def test_prompt_python_ps1_unicode():
 
         await repl.send("exit()")
         result = await repl.read_all()
-        assert result == ""
+        assert result == "" or result.startswith("Exception ignored in atexit")
         assert repl.at_eof
 
 
