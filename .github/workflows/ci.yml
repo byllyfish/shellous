@@ -33,11 +33,11 @@ jobs:
 
     steps:
     - name: Harden Runner
-      uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
+      uses: step-security/harden-runner@a4aa98b93cab29d9b1101a6143fb8bce00e2eac4 # v2.7.1
       with:
         egress-policy: audit
     - name: Checkout
-      uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4.1.4
+      uses: actions/checkout@44c2b7a8a4ea60a981eaca3cf939b5f4305c123b # v4.1.5
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@82c7e631bb3cdc910f68e0081d67478d79c6982d # v5.1.0
       with:
@@ -71,7 +71,7 @@ jobs:
         SHELLOUS_CHILDWATCHER_TYPE=default SHELLOUS_THREADSTRATEGY=1 coverage run --source shellous -m pytest
     - name: Upload Code Coverage
       if: (matrix.os == 'ubuntu-22.04' || matrix.os == 'macos-12') && matrix.python-version != '3.13-dev'
-      uses: codecov/codecov-action@84508663e988701840491b86de86b666e8a86bed # v4.3.0
+      uses: codecov/codecov-action@5ecb98a3c6b747ed38dc09f787459979aebb39be # v4.3.1
       with:
         token: ${{ secrets.SHELLOUS_CODECOV_TOKEN }}
         verbose: true
@@ -148,12 +148,12 @@ jobs:
 
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
+        uses: step-security/harden-runner@a4aa98b93cab29d9b1101a6143fb8bce00e2eac4 # v2.7.1
         with:
           egress-policy: audit
 
       - name: Checkout
-        uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4.1.4
+        uses: actions/checkout@44c2b7a8a4ea60a981eaca3cf939b5f4305c123b # v4.1.5
       - name: Install Dependencies
         run: |
           apk add --update gcc musl-dev python3-dev bash grep
@@ -189,12 +189,12 @@ jobs:
 
     steps:
     - name: Harden Runner
-      uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
+      uses: step-security/harden-runner@a4aa98b93cab29d9b1101a6143fb8bce00e2eac4 # v2.7.1
       with:
         egress-policy: audit
 
     - name: Checkout
-      uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4.1.4
+      uses: actions/checkout@44c2b7a8a4ea60a981eaca3cf939b5f4305c123b # v4.1.5
     - name: Set up Python ${{ matrix.pypy-version }}
       uses: actions/setup-python@82c7e631bb3cdc910f68e0081d67478d79c6982d # v5.1.0
       with:
@@ -219,11 +219,11 @@ jobs:
 
     steps:
     - name: Harden Runner
-      uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
+      uses: step-security/harden-runner@a4aa98b93cab29d9b1101a6143fb8bce00e2eac4 # v2.7.1
       with:
         egress-policy: audit
     - name: Checkout
-      uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4.1.4
+      uses: actions/checkout@44c2b7a8a4ea60a981eaca3cf939b5f4305c123b # v4.1.5
     - name: Set up Python 3.13
       uses: actions/setup-python@82c7e631bb3cdc910f68e0081d67478d79c6982d # v5.1.0
       with:
