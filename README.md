@@ -89,6 +89,15 @@ You can wrap your commands in a function to improve type safety:
 
 The type hint `Command[str]` indicates that the command returns a `str`.
 
+### Arguments
+
+Commands use positional arguments only; keyword arguments are not supported.
+
+In most cases, shellous automatically converts Python objects passed as command arguments to `str` or `bytes`. As described above, the `list` and `tuple` types are an exception; they are recursively flattened before their elements are converted to strings.
+
+Dicts, sets, and generator types are **not supported** as arguments. Their string format doesn't make sense as
+a command line argument.
+
 ### Results
 
 When a command completes successfully, it returns the standard output (or "" if stdout is redirected). For a more detailed response, you can specify that the command should return a `Result` object by using the `.result` modifier:
@@ -112,6 +121,8 @@ You can retrieve the string value of the standard error using the `.error` prope
 first 1024 bytes of standard error is stored.)
 
 If a command was terminated by a signal, the `exit_code` will be the negative *signal* number.
+
+The return value of `sh.result("cmd", ...)` uses the type hint `Command[Result]`.
 
 ### ResultError
 
@@ -541,7 +552,7 @@ You can retrieve an option from `cmd` with `cmd.options.<option>`. For example, 
 | pty | Used to allocate a pseudo-terminal (PTY). (Default=False) |
 | close_fds | True if process should close all file descriptors when it starts. This setting defaults to False to align with `posix_spawn` requirements. (Default=False) |
 | audit_callback | Provide function to audit stages of process execution. (Default=None) |
-| coerce_arg | Provide function to coerce `Command` arguments to strings when `str()` is not sufficient. (Default=None) |
+| coerce_arg | Provide function to coerce `Command` arguments to strings when `str()` is not sufficient. For example, you can provide your own function that converts a dictionary argument to a sequence of strings. (Default=None) |
 | error_limit | Maximum number of initial bytes of STDERR to store in `Result` object. (Default=1024) |
 
 ### env
