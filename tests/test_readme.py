@@ -11,6 +11,11 @@ from shellous import sh
 from shellous.log import LOGGER
 from shellous.prompt import Prompt
 
+_skip_py313beta = pytest.mark.skipif(
+    sys.version_info >= (3, 13), reason="broken in python 3.13 beta"
+)
+
+
 # Custom Python REPL prompt.
 _PROMPT = "<+=+=+>"
 
@@ -66,6 +71,7 @@ async def run_asyncio_repl(cmds, logfile=None):
     return output
 
 
+@_skip_py313beta
 async def test_run_asyncio_repl():
     "Test asyncio REPL with a short list of commands."
     result = await run_asyncio_repl(
@@ -144,6 +150,7 @@ def test_parse_readme():
     ]
 
 
+@_skip_py313beta
 @pytest.mark.skipif(sys.platform == "win32", reason="win32")
 async def test_readme(tmp_path):
     "Test that the REPL commands in the README.md file actually work."
