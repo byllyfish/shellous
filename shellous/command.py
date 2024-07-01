@@ -172,7 +172,7 @@ class Options:  # pylint: disable=too-many-instance-attributes
     pty: PtyAdapterOrBool = False
     "True if child process should be controlled using a pseudo-terminal (pty)."
 
-    close_fds: bool = False
+    close_fds: bool = True
     "True if child process should close all file descriptors."
 
     audit_callback: _AuditFnT = None
@@ -595,12 +595,10 @@ class Command(Generic[_RT]):
         `shellous.raw` and `shellous.cbreak` that can be used as arguments to
         the `pty` option.
 
-        **close_fds** (bool) default=False<br>
+        **close_fds** (bool) default=True<br>
         Close all unnecessary file descriptors in the child process. This
-        defaults to False to align with `posix_spawn` requirements. Please refer
-        to the documentation on [inheritance of file descriptors](
-        https://docs.python.org/3/library/os.html#inheritance-of-file-descriptors)
-        for behavior on Unix and Windows.
+        defaults to True to align with the default behavior of the subprocess
+        module.
 
         **audit_callback** (Callable(phase, info) | None) default=None<br>
         Specify a function to call as the command execution goes through its
