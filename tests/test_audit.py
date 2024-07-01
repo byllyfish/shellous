@@ -66,8 +66,9 @@ async def test_audit():
         # uvloop doesn't implement audit hooks.
         assert any(event.startswith("('subprocess.Popen',") for event in events)
 
-    if _has_posix_spawn():
-        assert any(event.startswith("('os.posix_spawn',") for event in events)
+    if _has_posix_spawn() and sys.version_info < (3, 13):
+        # Do not expect posix_spawn to be used on Python 3.12 or earlier.
+        assert not any(event.startswith("('os.posix_spawn',") for event in events)
 
 
 @pytest.mark.skipif(not _has_posix_spawn(), reason="posix_spawn")
@@ -84,7 +85,7 @@ async def test_audit_posix_spawn():
 
         # This command does not include a directory path, so it is resolved
         # through PATH.
-        result = await sh("ls", "README.md")
+        result = await sh("ls", "README.md").set(close_fds=False)
 
     finally:
         _HOOK = None
