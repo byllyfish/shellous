@@ -66,7 +66,8 @@ async def test_audit():
         # uvloop doesn't implement audit hooks.
         assert any(event.startswith("('subprocess.Popen',") for event in events)
 
-    if _has_posix_spawn():
+    if _has_posix_spawn() and sys.version_info < (3, 13):
+        # Do not expect posix_spawn to be used on Python 3.12 or earlier.
         assert not any(event.startswith("('os.posix_spawn',") for event in events)
 
 
