@@ -1,6 +1,13 @@
 Shellous Change Log
 ===================
 
+0.37.0
+------
+
+- [API] Change the default for the `close_fds` option back to True. This aligns with the expected subprocess module behavior.
+- [LATERAL] Update development dependencies.
+- [LATERAL] Work-around testing issues on Python 3.13b2 and later due to the asyncio REPL change.
+
 0.36.0
 ------
 
