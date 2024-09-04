@@ -27,18 +27,18 @@ classifiers = [
 python = "^3.9"
 
 [tool.poetry.group.dev.dependencies]
-asyncstdlib = "^3.12.4"
-black = "24.4.2"
-coverage = "^7.6.0"
-pdoc = "^14.5.1"
-pylint = "^3.2.6"
-pyright = "^1.1.373"
-pytest = "^8.3.1"
-pytest-asyncio = "^0.23.8"
+asyncstdlib = "^3.12.5"
+black = "24.8.0"
+coverage = "^7.6.1"
+pdoc = "^14.6.1"
+pylint = "^3.2.7"
+pyright = "^1.1.379"
+pytest = "^8.3.2"
+pytest-asyncio = "^0.24.0"
 pytest-dotenv = "^0.5.2"
 pytest-randomly = "^3.15.0"
 pytest-timeout = "^2.3.1"
-ruff = {version = "^0.5.4", markers = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'"}
+ruff = {version = "^0.6.3", markers = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'"}
 typing-extensions = "^4.12.2"
 
 [tool.poetry.group.uvloop]
@@ -59,6 +59,7 @@ build-backend = "poetry.core.masonry.api"
 env_files = ["tests/tests.env"]
 addopts = '--timeout=30 --color=yes --log-cli-format="%(created).03f %(levelname)s %(name)s %(message)s" --log-level=INFO --log-file-format="%(created).03f %(levelname)s %(name)s %(message)s"'
 asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
 
 [tool.pylint.classes]
 exclude-protected = ["_proc", "_transport", "_returncode", "_writable", "_return_result", "_catch_cancelled_error", "_start_new_session", "_preexec_fn"]
@@ -95,7 +96,7 @@ reportUnnecessaryTypeIgnoreComment = true
 # reportUnusedCallResult = true
 
 [tool.black]
-required-version = "24.4.2"
+required-version = "24.8.0"
 
 [tool.isort]
 profile = "black"
