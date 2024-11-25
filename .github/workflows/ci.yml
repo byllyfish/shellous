@@ -71,7 +71,7 @@ jobs:
         SHELLOUS_CHILDWATCHER_TYPE=default SHELLOUS_THREADSTRATEGY=1 coverage run --source shellous -m pytest
     - name: Upload Code Coverage
       if: (matrix.os == 'ubuntu-22.04' || matrix.os == 'macos-12') && matrix.python-version != '3.13-dev'
-      uses: codecov/codecov-action@e28ff129e5465c2c0dcc6f003fc735cb6ae0c673 # v4.5.0
+      uses: codecov/codecov-action@015f24e6818733317a2da2edd6290ab26238649a # v5.0.7
       with:
         token: ${{ secrets.SHELLOUS_CODECOV_TOKEN }}
         verbose: true
