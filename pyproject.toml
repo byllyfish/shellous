@@ -30,19 +30,19 @@ python = "^3.9"
 poetry-plugin-export = ">=1.8"
 
 [tool.poetry.group.dev.dependencies]
-asyncstdlib = "^3.12.5"
-black = "24.8.0"
-coverage = "^7.6.2"
-pdoc = "^14.7.0"
-pylint = "^3.3.1"
-pyright = "^1.1.384"
-pytest = "^8.3.3"
-pytest-asyncio = "^0.24.0"
+asyncstdlib = "^3.13.1"
+black = "25.1.0"
+coverage = "^7.8.0"
+pdoc = "^15.0.1"
+pylint = "^3.3.6"
+pyright = "^1.1.398"
+pytest = "^8.3.5"
+pytest-asyncio = "^0.26.0"
 pytest-dotenv = "^0.5.2"
-pytest-randomly = "^3.15.0"
+pytest-randomly = "^3.16.0"
 pytest-timeout = "^2.3.1"
-ruff = {version = "^0.6.9", markers = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'"}
-typing-extensions = "^4.12.2"
+ruff = {version = "^0.11.4", markers = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'"}
+typing-extensions = "^4.13.1"
 
 [tool.poetry.group.uvloop]
 optional = true
@@ -99,7 +99,7 @@ reportUnnecessaryTypeIgnoreComment = true
 # reportUnusedCallResult = true
 
 [tool.black]
-required-version = "24.8.0"
+required-version = "25.1.0"
 
 [tool.isort]
 profile = "black"

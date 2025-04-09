@@ -34,6 +34,7 @@ PtyAdapterOrBool = Union[PtyAdapter, bool]
 @dataclass
 class ChildFd:
     "Make sure child fd is only closed once."
+
     child_fd: int
 
     def __int__(self) -> int:
@@ -49,6 +50,7 @@ class ChildFd:
 
 class PtyFds(NamedTuple):
     "Track parent fd for pty."
+
     parent_fd: int
     child_fd: ChildFd
     eof: bytes
