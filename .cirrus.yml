@@ -9,12 +9,12 @@ freebsd_task:
     SHELLOUS_TRACE: all
 
   matrix:
-    - name: FreeBSD 14.0
+    - name: FreeBSD 14.2
       freebsd_instance:
-        image_family: freebsd-14-0
-    - name: FreeBSD 13.3
+        image_family: freebsd-14-2
+    - name: FreeBSD 14.1
       freebsd_instance:
-        image_family: freebsd-13-3
+        image_family: freebsd-14-1
 
   install_script:
     - pkg install -y python311 lsof bash
