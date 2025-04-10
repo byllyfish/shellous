@@ -12,9 +12,6 @@ freebsd_task:
     - name: FreeBSD 14.2
       freebsd_instance:
         image_family: freebsd-14-2
-    - name: FreeBSD 14.1
-      freebsd_instance:
-        image_family: freebsd-14-1
 
   install_script:
     - pkg install -y python311 lsof bash
