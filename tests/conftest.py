@@ -165,3 +165,15 @@ async def _get_children():
                     children.add(f"{m.group(1)}/{m.group(2).strip()}")
 
     return children
+
+
+@pytest.fixture(autouse=True, scope="session")
+def _pytest_readline_workaround():
+    # Importing `readline` has the silent side-effect of adding the 'COLUMNS'
+    # and 'LINES' environment variables. In subprocesses, these can override
+    # my terminal window size tests...
+    # see https://github.com/pytest-dev/pytest/issues/12888
+
+    if "readline" in sys.modules:
+        os.environ["COLUMNS"] = os.environ["LINES"] = ""
+        del os.environ["COLUMNS"], os.environ["LINES"]
