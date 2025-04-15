@@ -763,7 +763,7 @@ async def test_encoding_utf8_split(cat_cmd):
 
         run.stdin.close()
 
-    assert buf.getvalue() == "\U0001F41F" * 3
+    assert buf.getvalue() == "\U0001f41f" * 3
 
 
 async def test_many_short_programs_sequential(echo_cmd):

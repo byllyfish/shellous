@@ -358,7 +358,7 @@ async def test_prompt_asyncio_repl_expect():
 
 async def test_prompt_python_ps1_unicode():
     "Test the Python REPL but change the prompt to an Emoji. Use chunk_size=1."
-    ps1 = "<<\U0001F603>>"
+    ps1 = "<<\U0001f603>>"
 
     cmd = sh(sys.executable, "-i").stderr(sh.STDOUT)
 
