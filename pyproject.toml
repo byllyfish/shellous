@@ -34,14 +34,14 @@ asyncstdlib = "^3.13.1"
 black = "25.1.0"
 coverage = "^7.8.0"
 pdoc = "^15.0.3"
-pylint = "^3.3.6"
-pyright = "^1.1.399"
+pylint = "^3.3.7"
+pyright = "^1.1.400"
 pytest = "^8.3.5"
 pytest-asyncio = "^0.26.0"
 pytest-dotenv = "^0.5.2"
 pytest-randomly = "^3.16.0"
-pytest-timeout = "^2.3.1"
-ruff = {version = "^0.11.6", markers = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'"}
+pytest-timeout = "^2.4.0"
+ruff = {version = "^0.11.10", markers = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'"}
 typing-extensions = "^4.13.2"
 
 [tool.poetry.group.uvloop]
