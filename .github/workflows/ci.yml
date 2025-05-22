@@ -47,7 +47,6 @@ jobs:
       run: |
         pip3 install --require-hashes -r ./ci/requirements-dev.txt
     - name: Lint
-      if: matrix.python-version != '3.13-dev'
       run: |
         ruff check --exit-zero .
         pylint -v --fail-under 9.5 shellous
@@ -61,7 +60,7 @@ jobs:
           pytest -vv -s --durations=20 --log-cli-level=DEBUG --last-failed
         fi
     - name: Run Code Coverage (Linux and MacOS)
-      if: (matrix.os == 'ubuntu-22.04' || matrix.os == 'macos-12') && matrix.python-version != '3.13-dev'
+      if: (matrix.os == 'ubuntu-22.04' || matrix.os == 'macos-12')
       run: |
         # Run coverage.
         coverage run --source shellous -m pytest --log-cli-level=DEBUG
@@ -70,13 +69,13 @@ jobs:
         # Re-run with coverage for shellous/watcher.py and ThreadStrategy.
         SHELLOUS_CHILDWATCHER_TYPE=default SHELLOUS_THREADSTRATEGY=1 coverage run --source shellous -m pytest
     - name: Upload Code Coverage
-      if: (matrix.os == 'ubuntu-22.04' || matrix.os == 'macos-12') && matrix.python-version != '3.13-dev'
+      if: (matrix.os == 'ubuntu-22.04' || matrix.os == 'macos-12')
       uses: codecov/codecov-action@ad3126e916f78f00edff4ed0317cf185271ccc2d # v5.4.2
       with:
         token: ${{ secrets.SHELLOUS_CODECOV_TOKEN }}
         verbose: true
     - name: Run Tests with uvloop (Linux and MacOS)
-      if: (matrix.os == 'ubuntu-22.04' || matrix.os == 'macos-13') && matrix.python-version != '3.13-dev'
+      if: (matrix.os == 'ubuntu-22.04' || matrix.os == 'macos-13')
       run: |
         pip3 install --require-hashes -r ./ci/requirements-uvloop.txt
         # Ignore ResourceWarning with uvloop for now (TODO).
@@ -123,7 +122,6 @@ jobs:
       env:
         SHELLOUS_CHILDWATCHER_TYPE: "default"
     - name: Verify Types
-      if: matrix.python-version != '3.13-dev'
       run: |
         PYTHONPATH=. pyright --verifytypes shellous
     - name: Format Check
