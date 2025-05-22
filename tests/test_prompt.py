@@ -56,15 +56,13 @@ _requires_pty = pytest.mark.skipif(
     reason="requires pty",
 )
 
-_skip_py313beta = pytest.mark.skipif(
-    sys.version_info >= (3, 13), reason="broken in python 3.13 beta"
-)
-
 
 @_requires_pty
 async def test_prompt_python_pty():
     "Test the prompt class with the Python REPL (PTY)."
-    cmd = sh(sys.executable).stderr(sh.STDOUT).set(pty=_NO_ECHO)
+    cmd = (
+        sh(sys.executable).stderr(sh.STDOUT).set(pty=_NO_ECHO).env(PYTHON_BASIC_REPL=1)
+    )
 
     async with cmd.prompt(_PS1, timeout=3.0) as repl:
         greeting, _ = await repl.expect()
@@ -256,7 +254,6 @@ async def test_prompt_unix_shell_interactive():
     assert bool(repl.result)
 
 
-@_skip_py313beta
 async def test_prompt_asyncio_repl():
     "Test the prompt class with the asyncio REPL."
     cmd = sh(sys.executable, "-m", "asyncio").stderr(sh.STDOUT)
@@ -323,7 +320,6 @@ async def test_prompt_python_ps1_newline():
     assert bool(repl.result)
 
 
-@_skip_py313beta
 async def test_prompt_asyncio_repl_expect():
     "Test the prompt class with the asyncio REPL and the expect() function."
     cmd = sh(sys.executable, "-m", "asyncio").stderr(sh.STDOUT)
