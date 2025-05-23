@@ -45,7 +45,7 @@ def _is_uvloop():
 
 def _attach_loop():
     "Make sure the current child watcher is attached to a loop, if necessary."
-    if sys.platform != "win32":
+    if sys.platform != "win32" and sys.version_info < (3, 14):
         cw = asyncio.get_child_watcher()
         cw.attach_loop(asyncio.get_running_loop())
 

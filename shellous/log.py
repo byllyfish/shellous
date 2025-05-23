@@ -175,7 +175,7 @@ def _platform_info():
             child_watcher = (
                 asyncio.get_child_watcher().__class__.__name__  # pyright: ignore[reportDeprecated]
             )
-    except NotImplementedError:
+    except (NotImplementedError, AttributeError):
         child_watcher = None
 
     info = f"{_PYTHON_VERSION} {loop_name} {thread_name}"

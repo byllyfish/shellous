@@ -6,6 +6,7 @@ import contextvars
 import errno
 import os
 import struct
+import sys
 import warnings
 from dataclasses import dataclass
 from typing import Any, Callable, NamedTuple, Optional, Union
@@ -287,7 +288,7 @@ def _patch_child_watcher():
 @contextlib.contextmanager
 def set_ignore_child_watcher(ignore: bool):
     "Tell the current child watcher to ignore the next `add_child_handler`."
-    if ignore:
+    if ignore and sys.version_info < (3, 14):
         _patch_child_watcher()
 
     _IGNORE_CHILD_PROCESS.set(ignore)

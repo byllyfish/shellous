@@ -14,7 +14,7 @@ import pytest
 from shellous import sh
 
 # pyright: reportPossiblyUnboundVariable=false
-if sys.platform != "win32":
+if sys.platform != "win32" and sys.version_info < (3, 14):
     from shellous.watcher import DefaultChildWatcher
 
 _PYPY = platform.python_implementation() == "PyPy"
@@ -87,7 +87,7 @@ async def report_orphan_tasks():
     with _check_open_fds():
         yield
         # Close the childwatcher *before* checking for open fd's.
-        if sys.platform != "win32":
+        if sys.platform != "win32" and sys.version_info < (3, 14):
             cw = asyncio.get_child_watcher()
             if isinstance(cw, DefaultChildWatcher):
                 cw.close()
