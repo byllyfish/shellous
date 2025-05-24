@@ -1545,11 +1545,18 @@ async def test_process_pool_executor(echo_cmd, report_children):
     This tests that a command is pickle-able. It also tests that
     ProcessPoolExecutor and shellous can co-exist.
     """
+    import multiprocessing
     from concurrent.futures import ProcessPoolExecutor
 
     echo = echo_cmd.set(_return_result=True)
 
-    with ProcessPoolExecutor() as executor:
+    # On Python 3.14b1 Linux, the default is "forkserver" but this is leaking an
+    # fd in the beta. Revert temporarily to "fork".
+    mp_context = None
+    if sys.platform == "linux" and sys.version_info > (3, 14):
+        mp_context = multiprocessing.get_context("fork")
+
+    with ProcessPoolExecutor(mp_context=mp_context) as executor:
         loop = asyncio.get_running_loop()
         fut = loop.run_in_executor(executor, _run, echo("abc"))
         # Be aware this can fail if the test_shellous.py module imports
