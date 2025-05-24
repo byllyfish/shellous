@@ -12,10 +12,12 @@ import pytest
 from shellous import sh
 from shellous.log import log_method
 
-if sys.platform != "win32":
+if sys.platform != "win32" and sys.version_info < (3, 14):
     from shellous.watcher import DefaultChildWatcher
 
-pytestmark = pytest.mark.skipif(sys.platform == "win32", reason="Unix")
+pytestmark = pytest.mark.skipif(
+    sys.platform == "win32" or sys.version_info > (3, 14), reason="Unix|3.14"
+)
 
 _IS_UVLOOP = os.environ.get("SHELLOUS_LOOP_TYPE") == "uvloop"
 

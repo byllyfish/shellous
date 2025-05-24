@@ -45,7 +45,7 @@ def _is_uvloop():
 
 def _attach_loop():
     "Make sure the current child watcher is attached to a loop, if necessary."
-    if sys.platform != "win32":
+    if sys.platform != "win32" and sys.version_info < (3, 14):
         cw = asyncio.get_child_watcher()
         cw.attach_loop(asyncio.get_running_loop())
 
@@ -1539,6 +1539,7 @@ def _run(cmd):
     return asyncio.run(_coro())
 
 
+@pytest.mark.xfail(sys.version_info > (3, 14), reason="py3.14")
 async def test_process_pool_executor(echo_cmd, report_children):
     """Test that a command can be executed in a ProcessPoolExecutor.
 
