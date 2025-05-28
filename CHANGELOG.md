@@ -1,6 +1,14 @@
 Shellous Change Log
 ===================
 
+0.38.0
+------
+
+- [LATERAL] Re-formatted with latest version of black.
+- [LATERAL] Update CI to Python 3.13; drop CI testing for Python 3.9. Implement initial CI testing for Python 3.14-dev.
+- [LATERAL] Update CI to FreeBSD 14.2. Update CI testing for latest Macos, Linux and Windows platforms.
+- [LATERAL] Update dependencies and poetry version.
+
 0.37.0
 ------
 
