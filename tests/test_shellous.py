@@ -50,9 +50,9 @@ def _attach_loop():
         cw.attach_loop(asyncio.get_running_loop())
 
 
-def test_debug_mode(event_loop):
+async def test_debug_mode():
     "Tests should be running on a loop with asyncio debug mode set."
-    assert event_loop.get_debug()
+    assert asyncio.get_running_loop().get_debug()
 
 
 @pytest.fixture
