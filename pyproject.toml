@@ -64,6 +64,7 @@ env_files = ["tests/tests.env"]
 addopts = '--timeout=30 --color=yes --log-cli-format="%(created).03f %(levelname)s %(name)s %(message)s" --log-level=INFO --log-file-format="%(created).03f %(levelname)s %(name)s %(message)s"'
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
+asyncio_debug = true
 
 [tool.pylint.classes]
 exclude-protected = ["_proc", "_transport", "_returncode", "_writable", "_return_result", "_catch_cancelled_error", "_start_new_session", "_preexec_fn"]
