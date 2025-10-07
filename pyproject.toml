@@ -33,17 +33,17 @@ poetry-plugin-export = ">=1.8"
 [tool.poetry.group.dev.dependencies]
 asyncstdlib = "^3.13.1"
 black = "25.1.0"
-coverage = "^7.8.0"
-pdoc = "^15.0.3"
-pylint = "^3.3.7"
-pyright = "^1.1.400"
-pytest = "^8.3.5"
-pytest-asyncio = "^1.0.0"
+coverage = "^7.10.7"
+pdoc = "^15.0.4"
+pylint = "^3.3.9"
+pyright = "^1.1.406"
+pytest = "^8.4.2"
+pytest-asyncio = "^1.2.0"
 pytest-dotenv = "^0.5.2"
-pytest-randomly = "^3.16.0"
+pytest-randomly = "^4.0.1"
 pytest-timeout = "^2.4.0"
-ruff = {version = "^0.11.10", markers = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'"}
-typing-extensions = "^4.13.2"
+ruff = {version = "^0.14.0", markers = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'"}
+typing-extensions = "^4.15.0"
 
 [tool.poetry.group.uvloop]
 optional = true
