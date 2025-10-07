@@ -32,7 +32,7 @@ poetry-plugin-export = ">=1.8"
 
 [tool.poetry.group.dev.dependencies]
 asyncstdlib = "^3.13.1"
-black = "25.1.0"
+black = "25.9.0"
 coverage = "^7.10.7"
 pdoc = "^15.0.4"
 pylint = "^3.3.9"
@@ -101,7 +101,7 @@ reportUnnecessaryTypeIgnoreComment = true
 # reportUnusedCallResult = true
 
 [tool.black]
-required-version = "25.1.0"
+required-version = "25.9.0"
 
 [tool.isort]
 profile = "black"
