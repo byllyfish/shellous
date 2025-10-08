@@ -118,6 +118,8 @@ jobs:
       env:
         SHELLOUS_CHILDWATCHER_TYPE: "default"
     - name: Verify Types
+      # Issue with DefaultChildWatcher...
+      if: matrix.python-version != 3.14
       run: |
         PYTHONPATH=. pyright --verifytypes shellous
     - name: Format Check
