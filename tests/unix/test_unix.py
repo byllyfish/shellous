@@ -1793,11 +1793,13 @@ async def test_context_manager_running_pty():
         sleep1.cancel()
         await asyncio.sleep(0.1)
 
-        if sys.platform == "linux":
-            assert sleep1.returncode == _CANCELLED_EXIT_CODE
+        if sys.platform == "linux" or sys.version_info >= (3, 14):
+            expected_returncode = _CANCELLED_EXIT_CODE
         else:
             # Note: PTY mode disables child watcher on MacOS/FreeBSD.
-            assert sleep1.returncode is None
+            expected_returncode = None
+
+        assert sleep1.returncode == expected_returncode
 
 
 @pytest.mark.skipif(_is_uvloop(), reason="uvloop")

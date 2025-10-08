@@ -24,8 +24,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-24.04, ubuntu-22.04, macos-15, macos-14, windows-2025, windows-2022 ]
-        python-version: [ '3.10', '3.11', '3.12', '3.13' ]
+        os: [ ubuntu-24.04, macos-15, macos-14, windows-2025 ]
+        python-version: [ '3.10', '3.11', '3.12', '3.13', '3.14' ]
 
     env:
       SHELLOUS_TRACE: all
