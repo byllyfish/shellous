@@ -64,10 +64,6 @@ jobs:
       run: |
         # Run coverage.
         coverage run --source shellous -m pytest --log-cli-level=DEBUG
-        # Re-run with coverage for shellous/watcher.py
-        SHELLOUS_CHILDWATCHER_TYPE=default coverage run --source shellous -m pytest
-        # Re-run with coverage for shellous/watcher.py and ThreadStrategy.
-        SHELLOUS_CHILDWATCHER_TYPE=default SHELLOUS_THREADSTRATEGY=1 coverage run --source shellous -m pytest
     - name: Upload Code Coverage
       if: (matrix.os == 'ubuntu-24.04' || matrix.os == 'macos-15')
       uses: codecov/codecov-action@18283e04ce6e62d37312384ff67231eb8fd56d24 # v5.4.3
