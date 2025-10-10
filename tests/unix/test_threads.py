@@ -12,9 +12,6 @@ import pytest
 from shellous import sh
 from shellous.log import log_method
 
-if sys.platform != "win32" and sys.version_info < (3, 14):
-    from shellous.watcher import DefaultChildWatcher
-
 pytestmark = pytest.mark.skipif(
     sys.platform == "win32" or sys.version_info > (3, 14), reason="Unix|3.14"
 )
@@ -95,12 +92,7 @@ def run_in_thread(child_watcher_name="ThreadedChildWatcher"):
     def _decorator(coro):
         @functools.wraps(coro)
         def _wrap(*args, **kwargs):
-            if child_watcher_name == "DefaultChildWatcher":
-                child_watcher = (
-                    DefaultChildWatcher()  # pyright: ignore[reportPossiblyUnboundVariable]
-                )
-            else:
-                child_watcher = getattr(asyncio, child_watcher_name)()
+            child_watcher = getattr(asyncio, child_watcher_name)()
 
             saved_child_watcher = asyncio.get_child_watcher()
             asyncio.set_child_watcher(child_watcher)
@@ -137,7 +129,6 @@ def run_in_thread(child_watcher_name="ThreadedChildWatcher"):
 _CHILD_WATCHER_MAP = {
     "safe": "SafeChildWatcher",
     "pidfd": "PidfdChildWatcher",
-    "default": "DefaultChildWatcher",
 }
 
 _CW_TYPE = os.environ.get("SHELLOUS_CHILDWATCHER_TYPE", "<unset>")
