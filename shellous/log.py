@@ -154,7 +154,7 @@ def log_method(enabled: bool) -> Callable[[_ANYFN], _ANYFN]:
     return _decorator
 
 
-def _platform_info():
+def _platform_info() -> str:
     "Return platform information for use in logging."
     # Include module name with name of loop class.
     loop_cls = asyncio.get_running_loop().__class__
@@ -168,20 +168,32 @@ def _platform_info():
     else:
         thread_name = f"!!{current_thread.name}"
 
-    try:
-        # Child watcher is only implemented on Unix.
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", DeprecationWarning)
-            child_watcher = (
-                asyncio.get_child_watcher().__class__.__name__  # pyright: ignore[reportDeprecated]
-            )
-    except (NotImplementedError, AttributeError):
-        child_watcher = None
-
+    child_watcher = _child_watcher_name()
     info = f"{_PYTHON_VERSION} {loop_name} {thread_name}"
     if child_watcher:
         return f"{info} {child_watcher}"
     return info
+
+
+def _child_watcher_name() -> str:
+    """Return name of asyncio child watcher class (for Python 3.13 and earlier).
+
+    Return '' if child watcher is not supported on this OS/Python version.
+    """
+    if sys.version_info >= (3, 14):
+        return ""
+
+    try:
+        # Child watcher is only implemented on Unix.
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", DeprecationWarning)
+            name = (
+                asyncio.get_child_watcher().__class__.__name__  # pyright: ignore[reportDeprecated]
+            )
+    except (NotImplementedError, AttributeError):
+        name = ""
+
+    return name
 
 
 @contextmanager

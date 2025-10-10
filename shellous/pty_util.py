@@ -267,9 +267,7 @@ _IGNORE_CHILD_PROCESS = contextvars.ContextVar("ignore_child_process", default=F
 
 def _patch_child_watcher():
     "Patch the current child watcher for `add_child_handler`."
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", DeprecationWarning)
-        watcher = asyncio.get_child_watcher()  # pyright: ignore[reportDeprecated]
+    watcher = _get_child_watcher()
 
     # Check flag to see if patch already exists.
     if hasattr(watcher, "_shellous_patched"):
@@ -288,7 +286,7 @@ def _patch_child_watcher():
 @contextlib.contextmanager
 def set_ignore_child_watcher(ignore: bool):
     "Tell the current child watcher to ignore the next `add_child_handler`."
-    if ignore and sys.version_info < (3, 14):
+    if ignore:
         _patch_child_watcher()
 
     _IGNORE_CHILD_PROCESS.set(ignore)
@@ -296,3 +294,15 @@ def set_ignore_child_watcher(ignore: bool):
         yield
     finally:
         _IGNORE_CHILD_PROCESS.set(False)
+
+
+def _get_child_watcher():
+    "Return the current child watcher on this unix system."
+    if sys.version_info < (3, 14):
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", DeprecationWarning)
+            return asyncio.get_child_watcher()  # pyright: ignore[reportDeprecated]
+
+    else:
+        loop = asyncio.get_running_loop()
+        return loop._watcher
