@@ -1793,7 +1793,7 @@ async def test_context_manager_running_pty():
         sleep1.cancel()
         await asyncio.sleep(0.1)
 
-        if sys.platform == "linux" or sys.version_info >= (3, 14):
+        if sys.platform == "linux":
             expected_returncode = _CANCELLED_EXIT_CODE
         else:
             # Note: PTY mode disables child watcher on MacOS/FreeBSD.
