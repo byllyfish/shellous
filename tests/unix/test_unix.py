@@ -703,7 +703,7 @@ async def test_multiple_capture():
         assert run.stdout is not None
 
         run.stdin.write(b"abc\n")
-        output, _ = await asyncio.gather(run.stdout.readline(), run.stdin.drain())
+        _output, _ = await asyncio.gather(run.stdout.readline(), run.stdin.drain())
         run.stdin.close()
 
     result = run.result()
@@ -1758,7 +1758,7 @@ async def test_limited_file_descriptors(report_children):
     for fd_max in range(11, 14):
         with _limited_descriptors(fd_max):
             with pytest.raises(
-                OSError, match="Too many open files|No file descriptors available"
+                OSError, match=r"Too many open files|No file descriptors available"
             ):
                 await harvest(*cmds)
 
