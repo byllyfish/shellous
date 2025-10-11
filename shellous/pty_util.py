@@ -9,7 +9,7 @@ import struct
 import sys
 import warnings
 from dataclasses import dataclass
-from typing import Any, Callable, NamedTuple, Optional, Tuple, Union
+from typing import Any, Callable, NamedTuple, Optional, Union
 
 # The following modules are not supported on Windows.
 # pyright: reportPossiblyUnboundVariable=false
@@ -277,9 +277,7 @@ def _patch_child_watcher():
     saved_add_handler = watcher.add_child_handler
 
     def _add_child_handler(
-        pid: int,
-        callback: Callable[[int, int, *Tuple[object, ...]], object],
-        *args: Any
+        pid: int, callback: Callable[[int, int, int], object], *args: Any
     ):
         if not _IGNORE_CHILD_PROCESS.get():
             saved_add_handler(pid, callback, *args)
