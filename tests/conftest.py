@@ -13,10 +13,6 @@ import pytest
 
 from shellous import sh
 
-# pyright: reportPossiblyUnboundVariable=false
-if sys.platform != "win32" and sys.version_info < (3, 14):
-    from shellous.watcher import DefaultChildWatcher
-
 _PYPY = platform.python_implementation() == "PyPy"
 
 # Close any file descriptors >= 3. The tests will log file descriptors passed
@@ -64,9 +60,6 @@ class _CustomEventLoopPolicy(asyncio.DefaultEventLoopPolicy):
             return asyncio.SafeChildWatcher()
         if _watcher_type == "pidfd":
             return asyncio.PidfdChildWatcher()
-        if _watcher_type == "default":
-            strategy = os.environ.get("SHELLOUS_THREADSTRATEGY") is not None
-            return DefaultChildWatcher(thread_strategy=strategy)
         if _watcher_type is not None:
             raise NotImplementedError
         return None
@@ -86,11 +79,6 @@ async def report_orphan_tasks():
 
     with _check_open_fds():
         yield
-        # Close the childwatcher *before* checking for open fd's.
-        if sys.platform != "win32" and sys.version_info < (3, 14):
-            cw = asyncio.get_child_watcher()
-            if isinstance(cw, DefaultChildWatcher):
-                cw.close()
 
     # Check if any other tasks are still running. Ignore the current task.
     extra_tasks = asyncio.all_tasks() - {asyncio.current_task()}

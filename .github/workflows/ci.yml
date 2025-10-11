@@ -108,18 +108,7 @@ jobs:
         fi
       env:
         SHELLOUS_CHILDWATCHER_TYPE: "safe"
-    - name: Run Tests with DefaultChildWatcher (Linux and MacOS)
-      if: (matrix.os == 'ubuntu-24.04' || matrix.os == 'macos-15') && matrix.python-version != 3.14
-      run: |
-        if ! pytest -vv -s --log-cli-level=DEBUG | ./ci/annotate.awk -v step=DefaultChildWatcher; then
-          echo "::warning title=DefaultChildWatcher Warning::Re-running failed tests in $BUILD_NAME"
-          pytest -vv -s --log-cli-level=DEBUG --last-failed
-        fi
-      env:
-        SHELLOUS_CHILDWATCHER_TYPE: "default"
     - name: Verify Types
-      # Issue with DefaultChildWatcher...
-      if: matrix.python-version != 3.14
       run: |
         PYTHONPATH=. pyright --verifytypes shellous
     - name: Format Check
@@ -161,14 +150,6 @@ jobs:
             echo "::warning title=Run Tests Warning::Re-running failed tests in $BUILD_NAME"
             pytest -v -s --log-cli-level=DEBUG --last-failed
           fi
-      - name: Run Tests with DefaultChildWatcher
-        run: |
-          if ! pytest -v -s --log-cli-level=DEBUG; then
-            echo "::warning title=DefaultChildWatcher Warning::Re-running failed tests in $BUILD_NAME"
-            pytest -v -s --log-cli-level=DEBUG --last-failed
-          fi
-        env:
-          SHELLOUS_CHILDWATCHER_TYPE: "default"
 
 
   build-pypy:
@@ -201,8 +182,3 @@ jobs:
     - name: Run Tests
       run: |
         pytest -vv -s --durations=20 --log-cli-level=DEBUG -W ignore::pytest.PytestUnraisableExceptionWarning
-    - name: Run Tests with DefaultChildWatcher
-      run: |
-        pytest -vv -s --log-cli-level=DEBUG -W ignore::pytest.PytestUnraisableExceptionWarning
-      env:
-        SHELLOUS_CHILDWATCHER_TYPE: "default"
