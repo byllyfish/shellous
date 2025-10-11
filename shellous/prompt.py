@@ -604,7 +604,7 @@ def _make_decoder(encoding: str, normalize_newlines: bool) -> codecs.Incremental
     decoder = decoder_class(*enc[1:])
     if normalize_newlines:
         decoder = io.IncrementalNewlineDecoder(decoder, translate=True)
-    return decoder
+    return decoder  # pyright: ignore[reportReturnType]
 
 
 def _regex_compile_exact(pattern: Union[str, list[str]]) -> re.Pattern[str]:
