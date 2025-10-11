@@ -65,7 +65,7 @@ class Pipeline(Generic[_RT]):
     def stdin(self, input_: Any, *, close: bool = False) -> "Pipeline[_RT]":
         "Set stdin on the first command of the pipeline."
         new_first = self.commands[0].stdin(input_, close=close)
-        new_commands = (new_first,) + self.commands[1:]
+        new_commands = (new_first, *self.commands[1:])
         return dataclasses.replace(self, commands=new_commands)
 
     def stdout(
@@ -77,7 +77,7 @@ class Pipeline(Generic[_RT]):
     ) -> "Pipeline[_RT]":
         "Set stdout on the last command of the pipeline."
         new_last = self.commands[-1].stdout(output, append=append, close=close)
-        new_commands = self.commands[0:-1] + (new_last,)
+        new_commands = (*self.commands[0:-1], new_last)
         return dataclasses.replace(self, commands=new_commands)
 
     def stderr(
@@ -89,13 +89,13 @@ class Pipeline(Generic[_RT]):
     ) -> "Pipeline[_RT]":
         "Set stderr on the last command of the pipeline."
         new_last = self.commands[-1].stderr(error, append=append, close=close)
-        new_commands = self.commands[0:-1] + (new_last,)
+        new_commands = (*self.commands[0:-1], new_last)
         return dataclasses.replace(self, commands=new_commands)
 
     def _set(self, **kwds: Any):
         "Set options on last command of the pipeline."
         new_last = self.commands[-1].set(**kwds)
-        new_commands = self.commands[0:-1] + (new_last,)
+        new_commands = (*self.commands[0:-1], new_last)
         return dataclasses.replace(self, commands=new_commands)
 
     def coro(self) -> Coroutine[Any, Any, _RT]:

@@ -276,7 +276,9 @@ def _patch_child_watcher():
 
     saved_add_handler = watcher.add_child_handler
 
-    def _add_child_handler(pid: int, callback: Callable[..., object], *args: Any):
+    def _add_child_handler(
+        pid: int, callback: Callable[[int, int, int], object], *args: Any
+    ):
         if not _IGNORE_CHILD_PROCESS.get():
             saved_add_handler(pid, callback, *args)
 

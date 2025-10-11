@@ -812,7 +812,7 @@ def coerce(args: Iterable[Any], coerce_arg: _CoerceArgFnT) -> tuple[Any, ...]:
         if isinstance(arg, (str, bytes, os.PathLike, Command, shellous.Pipeline)):
             result.append(arg)
         elif isinstance(arg, (bytearray, memoryview)):
-            result.append(bytes(arg))
+            result.append(bytes(arg))  # pyright: ignore[reportUnknownArgumentType]
         elif isinstance(arg, (io.StringIO, io.BytesIO)):
             result.append(arg.getvalue())
         elif isinstance(arg, (list, tuple, reversed, enumerate, zip)):
