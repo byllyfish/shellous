@@ -1,6 +1,14 @@
 Shellous Change Log
 ===================
 
+0.39.0
+------
+
+- [API] Remove the test-only `DefaultChildWatcher` class.
+- [LATERAL] Improve support for Pty mode on Python 3.14 when running on MacOS/FreeBSD by supporting the new per-loop child watcher.
+- [LATERAL] Update CI to Python 3.14.
+- [LATERAL] Update development dependencies and poetry version.
+
 0.38.0
 ------
 
