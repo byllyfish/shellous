@@ -71,7 +71,7 @@ jobs:
         token: ${{ secrets.SHELLOUS_CODECOV_TOKEN }}
         verbose: true
     - name: Run Tests with uvloop (Linux and MacOS)
-      if: (matrix.os == 'ubuntu-24.04' || matrix.os == 'macos-15') && matrix.python-version != '3.14'
+      if: (matrix.os == 'ubuntu-24.04' || matrix.os == 'macos-15')
       run: |
         pip3 install --require-hashes -r ./ci/requirements-uvloop.txt
         # Ignore ResourceWarning with uvloop for now (TODO).
