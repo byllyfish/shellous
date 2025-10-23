@@ -43,7 +43,7 @@ pytest-asyncio = "^1.2.0"
 pytest-dotenv = "^0.5.2"
 pytest-randomly = "^4.0.1"
 pytest-timeout = "^2.4.0"
-ruff = {version = "^0.14.0", markers = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'"}
+ruff = {version = "^0.14.1", markers = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'"}
 typing-extensions = "^4.15.0"
 
 [tool.poetry.group.uvloop]
