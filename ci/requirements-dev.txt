@@ -382,9 +382,9 @@ pygments==2.19.2 ; python_version >= "3.9" and python_version < "4.0" \
 pylint==3.3.9 ; python_version >= "3.9" and python_version < "4.0" \
     --hash=sha256:01f9b0462c7730f94786c283f3e52a1fbdf0494bbe0971a78d7277ef46a751e7 \
     --hash=sha256:d312737d7b25ccf6b01cc4ac629b5dcd14a0fcf3ec392735ac70f137a9d5f83a
-pyright==1.1.406 ; python_version >= "3.9" and python_version < "4.0" \
-    --hash=sha256:1d81fb43c2407bf566e97e57abb01c811973fdb21b2df8df59f870f688bdca71 \
-    --hash=sha256:c4872bc58c9643dac09e8a2e74d472c62036910b3bd37a32813989ef7576ea2c
+pyright==1.1.407 ; python_version >= "3.9" and python_version < "4.0" \
+    --hash=sha256:099674dba5c10489832d4a4b2d302636152a9a42d317986c38474c76fe562262 \
+    --hash=sha256:6dd419f54fcc13f03b52285796d65e639786373f433e243f8b94cf93a7444d21
 pytest-asyncio==1.2.0 ; python_version >= "3.9" and python_version < "4.0" \
     --hash=sha256:8e17ae5e46d8e7efe51ab6494dd2010f4ca8dae51652aa3c8d55acf50bfb2e99 \
     --hash=sha256:c609a64a2a8768462d0c99811ddb8bd2583c33fd33cf7f21af1c142e824ffb57
