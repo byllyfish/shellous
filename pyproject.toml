@@ -32,18 +32,18 @@ python = "^3.9"
 poetry-plugin-export = ">=1.8"
 
 [tool.poetry.group.dev.dependencies]
-asyncstdlib = "^3.13.1"
+asyncstdlib = "^3.14.0"
 black = "25.9.0"
-coverage = "^7.10.7"
+coverage = "^7.10.7" # compatible with Python 3.9.
 pdoc = "^15.0.4"
 pylint = "^3.3.9"
-pyright = "^1.1.406"
+pyright = "^1.1.408"
 pytest = "^8.4.2"
-pytest-asyncio = "^1.2.0"
+pytest-asyncio = "^1.2.0" # compatible with Python 3.9
 pytest-dotenv = "^0.5.2"
 pytest-randomly = "^4.0.1"
 pytest-timeout = "^2.4.0"
-ruff = {version = "^0.14.1", markers = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'"}
+ruff = {version = "^0.14.14", markers = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'"}
 typing-extensions = "^4.15.0"
 
 [tool.poetry.group.uvloop]
