@@ -161,7 +161,7 @@ class _RunOptions:
                 new_args.append(arg)
                 continue
 
-            (read_fd, write_fd) = os.pipe()
+            read_fd, write_fd = os.pipe()
             if _is_writable(arg):
                 new_args.append(f"/dev/fd/{write_fd}")
                 new_fds.append(write_fd)
@@ -1166,7 +1166,7 @@ class PipeRunner:
 
         cmd_count = len(cmds)
         for i in range(cmd_count - 1):
-            (read_fd, write_fd) = os.pipe()
+            read_fd, write_fd = os.pipe()
             open_fds.extend((read_fd, write_fd))
 
             cmds[i] = cmds[i].stdout(write_fd, close=True)

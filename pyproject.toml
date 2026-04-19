@@ -26,14 +26,14 @@ classifiers = [
 "Issue Tracker" = "https://github.com/byllyfish/shellous/issues"
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "^3.10"
 
 [tool.poetry.requires-plugins]
 poetry-plugin-export = ">=1.8"
 
 [tool.poetry.group.dev.dependencies]
 asyncstdlib = "^3.14.0"
-black = "25.9.0"
+black = "26.3.1"
 coverage = "^7.10.7" # compatible with Python 3.9.
 pdoc = "^15.0.4"
 pylint = "^3.3.9"
@@ -102,7 +102,7 @@ reportUnnecessaryTypeIgnoreComment = true
 # reportUnusedCallResult = true
 
 [tool.black]
-required-version = "25.9.0"
+required-version = "26.3.1"
 
 [tool.isort]
 profile = "black"

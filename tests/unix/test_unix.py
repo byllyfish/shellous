@@ -516,7 +516,7 @@ async def test_async_iteration():
 
 async def test_manually_created_pipeline():
     "You can create a pipeline manually using input redirection and os.pipe()."
-    (r, w) = os.pipe()
+    r, w = os.pipe()
     echo = sh("echo", "-n", "abc").stdout(w, close=True)
     tr = sh("tr", "[:lower:]", "[:upper:]").stdin(r, close=True)
     result = await asyncio.gather(tr, echo)
