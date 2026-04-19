@@ -38,7 +38,7 @@ coverage = "^7.10.7" # compatible with Python 3.9.
 pdoc = "^15.0.4"
 pylint = "^3.3.9"
 pyright = "^1.1.408"
-pytest = "^8.4.2"
+pytest = ">=8.4.2,<10.0.0"
 pytest-asyncio = "^1.2.0" # compatible with Python 3.9
 pytest-dotenv = "^0.5.2"
 pytest-randomly = "^4.0.1"
