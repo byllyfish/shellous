@@ -299,9 +299,9 @@ pytest-randomly==4.0.1 ; python_version >= "3.10" and python_version < "4.0" \
 pytest-timeout==2.4.0 ; python_version >= "3.10" and python_version < "4.0" \
     --hash=sha256:7e68e90b01f9eff71332b25001f85c75495fc4e3a836701876183c4bcfd0540a \
     --hash=sha256:c42667e5cdadb151aeb5b26d114aff6bdf5a907f176a007a30b940d3d865b5c2
-pytest==8.4.2 ; python_version >= "3.10" and python_version < "4.0" \
-    --hash=sha256:86c0d0b93306b961d58d62a4db4879f27fe25513d4b969df351abdddb3c30e01 \
-    --hash=sha256:872f880de3fc3a5bdc88a11b39c9710c3497a547cfa9320bc3c5e62fbf272e79
+pytest==9.0.3 ; python_version >= "3.10" and python_version < "4.0" \
+    --hash=sha256:2c5efc453d45394fdd706ade797c0a81091eccd1d6e4bccfcd476e2b8e0ab5d9 \
+    --hash=sha256:b86ada508af81d19edeb213c681b1d48246c1a91d304c6c81a427674c17eb91c
 python-dotenv==1.2.2 ; python_version >= "3.10" and python_version < "4.0" \
     --hash=sha256:1d8214789a24de455a8b8bd8ae6fe3c6b69a5e3d64aa8a8e5d68e694bbcb285a \
     --hash=sha256:2c371a91fbd7ba082c2c1dc1f8bf89ca22564a087c2c287cd9b662adde799cf3
