@@ -1,5 +1,5 @@
-# Poetry (version 2.3.3) export at Fri Apr 17 16:27:13 MST 2026
-uvloop==0.22.1 ; python_version >= "3.9" and python_version < "4.0" \
+# Poetry (version 2.3.3) export at Sat Apr 18 17:16:49 MST 2026
+uvloop==0.22.1 ; python_version >= "3.10" and python_version < "4.0" \
     --hash=sha256:017bd46f9e7b78e81606329d07141d3da446f8798c6baeec124260e22c262772 \
     --hash=sha256:0530a5fbad9c9e4ee3f2b33b148c6a64d47bbad8000ea63704fa8260f4cf728e \
     --hash=sha256:05e4b5f86e621cf3927631789999e697e58f0d2d32675b67d9ca9eb0bca55743 \
