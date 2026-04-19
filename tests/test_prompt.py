@@ -11,6 +11,7 @@ import pytest
 
 from shellous import Prompt, cooked, sh
 
+# ruff: noqa: F401, F811
 from .test_shellous import PIPE_MAX_SIZE, bulk_cmd, python_script
 
 # True if we are running on PyPy.
