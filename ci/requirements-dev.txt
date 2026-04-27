@@ -266,9 +266,9 @@ mypy-extensions==1.1.0 ; python_version >= "3.10" and python_version < "4.0" \
 nodeenv==1.10.0 ; python_version >= "3.10" and python_version < "4.0" \
     --hash=sha256:5bb13e3eed2923615535339b3c620e76779af4cb4c6a90deccc9e36b274d3827 \
     --hash=sha256:996c191ad80897d076bdfba80a41994c2b47c68e224c542b48feba42ba00f8bb
-packaging==26.1 ; python_version >= "3.10" and python_version < "4.0" \
-    --hash=sha256:5d9c0669c6285e491e0ced2eee587eaf67b670d94a19e94e3984a481aba6802f \
-    --hash=sha256:f042152b681c4bfac5cae2742a55e103d27ab2ec0f3d88037136b6bfe7c9c5de
+packaging==26.2 ; python_version >= "3.10" and python_version < "4.0" \
+    --hash=sha256:5fc45236b9446107ff2415ce77c807cee2862cb6fac22b8a73826d0693b0980e \
+    --hash=sha256:ff452ff5a3e828ce110190feff1178bb1f2ea2281fa2075aadb987c2fb221661
 pathspec==1.0.4 ; python_version >= "3.10" and python_version < "4.0" \
     --hash=sha256:0210e2ae8a21a9137c0d470578cb0e595af87edaa6ebf12ff176f14a02e0e645 \
     --hash=sha256:fb6ae2fd4e7c921a165808a552060e722767cfa526f99ca5156ed2ce45a5c723
