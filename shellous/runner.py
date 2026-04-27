@@ -294,6 +294,9 @@ class _RunOptions:
         "Set up process output. Used for both stdout and stderr."
         assert output is not None
 
+        if self.command.options.limit is not None:
+            self.kwd_args["limit"] = self.command.options.limit
+
         stdout = asyncio.subprocess.PIPE
 
         if isinstance(output, os.PathLike):
