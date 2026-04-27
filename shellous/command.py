@@ -181,6 +181,9 @@ class Options:  # pylint: disable=too-many-instance-attributes
     coerce_arg: _CoerceArgFnT = None
     "Function called to coerce top level arguments."
 
+    limit: Optional[int] = None
+    "Output buffer limit"
+
     def runtime_env(self) -> Optional[dict[str, str]]:
         "@private Return our `env` merged with the global environment."
         if self.inherit_env:
@@ -505,6 +508,7 @@ class Command(Generic[_RT]):
         audit_callback: Unset[_AuditFnT] = _UNSET,
         coerce_arg: Unset[_CoerceArgFnT] = _UNSET,
         error_limit: Unset[Optional[int]] = _UNSET,
+        limit: Unset[Optional[int]] = _UNSET,
     ) -> "Command[_RT]":
         """Return new command with custom options set.
 
