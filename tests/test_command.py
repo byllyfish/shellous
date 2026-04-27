@@ -310,6 +310,7 @@ def test_dataclasses():
         "inherit_env",
         "input",
         "input_close",
+        "limit",
         "output",
         "output_append",
         "output_close",
