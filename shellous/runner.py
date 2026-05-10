@@ -238,6 +238,9 @@ class _RunOptions:
             preexec_fn=preexec_fn,
         )
 
+        if options.limit is not None:
+            self.kwd_args["limit"] = options.limit
+
     def _setup_pass_fds(self):
         "Set up `pass_fds` and `close_fds` if pass_fds is configured."
         options = self.command.options
@@ -293,9 +296,6 @@ class _RunOptions:
     def _setup_output(self, output: Any, append: bool, close: bool, sys_stream: TextIO):
         "Set up process output. Used for both stdout and stderr."
         assert output is not None
-
-        if self.command.options.limit is not None:
-            self.kwd_args["limit"] = self.command.options.limit
 
         stdout = asyncio.subprocess.PIPE
 
