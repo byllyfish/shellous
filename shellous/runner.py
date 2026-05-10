@@ -238,8 +238,9 @@ class _RunOptions:
             preexec_fn=preexec_fn,
         )
 
-        if options.limit is not None:
-            self.kwd_args["limit"] = options.limit
+        # Specify the `limit` argument to `asyncio.create_subprocess_exec`.
+        if options.read_buffer_limit is not None:
+            self.kwd_args["limit"] = options.read_buffer_limit
 
     def _setup_pass_fds(self):
         "Set up `pass_fds` and `close_fds` if pass_fds is configured."

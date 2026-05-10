@@ -310,7 +310,6 @@ def test_dataclasses():
         "inherit_env",
         "input",
         "input_close",
-        "limit",
         "output",
         "output_append",
         "output_close",
@@ -318,6 +317,7 @@ def test_dataclasses():
         "pass_fds_close",
         "path",
         "pty",
+        "read_buffer_limit",
         "timeout",
     ]
 

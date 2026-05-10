@@ -1531,13 +1531,13 @@ async def test_bulk_line_limit(bulk_cmd):
 
 async def test_readline_limit_decreased(echo_cmd):
     "Test line iteration with artifically lowered `read_buffer_limit`."
-    cmd1 = echo_cmd("x" * 25).set(limit=30)
+    cmd1 = echo_cmd("x" * 25).set(read_buffer_limit=30)
     assert [x async for x in cmd1] == ["x" * 25]
 
 
 async def test_readline_limit_too_small(echo_cmd):
     "Test line iteration with `read_buffer_limit` too small."
-    cmd2 = echo_cmd("y" * 25).set(limit=24)
+    cmd2 = echo_cmd("y" * 25).set(read_buffer_limit=24)
     with pytest.raises(ValueError, match="Separator is not found"):
         async for _ in cmd2:
             assert False  # never reached
