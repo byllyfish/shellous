@@ -186,10 +186,14 @@ jobs:
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
     - name: Install dependencies
       run: |
-        apt-get update && apt-get install -y python3-pip
-        pip3 install --require-hashes -r ./ci/requirements-dev.txt --break-system-packages
+        export DEBIAN_FRONTEND=noninteractive
+        apt-get update && apt-get install -y python3-pip python3-venv
+        python3 -m venv .venv
+        source .venv/bin/activate
+        pip3 install --require-hashes -r ./ci/requirements-dev.txt
     - name: Run Tests
       run: |
+        source .venv/bin/activate
         if ! pytest -vv -s --durations=20 --log-cli-level=DEBUG; then
           echo "::warning title=Run Tests Warning::Re-running failed tests in $BUILD_NAME"
           pytest -vv -s --durations=20 --log-cli-level=DEBUG --last-failed
