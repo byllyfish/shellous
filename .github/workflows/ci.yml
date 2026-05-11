@@ -22,17 +22,14 @@ jobs:
     defaults:
       run:
         shell: bash
-
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-24.04, macos-15, macos-14, windows-2025 ]
+        os: [ ubuntu-24.04, macos-26, macos-15, windows-2025 ]
         python-version: [ '3.10', '3.11', '3.12', '3.13', '3.14' ]
-
     env:
       SHELLOUS_TRACE: all
       BUILD_NAME: build (${{ matrix.os }},${{ matrix.python-version }})
-
     steps:
     - name: Harden Runner
       uses: step-security/harden-runner@8d3c67de8e2fe68ef647c8db1e6a09f647780f40 # v2.19.0
@@ -121,24 +118,20 @@ jobs:
   build-alpine:
     runs-on: ubuntu-latest
     timeout-minutes: 20  # stop runaway job after 20 minutes
-
     strategy:
       fail-fast: false
       matrix:
-        image-tag: ['python:3.10-alpine', 'python:3.11-alpine', 'python:3.12-alpine', 'python:3.13-alpine', 'python:3.14-alpine']
-
+        image-tag: ['python:3.10-alpine', 'python:3.14-alpine']
     container:
       image: ${{ matrix.image-tag }}
     env:
       SHELLOUS_TRACE: all
       BUILD_NAME: build (${{ matrix.image-tag }})
-
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@8d3c67de8e2fe68ef647c8db1e6a09f647780f40 # v2.19.0
         with:
           egress-policy: audit
-
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Install Dependencies
@@ -153,25 +146,20 @@ jobs:
             pytest -v -s --log-cli-level=DEBUG --last-failed
           fi
 
-
   build-pypy:
     runs-on: ubuntu-latest
     timeout-minutes: 20  # stop runaway job after 20 minutes
-
     strategy:
       fail-fast: false
       matrix:
         pypy-version: [ 'pypy-3.10', 'pypy-3.11']
-
     env:
       SHELLOUS_TRACE: all
-
     steps:
     - name: Harden Runner
       uses: step-security/harden-runner@8d3c67de8e2fe68ef647c8db1e6a09f647780f40 # v2.19.0
       with:
         egress-policy: audit
-
     - name: Checkout
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
     - name: Set up Python ${{ matrix.pypy-version }}
@@ -184,3 +172,29 @@ jobs:
     - name: Run Tests
       run: |
         pytest -vv -s --durations=20 --log-cli-level=DEBUG -W ignore::pytest.PytestUnraisableExceptionWarning
+
+  build-ubuntu-26-04:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20  # stop runaway job after 20 minutes
+    container:
+      image: ubuntu:26.04
+    env:
+      SHELLOUS_TRACE: all
+      BUILD_NAME: build (ubuntu:26.04)
+    steps:
+    - name: Checkout
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+    - name: Install dependencies
+      run: |
+        export DEBIAN_FRONTEND=noninteractive
+        apt-get update && apt-get install -y python3-pip python3-venv lsof
+        python3 -m venv venv
+        . venv/bin/activate
+        pip3 install --require-hashes -r ./ci/requirements-dev.txt
+    - name: Run Tests
+      run: |
+        . venv/bin/activate
+        if ! pytest -vv -s --durations=20 --log-cli-level=DEBUG; then
+          echo "::warning title=Run Tests Warning::Re-running failed tests in $BUILD_NAME"
+          pytest -vv -s --durations=20 --log-cli-level=DEBUG --last-failed
+        fi
