@@ -1211,7 +1211,8 @@ async def test_pty_stty_all(tmp_path):
 
     assert err.read_bytes() == b""
     if sys.platform == "linux":
-        assert buf == _STTY_LINUX
+        # Ubuntu-26.04: line endings added so ignore them.
+        assert buf.replace(b"\r\n", b" ") == _STTY_LINUX.replace(b"\r\n", b" ")
     elif sys.platform.startswith("freebsd"):
         assert buf in (
             _STTY_FREEBSD_12,

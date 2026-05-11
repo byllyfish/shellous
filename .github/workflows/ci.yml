@@ -187,7 +187,7 @@ jobs:
     - name: Install dependencies
       run: |
         export DEBIAN_FRONTEND=noninteractive
-        apt-get update && apt-get install -y python3-pip python3-venv
+        apt-get update && apt-get install -y python3-pip python3-venv lsof
         python3 -m venv venv
         . venv/bin/activate
         pip3 install --require-hashes -r ./ci/requirements-dev.txt
