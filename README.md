@@ -554,6 +554,7 @@ You can retrieve an option from `cmd` with `cmd.options.<option>`. For example, 
 | audit_callback | Provide function to audit stages of process execution. (Default=None) |
 | coerce_arg | Provide function to coerce `Command` arguments to strings when `str()` is not sufficient. For example, you can provide your own function that converts a dictionary argument to a sequence of strings. (Default=None) |
 | error_limit | Maximum number of initial bytes of STDERR to store in `Result` object. (Default=1024) |
+| read_buffer_limit | Maximum number of bytes to read when looking for a separator. (Default=65536) |
 
 ### env
 

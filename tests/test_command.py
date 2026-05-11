@@ -317,6 +317,7 @@ def test_dataclasses():
         "pass_fds_close",
         "path",
         "pty",
+        "read_buffer_limit",
         "timeout",
     ]
 

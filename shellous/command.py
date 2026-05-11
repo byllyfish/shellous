@@ -181,6 +181,9 @@ class Options:  # pylint: disable=too-many-instance-attributes
     coerce_arg: _CoerceArgFnT = None
     "Function called to coerce top level arguments."
 
+    read_buffer_limit: Optional[int] = None
+    "Maximum number of bytes to read when looking for a separator."
+
     def runtime_env(self) -> Optional[dict[str, str]]:
         "@private Return our `env` merged with the global environment."
         if self.inherit_env:
@@ -505,6 +508,7 @@ class Command(Generic[_RT]):
         audit_callback: Unset[_AuditFnT] = _UNSET,
         coerce_arg: Unset[_CoerceArgFnT] = _UNSET,
         error_limit: Unset[Optional[int]] = _UNSET,
+        read_buffer_limit: Unset[Optional[int]] = _UNSET,
     ) -> "Command[_RT]":
         """Return new command with custom options set.
 
@@ -640,6 +644,12 @@ class Command(Generic[_RT]):
         read from stderr, but will not store any additional bytes. Setting
         `error_limit` only affects the internal BUFFER; it has no effect when
         using other redirection types.
+
+        **read_buffer_limit** (int | None) default=65536<br>
+        Specify the maximum number of bytes to read from a stdout/stderr stream
+        when looking for a separator. Increase this value if you expect the
+        subprocess to emit extremely long lines. If this value is too small,
+        you may get the error: "Separator is not found".
 
         """
         kwargs = locals()

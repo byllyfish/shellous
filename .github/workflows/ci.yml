@@ -5,7 +5,9 @@ name: ci
 
 on:
   push:
-    branches: [ "*" ]
+    branches: [ "**" ]
+  pull_request:
+    branches: [ "**" ]
   schedule:
     # Every day at 2:02.
     - cron: '2 2 * * *'
