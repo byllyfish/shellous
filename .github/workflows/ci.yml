@@ -7,7 +7,7 @@ on:
   push:
     branches: [ "**" ]
   pull_request:
-    branches: [ "**" ]
+    branches: [ "main" ]
   schedule:
     # Every day at 2:02.
     - cron: '2 2 * * *'
@@ -17,6 +17,8 @@ permissions:
 
 jobs:
   build:
+    # Don't run for self-PR's.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20  # stop runaway job after 20 minutes
     defaults:
@@ -116,6 +118,7 @@ jobs:
         isort --check .
 
   build-alpine:
+    needs: build  # only run if build succeeds
     runs-on: ubuntu-latest
     timeout-minutes: 20  # stop runaway job after 20 minutes
     strategy:
@@ -147,6 +150,7 @@ jobs:
           fi
 
   build-pypy:
+    needs: build  # only run if build succeeds
     runs-on: ubuntu-latest
     timeout-minutes: 20  # stop runaway job after 20 minutes
     strategy:
@@ -174,6 +178,7 @@ jobs:
         pytest -vv -s --durations=20 --log-cli-level=DEBUG -W ignore::pytest.PytestUnraisableExceptionWarning
 
   build-ubuntu-26-04:
+    needs: build  # only run if build succeeds
     runs-on: ubuntu-latest
     timeout-minutes: 20  # stop runaway job after 20 minutes
     container:
