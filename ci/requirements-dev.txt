@@ -1,7 +1,7 @@
 # Poetry (version 2.3.3) export at Mon May 11 16:57:41 MST 2026
-astroid==4.0.4 ; python_version >= "3.10" and python_version < "4.0" \
-    --hash=sha256:52f39653876c7dec3e3afd4c2696920e05c83832b9737afc21928f2d2eb7a753 \
-    --hash=sha256:986fed8bcf79fb82c78b18a53352a0b287a73817d6dbcfba3162da36667c49a0
+astroid==4.1.2 ; python_version >= "3.10" and python_version < "4.0" \
+    --hash=sha256:21312e682c0866dc5a309ee57e4b88ea92751b9955a58b1c31371cbbeb088707 \
+    --hash=sha256:d6c4a52bfcda4bbeb7359dead642b0248b90f7d9a07e690230bd86fefd6d37f1
 asyncstdlib==3.14.0 ; python_version >= "3.10" and python_version < "4.0" \
     --hash=sha256:cad90c590ce357da6e70c56f0e2ad9e9baaf146a8fc2ede189879da57eb8bd87 \
     --hash=sha256:f99396992a3bba7495d8cf6c832bfe8c8727f61213233d3569a5a9cbd1c04385
