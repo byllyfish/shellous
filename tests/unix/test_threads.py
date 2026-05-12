@@ -13,7 +13,7 @@ from shellous import sh
 from shellous.log import log_method
 
 pytestmark = pytest.mark.skipif(
-    sys.platform == "win32" or sys.version_info > (3, 14), reason="Unix|3.14"
+    sys.platform == "win32" or sys.version_info >= (3, 14), reason="Unix|3.14"
 )
 
 _IS_UVLOOP = os.environ.get("SHELLOUS_LOOP_TYPE") == "uvloop"
@@ -66,6 +66,7 @@ class EventLoopThread(threading.Thread):
         # PidfdChildWatcher. We call it here using the running loop. I'm not
         # sure what happens if you run the same PidfdChildWatcher in
         # multiple threads though...
+        assert sys.version_info < (3, 14)
         cw = asyncio.get_child_watcher()
         if cw.__class__.__name__ in ("PidfdChildWatcher"):
             cw.attach_loop(loop)
@@ -94,6 +95,7 @@ def run_in_thread(child_watcher_name="ThreadedChildWatcher"):
         def _wrap(*args, **kwargs):
             child_watcher = getattr(asyncio, child_watcher_name)()
 
+            assert sys.version_info < (3, 14)
             saved_child_watcher = asyncio.get_child_watcher()
             asyncio.set_child_watcher(child_watcher)
 

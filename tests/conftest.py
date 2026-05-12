@@ -48,10 +48,8 @@ class _CustomEventLoopPolicy(asyncio.DefaultEventLoopPolicy):
         loop = super().new_event_loop()
         loop.set_debug(True)
         if _loop_type == "eager_task_factory":
-            assert sys.version_info[0:2] >= (3, 12), "requires python 3.12"
-            loop.set_task_factory(
-                asyncio.eager_task_factory  # pyright: ignore[reportArgumentType]
-            )
+            assert sys.version_info >= (3, 12)
+            loop.set_task_factory(asyncio.eager_task_factory)
         return loop
 
     def _get_watcher(self):

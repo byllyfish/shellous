@@ -44,7 +44,7 @@ def encode_bytes(data: str, encoding: str) -> bytes:
     return data.encode(*encoding.split(maxsplit=1))
 
 
-def coerce_env(env: dict[str, Any]) -> dict[str, str]:
+def coerce_env(env: dict[Any, Any]) -> dict[str, str]:
     """Utility function to coerce environment variables to string."""
     return {str(key): str(value) for key, value in env.items()}
 

@@ -38,7 +38,7 @@ def _is_codecov() -> bool:
 
 def _is_lsof_unsupported() -> bool:
     "Return true if lsof tests are unsupported."
-    return bool(_IS_ALPINE or _is_uvloop() or _is_codecov())
+    return _IS_ALPINE or _is_uvloop() or _is_codecov()
 
 
 def _readouterr(capfd):
@@ -690,7 +690,7 @@ async def test_cancelled_antipattern_fix():
     with pytest.raises(asyncio.CancelledError):
         await task
 
-    assert task.cancelled
+    assert task.cancelled()
 
 
 @pytest.mark.skipif(_IS_ALPINE, reason="test hangs on alpine")

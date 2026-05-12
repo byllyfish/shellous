@@ -73,6 +73,6 @@ else:
 
 if SHELLOUS_EXIT_SLEEP:
     sys.stdout.buffer.flush()
-    time.sleep(float(SHELLOUS_EXIT_SLEEP))
+    time.sleep(SHELLOUS_EXIT_SLEEP)
 
 sys.exit(SHELLOUS_EXIT_CODE)
