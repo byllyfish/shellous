@@ -154,7 +154,7 @@ async def _get_children():
 
 
 @pytest.fixture(autouse=True, scope="session")
-def _pytest_readline_workaround():
+def _pytest_env_workaround():
     # Importing `readline` has the silent side-effect of adding the 'COLUMNS'
     # and 'LINES' environment variables. In subprocesses, these can override
     # my terminal window size tests...
@@ -163,3 +163,7 @@ def _pytest_readline_workaround():
     if "readline" in sys.modules:
         os.environ["COLUMNS"] = os.environ["LINES"] = ""
         del os.environ["COLUMNS"], os.environ["LINES"]
+
+    # VSCode sets the PYTHONSTARTUP variable. This alters the prompt when
+    # running python in a subprocess.
+    os.environ.pop("PYTHONSTARTUP", None)
