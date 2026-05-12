@@ -225,6 +225,8 @@ jobs:
           python3.14 -m venv venv
           . venv/bin/activate
           pip install -r ./ci/requirements-dev.txt
+          # We need to enable the /dev/fd file system on FreeBSD.
+          mount -t fdescfs null /dev/fd
         run: |
           . venv/bin/activate
           pytest -vv -s --durations=20 --log-cli-level=DEBUG
