@@ -110,7 +110,7 @@ class Pipeline(Generic[_RT]):
         *,
         timeout: Optional[float] = None,
         normalize_newlines: bool = False,
-    ) -> AsyncGenerator[Prompt]:
+    ) -> AsyncGenerator[Prompt, None]:
         """Run pipeline using the send/expect API.
 
         This method should be called using `async with`. It returns a `Prompt`
