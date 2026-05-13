@@ -20,6 +20,7 @@ from pathlib import Path
 from types import TracebackType
 from typing import (
     Any,
+    AsyncGenerator,
     AsyncIterator,
     Callable,
     ClassVar,
@@ -686,7 +687,7 @@ class Command(Generic[_RT]):
         *,
         timeout: Optional[float] = None,
         normalize_newlines: bool = False,
-    ) -> AsyncIterator[Prompt]:
+    ) -> AsyncGenerator[Prompt]:
         """Run command using the send/expect API.
 
         This method should be called using `async with`. It returns a `Prompt`
