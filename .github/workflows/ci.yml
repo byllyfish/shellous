@@ -61,18 +61,18 @@ jobs:
           pytest -vv -s --durations=20 --log-cli-level=DEBUG --last-failed
         fi
     - name: Run Code Coverage (Linux and MacOS)
-      if: (matrix.os == 'ubuntu-24.04' || matrix.os == 'macos-15')
+      if: (matrix.os == 'ubuntu-24.04' || matrix.os == 'macos-26')
       run: |
         # Run coverage.
         coverage run --source shellous -m pytest --log-cli-level=DEBUG
     - name: Upload Code Coverage
-      if: (matrix.os == 'ubuntu-24.04' || matrix.os == 'macos-15')
+      if: (matrix.os == 'ubuntu-24.04' || matrix.os == 'macos-26')
       uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
       with:
         token: ${{ secrets.SHELLOUS_CODECOV_TOKEN }}
         verbose: true
     - name: Run Tests with uvloop (Linux and MacOS)
-      if: (matrix.os == 'ubuntu-24.04' || matrix.os == 'macos-15')
+      if: (matrix.os == 'ubuntu-24.04' || matrix.os == 'macos-26')
       run: |
         pip3 install --require-hashes -r ./ci/requirements-uvloop.txt
         # Ignore ResourceWarning with uvloop for now (TODO).
@@ -83,7 +83,7 @@ jobs:
       env:
         SHELLOUS_LOOP_TYPE: "uvloop"
     - name: Run Tests with eager task factory
-      if: (matrix.python-version == '3.12' || matrix.python-version == '3.13' || matrix.python-version == '3.14')
+      if: (matrix.python-version == '3.12' || matrix.python-version == '3.13' || matrix.python-version == '3.14' || matrix.python-version == '3.15-dev')
       run: |
         if ! pytest -vv -s --durations=20 --log-cli-level=DEBUG | ./ci/annotate.awk -v step=Run_Tests; then
           echo "::warning title=Run Tests Warning::Re-running failed tests in $BUILD_NAME"
@@ -92,7 +92,7 @@ jobs:
       env:
         SHELLOUS_LOOP_TYPE: "eager_task_factory"
     - name: Run Tests with PidfdWatcher (Linux)
-      if: matrix.os == 'ubuntu-24.04' && matrix.python-version != 3.14
+      if: matrix.os == 'ubuntu-24.04' && matrix.python-version != '3.14' && matrix.python-version != '3.15-dev'
       run: |
         if ! pytest -vv -s --log-cli-level=DEBUG; then
           echo "::warning title=PidfdChildWatcher Warning::Re-running failed tests in $BUILD_NAME"
@@ -101,7 +101,7 @@ jobs:
       env:
         SHELLOUS_CHILDWATCHER_TYPE: "pidfd"
     - name: Run Tests with SafeChildWatcher (Linux and MacOS; Python 3.11 only)
-      if: (matrix.os == 'ubuntu-24.04' || matrix.os == 'macos-15') && matrix.python-version == '3.11'
+      if: (matrix.os == 'ubuntu-24.04' || matrix.os == 'macos-26') && matrix.python-version == '3.11'
       run: |
         if ! pytest -vv -s --log-cli-level=DEBUG; then
           echo "::warning title=SafeChildWatcher Warning::Re-running failed tests in $BUILD_NAME"
