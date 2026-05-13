@@ -48,10 +48,8 @@ class _CustomEventLoopPolicy(asyncio.DefaultEventLoopPolicy):
         loop = super().new_event_loop()
         loop.set_debug(True)
         if _loop_type == "eager_task_factory":
-            assert sys.version_info[0:2] >= (3, 12), "requires python 3.12"
-            loop.set_task_factory(
-                asyncio.eager_task_factory  # pyright: ignore[reportArgumentType]
-            )
+            assert sys.version_info >= (3, 12)
+            loop.set_task_factory(asyncio.eager_task_factory)
         return loop
 
     def _get_watcher(self):
@@ -156,7 +154,7 @@ async def _get_children():
 
 
 @pytest.fixture(autouse=True, scope="session")
-def _pytest_readline_workaround():
+def _pytest_env_workaround():
     # Importing `readline` has the silent side-effect of adding the 'COLUMNS'
     # and 'LINES' environment variables. In subprocesses, these can override
     # my terminal window size tests...
@@ -165,3 +163,7 @@ def _pytest_readline_workaround():
     if "readline" in sys.modules:
         os.environ["COLUMNS"] = os.environ["LINES"] = ""
         del os.environ["COLUMNS"], os.environ["LINES"]
+
+    # VSCode sets the PYTHONSTARTUP variable. This alters the prompt when
+    # running python in a subprocess.
+    os.environ.pop("PYTHONSTARTUP", None)

@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from types import TracebackType
 from typing import (
     Any,
+    AsyncGenerator,
     AsyncIterator,
     Coroutine,
     Generator,
@@ -109,7 +110,7 @@ class Pipeline(Generic[_RT]):
         *,
         timeout: Optional[float] = None,
         normalize_newlines: bool = False,
-    ) -> AsyncIterator[Prompt]:
+    ) -> AsyncGenerator[Prompt, None]:
         """Run pipeline using the send/expect API.
 
         This method should be called using `async with`. It returns a `Prompt`
