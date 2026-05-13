@@ -53,12 +53,13 @@ class _CustomEventLoopPolicy(asyncio.DefaultEventLoopPolicy):
         return loop
 
     def _get_watcher(self):
-        "Construct a watcher, if requested."
-        if _watcher_type == "safe":
-            return asyncio.SafeChildWatcher()
-        if _watcher_type == "pidfd":
-            return asyncio.PidfdChildWatcher()
+        "Construct an asyncio child watcher, if requested."
         if _watcher_type is not None:
+            assert sys.version_info < (3, 14)
+            if _watcher_type == "safe":
+                return asyncio.SafeChildWatcher()
+            if _watcher_type == "pidfd":
+                return asyncio.PidfdChildWatcher()
             raise NotImplementedError
         return None
 
