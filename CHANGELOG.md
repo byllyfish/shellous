@@ -1,6 +1,16 @@
 Shellous Change Log
 ===================
 
+0.40.0
+------
+
+- [FEATURE] Add a new option `read_buffer_limit` which lets you increase the number of bytes to read when looking for a separator. (Thanks @AndreyKuzmaDev)
+- [LATERAL] Update CI to Python 3.15-dev, macos-26, and ubuntu-26.04.
+- [LATERAL] Update CI to FreeBSD 15.0 & 14.4. Stop using cirrus-ci.
+- [LATERAL] Update development dependencies.
+- [LATERAL] Re-formatted with black 26.3.1.
+- [LATERAL] Linting fixes.
+
 0.39.0
 ------
 
