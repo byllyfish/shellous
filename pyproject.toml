@@ -33,7 +33,7 @@ poetry-plugin-export = ">=1.8"
 
 [tool.poetry.group.dev.dependencies]
 asyncstdlib = "^3.14.0"
-black = "26.3.1"
+black = "26.5.1"
 coverage = "^7.13.5"
 pdoc = "^16.0.0"
 pylint = "^4.0.5"
