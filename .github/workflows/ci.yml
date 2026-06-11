@@ -34,11 +34,11 @@ jobs:
       BUILD_NAME: build (${{ matrix.os }},${{ matrix.python-version }})
     steps:
     - name: Harden Runner
-      uses: step-security/harden-runner@a5ad31d6a139d249332a2605b85202e8c0b78450 # v2.19.1
+      uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
       with:
         egress-policy: audit
     - name: Checkout
-      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
       with:
@@ -65,9 +65,9 @@ jobs:
       run: |
         # Run coverage.
         coverage run --source shellous -m pytest --log-cli-level=DEBUG
-    - name: Upload Code Coverage
+    - name: Upload Code Coverage (Linux and MacOS)
       if: (matrix.os == 'ubuntu-24.04' || matrix.os == 'macos-26')
-      uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
+      uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
       with:
         token: ${{ secrets.SHELLOUS_CODECOV_TOKEN }}
         verbose: true
@@ -82,8 +82,8 @@ jobs:
         fi
       env:
         SHELLOUS_LOOP_TYPE: "uvloop"
-    - name: Run Tests with eager task factory
-      if: (matrix.python-version == '3.12' || matrix.python-version == '3.13' || matrix.python-version == '3.14' || matrix.python-version == '3.15-dev')
+    - name: Run Tests with eager task factory (Python 3.12 and later)
+      if: contains(fromJson('["3.12", "3.13", "3.14", "3.15-dev"]'), matrix.python-version)
       run: |
         if ! pytest -vv -s --durations=20 --log-cli-level=DEBUG | ./ci/annotate.awk -v step=Run_Tests; then
           echo "::warning title=Run Tests Warning::Re-running failed tests in $BUILD_NAME"
@@ -91,8 +91,8 @@ jobs:
         fi
       env:
         SHELLOUS_LOOP_TYPE: "eager_task_factory"
-    - name: Run Tests with PidfdWatcher (Linux)
-      if: matrix.os == 'ubuntu-24.04' && matrix.python-version != '3.14' && matrix.python-version != '3.15-dev'
+    - name: Run Tests with PidfdWatcher (Linux; Python 3.11 only)
+      if: matrix.os == 'ubuntu-24.04' && matrix.python-version == '3.11'
       run: |
         if ! pytest -vv -s --log-cli-level=DEBUG; then
           echo "::warning title=PidfdChildWatcher Warning::Re-running failed tests in $BUILD_NAME"
@@ -132,11 +132,11 @@ jobs:
       BUILD_NAME: build (${{ matrix.image-tag }})
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@a5ad31d6a139d249332a2605b85202e8c0b78450 # v2.19.1
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
         with:
           egress-policy: audit
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - name: Install Dependencies
         run: |
           apk add --update gcc musl-dev python3-dev bash grep
@@ -161,11 +161,11 @@ jobs:
       SHELLOUS_TRACE: all
     steps:
     - name: Harden Runner
-      uses: step-security/harden-runner@a5ad31d6a139d249332a2605b85202e8c0b78450 # v2.19.1
+      uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
       with:
         egress-policy: audit
     - name: Checkout
-      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
     - name: Set up Python ${{ matrix.pypy-version }}
       uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
       with:
@@ -188,7 +188,7 @@ jobs:
       BUILD_NAME: build (ubuntu:26.04)
     steps:
     - name: Checkout
-      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
     - name: Install dependencies
       run: |
         export DEBIAN_FRONTEND=noninteractive
@@ -213,9 +213,9 @@ jobs:
         release: ["15.0", "14.4"]
     steps:
     - name: Checkout
-      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
     - name: Run Tests
-      uses: vmactions/freebsd-vm@d1e65811565151536c0c894fff74f06351ed26e6 # v1.4.5
+      uses: vmactions/freebsd-vm@a6de9343ef5747433d9c25784c90e84998b9d69a # v1.4.6
       with:
         release: "${{matrix.release}}"
         usesh: true
