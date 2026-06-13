@@ -1,18 +1,13 @@
 #!/bin/bash
 #
-# Update requirements-dev.txt to synchronize with "poetry.lock".
+# Update requirements-dev.txt to synchronize with "uv.lock".
 
 if [ ! -f "./ci/requirements-dev.txt" ]; then
     echo "Wrong directory."
     exit 1
 fi
 
-HEADER="# $(poetry --version) export at $(date)"
-
-echo "$HEADER" > ./ci/requirements-dev.txt
-poetry export --with dev >> ./ci/requirements-dev.txt
-
-echo "$HEADER" > ./ci/requirements-uvloop.txt
-poetry export --only uvloop >> ./ci/requirements-uvloop.txt
+uv export --quiet --frozen --no-annotate --format requirements-txt --only-dev --output-file ./ci/requirements-dev.txt
+uv export --quiet --frozen --no-annotate --format requirements-txt --only-group uvloop --output-file ./ci/requirements-uvloop.txt
 
 exit 0

@@ -1,60 +1,59 @@
-[tool.poetry]
+[project]
 name = "shellous"
 version = "0.40.0"
 description = "Async Processes and Pipelines"
-license = "Apache-2.0"
-authors = ["Bill Fisher <william.w.fisher@gmail.com>"]
+authors = [{ name = "Bill Fisher", email = "william.w.fisher@gmail.com" }]
+requires-python = ">=3.10,<4"
 readme = "README.md"
-homepage = "https://github.com/byllyfish/shellous"
+license = "Apache-2.0"
 classifiers = [
-  "Development Status :: 5 - Production/Stable",
-  "Framework :: AsyncIO",
-  "Operating System :: OS Independent",
-  "Intended Audience :: Developers",
-  "Intended Audience :: System Administrators",
-  "Programming Language :: Python :: 3.9",
-  "Programming Language :: Python :: 3.10",
-  "Programming Language :: Python :: 3.11",
-  "Programming Language :: Python :: 3.12",
-  "Programming Language :: Python :: 3.13",
-  "Programming Language :: Python :: 3.14",
-  "Typing :: Typed",
+    "Development Status :: 5 - Production/Stable",
+    "Framework :: AsyncIO",
+    "Operating System :: OS Independent",
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Typing :: Typed",
+    "Programming Language :: Python :: 3",
 ]
 
-[tool.poetry.urls]
+[project.urls]
+Homepage = "https://github.com/byllyfish/shellous"
 "Release Notes" = "https://github.com/byllyfish/shellous/blob/main/CHANGELOG.md"
 "Issue Tracker" = "https://github.com/byllyfish/shellous/issues"
 
-[tool.poetry.dependencies]
-python = "^3.10"
+[dependency-groups]
+dev = [
+    "asyncstdlib>=3.14.0,<4",
+    "black==26.5.1",
+    "coverage>=7.13.5,<8",
+    "pdoc>=16.0.0,<17",
+    "pylint>=4.0.5,<5",
+    "pyright>=1.1.408,<2",
+    "pytest>=9.0.3,<10",
+    "pytest-asyncio>=1.3.0,<2",
+    "pytest-dotenv>=0.5.2,<0.6",
+    "pytest-randomly>=4.0.1,<5",
+    "pytest-timeout>=2.4.0,<3",
+    "ruff>=0.15.11,<0.16 ; sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'",
+    "typing-extensions>=4.15.0,<5",
+]
+uvloop = ["uvloop>=0.22.1,<0.23"]
 
-[tool.poetry.requires-plugins]
-poetry-plugin-export = ">=1.8"
+[tool.uv]
+default-groups = ["dev"]
 
-[tool.poetry.group.dev.dependencies]
-asyncstdlib = "^3.14.0"
-black = "26.5.1"
-coverage = "^7.13.5"
-pdoc = "^16.0.0"
-pylint = "^4.0.5"
-pyright = "^1.1.408"
-pytest = "^9.0.3"
-pytest-asyncio = "^1.3.0"
-pytest-dotenv = "^0.5.2"
-pytest-randomly = "^4.0.1"
-pytest-timeout = "^2.4.0"
-ruff = {version = "^0.15.11", markers = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'"}
-typing-extensions = "^4.15.0"
-
-[tool.poetry.group.uvloop]
-optional = true
-
-[tool.poetry.group.uvloop.dependencies]
-uvloop = "^0.22.1"
+[tool.uv.build-backend]
+module-root = ""
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["uv_build>=0.11.21,<0.12.0"]
+build-backend = "uv_build"
 
 [tool.pytest.ini_options]
 #filterwarnings = [
