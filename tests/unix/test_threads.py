@@ -12,9 +12,7 @@ import pytest
 from shellous import sh
 from shellous.log import log_method
 
-pytestmark = pytest.mark.skipif(
-    sys.platform == "win32" or sys.version_info >= (3, 14), reason="Unix|3.14"
-)
+pytestmark = pytest.mark.skipif(sys.platform == "win32", reason="Unix")
 
 _IS_UVLOOP = os.environ.get("SHELLOUS_LOOP_TYPE") == "uvloop"
 
@@ -62,15 +60,6 @@ class EventLoopThread(threading.Thread):
         with self._lock:
             self._loop = loop
 
-        # FIXME: asyncio.run doesn't provide a nice way to call attach_loop on a
-        # PidfdChildWatcher. We call it here using the running loop. I'm not
-        # sure what happens if you run the same PidfdChildWatcher in
-        # multiple threads though...
-        assert sys.version_info < (3, 14)
-        cw = asyncio.get_child_watcher()
-        if cw.__class__.__name__ in ("PidfdChildWatcher"):
-            cw.attach_loop(loop)
-
         await self._shutdown_fut
 
     def _stop(self):
@@ -87,76 +76,38 @@ class EventLoopThread(threading.Thread):
         self.stop()
 
 
-def run_in_thread(child_watcher_name="ThreadedChildWatcher"):
+def run_in_thread():
     "Decorator to run async function in a daemon thread with private event loop."
 
     def _decorator(coro):
         @functools.wraps(coro)
         def _wrap(*args, **kwargs):
-            child_watcher = getattr(asyncio, child_watcher_name)()
-
-            assert sys.version_info < (3, 14)
-            saved_child_watcher = asyncio.get_child_watcher()
-            asyncio.set_child_watcher(child_watcher)
-
-            if child_watcher_name in ("FastChildWatcher", "SafeChildWatcher"):
-                # SafeChildWatcher and FastChildWatcher require a viable
-                # asyncio event loop in the main thread, so give them one...
-
-                def blocking_call():
-                    with EventLoopThread() as thread:
-                        fut = thread.future(coro(*args, **kwargs))
-                        fut.result()
-
-                async def _main():
-                    await asyncio.to_thread(blocking_call)
-
-                asyncio.run(_main())
-
-            else:
-                # Run every other child watcher using a daemon thread while the
-                # main thread waits in concurrent.Future.
-
-                with EventLoopThread() as thread:
-                    fut = thread.future(coro(*args, **kwargs))
-                    fut.result()
-
-            asyncio.set_child_watcher(saved_child_watcher)
+            # Run using a daemon thread while the main thread waits in a
+            # `concurrent.Future`.
+            with EventLoopThread() as thread:
+                fut = thread.future(coro(*args, **kwargs))
+                fut.result()
 
         return _wrap
 
     return _decorator
 
 
-_CHILD_WATCHER_MAP = {
-    "safe": "SafeChildWatcher",
-    "pidfd": "PidfdChildWatcher",
-}
-
-_CW_TYPE = os.environ.get("SHELLOUS_CHILDWATCHER_TYPE", "<unset>")
-
-CHILD_WATCHER = _CHILD_WATCHER_MAP.get(_CW_TYPE, "ThreadedChildWatcher")
-XFAIL_CHILDWATCHER = CHILD_WATCHER in ("SafeChildWatcher",)
-
-
-@pytest.mark.xfail(XFAIL_CHILDWATCHER, reason="xfail_childwatcher")
-@run_in_thread(CHILD_WATCHER)
+@run_in_thread()
 async def test_thread_echo():
     "Test echo in another thread."
     result = await sh("echo", "abc")
     assert result == "abc\n"
 
 
-@pytest.mark.xfail(XFAIL_CHILDWATCHER, reason="xfail_childwatcher")
-@run_in_thread(CHILD_WATCHER)
+@run_in_thread()
 async def test_thread_pipe():
     "Test pipe in another thread."
     result = await (sh("echo", "abc") | sh("cat"))
     assert result == "abc\n"
 
 
-@pytest.mark.xfail(XFAIL_CHILDWATCHER, reason="xfail_childwatcher")
-@run_in_thread(CHILD_WATCHER)
+@run_in_thread()
 async def test_thread_procsub():
     "Test process substituion in another thread."
     result = await sh("cat", sh("echo", "abc"), sh("echo", "def"))
@@ -164,8 +115,7 @@ async def test_thread_procsub():
 
 
 @pytest.mark.skipif(_IS_UVLOOP, reason="requires pty")
-@pytest.mark.xfail(XFAIL_CHILDWATCHER, reason="xfail_childwatcher")
-@run_in_thread(CHILD_WATCHER)
+@run_in_thread()
 async def test_thread_pty():
     "Test pty in another thread."
     if sys.platform == "linux":
@@ -177,8 +127,7 @@ async def test_thread_pty():
     assert result == "README.md\r\n"
 
 
-@pytest.mark.xfail(XFAIL_CHILDWATCHER, reason="xfail_childwatcher")
-@run_in_thread(CHILD_WATCHER)
+@run_in_thread()
 async def test_thread_pipe_long():
     "Test pipe in another thread."
     # Create a pipe with 1 echo, and 9 cat commands.
