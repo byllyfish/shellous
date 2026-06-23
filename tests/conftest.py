@@ -23,50 +23,30 @@ _PYPY = platform.python_implementation() == "PyPy"
 if not os.environ.get("COVERAGE_RUN"):
     os.closerange(3, 600)
 
-_watcher_type = os.environ.get("SHELLOUS_CHILDWATCHER_TYPE")
 _loop_type = os.environ.get("SHELLOUS_LOOP_TYPE")
 
 
-class _CustomEventLoopPolicy(asyncio.DefaultEventLoopPolicy):
-    "Custom event loop policy for tests."
+def _loop_factory():
+    "Return an event loop for use in tests based on `_loop_type` setting."
+    if _loop_type == "uvloop":
+        import uvloop
 
-    if sys.platform != "win32" and _loop_type == "uvloop":
+        loop = uvloop.new_event_loop()
+    else:
+        loop = asyncio.new_event_loop()
 
-        def _loop_factory(self):
-            import uvloop
+    loop.set_debug(True)
 
-            return uvloop.new_event_loop()
+    if _loop_type == "eager_task_factory":
+        assert sys.version_info >= (3, 12)
+        loop.set_task_factory(asyncio.eager_task_factory)
 
-    def __init__(self):
-        super().__init__()
-        watcher = self._get_watcher()
-        if watcher:
-            self.set_child_watcher(watcher)
-
-    def new_event_loop(self):
-        "Return a new event loop."
-        loop = super().new_event_loop()
-        loop.set_debug(True)
-        if _loop_type == "eager_task_factory":
-            assert sys.version_info >= (3, 12)
-            loop.set_task_factory(asyncio.eager_task_factory)
-        return loop
-
-    def _get_watcher(self):
-        "Construct an asyncio child watcher, if requested."
-        if _watcher_type is not None:
-            assert sys.version_info < (3, 14)
-            if _watcher_type == "safe":
-                return asyncio.SafeChildWatcher()
-            if _watcher_type == "pidfd":
-                return asyncio.PidfdChildWatcher()
-            raise NotImplementedError
-        return None
+    return loop
 
 
-@pytest.fixture
-def event_loop_policy():
-    return _CustomEventLoopPolicy()
+def pytest_asyncio_loop_factories(config, item):
+    "Override default event loop for pytest-asyncio."
+    return {"loop": _loop_factory}
 
 
 @pytest.fixture(autouse=True)

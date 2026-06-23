@@ -91,24 +91,6 @@ jobs:
         fi
       env:
         SHELLOUS_LOOP_TYPE: "eager_task_factory"
-    - name: Run Tests with PidfdWatcher (Linux; Python 3.11 only)
-      if: matrix.os == 'ubuntu-24.04' && matrix.python-version == '3.11'
-      run: |
-        if ! pytest -vv -s --log-cli-level=DEBUG; then
-          echo "::warning title=PidfdChildWatcher Warning::Re-running failed tests in $BUILD_NAME"
-          pytest -vv -s --log-cli-level=DEBUG --last-failed
-        fi
-      env:
-        SHELLOUS_CHILDWATCHER_TYPE: "pidfd"
-    - name: Run Tests with SafeChildWatcher (Linux and MacOS; Python 3.11 only)
-      if: (matrix.os == 'ubuntu-24.04' || matrix.os == 'macos-26') && matrix.python-version == '3.11'
-      run: |
-        if ! pytest -vv -s --log-cli-level=DEBUG; then
-          echo "::warning title=SafeChildWatcher Warning::Re-running failed tests in $BUILD_NAME"
-          pytest -vv -s --log-cli-level=DEBUG --last-failed
-        fi
-      env:
-        SHELLOUS_CHILDWATCHER_TYPE: "safe"
     - name: Verify Types
       run: |
         PYTHONPATH=. pyright --verifytypes shellous
