@@ -1,6 +1,7 @@
 "Implements utilities to run a command."
 
 import asyncio
+import collections.abc as cabc
 import io
 import os
 import sys
@@ -55,6 +56,19 @@ def _is_writable(cmd: "Union[shellous.Command[Any], shellous.Pipeline[Any]]"):
         # Pipelines need to check both the last/first commands.
         return cmd.options._writable or cmd[0].options._writable
     return cmd.options._writable
+
+
+def _is_supported_input_type(obj: object) -> bool:
+    "Return true if object is supported by shellous as an input type."
+    return isinstance(
+        obj,
+        (
+            asyncio.StreamReader,
+            io.BytesIO,
+            io.StringIO,
+            cabc.AsyncGenerator,
+        ),
+    )
 
 
 class _RunOptions:
@@ -285,7 +299,7 @@ class _RunOptions:
                 self.open_fds.append(stdin)
         elif isinstance(input_, str):
             input_bytes = encode_bytes(input_, encoding)
-        elif isinstance(input_, (asyncio.StreamReader, io.BytesIO, io.StringIO)):
+        elif _is_supported_input_type(input_):
             # Shellous-supported input classes.
             assert stdin == asyncio.subprocess.PIPE
             assert input_bytes is None
@@ -336,7 +350,9 @@ class _RunOptions:
             _set_position(output, append)
             assert stdout == asyncio.subprocess.PIPE
         elif isinstance(output, io.IOBase):
-            # Client-managed File-like object.
+            # Client-managed File-like object. This check must appear *after*
+            # check for shellous supported output classes since it overlaps with
+            # StringIO/BytesIO.
             _set_position(output, append)
             stdout = output
         else:
@@ -816,6 +832,10 @@ class Runner:
         if isinstance(source, io.StringIO):
             input_bytes = encode_bytes(source.getvalue(), opts.encoding)
             self.add_task(redir.write_stream(input_bytes, stream, eof), tag)
+            return None
+
+        if isinstance(source, cabc.AsyncGenerator):
+            self.add_task(redir.write_asyncgen(source, stream, eof), tag)
             return None
 
         return stream

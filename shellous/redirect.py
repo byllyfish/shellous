@@ -1,11 +1,12 @@
 "Implements the Redirect enum and various redirection utilities."
 
 import asyncio
+import collections.abc as cabc
 import enum
 import io
 from logging import Logger
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union
+from typing import TYPE_CHECKING, Any, AsyncGenerator, Optional, TypeVar, Union
 
 from shellous.log import LOG_DETAIL, log_method
 from shellous.pty_util import PtyAdapterOrBool
@@ -78,6 +79,7 @@ STDIN_TYPES = (
     int,
     Redirect,
     asyncio.StreamReader,
+    cabc.AsyncGenerator,
 )
 
 StdinType = Union[
@@ -89,6 +91,7 @@ StdinType = Union[
     int,
     Redirect,
     asyncio.StreamReader,
+    AsyncGenerator[bytes, None],
 ]
 
 STDOUT_TYPES = (
@@ -185,6 +188,20 @@ async def write_reader(
         else:
             stream.write(eof)
         await _drain(stream)
+
+
+@log_method(LOG_DETAIL)
+async def write_asyncgen(
+    async_gen: AsyncGenerator[bytes, None],
+    stream: asyncio.StreamWriter,
+    eof: Optional[bytes] = None,
+):
+    "Copy from async generator to writer."
+    async for data in async_gen:
+        stream.write(data)
+        await stream.drain()
+
+    stream.close()
 
 
 @log_method(LOG_DETAIL)

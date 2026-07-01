@@ -581,6 +581,17 @@ async def test_redirect_stdin_result(echo_cmd):
         await echo_cmd("abc").stdin(sh.BUFFER)
 
 
+async def test_redirect_stdin_async_generator(cat_cmd):
+    "Test reading stdin from an async generator."
+
+    async def _delayed_input():
+        await asyncio.sleep(0.05)
+        yield b"abc"
+
+    result = await cat_cmd().stdin(_delayed_input())
+    assert result == "abc"
+
+
 async def test_redirect_stdin_unsupported_type(cat_cmd):
     "Test reading stdin from unsupported type."
     with pytest.raises(TypeError, match="unsupported input type"):
