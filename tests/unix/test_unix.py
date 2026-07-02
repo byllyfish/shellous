@@ -1582,6 +1582,20 @@ async def test_pty_redirect_stdout_streamwriter():
         await server.wait_closed()
 
 
+@pytest.mark.skipif(_is_uvloop(), reason="uvloop")
+async def test_pty_redirect_stdin_asyncgen():
+    "Test reading stdin from an async generator in a pty."
+
+    async def _hello():
+        await asyncio.sleep(0.05)
+        yield b"1\n"
+        await asyncio.sleep(0.05)
+        yield b"2\n"
+
+    result = await (_hello() | sh("cat")).set(pty=True)
+    assert result.replace("^D\x08\x08", "") == "1\r\n1\r\n2\r\n2\r\n"
+
+
 async def test_audit_cancel_nohup():
     "Test audit callback when a command is cancelled."
     calls = []
