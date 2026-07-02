@@ -587,9 +587,11 @@ async def test_redirect_stdin_async_generator(cat_cmd):
     async def _delayed_input():
         await asyncio.sleep(0.05)
         yield b"abc"
+        await asyncio.sleep(0.05)
+        yield "def"
 
     result = await cat_cmd().stdin(_delayed_input())
-    assert result == "abc"
+    assert result == "abcdef"
 
 
 async def test_redirect_stdin_unsupported_type(cat_cmd):

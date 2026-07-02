@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, Any, AsyncGenerator, Optional, TypeVar, Union
 
 from shellous.log import LOG_DETAIL, log_method
 from shellous.pty_util import PtyAdapterOrBool
-from shellous.util import decode_bytes
+from shellous.util import decode_bytes, encode_bytes
 
 if TYPE_CHECKING:
     import shellous
@@ -91,7 +91,7 @@ StdinType = Union[
     int,
     Redirect,
     asyncio.StreamReader,
-    AsyncGenerator[bytes, None],
+    AsyncGenerator[bytes | str, None],
 ]
 
 STDOUT_TYPES = (
@@ -150,7 +150,7 @@ async def _check_eof(
 async def write_stream(
     input_bytes: bytes,
     stream: asyncio.StreamWriter,
-    eof: Optional[bytes] = None,
+    eof: Optional[bytes],
 ):
     "Write input_bytes to stream."
     if input_bytes:
@@ -172,7 +172,7 @@ async def write_stream(
 async def write_reader(
     reader: asyncio.StreamReader,
     stream: asyncio.StreamWriter,
-    eof: Optional[bytes] = None,
+    eof: Optional[bytes],
 ):
     "Copy from reader to writer."
     ends_with_newline = True
@@ -193,14 +193,21 @@ async def write_reader(
 
 @log_method(LOG_DETAIL)
 async def write_asyncgen(
-    async_gen: AsyncGenerator[bytes, None],
+    async_gen: AsyncGenerator[bytes | str, None],
     stream: asyncio.StreamWriter,
-    eof: Optional[bytes] = None,
+    encoding: str,
+    eof: Optional[bytes],
 ):
     "Copy from async generator to writer."
     ends_with_newline = True
 
-    async for data in async_gen:
+    async for value in async_gen:
+        if isinstance(value, str):
+            data = encode_bytes(value, encoding)
+        elif isinstance(value, bytes):
+            data = value
+        else:
+            raise ValueError(f"Unexpected yield from async generator: {value!r}")
         ends_with_newline = data.endswith(b"\n")
         stream.write(data)
         await stream.drain()

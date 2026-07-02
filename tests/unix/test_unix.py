@@ -1590,7 +1590,7 @@ async def test_pty_redirect_stdin_asyncgen():
         await asyncio.sleep(0.05)
         yield b"1\n"
         await asyncio.sleep(0.05)
-        yield b"2\n"
+        yield "2\n"
 
     result = await (_hello() | sh("cat")).set(pty=True)
     assert result.replace("^D\x08\x08", "") == "1\r\n1\r\n2\r\n2\r\n"

@@ -835,7 +835,7 @@ class Runner:
             return None
 
         if isinstance(source, cabc.AsyncGenerator):
-            self.add_task(redir.write_asyncgen(source, stream, eof), tag)
+            self.add_task(redir.write_asyncgen(source, stream, opts.encoding, eof), tag)
             return None
 
         return stream
