@@ -75,10 +75,18 @@ STDIN_TYPES = (
     bytes,
     Path,
     bytearray,
-    io.IOBase,
+    io.IOBase,  # includes BytesIO, StringIO
     int,
     Redirect,
     asyncio.StreamReader,
+    cabc.AsyncGenerator,
+)
+
+# Types implemented in shellous as "extended" stdin types.
+EXTENDED_STDIN_TYPES = (
+    asyncio.StreamReader,
+    io.BytesIO,
+    io.StringIO,
     cabc.AsyncGenerator,
 )
 
@@ -204,7 +212,7 @@ async def write_asyncgen(
     async for value in async_gen:
         if isinstance(value, str):
             data = encode_bytes(value, encoding)
-        elif isinstance(value, bytes):
+        elif isinstance(value, bytes):  # pyright: ignore[reportUnnecessaryIsInstance]
             data = value
         else:
             raise ValueError(f"Unexpected yield from async generator: {value!r}")

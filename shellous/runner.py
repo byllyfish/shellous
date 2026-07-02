@@ -58,19 +58,6 @@ def _is_writable(cmd: "Union[shellous.Command[Any], shellous.Pipeline[Any]]"):
     return cmd.options._writable
 
 
-def _is_supported_input_type(obj: object) -> bool:
-    "Return true if object is supported by shellous as an input type."
-    return isinstance(
-        obj,
-        (
-            asyncio.StreamReader,
-            io.BytesIO,
-            io.StringIO,
-            cabc.AsyncGenerator,
-        ),
-    )
-
-
 class _RunOptions:
     """_RunOptions is context manager to assist in running a command.
 
@@ -299,7 +286,7 @@ class _RunOptions:
                 self.open_fds.append(stdin)
         elif isinstance(input_, str):
             input_bytes = encode_bytes(input_, encoding)
-        elif _is_supported_input_type(input_):
+        elif isinstance(input_, redir.EXTENDED_STDIN_TYPES):
             # Shellous-supported input classes.
             assert stdin == asyncio.subprocess.PIPE
             assert input_bytes is None
@@ -835,6 +822,8 @@ class Runner:
             return None
 
         if isinstance(source, cabc.AsyncGenerator):
+            if source.ag_frame is None:
+                raise ValueError(f"Async generator input is closed: {source!r}")
             self.add_task(redir.write_asyncgen(source, stream, opts.encoding, eof), tag)
             return None
 
