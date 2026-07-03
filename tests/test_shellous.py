@@ -628,8 +628,7 @@ async def test_redirect_stdin_async_generator_closed(cat_cmd):
         yield "abc"
 
     # Create generator object and command.
-    iter = _agen()
-    cmd = cat_cmd().stdin(iter)
+    cmd = cat_cmd().stdin(_agen())
 
     # Run command once.
     result = await cmd
@@ -1366,7 +1365,7 @@ async def test_wait_for_zero_seconds(sleep_cmd):
 
     # Python 3.12 added support for "eager" tasks. This test behaves differently
     # when using eager tasks.
-    if sys.version_info[:2] >= (3, 12):
+    if sys.version_info >= (3, 12):
         is_eager_task = (
             asyncio.get_running_loop().get_task_factory() == asyncio.eager_task_factory
         )
