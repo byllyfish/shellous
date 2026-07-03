@@ -899,7 +899,7 @@ async def test_pty_manual():
 
     tr = sh("tr", "[:lower:]", "[:upper:]")
     cmd = (
-        tr.stdin(child_fd, close=True)
+        tr.stdin(child_fd, close=False)
         .stdout(child_fd, close=True)
         .set(_start_new_session=True)
     )
@@ -1001,7 +1001,7 @@ async def test_pty_manual_streams():
 
     tr = sh("tr", "[:lower:]", "[:upper:]")
     cmd = (
-        tr.stdin(child_fd, close=True)
+        tr.stdin(child_fd, close=False)
         .stdout(child_fd, close=True)
         .set(_start_new_session=True)
     )
