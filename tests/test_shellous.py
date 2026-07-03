@@ -1124,6 +1124,15 @@ def test_command_iterator_api_interrupted_sync(echo_cmd):
     assert result
 
 
+async def test_command_iterator_api_redirected(echo_cmd):
+    "Test running a command's async iterator with redirected command."
+    buf = bytearray()
+    cmd = echo_cmd("hello\n", "world") | buf
+    lines = [line async for line in cmd]
+    assert lines == []
+    assert buf == b"hello\n world"
+
+
 async def test_pipe_iterator_api(echo_cmd, cat_cmd):
     "Test running a command's async iterator directly."
     cmd = echo_cmd("hello\n", "world") | cat_cmd()
@@ -1195,6 +1204,15 @@ def test_pipe_iterator_api_interrupted_sync(echo_cmd, cat_cmd):
     # asyncio.run() should do all clean up for interrupted async iterator.
     result = asyncio.run(_test())
     assert result
+
+
+async def test_pipe_iterator_api_redirected(echo_cmd, cat_cmd):
+    "Test running a pipe's async iterator with redirected command."
+    buf = bytearray()
+    cmd = echo_cmd("hello\n", "world") | cat_cmd() | buf
+    lines = [line async for line in cmd]
+    assert lines == []
+    assert buf == b"hello\n world"
 
 
 async def test_audit_callback(echo_cmd):
