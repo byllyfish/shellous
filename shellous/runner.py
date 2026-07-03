@@ -2,13 +2,24 @@
 
 import asyncio
 import collections.abc as cabc
+import inspect
 import io
 import os
 import sys
 from logging import Logger
 from pathlib import Path
 from types import TracebackType
-from typing import Any, AsyncIterator, Coroutine, Optional, TextIO, TypeVar, Union, cast
+from typing import (
+    Any,
+    AsyncGenerator,
+    AsyncIterator,
+    Coroutine,
+    Optional,
+    TextIO,
+    TypeVar,
+    Union,
+    cast,
+)
 
 import shellous
 import shellous.redirect as redir
@@ -56,6 +67,13 @@ def _is_writable(cmd: "Union[shellous.Command[Any], shellous.Pipeline[Any]]"):
         # Pipelines need to check both the last/first commands.
         return cmd.options._writable or cmd[0].options._writable
     return cmd.options._writable
+
+
+def _is_async_gen_closed(agen: AsyncGenerator[Any, Any]) -> bool:
+    "Return true if async generator is closed."
+    if sys.version_info < (3, 12):
+        return agen.ag_frame is None
+    return inspect.getasyncgenstate(agen) == inspect.AGEN_CLOSED
 
 
 class _RunOptions:
@@ -824,7 +842,7 @@ class Runner:
             return None
 
         if isinstance(source, cabc.AsyncGenerator):
-            if source.ag_frame is None:
+            if _is_async_gen_closed(source):
                 LOGGER.warning("Runner: Async generator input is closed: %r", source)
                 raise ValueError(f"Async generator input is closed: {source!r}")
             self.add_task(redir.write_asyncgen(source, stream, opts.encoding, eof), tag)
