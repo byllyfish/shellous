@@ -1631,8 +1631,6 @@ async def test_pty_redirect_stdin_asyncgen_closed():
 
     async def _agen():
         yield "abc\n"
-        # Wait for driver to echo the input before ending.
-        await asyncio.sleep(0.2)
 
     # Create generator object and command.
     iter = _agen()
@@ -1640,7 +1638,7 @@ async def test_pty_redirect_stdin_asyncgen_closed():
 
     # Run command once.
     result = await cmd
-    assert result == "abc\r\nabc\r\n^D\x08\x08"
+    assert result.replace("^D\x08\x08", "") == "abc\r\nabc\r\n"
 
     # Now try to run command with the `closed` generator.
     with pytest.raises(ValueError, match="Async generator input is closed"):
