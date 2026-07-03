@@ -1003,6 +1003,20 @@ async def test_redirect_to_arbitrary_tuple():
         await (sh("echo") | (1, 2))  # pyright: ignore[reportOperatorIssue]
 
 
+async def test_pathlike_args_and_which():
+    "Test running a command with `os.PathLike` args."
+    cmd = sh(Path("echo"), Path("xyz"))
+    result = await cmd
+    assert result == "xyz\n"
+
+    # On Windows before Python 3.12, using a PathLike as `cmd` would always
+    # fail or return `None`. (shutil.which)
+    found = cmd.options.which(Path("echo"))
+    assert found and isinstance(found, str)
+
+    assert cmd.options.which(Path("12345_non_existant")) is None
+
+
 async def test_command_context_manager_default():
     "Test running a command using its context manager."
     async with sh("echo", "hello") as run:

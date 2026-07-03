@@ -36,6 +36,12 @@ def test_args2():
     assert cmd.args == ("echo", "b", "-1")
 
 
+def test_args3():
+    "Test command args with os.PathLike objects."
+    cmd = sh(Path("echo"), Path("foo"))
+    assert cmd.args == (Path("echo"), Path("foo"))
+
+
 def test_name():
     "Test command's name property."
     cmd = sh("echo", "a")
