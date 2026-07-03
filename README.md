@@ -62,7 +62,7 @@ converted to a string. If an argument is a list or tuple, it is flattened recurs
 ```
 
 A command does not run until you `await` it. When you run a command using `await`, it returns the value of the standard output interpreted as a UTF-8 string.
-It is safe to `await` the same command object more than once.
+It is safe to `await` the same command object more than once.[^immutable]
 
 Here, we create our own echo command with "-n" to omit the newline. Note, `echo("abc")` will run the same command as `echo -n "abc"`.
 
@@ -74,7 +74,7 @@ Here, we create our own echo command with "-n" to omit the newline. Note, `echo(
 
 Commands are **immutable** objects that represent a program invocation: program name, arguments, environment
 variables, redirection operators and other settings. When you use a method to modify a `Command`, you are
-returning a new `Command` object. The original object is unchanged.
+returning a new `Command` object. The original object is unchanged.[^immutable]
 
 You can wrap your commands in a function to improve type safety:
 
@@ -88,6 +88,9 @@ You can wrap your commands in a function to improve type safety:
 ```
 
 The type hint `Command[str]` indicates that the command returns a `str`.
+
+[^immutable]: If you use an async generator object for `stdin`, the command cannot run more than once. In Python, async 
+generator objects cannot be reused. Shellous will detect this case and raise an error.
 
 ### Arguments
 
@@ -293,7 +296,8 @@ Shellous supports different STDIN behavior when using different Python types.
 | Path | Read input from file specified by `Path`. |
 | File, StringIO, ByteIO | Read input from open file object. |
 | int | Read input from existing file descriptor. |
-| asyncio.StreamReader | Read input from `StreamReader`. |
+| asyncio.StreamReader | Read input from a `StreamReader`. |
+| AsyncGenerator[str \| bytes, None] | Read input from an async generator. |
 | sh.DEVNULL | Read input from `/dev/null`. |
 | sh.INHERIT  | Read input from existing `sys.stdin`. |
 | sh.CAPTURE | You will write to stdin interactively. |
