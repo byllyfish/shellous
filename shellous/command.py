@@ -15,6 +15,7 @@ import os
 import re
 import shutil
 import signal
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from types import TracebackType
@@ -271,6 +272,11 @@ class Options:  # pylint: disable=too-many-instance-attributes
         self, name: Union[str, bytes, os.PathLike[Any]]
     ) -> Optional[Union[str, bytes, os.PathLike[Any]]]:
         "@private Find the command with the given name and return its path."
+        if sys.platform == "win32" and sys.version_info < (3, 12):
+            # On Windows before Python 3.12, using a Path for `name` causes an
+            # AttributeError. Forcibly coerce Path to String.
+            if isinstance(name, os.PathLike):
+                name = str(name)
         return shutil.which(name, path=self.path)
 
 

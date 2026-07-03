@@ -1608,7 +1608,11 @@ async def test_pty_redirect_stdin_asyncgen_invalid_yield():
         assert False  # should never reach here!
 
     with pytest.raises(ValueError, match="Unexpected yield from async generator"):
-        await (_invalid_input() | sh("cat")).set(pty=True)
+        await (
+            _invalid_input() | sh("cat")
+        ).set(  # pyright: ignore[reportOperatorIssue]
+            pty=True
+        )
 
 
 @pytest.mark.skipif(_is_uvloop(), reason="uvloop")

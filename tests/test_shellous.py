@@ -628,8 +628,7 @@ async def test_redirect_stdin_async_generator_closed(cat_cmd):
         yield "abc"
 
     # Create generator object and command.
-    iter = _agen()
-    cmd = cat_cmd().stdin(iter)
+    cmd = cat_cmd().stdin(_agen())
 
     # Run command once.
     result = await cmd
@@ -1004,6 +1003,20 @@ async def test_redirect_to_arbitrary_tuple():
         await (sh("echo") | (1, 2))  # pyright: ignore[reportOperatorIssue]
 
 
+async def test_pathlike_args_and_which():
+    "Test running a command with `os.PathLike` args."
+    cmd = sh(Path("echo"), Path("xyz"))
+    result = await cmd
+    assert result == "xyz\n"
+
+    # On Windows before Python 3.12, using a PathLike as `cmd` would always
+    # fail or return `None`. (shutil.which)
+    found = cmd.options.which(Path("echo"))
+    assert found and isinstance(found, str)
+
+    assert cmd.options.which(Path("12345_non_existant")) is None
+
+
 async def test_command_context_manager_default():
     "Test running a command using its context manager."
     async with sh("echo", "hello") as run:
@@ -1111,6 +1124,15 @@ def test_command_iterator_api_interrupted_sync(echo_cmd):
     assert result
 
 
+async def test_command_iterator_api_redirected(echo_cmd):
+    "Test running a command's async iterator with redirected command."
+    buf = bytearray()
+    cmd = echo_cmd("hello\n", "world") | buf
+    lines = [line async for line in cmd]
+    assert lines == []
+    assert buf == b"hello\n world"
+
+
 async def test_pipe_iterator_api(echo_cmd, cat_cmd):
     "Test running a command's async iterator directly."
     cmd = echo_cmd("hello\n", "world") | cat_cmd()
@@ -1182,6 +1204,15 @@ def test_pipe_iterator_api_interrupted_sync(echo_cmd, cat_cmd):
     # asyncio.run() should do all clean up for interrupted async iterator.
     result = asyncio.run(_test())
     assert result
+
+
+async def test_pipe_iterator_api_redirected(echo_cmd, cat_cmd):
+    "Test running a pipe's async iterator with redirected command."
+    buf = bytearray()
+    cmd = echo_cmd("hello\n", "world") | cat_cmd() | buf
+    lines = [line async for line in cmd]
+    assert lines == []
+    assert buf == b"hello\n world"
 
 
 async def test_audit_callback(echo_cmd):
@@ -1366,7 +1397,7 @@ async def test_wait_for_zero_seconds(sleep_cmd):
 
     # Python 3.12 added support for "eager" tasks. This test behaves differently
     # when using eager tasks.
-    if sys.version_info[:2] >= (3, 12):
+    if sys.version_info >= (3, 12):
         is_eager_task = (
             asyncio.get_running_loop().get_task_factory() == asyncio.eager_task_factory
         )

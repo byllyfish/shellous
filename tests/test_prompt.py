@@ -241,7 +241,7 @@ async def test_prompt_unix_shell_interactive():
 
         result = await repl.command("echo 123")
 
-        if _IS_MACOS and sys.version_info[:2] >= (3, 10) and not _IS_UVLOOP:
+        if _IS_MACOS and sys.version_info >= (3, 10) and not _IS_UVLOOP:
             # On MacOS with Python 3.10 or later, the result is 'echo 123\n123'.
             # (Unless we are using uvloop.) Result is "123" on MacOS in
             # Python 3.9, or when using uvloop with later Python versions.

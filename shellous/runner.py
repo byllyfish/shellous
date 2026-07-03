@@ -72,7 +72,7 @@ def _is_writable(cmd: "Union[shellous.Command[Any], shellous.Pipeline[Any]]"):
 def _is_async_gen_closed(agen: AsyncGenerator[Any, Any]) -> bool:
     "Return true if async generator is closed."
     if sys.version_info < (3, 12):
-        return agen.ag_frame is None
+        return agen.ag_frame is None  # pyright: ignore[reportAttributeAccessIssue]
     return inspect.getasyncgenstate(agen) == inspect.AGEN_CLOSED
 
 
@@ -842,10 +842,11 @@ class Runner:
             return None
 
         if isinstance(source, cabc.AsyncGenerator):
-            if _is_async_gen_closed(source):
-                LOGGER.warning("Runner: Async generator input is closed: %r", source)
+            obj = cast(AsyncGenerator[Any, Any], source)
+            if _is_async_gen_closed(obj):
+                LOGGER.warning("Runner: Async generator input is closed: %r", obj)
                 raise ValueError(f"Async generator input is closed: {source!r}")
-            self.add_task(redir.write_asyncgen(source, stream, opts.encoding, eof), tag)
+            self.add_task(redir.write_asyncgen(obj, stream, opts.encoding, eof), tag)
             return None
 
         return stream
