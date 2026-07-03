@@ -1,15 +1,16 @@
 "Implements the Redirect enum and various redirection utilities."
 
 import asyncio
+import collections.abc as cabc
 import enum
 import io
 from logging import Logger
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union
+from typing import TYPE_CHECKING, Any, AsyncGenerator, Optional, TypeVar, Union
 
 from shellous.log import LOG_DETAIL, log_method
 from shellous.pty_util import PtyAdapterOrBool
-from shellous.util import decode_bytes
+from shellous.util import decode_bytes, encode_bytes
 
 if TYPE_CHECKING:
     import shellous
@@ -74,10 +75,19 @@ STDIN_TYPES = (
     bytes,
     Path,
     bytearray,
-    io.IOBase,
+    io.IOBase,  # includes BytesIO, StringIO
     int,
     Redirect,
     asyncio.StreamReader,
+    cabc.AsyncGenerator,
+)
+
+# Types implemented in shellous as "extended" stdin types.
+EXTENDED_STDIN_TYPES = (
+    asyncio.StreamReader,
+    io.BytesIO,
+    io.StringIO,
+    cabc.AsyncGenerator,
 )
 
 StdinType = Union[
@@ -89,6 +99,7 @@ StdinType = Union[
     int,
     Redirect,
     asyncio.StreamReader,
+    AsyncGenerator[bytes | str, None],
 ]
 
 STDOUT_TYPES = (
@@ -122,11 +133,32 @@ async def _drain(stream: asyncio.StreamWriter):
         pass
 
 
+async def _check_eof(
+    eof: Optional[bytes],
+    stream: asyncio.StreamWriter,
+    ends_with_newline: bool,
+):
+    "Close stream in pty mode when necessary."
+    if eof is None:
+        # Close the stream when we are done.
+        stream.close()
+    elif eof:
+        # When using a pty in canonical mode, send the EOF character instead
+        # of closing the pty. At the beginning of a line, we only need to
+        # send one EOF. Otherwise, we need to send one EOF to end the
+        # partial line and then another EOF to signal we are done.
+        if ends_with_newline:
+            stream.write(eof)
+        else:
+            stream.write(eof + eof)
+        await _drain(stream)
+
+
 @log_method(LOG_DETAIL)
 async def write_stream(
     input_bytes: bytes,
     stream: asyncio.StreamWriter,
-    eof: Optional[bytes] = None,
+    eof: Optional[bytes],
 ):
     "Write input_bytes to stream."
     if input_bytes:
@@ -141,27 +173,14 @@ async def write_stream(
     # If `stream.drain()`` is cancelled, we do NOT close the stream here.
     # See https://bugs.python.org/issue45074
 
-    if eof is None:
-        # Close the stream when we are done.
-        stream.close()
-
-    elif eof:
-        # When using a pty in canonical mode, send the EOF character instead
-        # of closing the pty. At the beginning of a line, we only need to
-        # send one EOF. Otherwise, we need to send one EOF to end the
-        # partial line and then another EOF to signal we are done.
-        if not input_bytes.endswith(b"\n"):
-            stream.write(eof + eof)
-        else:
-            stream.write(eof)
-        await _drain(stream)
+    await _check_eof(eof, stream, input_bytes.endswith(b"\n"))
 
 
 @log_method(LOG_DETAIL)
 async def write_reader(
     reader: asyncio.StreamReader,
     stream: asyncio.StreamWriter,
-    eof: Optional[bytes] = None,
+    eof: Optional[bytes],
 ):
     "Copy from reader to writer."
     ends_with_newline = True
@@ -177,14 +196,31 @@ async def write_reader(
     except (BrokenPipeError, ConnectionResetError):
         pass
 
-    if eof is None:
-        stream.close()
-    elif eof:
-        if not ends_with_newline:
-            stream.write(eof + eof)
+    await _check_eof(eof, stream, ends_with_newline)
+
+
+@log_method(LOG_DETAIL)
+async def write_asyncgen(
+    async_gen: AsyncGenerator[bytes | str, None],
+    stream: asyncio.StreamWriter,
+    encoding: str,
+    eof: Optional[bytes],
+):
+    "Copy from async generator to writer."
+    ends_with_newline = True
+
+    async for value in async_gen:
+        if isinstance(value, str):
+            data = encode_bytes(value, encoding)
+        elif isinstance(value, bytes):  # pyright: ignore[reportUnnecessaryIsInstance]
+            data = value
         else:
-            stream.write(eof)
-        await _drain(stream)
+            raise ValueError(f"Unexpected yield from async generator: {value!r}")
+        ends_with_newline = data.endswith(b"\n")
+        stream.write(data)
+        await stream.drain()
+
+    await _check_eof(eof, stream, ends_with_newline)
 
 
 @log_method(LOG_DETAIL)

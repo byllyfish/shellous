@@ -1,13 +1,25 @@
 "Implements utilities to run a command."
 
 import asyncio
+import collections.abc as cabc
+import inspect
 import io
 import os
 import sys
 from logging import Logger
 from pathlib import Path
 from types import TracebackType
-from typing import Any, AsyncIterator, Coroutine, Optional, TextIO, TypeVar, Union, cast
+from typing import (
+    Any,
+    AsyncGenerator,
+    AsyncIterator,
+    Coroutine,
+    Optional,
+    TextIO,
+    TypeVar,
+    Union,
+    cast,
+)
 
 import shellous
 import shellous.redirect as redir
@@ -55,6 +67,13 @@ def _is_writable(cmd: "Union[shellous.Command[Any], shellous.Pipeline[Any]]"):
         # Pipelines need to check both the last/first commands.
         return cmd.options._writable or cmd[0].options._writable
     return cmd.options._writable
+
+
+def _is_async_gen_closed(agen: AsyncGenerator[Any, Any]) -> bool:
+    "Return true if async generator is closed."
+    if sys.version_info < (3, 12):
+        return agen.ag_frame is None
+    return inspect.getasyncgenstate(agen) == inspect.AGEN_CLOSED
 
 
 class _RunOptions:
@@ -285,7 +304,7 @@ class _RunOptions:
                 self.open_fds.append(stdin)
         elif isinstance(input_, str):
             input_bytes = encode_bytes(input_, encoding)
-        elif isinstance(input_, (asyncio.StreamReader, io.BytesIO, io.StringIO)):
+        elif isinstance(input_, redir.EXTENDED_STDIN_TYPES):
             # Shellous-supported input classes.
             assert stdin == asyncio.subprocess.PIPE
             assert input_bytes is None
@@ -336,7 +355,9 @@ class _RunOptions:
             _set_position(output, append)
             assert stdout == asyncio.subprocess.PIPE
         elif isinstance(output, io.IOBase):
-            # Client-managed File-like object.
+            # Client-managed File-like object. This check must appear *after*
+            # check for shellous supported output classes since it overlaps with
+            # StringIO/BytesIO.
             _set_position(output, append)
             stdout = output
         else:
@@ -696,6 +717,8 @@ class Runner:
                 self._set_cancelled()
             if self._proc:
                 await self._kill()
+            if self._options.pty_fds:
+                self._options.pty_fds.close()
             raise
 
         # Make final streams available. These may be different from `self.proc`
@@ -816,6 +839,13 @@ class Runner:
         if isinstance(source, io.StringIO):
             input_bytes = encode_bytes(source.getvalue(), opts.encoding)
             self.add_task(redir.write_stream(input_bytes, stream, eof), tag)
+            return None
+
+        if isinstance(source, cabc.AsyncGenerator):
+            if _is_async_gen_closed(source):
+                LOGGER.warning("Runner: Async generator input is closed: %r", source)
+                raise ValueError(f"Async generator input is closed: {source!r}")
+            self.add_task(redir.write_asyncgen(source, stream, opts.encoding, eof), tag)
             return None
 
         return stream

@@ -581,6 +581,65 @@ async def test_redirect_stdin_result(echo_cmd):
         await echo_cmd("abc").stdin(sh.BUFFER)
 
 
+async def test_redirect_stdin_async_generator(cat_cmd):
+    "Test reading stdin from an async generator."
+
+    async def _delayed_input():
+        await asyncio.sleep(0.05)
+        yield b"abc"
+        await asyncio.sleep(0.05)
+        yield "def"
+
+    result = await cat_cmd().stdin(_delayed_input())
+    assert result == "abcdef"
+
+
+async def test_redirect_stdin_async_generator_invalid_yield(cat_cmd):
+    "Test reading stdin from an async generator with invalid yield."
+
+    async def _invalid_input():
+        await asyncio.sleep(0.05)
+        yield b"abc"
+        await asyncio.sleep(0.05)
+        yield 7  # invalid!
+        assert False  # should never reach here!
+
+    with pytest.raises(ValueError, match="Unexpected yield from async generator"):
+        await cat_cmd().stdin(_invalid_input())
+
+
+async def test_redirect_stdin_async_generator_exception(cat_cmd):
+    "Test reading stdin from an async generator that fails with ValueError."
+
+    async def _failed_input():
+        await asyncio.sleep(0.05)
+        yield b"abc"
+        await asyncio.sleep(0.05)
+        raise ValueError("IT FAILED!")
+
+    with pytest.raises(ValueError, match="IT FAILED!"):
+        await cat_cmd().stdin(_failed_input())
+
+
+async def test_redirect_stdin_async_generator_closed(cat_cmd):
+    "Test reading stdin from an async generator that is `closed`."
+
+    async def _agen():
+        yield "abc"
+
+    # Create generator object and command.
+    iter = _agen()
+    cmd = cat_cmd().stdin(iter)
+
+    # Run command once.
+    result = await cmd
+    assert result == "abc"
+
+    # Now try to run command with the `closed` generator.
+    with pytest.raises(ValueError, match="Async generator input is closed"):
+        await cmd
+
+
 async def test_redirect_stdin_unsupported_type(cat_cmd):
     "Test reading stdin from unsupported type."
     with pytest.raises(TypeError, match="unsupported input type"):
