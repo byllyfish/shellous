@@ -699,6 +699,8 @@ class Runner:
                 self._set_cancelled()
             if self._proc:
                 await self._kill()
+            if self._options.pty_fds:
+                self._options.pty_fds.close()
             raise
 
         # Make final streams available. These may be different from `self.proc`
@@ -823,6 +825,7 @@ class Runner:
 
         if isinstance(source, cabc.AsyncGenerator):
             if source.ag_frame is None:
+                LOGGER.warning("Runner: Async generator input is closed: %r", source)
                 raise ValueError(f"Async generator input is closed: {source!r}")
             self.add_task(redir.write_asyncgen(source, stream, opts.encoding, eof), tag)
             return None

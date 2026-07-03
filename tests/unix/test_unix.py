@@ -1596,6 +1596,57 @@ async def test_pty_redirect_stdin_asyncgen():
     assert result.replace("^D\x08\x08", "") == "1\r\n1\r\n2\r\n2\r\n"
 
 
+@pytest.mark.skipif(_is_uvloop(), reason="uvloop")
+async def test_pty_redirect_stdin_asyncgen_invalid_yield():
+    "Test reading stdin from an async generator in a pty with invalid yield."
+
+    async def _invalid_input():
+        await asyncio.sleep(0.05)
+        yield b"1\n"
+        await asyncio.sleep(0.05)
+        yield 7  # invalid!
+        assert False  # should never reach here!
+
+    with pytest.raises(ValueError, match="Unexpected yield from async generator"):
+        await (_invalid_input() | sh("cat")).set(pty=True)
+
+
+@pytest.mark.skipif(_is_uvloop(), reason="uvloop")
+async def test_pty_redirect_stdin_asyncgen_exception():
+    "Test reading stdin from an async generator in a pty with failure."
+
+    async def _failed_input():
+        await asyncio.sleep(0.05)
+        yield b"1\n"
+        await asyncio.sleep(0.05)
+        raise ValueError("IT FAILED!")
+
+    with pytest.raises(ValueError, match="IT FAILED!"):
+        await (_failed_input() | sh("cat")).set(pty=True)
+
+
+@pytest.mark.skipif(_is_uvloop(), reason="uvloop")
+async def test_pty_redirect_stdin_asyncgen_closed():
+    "Test reading stdin from a `closed` async generator in a pty."
+
+    async def _agen():
+        yield "abc\n"
+        # Wait for driver to echo the input before ending.
+        await asyncio.sleep(0.2)
+
+    # Create generator object and command.
+    iter = _agen()
+    cmd = (iter | sh("cat")).set(pty=True)
+
+    # Run command once.
+    result = await cmd
+    assert result == "abc\r\nabc\r\n^D\x08\x08"
+
+    # Now try to run command with the `closed` generator.
+    with pytest.raises(ValueError, match="Async generator input is closed"):
+        await cmd
+
+
 async def test_audit_cancel_nohup():
     "Test audit callback when a command is cancelled."
     calls = []
