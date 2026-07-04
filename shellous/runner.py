@@ -883,6 +883,10 @@ class Runner:
             return None
 
         if isinstance(sink, cabc.AsyncGenerator):
+            obj = cast(AsyncGenerator[Any, Any], sink)
+            if _is_async_gen_closed(obj):
+                LOGGER.warning("Runner: Async generator output is closed: %r", obj)
+                raise ValueError(f"Async generator output is closed: {sink!r}")
             self.add_task(redir.copy_asyncgen(stream, sink), tag)
             return None
 

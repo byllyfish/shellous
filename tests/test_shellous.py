@@ -698,6 +698,27 @@ async def test_redirect_stdout_async_generator_error(echo_cmd):
         await echo_cmd("abcdef").stdout(_failure())
 
 
+async def test_redirect_stdout_async_generator_closed(echo_cmd):
+    "Test writing stdout to an async generator."
+
+    async def _output(buf: bytearray):
+        while True:
+            data = yield
+            buf.extend(data)
+
+    buf = bytearray()
+    cmd = echo_cmd("abc").stdout(_output(buf))
+
+    # First time through is okay.
+    result = await cmd
+    assert result == ""
+    assert buf == b"abc"
+
+    # Second time fails because generator object already closed.
+    with pytest.raises(ValueError, match="Async generator output is closed"):
+        await cmd
+
+
 async def test_broken_pipe():
     """Test broken pipe error for large data passed to stdin.
 
