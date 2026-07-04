@@ -653,6 +653,72 @@ async def test_redirect_sequence_stringio(echo_cmd, cat_cmd):
     assert result == "abc"
 
 
+async def test_redirect_stdout_async_generator(echo_cmd):
+    "Test writing stdout to an async generator."
+
+    async def _output(buf: bytearray):
+        while True:
+            data = yield
+            assert data
+            await asyncio.sleep(0.1)  # simulate doing some work
+            buf.extend(data)
+
+    buf = bytearray()
+    result = await echo_cmd("abcdef").stdout(_output(buf))
+    assert result == ""
+    assert buf == b"abcdef"
+
+
+async def test_redirect_stdout_async_generator_early_exit():
+    "Test writing stdout to an async generator that exits early."
+
+    async def _input():
+        yield "abc\n"  # chunk 1
+        await asyncio.sleep(0.5)
+        yield "def\n"  # chunk 2
+
+    async def _output(buf: bytearray):
+        data = yield  # chunk 1 only
+        buf.extend(data)
+
+    buf = bytearray()
+    result = await sh("cat").stdin(_input()).stdout(_output(buf))
+    assert result == ""
+    assert buf == b"abc\n"
+
+
+async def test_redirect_stdout_async_generator_error(echo_cmd):
+    "Test writing stdout to an async generator that fails."
+
+    async def _failure():
+        data = yield
+        raise ValueError(f"FAILURE! data={data!r}")
+
+    with pytest.raises(ValueError, match="FAILURE!"):
+        await echo_cmd("abcdef").stdout(_failure())
+
+
+async def test_redirect_stdout_async_generator_closed(echo_cmd):
+    "Test writing stdout to an async generator."
+
+    async def _output(buf: bytearray):
+        while True:
+            data = yield
+            buf.extend(data)
+
+    buf = bytearray()
+    cmd = echo_cmd("abc").stdout(_output(buf))
+
+    # First time through is okay.
+    result = await cmd
+    assert result == ""
+    assert buf == b"abc"
+
+    # Second time fails because generator object already closed.
+    with pytest.raises(ValueError, match="Async generator output is closed"):
+        await cmd
+
+
 async def test_broken_pipe():
     """Test broken pipe error for large data passed to stdin.
 

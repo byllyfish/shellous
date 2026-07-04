@@ -348,9 +348,7 @@ class _RunOptions:
             stdout = output
             if close:
                 self.open_fds.append(stdout)
-        elif isinstance(
-            output, (io.StringIO, io.BytesIO, bytearray, Logger, asyncio.StreamWriter)
-        ):
+        elif isinstance(output, redir.EXTENDED_STDOUT_TYPES):
             # Shellous-supported output classes.
             _set_position(output, append)
             assert stdout == asyncio.subprocess.PIPE
@@ -882,6 +880,14 @@ class Runner:
 
         if isinstance(sink, asyncio.StreamWriter):
             self.add_task(redir.copy_streamwriter(stream, sink), tag)
+            return None
+
+        if isinstance(sink, cabc.AsyncGenerator):
+            obj = cast(AsyncGenerator[Any, Any], sink)
+            if _is_async_gen_closed(obj):
+                LOGGER.warning("Runner: Async generator output is closed: %r", obj)
+                raise ValueError(f"Async generator output is closed: {sink!r}")
+            self.add_task(redir.copy_asyncgen(stream, sink), tag)
             return None
 
         return stream

@@ -89,7 +89,7 @@ You can wrap your commands in a function to improve type safety:
 
 The type hint `Command[str]` indicates that the command returns a `str`.
 
-[^immutable]: If you use an async generator object for `stdin`, the command cannot run more than once. In Python, async 
+[^immutable]: If you use an async generator object for `stdin` or `stdout`, the command cannot run more than once. In Python, async 
 generator objects cannot be reused. Shellous will detect this case and raise an error.
 
 ### Arguments
@@ -336,6 +336,7 @@ Shellous supports different STDOUT behavior when using different Python types.
 | int | Write output to existing file descriptor at its current position. ◆ | 
 | logging.Logger | Log each line of output. ◆ | 
 | asyncio.StreamWriter | Write output to `StreamWriter`. ◆ | 
+| AsyncGenerator[None, bytes] | Write output to an async generator. ◆ |
 | sh.CAPTURE | Capture output for `async with`. ◆ | 
 | sh.DEVNULL | Write output to `/dev/null`. ◆ | 
 | sh.INHERIT  | Write output to existing `sys.stdout` or `sys.stderr`. ◆ | 
