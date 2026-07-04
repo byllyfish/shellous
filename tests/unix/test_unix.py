@@ -1649,6 +1649,74 @@ async def test_pty_redirect_stdin_asyncgen_closed():
         await cmd
 
 
+@pytest.mark.skipif(_is_uvloop(), reason="uvloop")
+async def test_pty_redirect_stdout_asyncgen():
+    "Test writing stdout to an async generator in a pty."
+
+    async def _output(buf: bytearray):
+        while True:
+            data = yield
+            buf.extend(data)
+
+    buf = bytearray()
+    result = await ("123" | sh("cat") | _output(buf)).set(pty=True)
+    assert result == ""
+    assert buf.replace(b"^D\x08\x08", b"") == b"123123"
+
+
+@pytest.mark.skipif(_is_uvloop(), reason="uvloop")
+async def test_pty_redirect_stdout_asyncgen_early_exit():
+    "Test writing stdout to an async generator that exits early in a pty."
+
+    async def _input():
+        yield "abc\n"  # chunk 1
+        await asyncio.sleep(0.5)
+        yield "def\n"  # chunk 2
+
+    async def _output(buf: bytearray):
+        data = yield  # chunk 1 only
+        buf.extend(data)
+
+    buf = bytearray()
+    result = await (_input() | sh("cat") | _output(buf)).set(pty=True)
+    assert result == ""
+    assert buf.replace(b"^D\x08\x08", b"") == b"abc\r\nabc\r\n"
+
+
+@pytest.mark.skipif(_is_uvloop(), reason="uvloop")
+async def test_pty_redirect_stdout_asyncgen_error():
+    "Test writing stdout to a failing async generator in a pty."
+
+    async def _failure():
+        data = yield
+        raise ValueError(f"FAILURE! data={data!r}")
+
+    with pytest.raises(ValueError, match="FAILURE!"):
+        await (sh("echo", "123") | _failure()).set(pty=True)
+
+
+@pytest.mark.skipif(_is_uvloop(), reason="uvloop")
+async def test_pty_redirect_stdout_asyncgen_closed():
+    "Test writing stdout to a closed async generator in a pty."
+
+    async def _output(buf: bytearray):
+        while True:
+            data = yield
+            buf.extend(data)
+
+    buf = bytearray()
+    cmd = ("123" | sh("cat") | _output(buf)).set(pty=True)
+
+    # First time through is okay.
+    result = await cmd
+    assert result == ""
+    assert buf.replace(b"^D\x08\x08", b"") == b"123123"
+
+    # Second time fails because generator object already closed.
+    with pytest.raises(ValueError, match="Async generator output is closed"):
+        await cmd
+
+
 async def test_audit_cancel_nohup():
     "Test audit callback when a command is cancelled."
     calls = []
