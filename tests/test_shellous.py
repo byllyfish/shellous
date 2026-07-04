@@ -660,12 +660,42 @@ async def test_redirect_stdout_async_generator(echo_cmd):
         while True:
             data = yield
             assert data
+            await asyncio.sleep(0.1)  # simulate doing some work
             buf.extend(data)
 
     buf = bytearray()
     result = await echo_cmd("abcdef").stdout(_output(buf))
     assert result == ""
     assert buf == b"abcdef"
+
+
+async def test_redirect_stdout_async_generator_early_exit():
+    "Test writing stdout to an async generator that exits early."
+
+    async def _input():
+        yield "abc\n"  # chunk 1
+        await asyncio.sleep(0.5)
+        yield "def\n"  # chunk 2
+
+    async def _output(buf: bytearray):
+        data = yield  # chunk 1 only
+        buf.extend(data)
+
+    buf = bytearray()
+    result = await sh("cat").stdin(_input()).stdout(_output(buf))
+    assert result == ""
+    assert buf == b"abc\n"
+
+
+async def test_redirect_stdout_async_generator_error(echo_cmd):
+    "Test writing stdout to an async generator that fails."
+
+    async def _failure():
+        data = yield
+        raise ValueError(f"FAILURE! data={data!r}")
+
+    with pytest.raises(ValueError, match="FAILURE!"):
+        await echo_cmd("abcdef").stdout(_failure())
 
 
 async def test_broken_pipe():

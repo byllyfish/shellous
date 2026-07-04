@@ -336,15 +336,24 @@ async def copy_asyncgen(
     dest: AsyncGenerator[None, bytes],
 ):
     "Copy bytes from source stream to async generator."
-    await dest.asend(None)  # prime generator
+    try:
+        await dest.asend(None)  # prime the async generator
 
-    while True:
-        data = await source.read(_CHUNK_SIZE)
-        if not data:
-            break
-        await dest.asend(data)
+        while True:
+            data = await source.read(_CHUNK_SIZE)
+            if not data:
+                break
+            await dest.asend(data)
 
-    await dest.aclose()
+        await dest.aclose()
+    except StopAsyncIteration:
+        # If the async generator exits early, `asend` raises a `StopAsyncIteration`
+        # exception. We treat this as a request to exit the process early.
+        # Raising a CancelledError exception will cause shellous to close
+        # the process cleanly. N.B. the async generator should be written to
+        # continue processing (and ignoring) bytes if it's termination should
+        # not terminate the command; it should be written as an infinite loop.
+        raise asyncio.CancelledError()
 
 
 @log_method(LOG_DETAIL)
