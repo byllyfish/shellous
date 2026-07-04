@@ -110,7 +110,19 @@ STDOUT_TYPES = (
     Redirect,
     Logger,
     asyncio.StreamWriter,
+    cabc.AsyncGenerator,
 )
+
+# Types implemented in shellous as "extended" stdout types.
+EXTENDED_STDOUT_TYPES = (
+    io.StringIO,
+    io.BytesIO,
+    bytearray,
+    Logger,
+    asyncio.StreamWriter,
+    cabc.AsyncGenerator,
+)
+
 
 StdoutType = Union[
     Path,
@@ -120,6 +132,7 @@ StdoutType = Union[
     Redirect,
     Logger,
     asyncio.StreamWriter,
+    AsyncGenerator[None, bytes],
 ]
 
 
@@ -315,6 +328,23 @@ async def copy_streamwriter(source: asyncio.StreamReader, dest: asyncio.StreamWr
 
     dest.close()
     await dest.wait_closed()
+
+
+@log_method(LOG_DETAIL)
+async def copy_asyncgen(
+    source: asyncio.StreamReader,
+    dest: AsyncGenerator[None, bytes],
+):
+    "Copy bytes from source stream to async generator."
+    await dest.asend(None)  # prime generator
+
+    while True:
+        data = await source.read(_CHUNK_SIZE)
+        if not data:
+            break
+        await dest.asend(data)
+
+    await dest.aclose()
 
 
 @log_method(LOG_DETAIL)

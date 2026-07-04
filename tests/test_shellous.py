@@ -653,6 +653,21 @@ async def test_redirect_sequence_stringio(echo_cmd, cat_cmd):
     assert result == "abc"
 
 
+async def test_redirect_stdout_async_generator(echo_cmd):
+    "Test writing stdout to an async generator."
+
+    async def _output(buf: bytearray):
+        while True:
+            data = yield
+            assert data
+            buf.extend(data)
+
+    buf = bytearray()
+    result = await echo_cmd("abcdef").stdout(_output(buf))
+    assert result == ""
+    assert buf == b"abcdef"
+
+
 async def test_broken_pipe():
     """Test broken pipe error for large data passed to stdin.
 
