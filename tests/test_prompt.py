@@ -26,9 +26,6 @@ _IS_FREEBSD = sys.platform.startswith("freebsd")
 # True if we're running on MacOS.
 _IS_MACOS = sys.platform == "darwin"
 
-# True if we're in Github Actions.
-_IS_GITHUB_ACTIONS = os.environ.get("GITHUB_ACTIONS") is not None
-
 # True if we're using uvloop.
 _IS_UVLOOP = os.environ.get("SHELLOUS_LOOP_TYPE") == "uvloop"
 
