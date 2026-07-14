@@ -2030,6 +2030,7 @@ os.write(fd, b"hello")
     assert out.read_bytes() == b"hello"
 
 
+@pytest.mark.skipif(_is_uvloop(), reason="uvloop")
 async def test_command_pty_adapter():
     "Test the .pty adapter on a Command."
     cmd = sh("echo", "abc")
@@ -2037,6 +2038,7 @@ async def test_command_pty_adapter():
     assert result == "abc\r\n"
 
 
+@pytest.mark.skipif(_is_uvloop(), reason="uvloop")
 async def test_context_pty_adapter():
     "Test the .pty adapter on a CmdContext."
     result = await sh.pty("echo", "abc")
