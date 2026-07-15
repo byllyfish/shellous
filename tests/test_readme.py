@@ -135,7 +135,7 @@ def test_parse_readme():
         't = asyncio.create_task(sh("sleep", 60).coro())',
         "t.cancel()",
         "await t",
-        'await sh("echo", "in a pty").set(pty=True)',
+        'await sh.pty("echo", "in a pty")',
         'ls = sh("ls").set(pty=shellous.cooked(cols=40, rows=10, echo=False))',
         'await ls("README.md", "CHANGELOG.md")',
         'auditor = lambda phase, info: print(phase, info["runner"].name)',
