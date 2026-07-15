@@ -481,10 +481,10 @@ process exits.
 
 ## Pseudo-Terminal Support (Unix Only)
 
-To run a command through a pseudo-terminal, set the `pty` option to True. 
+To run a command through a pseudo-terminal, use the `pty` adapter. 
 
 ```pycon
->>> await sh("echo", "in a pty").set(pty=True)
+>>> await sh.pty("echo", "in a pty")
 'in a pty\r\n'
 ```
 

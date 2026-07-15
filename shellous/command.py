@@ -383,6 +383,11 @@ class CmdContext(Generic[_RT]):
         return Command(coerce(args, self.options.coerce_arg), self.options)
 
     @property
+    def pty(self) -> "CmdContext[_RT]":
+        "Set `pty` to true."
+        return self.set(pty=True)
+
+    @property
     def result(self) -> "CmdContext[shellous.Result]":
         "Set `_return_result` and `exit_codes`."
         return cast(
@@ -805,6 +810,11 @@ class Command(Generic[_RT]):
     def writable(self) -> "Command[_RT]":
         "Set `writable` to True."
         return self.set(_writable=True)
+
+    @property
+    def pty(self) -> "Command[_RT]":
+        "Set `pty` to True."
+        return self.set(pty=True)
 
     @property
     def result(self) -> "Command[shellous.Result]":

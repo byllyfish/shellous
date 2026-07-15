@@ -26,9 +26,6 @@ _IS_FREEBSD = sys.platform.startswith("freebsd")
 # True if we're running on MacOS.
 _IS_MACOS = sys.platform == "darwin"
 
-# True if we're in Github Actions.
-_IS_GITHUB_ACTIONS = os.environ.get("GITHUB_ACTIONS") is not None
-
 # True if we're using uvloop.
 _IS_UVLOOP = os.environ.get("SHELLOUS_LOOP_TYPE") == "uvloop"
 
@@ -66,15 +63,18 @@ async def test_prompt_python_pty():
     )
 
     async with cmd.prompt(_PS1, timeout=3.0) as repl:
+        assert not repl.echo
+
         greeting, _ = await repl.expect()
         assert "Python" in greeting
         assert repl.pending == ""
 
+        if _IS_MACOS and repl.echo:
+            print("** echo re-enabled?")
+            repl.echo = False  # make sure echo is actually disabled (??)
+
         result = await repl.command("print('abc')")
-        if _IS_MACOS and _IS_GITHUB_ACTIONS:
-            assert result == "print('abc')\r\nabc\r\n"
-        else:
-            assert result == "abc\r\n"
+        assert result == "abc\r\n"
 
         await repl.command("exit()", allow_eof=True)
         assert repl.at_eof

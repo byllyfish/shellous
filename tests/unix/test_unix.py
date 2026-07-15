@@ -2028,3 +2028,25 @@ os.write(fd, b"hello")
         await sh(sys.executable, "-c", script, fd).set(pass_fds=[fd])
 
     assert out.read_bytes() == b"hello"
+
+
+@pytest.mark.skipif(_is_uvloop(), reason="uvloop")
+async def test_command_pty_adapter():
+    "Test the .pty adapter on a Command."
+    cmd = sh("echo", "abc")
+    result = await cmd.pty
+    assert result == "abc\r\n"
+
+
+@pytest.mark.skipif(_is_uvloop(), reason="uvloop")
+async def test_context_pty_adapter():
+    "Test the .pty adapter on a CmdContext."
+    result = await sh.pty("echo", "abc")
+    assert result == "abc\r\n"
+
+
+async def test_pipeline_pty_adapter():
+    "Test the .pty adapter on a Pipeline (there isn't one)."
+    pipe = sh("echo", "abc") | sh("cat")
+    with pytest.raises(AttributeError, match="no attribute 'pty'"):
+        await pipe.pty
