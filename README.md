@@ -30,7 +30,7 @@ asyncio.run(main())
 
 ## Requirements
 
-- Requires Python 3.9 or later.
+- Requires Python 3.10 or later.
 - Requires an asyncio event loop.
 - Pseudo-terminals require a Unix system.
 - Process substitution requires a Unix system with /dev/fd support.
