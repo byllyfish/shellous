@@ -1,6 +1,20 @@
 Shellous Change Log
 ===================
 
+0.41.0
+------
+
+- [FEATURE] Add support for using async generators as STDIN, STDOUT and STDERR (#1029).
+- [FEATURE] Add `.pty` modifier as an alternative to the `.set(pty=True)` syntax for running in a PTY.
+- [BUGFIX] Add work-around for bug in `shutil.which` on Windows prior to Python 3.12.
+- [LATERAL] Replace CustomEventLoopPolicy with `pytest_asyncio_loop_factories`.
+- [LATERAL] Remove tests of specific asyncio child watchers: PidfdWatcher and SafeChildWatcher.
+- [LATERAL] Update CI to FreeBSD 15.1 & 15.0.
+- [LATERAL] Switch from poetry to uv.
+- [LATERAL] Update development dependencies and github actions.
+- [LATERAL] Linting fixes.
+- [PYTHON] Change minimum Python version to 3.10.
+
 0.40.0
 ------
 
