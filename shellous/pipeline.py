@@ -12,7 +12,6 @@ from typing import (
     Coroutine,
     Generator,
     Generic,
-    Optional,
     TypeVar,
     Union,
     cast,
@@ -106,9 +105,9 @@ class Pipeline(Generic[_RT]):
     @contextlib.asynccontextmanager
     async def prompt(
         self,
-        prompt: Union[str, list[str], re.Pattern[str], None] = None,
+        prompt: str | list[str] | re.Pattern[str] | None = None,
         *,
-        timeout: Optional[float] = None,
+        timeout: float | None = None,
         normalize_newlines: bool = False,
     ) -> AsyncGenerator[Prompt, None]:
         """Run pipeline using the send/expect API.
@@ -165,12 +164,12 @@ class Pipeline(Generic[_RT]):
 
     @overload
     def __or__(
-        self, rhs: "Union[shellous.Command[shellous.Result], Pipeline[shellous.Result]]"
+        self, rhs: "shellous.Command[shellous.Result] | Pipeline[shellous.Result]"
     ) -> "Pipeline[shellous.Result]": ...  # pragma: no cover
 
     @overload
     def __or__(
-        self, rhs: "Union[shellous.Command[str], Pipeline[str]]"
+        self, rhs: "shellous.Command[str] | Pipeline[str]"
     ) -> "Pipeline[str]": ...  # pragma: no cover
 
     @overload
@@ -225,10 +224,10 @@ class Pipeline(Generic[_RT]):
 
     async def __aexit__(
         self,
-        exc_type: Optional[type[BaseException]],
-        exc_value: Optional[BaseException],
-        exc_tb: Optional[TracebackType],
-    ) -> Optional[bool]:
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> bool | None:
         "Exit the async context manager."
         return await context_aexit(self, exc_type, exc_value, exc_tb)
 

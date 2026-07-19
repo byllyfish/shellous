@@ -4,7 +4,6 @@ import asyncio
 import codecs
 import io
 import re
-from typing import Optional, Union
 
 from shellous import pty_util
 from shellous.harvest import harvest_results
@@ -50,23 +49,23 @@ class Prompt:
     ```
     """
 
-    _runner: Union[Runner, PipeRunner]
+    _runner: Runner | PipeRunner
     _encoding: str
-    _default_prompt: Optional[re.Pattern[str]]
-    _default_timeout: Optional[float]
+    _default_prompt: re.Pattern[str] | None
+    _default_timeout: float | None
     _normalize_newlines: bool
     _chunk_size: int
     _decoder: codecs.IncrementalDecoder
     _pending: str = ""
     _at_eof: bool = False
-    _result: Optional[Result] = None
+    _result: Result | None = None
 
     def __init__(
         self,
         runner: Runner,
         *,
-        default_prompt: Union[str, list[str], re.Pattern[str], None] = None,
-        default_timeout: Optional[float] = None,
+        default_prompt: str | list[str] | re.Pattern[str] | None = None,
+        default_timeout: float | None = None,
         normalize_newlines: bool = False,
         _chunk_size: int = _DEFAULT_CHUNK_SIZE,
     ):
@@ -146,11 +145,11 @@ class Prompt:
 
     async def send(
         self,
-        text: Union[bytes, str],
+        text: bytes | str,
         *,
-        end: Optional[str] = _DEFAULT_LINE_END,
+        end: str | None = _DEFAULT_LINE_END,
         no_echo: bool = False,
-        timeout: Optional[float] = None,
+        timeout: float | None = None,
     ) -> None:
         """Write some `text` to co-process standard input and append a newline.
 
@@ -206,9 +205,9 @@ class Prompt:
 
     async def expect(
         self,
-        prompt: Union[str, list[str], re.Pattern[str], None] = None,
+        prompt: str | list[str] | re.Pattern[str] | None = None,
         *,
-        timeout: Optional[float] = None,
+        timeout: float | None = None,
     ) -> tuple[str, re.Match[str]]:
         """Read from co-process standard output until `prompt` pattern matches.
 
@@ -332,7 +331,7 @@ class Prompt:
     async def read_all(
         self,
         *,
-        timeout: Optional[float] = None,
+        timeout: float | None = None,
     ) -> str:
         """Read from co-process output until EOF.
 
@@ -367,8 +366,8 @@ class Prompt:
         *,
         end: str = _DEFAULT_LINE_END,
         no_echo: bool = False,
-        prompt: Union[str, re.Pattern[str], None] = None,
-        timeout: Optional[float] = None,
+        prompt: str | re.Pattern[str] | None = None,
+        timeout: float | None = None,
         allow_eof: bool = False,
     ) -> str:
         """Send some text to the co-process and return the response.
@@ -472,7 +471,7 @@ class Prompt:
     def _search_pending(
         self,
         pattern: re.Pattern[str],
-    ) -> Optional[tuple[str, re.Match[str]]]:
+    ) -> tuple[str, re.Match[str]] | None:
         """Search our `pending` buffer for the pattern.
 
         If we find a match, we return the data up to the portion that matched
@@ -607,7 +606,7 @@ def _make_decoder(encoding: str, normalize_newlines: bool) -> codecs.Incremental
     return decoder  # pyright: ignore[reportReturnType]
 
 
-def _regex_compile_exact(pattern: Union[str, list[str]]) -> re.Pattern[str]:
+def _regex_compile_exact(pattern: str | list[str]) -> re.Pattern[str]:
     "Compile a regex that matches an exact string or set of strings."
     if isinstance(pattern, list):
         return re.compile("|".join(re.escape(s) for s in pattern))

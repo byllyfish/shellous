@@ -96,10 +96,10 @@ _CoerceArgFnT = Optional[Callable[[Any], Any]]
 class Options:  # pylint: disable=too-many-instance-attributes
     "Concrete class for per-command options."
 
-    path: Optional[str] = None
+    path: str | None = None
     "Optional search path to use instead of PATH environment variable."
 
-    env: Optional[EnvironmentDict] = field(default=None, repr=False)
+    env: EnvironmentDict | None = field(default=None, repr=False)
     "Additional environment variables for command."
 
     inherit_env: bool = True
@@ -129,7 +129,7 @@ class Options:  # pylint: disable=too-many-instance-attributes
     error_close: bool = False
     "True if error object should be closed after subprocess launch."
 
-    error_limit: Optional[int] = DEFAULT_ERROR_LIMIT
+    error_limit: int | None = DEFAULT_ERROR_LIMIT
     "Bytes of stderr to buffer in memory (`sh.BUFFER`). None means unlimited."
 
     encoding: str = "utf-8"
@@ -141,19 +141,19 @@ class Options:  # pylint: disable=too-many-instance-attributes
     _catch_cancelled_error: bool = False
     "True if we should raise `ResultError` after clean up from cancelled task."
 
-    exit_codes: Optional[Container[int]] = None
+    exit_codes: Container[int] | None = None
     "Set of exit codes that do not raise a `ResultError`. None means {0}."
 
-    timeout: Optional[float] = None
+    timeout: float | None = None
     "Timeout in seconds that we wait before cancelling the process."
 
     cancel_timeout: float = 3.0
     "Timeout in seconds that we wait for a cancelled process to terminate."
 
-    cancel_signal: Optional[signal.Signals] = signal.SIGTERM
+    cancel_signal: signal.Signals | None = signal.SIGTERM
     "The signal sent to terminate a cancelled process."
 
-    alt_name: Optional[str] = None
+    alt_name: str | None = None
     "Alternate name for the command to use when logging."
 
     pass_fds: Iterable[int] = ()
@@ -183,10 +183,10 @@ class Options:  # pylint: disable=too-many-instance-attributes
     coerce_arg: _CoerceArgFnT = None
     "Function called to coerce top level arguments."
 
-    read_buffer_limit: Optional[int] = None
+    read_buffer_limit: int | None = None
     "Maximum number of bytes to read when looking for a separator."
 
-    def runtime_env(self) -> Optional[dict[str, str]]:
+    def runtime_env(self) -> dict[str, str] | None:
         "@private Return our `env` merged with the global environment."
         if self.inherit_env:
             if not self.env:
@@ -259,18 +259,16 @@ class Options:  # pylint: disable=too-many-instance-attributes
         return dataclasses.replace(self, **kwds)
 
     @overload
-    def which(self, name: bytes) -> Optional[bytes]:
+    def which(self, name: bytes) -> bytes | None:
         "@private Find the command with the given name and return its path."
 
     @overload
-    def which(
-        self, name: Union[str, os.PathLike[Any]]
-    ) -> Optional[Union[str, os.PathLike[Any]]]:
+    def which(self, name: str | os.PathLike[Any]) -> str | os.PathLike[Any] | None:
         "@private Find the command with the given name and return its path."
 
     def which(
-        self, name: Union[str, bytes, os.PathLike[Any]]
-    ) -> Optional[Union[str, bytes, os.PathLike[Any]]]:
+        self, name: str | bytes | os.PathLike[Any]
+    ) -> str | bytes | os.PathLike[Any] | None:
         "@private Find the command with the given name and return its path."
         if sys.platform == "win32" and sys.version_info < (3, 12):
             # On Windows before Python 3.12, using a Path for `name` causes an
@@ -346,17 +344,17 @@ class CmdContext(Generic[_RT]):
     def set(  # pylint: disable=unused-argument, too-many-locals, too-many-arguments
         self,
         *,
-        path: Unset[Optional[str]] = _UNSET,
+        path: Unset[str | None] = _UNSET,
         env: Unset[dict[str, Any]] = _UNSET,
         inherit_env: Unset[bool] = _UNSET,
         encoding: Unset[str] = _UNSET,
         _return_result: Unset[bool] = _UNSET,
         _catch_cancelled_error: Unset[bool] = _UNSET,
-        exit_codes: Unset[Optional[Container[int]]] = _UNSET,
-        timeout: Unset[Optional[float]] = _UNSET,
+        exit_codes: Unset[Container[int] | None] = _UNSET,
+        timeout: Unset[float | None] = _UNSET,
         cancel_timeout: Unset[float] = _UNSET,
-        cancel_signal: Unset[Optional[signal.Signals]] = _UNSET,
-        alt_name: Unset[Optional[str]] = _UNSET,
+        cancel_signal: Unset[signal.Signals | None] = _UNSET,
+        alt_name: Unset[str | None] = _UNSET,
         pass_fds: Unset[Iterable[int]] = _UNSET,
         pass_fds_close: Unset[bool] = _UNSET,
         _writable: Unset[bool] = _UNSET,
@@ -366,7 +364,7 @@ class CmdContext(Generic[_RT]):
         close_fds: Unset[bool] = _UNSET,
         audit_callback: Unset[_AuditFnT] = _UNSET,
         coerce_arg: Unset[_CoerceArgFnT] = _UNSET,
-        error_limit: Unset[Optional[int]] = _UNSET,
+        error_limit: Unset[int | None] = _UNSET,
     ) -> "CmdContext[_RT]":
         """Return new context with custom options set.
 
@@ -398,7 +396,7 @@ class CmdContext(Generic[_RT]):
             ),
         )
 
-    def find_command(self, name: str) -> Optional[Path]:
+    def find_command(self, name: str) -> Path | None:
         """Find the command with the given name and return its filesystem path.
 
         Return None if the command name is not found in the search path.
@@ -432,7 +430,7 @@ class Command(Generic[_RT]):
     ```
     """
 
-    args: "tuple[Union[str, bytes, os.PathLike[Any], Command[Any], shellous.Pipeline[Any]], ...]"
+    args: "tuple[str | bytes | os.PathLike[Any] | Command[Any] | shellous.Pipeline[Any], ...]"
     "Command arguments including the program name as first argument."
 
     options: Options
@@ -499,17 +497,17 @@ class Command(Generic[_RT]):
     def set(  # pylint: disable=unused-argument, too-many-locals, too-many-arguments
         self,
         *,
-        path: Unset[Optional[str]] = _UNSET,
+        path: Unset[str | None] = _UNSET,
         env: Unset[dict[str, Any]] = _UNSET,
         inherit_env: Unset[bool] = _UNSET,
         encoding: Unset[str] = _UNSET,
         _return_result: Unset[bool] = _UNSET,
         _catch_cancelled_error: Unset[bool] = _UNSET,
-        exit_codes: Unset[Optional[Container[int]]] = _UNSET,
-        timeout: Unset[Optional[float]] = _UNSET,
+        exit_codes: Unset[Container[int] | None] = _UNSET,
+        timeout: Unset[float | None] = _UNSET,
         cancel_timeout: Unset[float] = _UNSET,
-        cancel_signal: Unset[Optional[signal.Signals]] = _UNSET,
-        alt_name: Unset[Optional[str]] = _UNSET,
+        cancel_signal: Unset[signal.Signals | None] = _UNSET,
+        alt_name: Unset[str | None] = _UNSET,
         pass_fds: Unset[Iterable[int]] = _UNSET,
         pass_fds_close: Unset[bool] = _UNSET,
         _writable: Unset[bool] = _UNSET,
@@ -519,8 +517,8 @@ class Command(Generic[_RT]):
         close_fds: Unset[bool] = _UNSET,
         audit_callback: Unset[_AuditFnT] = _UNSET,
         coerce_arg: Unset[_CoerceArgFnT] = _UNSET,
-        error_limit: Unset[Optional[int]] = _UNSET,
-        read_buffer_limit: Unset[Optional[int]] = _UNSET,
+        error_limit: Unset[int | None] = _UNSET,
+        read_buffer_limit: Unset[int | None] = _UNSET,
     ) -> "Command[_RT]":
         """Return new command with custom options set.
 
@@ -683,7 +681,7 @@ class Command(Generic[_RT]):
     def coro(
         self,
         *,
-        _run_future: Optional[asyncio.Future[Runner]] = None,
+        _run_future: asyncio.Future[Runner] | None = None,
     ) -> Coroutine[Any, Any, _RT]:
         "Return coroutine object to run awaitable."
         return cast(
@@ -694,9 +692,9 @@ class Command(Generic[_RT]):
     @contextlib.asynccontextmanager
     async def prompt(
         self,
-        prompt: Union[str, list[str], re.Pattern[str], None] = None,
+        prompt: str | list[str] | re.Pattern[str] | None = None,
         *,
-        timeout: Optional[float] = None,
+        timeout: float | None = None,
         normalize_newlines: bool = False,
     ) -> AsyncGenerator[Prompt, None]:
         """Run command using the send/expect API.
@@ -740,10 +738,10 @@ class Command(Generic[_RT]):
 
     async def __aexit__(
         self,
-        exc_type: Optional[type[BaseException]],
-        exc_value: Optional[BaseException],
-        exc_tb: Optional[TracebackType],
-    ) -> Optional[bool]:
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> bool | None:
         "Exit the async context manager."
         return await context_aexit(self, exc_type, exc_value, exc_tb)
 

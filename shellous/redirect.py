@@ -6,7 +6,7 @@ import enum
 import io
 from logging import Logger
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, AsyncGenerator, Optional, TypeVar, Union
+from typing import TYPE_CHECKING, Any, AsyncGenerator, TypeVar, Union
 
 from shellous.log import LOG_DETAIL, log_method
 from shellous.pty_util import PtyAdapterOrBool
@@ -43,9 +43,7 @@ class Redirect(enum.IntEnum):
         }
 
     @staticmethod
-    def from_default(
-        obj: Any, fdesc: int, pty: PtyAdapterOrBool
-    ) -> "Union[bytes, Redirect]":
+    def from_default(obj: Any, fdesc: int, pty: PtyAdapterOrBool) -> "bytes | Redirect":
         "Return object with Redirect.DEFAULT replaced by actual value."
         if not isinstance(obj, Redirect) or obj != Redirect.DEFAULT:
             return obj
@@ -56,7 +54,7 @@ class Redirect(enum.IntEnum):
 
 # This table has the default redirections for (src, pty).
 # Sources are stdin, stdout, stderr. Used by Redirect.from_default().
-_DEFAULT_REDIRECTION: dict[tuple[int, bool], Union[bytes, Redirect]] = {
+_DEFAULT_REDIRECTION: dict[tuple[int, bool], bytes | Redirect] = {
     # (FD, PTY)
     (_STDIN, False): b"",
     (_STDIN, True): Redirect.CAPTURE,
@@ -147,7 +145,7 @@ async def _drain(stream: asyncio.StreamWriter):
 
 
 async def _check_eof(
-    eof: Optional[bytes],
+    eof: bytes | None,
     stream: asyncio.StreamWriter,
     ends_with_newline: bool,
 ):
@@ -171,7 +169,7 @@ async def _check_eof(
 async def write_stream(
     input_bytes: bytes,
     stream: asyncio.StreamWriter,
-    eof: Optional[bytes],
+    eof: bytes | None,
 ):
     "Write input_bytes to stream."
     if input_bytes:
@@ -193,7 +191,7 @@ async def write_stream(
 async def write_reader(
     reader: asyncio.StreamReader,
     stream: asyncio.StreamWriter,
-    eof: Optional[bytes],
+    eof: bytes | None,
 ):
     "Copy from reader to writer."
     ends_with_newline = True
@@ -217,7 +215,7 @@ async def write_asyncgen(
     async_gen: AsyncGenerator[bytes | str, None],
     stream: asyncio.StreamWriter,
     encoding: str,
-    eof: Optional[bytes],
+    eof: bytes | None,
 ):
     "Copy from async generator to writer."
     ends_with_newline = True
