@@ -14,7 +14,6 @@ from typing import (
     AsyncGenerator,
     AsyncIterator,
     Coroutine,
-    Optional,
     TextIO,
     TypeVar,
     cast,
@@ -421,7 +420,7 @@ class Runner:
 
     _options: _RunOptions
     _tasks: list[asyncio.Task[Any]]
-    _proc: Optional["asyncio.subprocess.Process"] = None
+    _proc: "asyncio.subprocess.Process | None" = None
     _cancelled: bool = False
     _timer: asyncio.TimerHandle | None = None
     _timed_out: bool = False

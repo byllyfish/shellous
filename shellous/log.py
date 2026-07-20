@@ -11,10 +11,10 @@ import threading
 import time
 import warnings
 from contextlib import contextmanager
-from typing import Any, Callable
+from typing import Any, Callable, TypeAlias
 
 # Type Alias.
-_ANYFN = Callable[..., Any]
+_ANYFN: TypeAlias = Callable[..., Any]
 
 # LOGGER is the package-wide logger object.
 LOGGER = logging.getLogger(__package__)

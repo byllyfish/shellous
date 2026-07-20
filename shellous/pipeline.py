@@ -13,7 +13,6 @@ from typing import (
     Generator,
     Generic,
     TypeVar,
-    Union,
     cast,
     overload,
 )
@@ -141,7 +140,7 @@ class Pipeline(Generic[_RT]):
             if cli is not None:
                 cli._finish_()  # pyright: ignore[reportPrivateUsage]
 
-    def _add(self, item: Union["shellous.Command[Any]", "Pipeline[Any]"]):
+    def _add(self, item: "shellous.Command[Any] | Pipeline[Any]"):
         if isinstance(item, shellous.Command):
             return dataclasses.replace(self, commands=(*self.commands, item))
         return dataclasses.replace(

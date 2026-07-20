@@ -13,15 +13,15 @@ from typing import (
     Coroutine,
     Iterable,
     Iterator,
-    Optional,
     Protocol,
+    TypeAlias,
     TypeVar,
 )
 
 from .log import LOG_DETAIL, LOGGER, log_timer
 
 _T = TypeVar("_T")
-_ContextKey = tuple[int, int]
+_ContextKey: TypeAlias = tuple[int, int]
 
 # Stores current stack of context managers for immutable Command objects.
 _CONTEXT_STACKS = contextvars.ContextVar[
@@ -190,7 +190,7 @@ class EnvironmentDict(abc.Mapping[str, str]):
 
     _data: dict[str, str]
 
-    def __init__(self, base: Optional["EnvironmentDict"], updates: dict[str, Any]):
+    def __init__(self, base: "EnvironmentDict | None", updates: dict[str, Any]):
         if base is None:
             self._data = {}
         else:
