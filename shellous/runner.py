@@ -24,7 +24,7 @@ import shellous.redirect as redir
 from shellous import pty_util
 from shellous.harvest import harvest, harvest_results
 from shellous.log import LOG_DETAIL, LOGGER, log_method, log_timer
-from shellous.redirect import Redirect
+from shellous.redirect import OutputInterrupted, Redirect
 from shellous.result import Result, check_result, convert_result_list
 from shellous.util import (
     BSD_DERIVED,
@@ -425,6 +425,7 @@ class Runner:
     _timer: asyncio.TimerHandle | None = None
     _timed_out: bool = False
     _last_signal: int | None = None
+    _ignore_cancel_signal: bool = False
 
     def __init__(self, command: "shellous.Command[Any]"):
         self._options = _RunOptions(command)
@@ -454,18 +455,31 @@ class Runner:
 
     @property
     def returncode(self) -> int | None:
-        "Process's exit code."
+        "Process's exit code, or None if process is still running."
         if not self._proc:
             if self._cancelled:
                 # The process was cancelled before starting.
                 return CANCELLED_EXIT_CODE
             return None
+
         code = self._proc.returncode
+        if code is None:
+            # Process is still running.
+            return None
+
         if code == _UNKNOWN_EXIT_CODE and self._last_signal is not None:
             # After sending a signal, `waitpid` may fail to locate the child
             # process. In this case, map the status to the last signal we sent.
             # For more on this, see https://github.com/python/cpython/issues/87744
             return -self._last_signal  # pylint: disable=invalid-unary-operand-type
+
+        if self._ignore_cancel_signal and not self._cancelled:
+            cancel_signal = self.command.options.cancel_signal
+            if cancel_signal is not None and code == -cancel_signal:
+                # Treat an exit status of the cancel signal as "graceful".
+                # (See the `OutputInterrupted` exception.)
+                code = 0
+
         return code
 
     @property
@@ -559,6 +573,14 @@ class Runner:
             LOGGER.debug("Runner.wait cancelled %r", self)
             self._set_cancelled()
             self._tasks.clear()  # all tasks were cancelled
+            await self._kill()
+
+        except OutputInterrupted:
+            LOGGER.debug("Runner.wait output interrupted %r", self)
+            self._tasks.clear()  # all tasks were cancelled
+            # Abort process but map the negative exit_code from the cancel
+            # signal to 0.
+            self._ignore_cancel_signal = True
             await self._kill()
 
         except Exception as ex:

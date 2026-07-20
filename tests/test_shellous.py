@@ -674,8 +674,9 @@ async def test_redirect_stdout_async_generator_early_exit():
 
     async def _input():
         yield "abc\n"  # chunk 1
-        await asyncio.sleep(0.5)
-        yield "def\n"  # chunk 2
+        while True:
+            await asyncio.sleep(0.5)
+            yield "def\n"  # infinite chunks...
 
     async def _output(buf: bytearray):
         data = yield  # chunk 1 only
