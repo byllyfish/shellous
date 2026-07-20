@@ -74,6 +74,19 @@ def _is_async_gen_closed(agen: AsyncGenerator[Any, Any]) -> bool:
     return inspect.getasyncgenstate(agen) == inspect.AGEN_CLOSED
 
 
+def _map_graceful_exit_code(code: int, cancel_signal: int | None) -> int:
+    "Map a non-zero exit code for a graceful exit to zero."
+    if cancel_signal is None:
+        return code
+
+    # Check if exit code matches the cancel_signal. On Windows, we have to be
+    # careful about how SIGTERM maps to `terminate()`.
+    if code == -cancel_signal or (code == 1 and sys.platform == "win32"):
+        code = 0
+
+    return code
+
+
 class _RunOptions:
     """_RunOptions is context manager to assist in running a command.
 
@@ -474,11 +487,9 @@ class Runner:
             return -self._last_signal  # pylint: disable=invalid-unary-operand-type
 
         if self._ignore_cancel_signal and not self._cancelled:
+            # To see how this is used, look for `OutputInterrupted` exception.
             cancel_signal = self.command.options.cancel_signal
-            if cancel_signal is not None and code == -cancel_signal:
-                # Treat an exit status of the cancel signal as "graceful".
-                # (See the `OutputInterrupted` exception.)
-                code = 0
+            code = _map_graceful_exit_code(code, cancel_signal)
 
         return code
 

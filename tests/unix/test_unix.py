@@ -1680,7 +1680,7 @@ async def test_pty_redirect_stdout_asyncgen_early_exit():
             buf.extend(data)
             pos = buf.find(b"\r\n")
             if pos >= 0:
-                buf.resize(pos + 2)
+                buf[pos + 2 :] = b""
                 return  # exit after first line is received
 
     buf = bytearray()
