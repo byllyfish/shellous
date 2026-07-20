@@ -9,7 +9,7 @@ import struct
 import sys
 import warnings
 from dataclasses import dataclass
-from typing import Any, Callable, NamedTuple, Optional, Union
+from typing import Any, Callable, NamedTuple, TypeAlias
 
 # The following modules are not supported on Windows.
 # pyright: reportPossiblyUnboundVariable=false
@@ -28,8 +28,8 @@ _STDOUT_FILENO = 1
 _LFLAG = 3
 _CC = 6
 
-PtyAdapter = Callable[[int], None]
-PtyAdapterOrBool = Union[PtyAdapter, bool]
+PtyAdapter: TypeAlias = Callable[[int], None]
+PtyAdapterOrBool: TypeAlias = PtyAdapter | bool
 
 
 @dataclass
@@ -55,8 +55,8 @@ class PtyFds(NamedTuple):
     parent_fd: int
     child_fd: ChildFd
     eof: bytes
-    reader: Optional[asyncio.StreamReader] = None
-    writer: Optional[asyncio.StreamWriter] = None
+    reader: asyncio.StreamReader | None = None
+    writer: asyncio.StreamWriter | None = None
 
     @log_method(LOG_DETAIL)
     async def open_streams(self) -> "PtyFds":
@@ -109,10 +109,10 @@ def set_ctty(ttypath: str) -> None:
 class PtyStreamReaderProtocol(asyncio.StreamReaderProtocol):
     "Custom subclass of StreamReaderProtocol for pty's."
 
-    pty__child_fd: Optional[ChildFd] = None
-    pty__timer: Optional[asyncio.TimerHandle] = None  # Issue #378
+    pty__child_fd: ChildFd | None = None
+    pty__timer: asyncio.TimerHandle | None = None  # Issue #378
 
-    def connection_lost(self, exc: Optional[Exception]) -> None:
+    def connection_lost(self, exc: Exception | None) -> None:
         "Intercept EIO error and treat it as EOF."
         if LOG_DETAIL:
             LOGGER.debug("PtyStreamReaderProtocol.connection_lost ex=%r", exc)
@@ -144,7 +144,7 @@ class PtyStreamReaderProtocol(asyncio.StreamReaderProtocol):
             self._close_child_fd()
             return super().data_received(data)
 
-    def eof_received(self) -> Optional[bool]:
+    def eof_received(self) -> bool | None:
         "Log when EOF received."
         if LOG_DETAIL:
             LOGGER.debug("PtyStreamReaderProtocol.eof_received")

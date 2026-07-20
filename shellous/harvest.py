@@ -1,7 +1,7 @@
 "Implementation for harvest and harvest_results function."
 
 import asyncio
-from typing import Any, Awaitable, Iterable, Optional
+from typing import Any, Awaitable, Iterable
 
 from shellous.log import LOG_DETAIL, LOGGER
 
@@ -10,7 +10,7 @@ _CANCEL_TIMEOUT = 15.0  # seconds to wait for cancelled task to finish
 
 async def harvest(
     *aws: Awaitable[Any],
-    timeout: Optional[float] = None,
+    timeout: float | None = None,
     cancel_timeout: float = _CANCEL_TIMEOUT,
     trustee: Any = None,
     cancel_finish: bool = False,
@@ -49,7 +49,7 @@ async def harvest(
 
 async def harvest_results(
     *aws: Awaitable[Any],
-    timeout: Optional[float] = None,
+    timeout: float | None = None,
     cancel_timeout: float = _CANCEL_TIMEOUT,
     trustee: Any = None,
 ) -> tuple[bool, list[Any]]:
@@ -91,7 +91,7 @@ async def harvest_results(
 async def harvest_wait(
     tasks: Iterable[asyncio.Task[Any]],
     *,
-    timeout: Optional[float] = None,
+    timeout: float | None = None,
     cancel_timeout: float = _CANCEL_TIMEOUT,
     cancel_finish: bool = False,
     trustee: Any = None,

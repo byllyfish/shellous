@@ -103,15 +103,15 @@ profile = "black"
 
 [tool.ruff]
 line-length = 120
+target-version = "py310"
 
 [tool.ruff.lint]
-select = ["E", "F", "D202", "RET", "RUF", "W"]
+select = ["E", "F", "D202", "RET", "RUF", "W", "UP007", "UP045", "PYI026"]
 ignore = [
   "D300",   # Use triple double quotes `"""`
   "S101",   # Use of `assert` detected
   "EM101",  # Exception must not use a string literal, assign to variable first
   "EM102",  # Exception must not use an f-string literal, assign to variable first
-  "UP007",  # Use `X | Y` for type annotations
   "RUF022", # `__all__` is not sorted
 ]
 

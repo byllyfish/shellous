@@ -14,10 +14,8 @@ from typing import (
     AsyncGenerator,
     AsyncIterator,
     Coroutine,
-    Optional,
     TextIO,
     TypeVar,
-    Union,
     cast,
 )
 
@@ -61,7 +59,7 @@ def _is_cancelled(ex: BaseException):
     return isinstance(ex, asyncio.CancelledError)
 
 
-def _is_writable(cmd: "Union[shellous.Command[Any], shellous.Pipeline[Any]]"):
+def _is_writable(cmd: "shellous.Command[Any] | shellous.Pipeline[Any]"):
     "Return true if command/pipeline has `_writable` set."
     if isinstance(cmd, shellous.Pipeline):
         # Pipelines need to check both the last/first commands.
@@ -91,14 +89,14 @@ class _RunOptions:
 
     command: "shellous.Command[Any]"
     encoding: str
-    open_fds: list[Union[int, SupportsClose]]
-    input_bytes: Optional[bytes]
-    pos_args: list[Union[str, bytes, os.PathLike[Any]]]
+    open_fds: list[int | SupportsClose]
+    input_bytes: bytes | None
+    pos_args: list[str | bytes | os.PathLike[Any]]
     kwd_args: dict[str, Any]
-    subcmds: "list[Union[shellous.Command[Any], shellous.Pipeline[Any]]]"
-    pty_fds: Optional[pty_util.PtyFds]
-    output_bytes: Optional[bytearray]
-    error_bytes: Optional[bytearray]
+    subcmds: "list[shellous.Command[Any] | shellous.Pipeline[Any]]"
+    pty_fds: pty_util.PtyFds | None
+    output_bytes: bytearray | None
+    error_bytes: bytearray | None
     is_stderr_only: bool = False
 
     def __init__(self, command: "shellous.Command[Any]"):
@@ -122,7 +120,7 @@ class _RunOptions:
                 self.pos_args = self._setup_process_substitution()
             else:
                 self.pos_args = cast(
-                    list[Union[str, bytes, os.PathLike[Any]]], list(self.command.args)
+                    list[str | bytes | os.PathLike[Any]], list(self.command.args)
                 )
 
             self._setup_redirects()
@@ -148,9 +146,9 @@ class _RunOptions:
 
     def __exit__(
         self,
-        _exc_type: Optional[type[BaseException]],
-        exc_value: Optional[BaseException],
-        _exc_tb: Optional[TracebackType],
+        _exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        _exc_tb: TracebackType | None,
     ):
         "Make sure those file descriptors are cleaned up."
         close_fds(self.open_fds)
@@ -164,7 +162,7 @@ class _RunOptions:
             for subcmd in self.subcmds:
                 _cleanup(subcmd)
 
-    def _setup_process_substitution(self) -> list[Union[str, bytes, os.PathLike[Any]]]:
+    def _setup_process_substitution(self) -> list[str | bytes | os.PathLike[Any]]:
         """Set up process substitution.
 
         Returns new command line arguments with /dev/fd path substitutions.
@@ -172,7 +170,7 @@ class _RunOptions:
         if sys.platform == "win32":
             raise RuntimeError("process substitution not supported")  # pragma: no cover
 
-        new_args: list[Union[str, bytes, os.PathLike[Any]]] = []
+        new_args: list[str | bytes | os.PathLike[Any]] = []
         new_fds: list[int] = []
 
         for arg in self.command.args:
@@ -411,22 +409,22 @@ class Runner:
     ```
     """
 
-    stdin: Optional[asyncio.StreamWriter] = None
+    stdin: asyncio.StreamWriter | None = None
     "Process standard input."
 
-    stdout: Optional[asyncio.StreamReader] = None
+    stdout: asyncio.StreamReader | None = None
     "Process standard output."
 
-    stderr: Optional[asyncio.StreamReader] = None
+    stderr: asyncio.StreamReader | None = None
     "Process standard error."
 
     _options: _RunOptions
     _tasks: list[asyncio.Task[Any]]
-    _proc: Optional["asyncio.subprocess.Process"] = None
+    _proc: "asyncio.subprocess.Process | None" = None
     _cancelled: bool = False
-    _timer: Optional[asyncio.TimerHandle] = None
+    _timer: asyncio.TimerHandle | None = None
     _timed_out: bool = False
-    _last_signal: Optional[int] = None
+    _last_signal: int | None = None
 
     def __init__(self, command: "shellous.Command[Any]"):
         self._options = _RunOptions(command)
@@ -448,14 +446,14 @@ class Runner:
         return self._options.command
 
     @property
-    def pid(self) -> Optional[int]:
+    def pid(self) -> int | None:
         "Return the command's process ID."
         if not self._proc:
             return None
         return self._proc.pid
 
     @property
-    def returncode(self) -> Optional[int]:
+    def returncode(self) -> int | None:
         "Process's exit code."
         if not self._proc:
             if self._cancelled:
@@ -476,7 +474,7 @@ class Runner:
         return self._cancelled
 
     @property
-    def pty_fd(self) -> Optional[int]:
+    def pty_fd(self) -> int | None:
         """The file descriptor used to communicate with the child PTY process.
 
         Returns None if the process is not using a PTY.
@@ -487,7 +485,7 @@ class Runner:
         return None
 
     @property
-    def pty_eof(self) -> Optional[bytes]:
+    def pty_eof(self) -> bytes | None:
         """Byte sequence used to indicate EOF when written to the PTY child.
 
         Returns None if process is not using a PTY.
@@ -611,7 +609,7 @@ class Runner:
             await self._kill_wait()
             raise
 
-    def _signal(self, sig: Optional[int]):
+    def _signal(self, sig: int | None):
         "Send a signal to the process."
         assert self._proc is not None  # (pyright)
 
@@ -787,7 +785,7 @@ class Runner:
         self._cancelled = True
         self._stop_timer()
 
-    def _start_timer(self, timeout: Optional[float]):
+    def _start_timer(self, timeout: float | None):
         "Start an optional timer to cancel the process if `timeout` desired."
         assert self._timer is None
         if timeout is not None:
@@ -855,8 +853,8 @@ class Runner:
         sink: Any,
         encoding: str,
         tag: str,
-        limit: Optional[int] = None,
-    ) -> Optional[asyncio.StreamReader]:
+        limit: int | None = None,
+    ) -> asyncio.StreamReader | None:
         "Set up a task to write to custom output sink."
         if isinstance(sink, io.StringIO):
             self.add_task(redir.copy_stringio(stream, sink, encoding), tag)
@@ -895,9 +893,9 @@ class Runner:
     @log_method(LOG_DETAIL)
     async def __aexit__(
         self,
-        _exc_type: Union[type[BaseException], None],
-        exc_value: Union[BaseException, None],
-        _exc_tb: Optional[TracebackType],
+        _exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        _exc_tb: TracebackType | None,
     ):
         "Wait for process to exit and handle cancellation."
         suppress = False
@@ -919,7 +917,7 @@ class Runner:
         return suppress
 
     @log_method(LOG_DETAIL)
-    async def _finish(self, exc_value: Union[BaseException, None]):
+    async def _finish(self, exc_value: BaseException | None):
         "Finish the run. Return True only if `exc_value` should be suppressed."
         assert self._proc
 
@@ -973,7 +971,7 @@ class Runner:
         phase: str,
         *,
         failure: str = "",
-        signal: Optional[int] = None,
+        signal: int | None = None,
     ):
         "Call `audit_callback` if there is one."
         callback = self.command.options.audit_callback
@@ -1010,8 +1008,8 @@ class Runner:
     async def run_command(
         command: "shellous.Command[Any]",
         *,
-        _run_future: Optional[asyncio.Future["Runner"]] = None,
-    ) -> Union[str, Result]:
+        _run_future: asyncio.Future["Runner"] | None = None,
+    ) -> str | Result:
         "Run a command. This is the main entry point for Runner."
         if not _run_future and _is_multiple_capture(command):
             LOGGER.warning("run_command: multiple capture requires 'async with'")
@@ -1039,13 +1037,13 @@ class PipeRunner:
     ```
     """
 
-    stdin: Optional[asyncio.StreamWriter] = None
+    stdin: asyncio.StreamWriter | None = None
     "Pipeline standard input."
 
-    stdout: Optional[asyncio.StreamReader] = None
+    stdout: asyncio.StreamReader | None = None
     "Pipeline standard output."
 
-    stderr: Optional[asyncio.StreamReader] = None
+    stderr: asyncio.StreamReader | None = None
     "Pipeline standard error."
 
     _pipe: "shellous.Pipeline[Any]"
@@ -1053,7 +1051,7 @@ class PipeRunner:
     _tasks: list[asyncio.Task[Any]]
     _encoding: str
     _cancelled: bool = False
-    _results: Optional[list[Union[BaseException, Result]]] = None
+    _results: list[BaseException | Result] | None = None
     _pid: int = -1
 
     def __init__(self, pipe: "shellous.Pipeline[Any]", *, capturing: bool):
@@ -1082,7 +1080,7 @@ class PipeRunner:
         return self._pipe.options
 
     @property
-    def pid(self) -> Optional[int]:
+    def pid(self) -> int | None:
         """Return the process ID for the first command in the pipeline.
 
         The PID is only available when `capturing=True`.
@@ -1142,9 +1140,9 @@ class PipeRunner:
     @log_method(LOG_DETAIL)
     async def __aexit__(
         self,
-        _exc_type: Union[type[BaseException], None],
-        exc_value: Union[BaseException, None],
-        _exc_tb: Optional[TracebackType],
+        _exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        _exc_tb: TracebackType | None,
     ):
         "Wait for pipeline to exit and handle cancellation."
         suppress = False
@@ -1156,7 +1154,7 @@ class PipeRunner:
         return suppress
 
     @log_method(LOG_DETAIL)
-    async def _finish(self, exc_value: Optional[BaseException]) -> bool:
+    async def _finish(self, exc_value: BaseException | None) -> bool:
         "Wait for pipeline to exit and handle cancellation."
         if exc_value is not None:
             LOGGER.warning("PipeRunner._finish exc_value=%r", exc_value)
@@ -1270,7 +1268,7 @@ class PipeRunner:
         return self._readlines()
 
     @staticmethod
-    async def run_pipeline(pipe: "shellous.Pipeline[Any]") -> Union[str, Result]:
+    async def run_pipeline(pipe: "shellous.Pipeline[Any]") -> str | Result:
         "Run a pipeline. This is the main entry point for PipeRunner."
         run = PipeRunner(pipe, capturing=False)
         async with run:
@@ -1296,7 +1294,7 @@ def _is_multiple_capture(cmd: "shellous.Command[Any]"):
     return output == Redirect.CAPTURE and error == Redirect.CAPTURE
 
 
-def _cleanup(command: "Union[shellous.Command[Any], shellous.Pipeline[Any]]"):
+def _cleanup(command: "shellous.Command[Any] | shellous.Pipeline[Any]"):
     "Close remaining file descriptors that need to be closed."
 
     def _add_close(close: bool, fdesc: Any):

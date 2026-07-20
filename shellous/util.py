@@ -13,16 +13,15 @@ from typing import (
     Coroutine,
     Iterable,
     Iterator,
-    Optional,
     Protocol,
+    TypeAlias,
     TypeVar,
-    Union,
 )
 
 from .log import LOG_DETAIL, LOGGER, log_timer
 
 _T = TypeVar("_T")
-_ContextKey = tuple[int, int]
+_ContextKey: TypeAlias = tuple[int, int]
 
 # Stores current stack of context managers for immutable Command objects.
 _CONTEXT_STACKS = contextvars.ContextVar[
@@ -56,7 +55,7 @@ class SupportsClose(Protocol):
         "Close file object."
 
 
-def close_fds(open_fds: Iterable[Union[SupportsClose, int]]) -> None:
+def close_fds(open_fds: Iterable[SupportsClose | int]) -> None:
     "Close open file descriptors or file objects."
     with log_timer("close_fds"):
         try:
@@ -83,7 +82,7 @@ def verify_dev_fd(fdesc: int) -> None:
         )
 
 
-def wait_pid(pid: int, *, block: bool = False) -> Optional[int]:
+def wait_pid(pid: int, *, block: bool = False) -> int | None:
     """Call os.waitpid and return exit status.
 
     Return None if process is still running.
@@ -168,10 +167,10 @@ async def context_aenter(owner: object, ctxt_manager: AsyncContextManager[_T]) -
 
 async def context_aexit(
     owner: object,
-    exc_type: Optional[type[BaseException]],
-    exc_value: Optional[BaseException],
-    exc_tb: Optional[TracebackType],
-) -> Optional[bool]:
+    exc_type: type[BaseException] | None,
+    exc_value: BaseException | None,
+    exc_tb: TracebackType | None,
+) -> bool | None:
     "Exit an async context manager."
     try:
         ctxt_stacks = _CONTEXT_STACKS.get()
@@ -191,7 +190,7 @@ class EnvironmentDict(abc.Mapping[str, str]):
 
     _data: dict[str, str]
 
-    def __init__(self, base: Optional["EnvironmentDict"], updates: dict[str, Any]):
+    def __init__(self, base: "EnvironmentDict | None", updates: dict[str, Any]):
         if base is None:
             self._data = {}
         else:

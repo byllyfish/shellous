@@ -4,7 +4,6 @@ import asyncio
 import signal
 import sys
 from dataclasses import dataclass
-from typing import Optional, Union
 
 import shellous
 from shellous.util import decode_bytes
@@ -52,7 +51,7 @@ class Result:
         return decode_bytes(self.error_bytes, self.encoding)
 
     @property
-    def exit_signal(self) -> Optional[signal.Signals]:
+    def exit_signal(self) -> signal.Signals | None:
         "Signal that caused the command to exit, or None if no signal."
         if self.exit_code >= 0:
             return None
@@ -64,7 +63,7 @@ class Result:
 
 
 def convert_result_list(
-    result_list: list[Union[BaseException, Result]],
+    result_list: list[BaseException | Result],
     cancelled: bool,
 ) -> Result:
     "Convert list of results into a single pipe result."
@@ -114,7 +113,7 @@ def check_result(
     return result
 
 
-def _find_key_result(result_list: list[Union[Result, BaseException]]) -> Result:
+def _find_key_result(result_list: list[Result | BaseException]) -> Result:
     "Scan a result list and return the 'key' result."
     acc = None
 
@@ -131,7 +130,7 @@ def _find_key_result(result_list: list[Union[Result, BaseException]]) -> Result:
     return acc
 
 
-def _compare_result(acc: Optional[Result], item: Result) -> Result:
+def _compare_result(acc: Result | None, item: Result) -> Result:
     if acc is None:
         return item
     acc_key = (not acc.cancelled, acc.exit_code != 0)
@@ -141,7 +140,7 @@ def _compare_result(acc: Optional[Result], item: Result) -> Result:
     return acc
 
 
-def _get_result(item: Union[Result, BaseException]) -> Result:
+def _get_result(item: Result | BaseException) -> Result:
     if isinstance(item, ResultError):
         return item.result
     assert isinstance(item, Result)
