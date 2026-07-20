@@ -9,7 +9,7 @@ import struct
 import sys
 import warnings
 from dataclasses import dataclass
-from typing import Any, Callable, NamedTuple, Union
+from typing import Any, Callable, NamedTuple, TypeAlias
 
 # The following modules are not supported on Windows.
 # pyright: reportPossiblyUnboundVariable=false
@@ -28,8 +28,8 @@ _STDOUT_FILENO = 1
 _LFLAG = 3
 _CC = 6
 
-PtyAdapter = Callable[[int], None]
-PtyAdapterOrBool = Union[PtyAdapter, bool]
+PtyAdapter: TypeAlias = Callable[[int], None]
+PtyAdapterOrBool: TypeAlias = PtyAdapter | bool
 
 
 @dataclass

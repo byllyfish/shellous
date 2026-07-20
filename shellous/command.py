@@ -30,11 +30,10 @@ from typing import (
     Generator,
     Generic,
     Iterable,
-    Optional,
     Sequence,
+    TypeAlias,
     TypedDict,
     TypeVar,
-    Union,
     cast,
     overload,
 )
@@ -66,10 +65,10 @@ _UNSET = _UnsetEnum.UNSET
 
 # Use Unset[T] for unset variable types.
 _T = TypeVar("_T")
-Unset = Union[_T, _UnsetEnum]
+Unset: TypeAlias = _T | _UnsetEnum
 
-_RedirectT = Any
-_PreexecFnT = Optional[Callable[[], None]]
+_RedirectT: TypeAlias = Any
+_PreexecFnT: TypeAlias = Callable[[], None] | None
 
 
 class AuditEventInfo(TypedDict):
@@ -88,8 +87,8 @@ class AuditEventInfo(TypedDict):
     "When phase is 'signal', the signal name/number sent to the process."
 
 
-_AuditFnT = Optional[Callable[[str, AuditEventInfo], None]]
-_CoerceArgFnT = Optional[Callable[[Any], Any]]
+_AuditFnT: TypeAlias = Callable[[str, AuditEventInfo], None] | None
+_CoerceArgFnT: TypeAlias = Callable[[Any], Any] | None
 
 
 @dataclass(frozen=True)

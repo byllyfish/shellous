@@ -6,7 +6,7 @@ import enum
 import io
 from logging import Logger
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, AsyncGenerator, TypeVar, Union
+from typing import TYPE_CHECKING, Any, AsyncGenerator, TypeAlias, TypeVar
 
 from shellous.log import LOG_DETAIL, log_method
 from shellous.pty_util import PtyAdapterOrBool
@@ -88,17 +88,17 @@ EXTENDED_STDIN_TYPES = (
     cabc.AsyncGenerator,
 )
 
-StdinType = Union[
-    str,
-    bytes,
-    Path,
-    bytearray,
-    io.IOBase,
-    int,
-    Redirect,
-    asyncio.StreamReader,
-    AsyncGenerator[bytes | str, None],
-]
+StdinType: TypeAlias = (
+    str
+    | bytes
+    | Path
+    | bytearray
+    | io.IOBase
+    | int
+    | Redirect
+    | asyncio.StreamReader
+    | AsyncGenerator[bytes | str, None]
+)
 
 STDOUT_TYPES = (
     Path,
@@ -122,16 +122,16 @@ EXTENDED_STDOUT_TYPES = (
 )
 
 
-StdoutType = Union[
-    Path,
-    bytearray,
-    io.IOBase,
-    int,
-    Redirect,
-    Logger,
-    asyncio.StreamWriter,
-    AsyncGenerator[None, bytes],
-]
+StdoutType: TypeAlias = (
+    Path
+    | bytearray
+    | io.IOBase
+    | int
+    | Redirect
+    | Logger
+    | asyncio.StreamWriter
+    | AsyncGenerator[None, bytes]
+)
 
 
 async def _drain(stream: asyncio.StreamWriter):
