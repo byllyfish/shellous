@@ -74,14 +74,13 @@ def _is_async_gen_closed(agen: AsyncGenerator[Any, Any]) -> bool:
     return inspect.getasyncgenstate(agen) == inspect.AGEN_CLOSED
 
 
-def _map_graceful_exit_code(code: int, cancel_signal: int | None) -> int:
-    "Map a non-zero exit code for a graceful exit to zero."
-    if cancel_signal is None:
-        return code
+def _map_graceful_exit_code(code: int, cancel_signal: int) -> int:
+    """Map a non-zero exit code for a graceful exit to zero.
 
-    # Check if exit code matches the cancel_signal. On Windows, we have to be
-    # careful about how SIGTERM maps to `terminate()`.
+    Check if exit code matches the cancel_signal. On Windows, we have to be
+    careful about how SIGTERM maps to `terminate()`."""
     if code == -cancel_signal or (code == 1 and sys.platform == "win32"):
+        LOGGER.debug("Map exit_code=%r to zero.", code)
         code = 0
 
     return code
@@ -476,20 +475,11 @@ class Runner:
             return None
 
         code = self._proc.returncode
-        if code is None:
-            # Process is still running.
-            return None
-
         if code == _UNKNOWN_EXIT_CODE and self._last_signal is not None:
             # After sending a signal, `waitpid` may fail to locate the child
             # process. In this case, map the status to the last signal we sent.
             # For more on this, see https://github.com/python/cpython/issues/87744
             return -self._last_signal  # pylint: disable=invalid-unary-operand-type
-
-        if self._ignore_cancel_signal and not self._cancelled:
-            # To see how this is used, look for `OutputInterrupted` exception.
-            cancel_signal = self.command.options.cancel_signal
-            code = _map_graceful_exit_code(code, cancel_signal)
 
         return code
 
@@ -525,6 +515,13 @@ class Runner:
         code = self.returncode
         if code is None:
             raise TypeError("Runner.result(): Process has not exited")
+
+        if self._ignore_cancel_signal and not self._cancelled:
+            # Check if we need to replace a non-zero exit code for an early
+            # terminated process with zero. (See `OutputInterrupted`)
+            cancel_signal = self.command.options.cancel_signal
+            if cancel_signal is not None:
+                code = _map_graceful_exit_code(code, cancel_signal)
 
         result = Result(
             exit_code=code,
