@@ -720,6 +720,31 @@ async def test_redirect_stdout_async_generator_closed(echo_cmd):
         await cmd
 
 
+async def test_pipe_redirect_stdout_async_generator_early_exit():
+    "Test pipe writing stdout to an async generator that exits early."
+
+    async def _input():
+        yield "abc\n"  # chunk 1
+        while True:
+            await asyncio.sleep(1.0)
+            yield "def\n"  # infinite chunks...
+
+    async def _output(buf: bytearray):
+        data = yield  # chunk 1 only
+        buf.extend(data)
+
+    buf = bytearray()
+    cmd = _input() | sh("cat") | sh("cat") | sh("cat") | _output(buf)
+    result = await cmd.result()
+    assert buf == b"abc\n"
+
+    # FIXME: The default behavior is `pipefail`. The entire pipeline will
+    # fail due to broken pipe in 2nd-to-last cat. In the future, implement
+    # a way to disable `pipefail`?
+    assert result.output == ""
+    assert result.exit_code == -13  # FIXME: need win32 value
+
+
 async def test_broken_pipe():
     """Test broken pipe error for large data passed to stdin.
 
