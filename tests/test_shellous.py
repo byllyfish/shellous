@@ -742,7 +742,9 @@ async def test_pipe_redirect_stdout_async_generator_early_exit():
     # fail due to broken pipe in 2nd-to-last cat. In the future, implement
     # a way to disable `pipefail`?
     assert result.output == ""
-    assert result.exit_code == -13  # FIXME: need win32 value
+    _SIGPIPE = -13
+    _SIGPIPE_WIN32 = 3328  # from `cat` on windows-2025.
+    assert result.exit_code in (_SIGPIPE, _SIGPIPE_WIN32)
 
 
 async def test_broken_pipe():
