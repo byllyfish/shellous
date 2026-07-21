@@ -8,6 +8,7 @@ import os
 import sys
 from logging import Logger
 from pathlib import Path
+from signal import SIGTERM
 from types import TracebackType
 from typing import (
     Any,
@@ -41,6 +42,7 @@ from shellous.util import (
 _KILL_TIMEOUT = 3.0
 _CLOSE_TIMEOUT = 0.25
 _UNKNOWN_EXIT_CODE = 255
+_WIN32_EXIT_FAILURE = 1
 
 EVENT_SHELLOUS_EXEC = "shellous.exec"
 """Audit event raised by sys.audit() when shellous runs a subprocess.
@@ -76,11 +78,14 @@ def _is_async_gen_closed(agen: AsyncGenerator[Any, Any]) -> bool:
 
 def _map_graceful_exit_code(code: int, cancel_signal: int) -> int:
     """Map a non-zero exit code for a graceful exit to zero.
-
     Check if exit code matches the cancel_signal. On Windows, we have to be
     careful about how SIGTERM maps to `terminate()`."""
-    if code == -cancel_signal or (code == 1 and sys.platform == "win32"):
-        LOGGER.debug("Map exit_code=%r to zero.", code)
+    if code == -cancel_signal or (
+        code == _WIN32_EXIT_FAILURE
+        and cancel_signal == SIGTERM
+        and sys.platform == "win32"
+    ):
+        LOGGER.debug("result(): Map non-zero exit_code=%r to zero.", code)
         code = 0
 
     return code
@@ -467,20 +472,18 @@ class Runner:
 
     @property
     def returncode(self) -> int | None:
-        "Process's exit code, or None if process is still running."
+        "Process's exit code."
         if not self._proc:
             if self._cancelled:
                 # The process was cancelled before starting.
                 return CANCELLED_EXIT_CODE
             return None
-
         code = self._proc.returncode
         if code == _UNKNOWN_EXIT_CODE and self._last_signal is not None:
             # After sending a signal, `waitpid` may fail to locate the child
             # process. In this case, map the status to the last signal we sent.
             # For more on this, see https://github.com/python/cpython/issues/87744
             return -self._last_signal  # pylint: disable=invalid-unary-operand-type
-
         return code
 
     @property
