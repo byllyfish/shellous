@@ -211,7 +211,7 @@ class Pipeline(Generic[_RT]):
         "Set `_return_result` and `exit_codes`."
         return cast(
             Pipeline[shellous.Result],
-            self._set(_return_result=True, exit_codes=range(-255, 256)),
+            self._set(_return_result=True, exit_codes=range(-255, 4294967295)),
         )
 
     def __await__(self) -> "Generator[Any, None, _RT]":

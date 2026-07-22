@@ -391,7 +391,7 @@ class CmdContext(Generic[_RT]):
             CmdContext[shellous.Result],
             self.set(
                 _return_result=True,
-                exit_codes=range(-255, 256),
+                exit_codes=range(-255, 4294967295),
             ),
         )
 
