@@ -737,14 +737,18 @@ async def test_pipe_redirect_stdout_async_generator_early_exit():
     cmd = _input() | sh("cat") | sh("cat") | sh("cat") | _output(buf)
     result = await cmd.result()
     assert buf == b"abc\n"
-
-    # FIXME: The default behavior is `pipefail`. The entire pipeline will
-    # fail due to broken pipe in 2nd-to-last cat. In the future, implement
-    # a way to disable `pipefail`?
     assert result.output == ""
-    _SIGPIPE = -13
-    _SIGPIPE_WIN32 = 3328  # from `cat` on windows-2025.
-    assert result.exit_code in (_SIGPIPE, _SIGPIPE_WIN32)
+
+    # FIXME: The default behavior is `pipefail`. The pipe will return non-zero
+    # exit code due to broken pipe in 2nd-to-last cat. In the future, implement
+    # a way to disable `pipefail`?
+    if sys.platform == "win32":
+        _SIGPIPE_WIN32 = 3328  # from `cat` on windows-2025.
+        assert result.exit_code == _SIGPIPE_WIN32
+    else:
+        from signal import SIGPIPE
+
+        assert result.exit_code == -SIGPIPE
 
 
 async def test_broken_pipe():
@@ -1768,3 +1772,12 @@ async def test_process_pool_executor(echo_cmd, report_children):
     from multiprocessing import resource_tracker
 
     resource_tracker._resource_tracker._stop()  # pyright: ignore[reportAttributeAccessIssue]
+
+
+def test_cross_platform_executables_exist():
+    "Test that executables in this file exist on all platforms."
+    cmds = ["echo", "cat"]
+    for cmd in cmds:
+        result = sh.find_command(cmd)
+        assert result is not None, cmd
+        print(repr(result))
