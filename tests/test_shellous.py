@@ -738,17 +738,35 @@ async def test_pipe_redirect_stdout_async_generator_early_exit():
     result = await cmd.result()
     assert buf == b"abc\n"
     assert result.output == ""
+    # NOTE: The default behavior is `pipefail`.
+    assert _is_broken_pipe(result.exit_code)
 
-    # FIXME: The default behavior is `pipefail`. The pipe will return non-zero
-    # exit code due to broken pipe in 2nd-to-last cat. In the future, implement
-    # a way to disable `pipefail`?
+
+async def test_pipe_head_early_exit():
+    "Test pipe writing to unix `head` tool that exits early."
+
+    async def _input():
+        yield "abc\n"  # chunk 1
+        while True:
+            await asyncio.sleep(0.1)
+            yield "def\n"  # infinite chunks...
+
+    cmd = _input() | sh("cat") | sh("head", "-n", 1)
+    result = await cmd.result()
+    assert result.output == "abc\n"
+    # NOTE: The default behavior is `pipefail`
+    assert _is_broken_pipe(result.exit_code)
+
+
+def _is_broken_pipe(exit_code: int) -> bool:
+    "Return true if `exit_code` matches the broken pipe error."
     if sys.platform == "win32":
-        _SIGPIPE_WIN32 = 3328  # from `cat` on windows-2025.
-        assert result.exit_code == _SIGPIPE_WIN32
-    else:
-        from signal import SIGPIPE
+        _SIGPIPE_WIN32 = 0xD00  # 0xD00 = SIGPIPE(13) << 8
+        return exit_code == _SIGPIPE_WIN32
 
-        assert result.exit_code == -SIGPIPE
+    from signal import SIGPIPE
+
+    return exit_code == -SIGPIPE
 
 
 async def test_broken_pipe():
@@ -1775,8 +1793,10 @@ async def test_process_pool_executor(echo_cmd, report_children):
 
 
 def test_cross_platform_executables_exist():
-    "Test that executables in this file exist on all platforms."
-    cmds = ["echo", "cat"]
+    """Test that executables used in this test module exist on all platforms.
+
+    On Windows test hosts, these are in included with a git.exe install."""
+    cmds = ["echo", "cat", "head"]
     for cmd in cmds:
         result = sh.find_command(cmd)
         assert result is not None, cmd

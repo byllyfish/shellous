@@ -232,9 +232,15 @@ async def write_asyncgen(
             data = value
         else:
             raise ValueError(f"Unexpected yield from async generator: {value!r}")
+
         ends_with_newline = data.endswith(b"\n")
         stream.write(data)
-        await stream.drain()
+
+        try:
+            await stream.drain()
+        except (BrokenPipeError, ConnectionResetError):
+            # If the connection is lost, terminate the loop.
+            break
 
     await _check_eof(eof, stream, ends_with_newline)
 
