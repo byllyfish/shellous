@@ -234,6 +234,10 @@ async def write_asyncgen(
             raise ValueError(f"Unexpected yield from async generator: {value!r}")
 
         ends_with_newline = data.endswith(b"\n")
+
+        # Break loop if stream is already closing (i.e. broken pipe).
+        if stream.is_closing():
+            break
         stream.write(data)
 
         try:
