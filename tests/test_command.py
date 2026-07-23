@@ -340,7 +340,7 @@ def test_context_result():
     "Test that `sh` supports the .result modifier."
     ctxt = sh.result
     assert ctxt.options._return_result
-    assert ctxt.options.exit_codes == range(-255, 256)
+    assert ctxt.options.exit_codes == range(-255, 2**32)
 
 
 def test_command_invalid_encoding():

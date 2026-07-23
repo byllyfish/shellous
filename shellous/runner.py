@@ -8,6 +8,7 @@ import os
 import sys
 from logging import Logger
 from pathlib import Path
+from signal import SIGTERM
 from types import TracebackType
 from typing import (
     Any,
@@ -24,7 +25,7 @@ import shellous.redirect as redir
 from shellous import pty_util
 from shellous.harvest import harvest, harvest_results
 from shellous.log import LOG_DETAIL, LOGGER, log_method, log_timer
-from shellous.redirect import Redirect
+from shellous.redirect import OutputInterrupted, Redirect
 from shellous.result import Result, check_result, convert_result_list
 from shellous.util import (
     BSD_DERIVED,
@@ -41,6 +42,7 @@ from shellous.util import (
 _KILL_TIMEOUT = 3.0
 _CLOSE_TIMEOUT = 0.25
 _UNKNOWN_EXIT_CODE = 255
+_WIN32_EXIT_FAILURE = 1
 
 EVENT_SHELLOUS_EXEC = "shellous.exec"
 """Audit event raised by sys.audit() when shellous runs a subprocess.
@@ -72,6 +74,21 @@ def _is_async_gen_closed(agen: AsyncGenerator[Any, Any]) -> bool:
     if sys.version_info < (3, 12):
         return agen.ag_frame is None  # pyright: ignore[reportAttributeAccessIssue]
     return inspect.getasyncgenstate(agen) == inspect.AGEN_CLOSED
+
+
+def _map_graceful_exit_code(code: int, cancel_signal: int) -> int:
+    """Map a non-zero exit code for a graceful exit to zero.
+    Check if exit code matches the cancel_signal. On Windows, we have to be
+    careful about how SIGTERM maps to `terminate()`."""
+    if code == -cancel_signal or (
+        code == _WIN32_EXIT_FAILURE
+        and cancel_signal == SIGTERM
+        and sys.platform == "win32"
+    ):
+        LOGGER.debug("result(): Map non-zero exit_code=%r to zero.", code)
+        code = 0
+
+    return code
 
 
 class _RunOptions:
@@ -425,6 +442,7 @@ class Runner:
     _timer: asyncio.TimerHandle | None = None
     _timed_out: bool = False
     _last_signal: int | None = None
+    _ignore_cancel_signal: bool = False
 
     def __init__(self, command: "shellous.Command[Any]"):
         self._options = _RunOptions(command)
@@ -501,6 +519,13 @@ class Runner:
         if code is None:
             raise TypeError("Runner.result(): Process has not exited")
 
+        if self._ignore_cancel_signal and not self._cancelled:
+            # Check if we need to replace a non-zero exit code for an early
+            # terminated process with zero. (See `OutputInterrupted`)
+            cancel_signal = self.command.options.cancel_signal
+            if cancel_signal is not None:
+                code = _map_graceful_exit_code(code, cancel_signal)
+
         result = Result(
             exit_code=code,
             output_bytes=bytes(self._options.output_bytes or b""),
@@ -559,6 +584,14 @@ class Runner:
             LOGGER.debug("Runner.wait cancelled %r", self)
             self._set_cancelled()
             self._tasks.clear()  # all tasks were cancelled
+            await self._kill()
+
+        except OutputInterrupted:
+            LOGGER.debug("Runner.wait output interrupted %r", self)
+            self._tasks.clear()  # all tasks were cancelled
+            # Abort process but map the negative exit_code from the cancel
+            # signal to 0.
+            self._ignore_cancel_signal = True
             await self._kill()
 
         except Exception as ex:

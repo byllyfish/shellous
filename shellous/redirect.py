@@ -134,6 +134,11 @@ StdoutType: TypeAlias = (
 )
 
 
+class OutputInterrupted(Exception):
+    """Internal exception raised and caught to indicate that output redirection
+    was interrupted cleanly."""
+
+
 async def _drain(stream: asyncio.StreamWriter):
     "Safe drain method."
     try:
@@ -227,9 +232,19 @@ async def write_asyncgen(
             data = value
         else:
             raise ValueError(f"Unexpected yield from async generator: {value!r}")
+
         ends_with_newline = data.endswith(b"\n")
+
+        # Break loop if stream is already closing (i.e. broken pipe).
+        if stream.is_closing():
+            break
         stream.write(data)
-        await stream.drain()
+
+        try:
+            await stream.drain()
+        except (BrokenPipeError, ConnectionResetError):
+            # If the connection is lost, terminate the loop.
+            break
 
     await _check_eof(eof, stream, ends_with_newline)
 
@@ -344,14 +359,14 @@ async def copy_asyncgen(
             await dest.asend(data)
 
         await dest.aclose()
-    except StopAsyncIteration:
+    except StopAsyncIteration as ex:
         # If the async generator exits early, `asend` raises a `StopAsyncIteration`
         # exception. We treat this as a request to exit the process early.
-        # Raising a CancelledError exception will cause shellous to close
+        # Raising an `OutputInterruptedError` exception will cause shellous to close
         # the process cleanly. N.B. the async generator should be written to
         # continue processing (and ignoring) bytes if it's termination should
         # not terminate the command; it should be written as an infinite loop.
-        raise asyncio.CancelledError()
+        raise OutputInterrupted() from ex
 
 
 @log_method(LOG_DETAIL)

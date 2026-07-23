@@ -674,8 +674,9 @@ async def test_redirect_stdout_async_generator_early_exit():
 
     async def _input():
         yield "abc\n"  # chunk 1
-        await asyncio.sleep(0.5)
-        yield "def\n"  # chunk 2
+        while True:
+            await asyncio.sleep(0.5)
+            yield "def\n"  # infinite chunks...
 
     async def _output(buf: bytearray):
         data = yield  # chunk 1 only
@@ -717,6 +718,55 @@ async def test_redirect_stdout_async_generator_closed(echo_cmd):
     # Second time fails because generator object already closed.
     with pytest.raises(ValueError, match="Async generator output is closed"):
         await cmd
+
+
+async def test_pipe_redirect_stdout_async_generator_early_exit():
+    "Test pipe writing stdout to an async generator that exits early."
+
+    async def _input():
+        yield "abc\n"  # chunk 1
+        while True:
+            await asyncio.sleep(1.0)
+            yield "def\n"  # infinite chunks...
+
+    async def _output(buf: bytearray):
+        data = yield  # chunk 1 only
+        buf.extend(data)
+
+    buf = bytearray()
+    cmd = _input() | sh("cat") | sh("cat") | sh("cat") | _output(buf)
+    result = await cmd.result()
+    assert buf == b"abc\n"
+    assert result.output == ""
+    # NOTE: The default behavior is `pipefail`.
+    assert _is_broken_pipe(result.exit_code)
+
+
+async def test_pipe_head_early_exit():
+    "Test pipe writing to unix `head` tool that exits early."
+
+    async def _input():
+        yield "abc\n"  # chunk 1
+        while True:
+            await asyncio.sleep(0.1)
+            yield "def\n"  # infinite chunks...
+
+    cmd = _input() | sh("cat") | sh("head", "-n", 1)
+    result = await cmd.result()
+    assert result.output == "abc\n"
+    # NOTE: The default behavior is `pipefail`
+    assert _is_broken_pipe(result.exit_code)
+
+
+def _is_broken_pipe(exit_code: int) -> bool:
+    "Return true if `exit_code` matches the broken pipe error."
+    if sys.platform == "win32":
+        _SIGPIPE_WIN32 = 0xD00  # 0xD00 = SIGPIPE(13) << 8
+        return exit_code == _SIGPIPE_WIN32
+
+    from signal import SIGPIPE
+
+    return exit_code == -SIGPIPE
 
 
 async def test_broken_pipe():
@@ -1740,3 +1790,14 @@ async def test_process_pool_executor(echo_cmd, report_children):
     from multiprocessing import resource_tracker
 
     resource_tracker._resource_tracker._stop()  # pyright: ignore[reportAttributeAccessIssue]
+
+
+def test_cross_platform_executables_exist():
+    """Test that executables used in this test module exist on all platforms.
+
+    On Windows test hosts, these are in included with a git.exe install."""
+    cmds = ["echo", "cat", "head"]
+    for cmd in cmds:
+        result = sh.find_command(cmd)
+        assert result is not None, cmd
+        print(repr(result))

@@ -1670,26 +1670,25 @@ async def test_pty_redirect_stdout_asyncgen_early_exit():
 
     async def _input():
         yield "abc\n"  # chunk 1
-        await asyncio.sleep(0.5)
-        yield "def\n"  # chunk 2
+        while True:
+            await asyncio.sleep(1.0)
+            yield "def\n"  # chunk 2
 
     async def _output(buf: bytearray):
-        data = yield  # chunk 1 only
-        buf.extend(data)
+        while True:
+            data = yield
+            buf.extend(data)
+            pos = buf.find(b"\r\n")
+            if pos >= 0:
+                buf[pos + 2 :] = b""
+                return  # exit after first line is received
 
     buf = bytearray()
     result = await (_input() | sh("cat") | _output(buf)).set(pty=True)
     assert result == ""
 
     output = buf.replace(b"^D\x08\x08", b"")
-    if _is_codecov():
-        # FIXME: Under code coverage, some of the output is sometimes truncated?
-        # Is there a timing issue when cancelling the process that prevents the
-        # rest of the output from being read from the terminal driver? Check
-        # if issue can be replicated outside of code coverage. 2026-07-06
-        assert output == b"abc\r\nabc\r\n" or b"abc\r\n"
-    else:
-        assert output == b"abc\r\nabc\r\n"
+    assert output == b"abc\r\n"
 
 
 @pytest.mark.skipif(_is_uvloop(), reason="uvloop")
