@@ -68,6 +68,9 @@ elif SHELLOUS_CMD == "error":
 
     sys.stderr.buffer.flush()
 
+elif SHELLOUS_CMD == "cwd":
+    _write(os.getcwd().encode())
+
 else:
     raise NotImplementedError
 

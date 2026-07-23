@@ -3,12 +3,14 @@
 # pylint: disable=redefined-outer-name,invalid-name
 
 import asyncio
+import contextlib
 import hashlib
 import io
 import logging
 import os
 import sys
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 import asyncstdlib as asl
 import pytest
@@ -62,7 +64,7 @@ def python_script():
     The script behaves like common versions of `echo`, `cat`, `sleep` or `env`
     depending on environment variables.
     """
-    source_file = Path("tests/python_script.py")
+    source_file = Path("tests/python_script.py").resolve()
     return sh(sys.executable, "-u", source_file).stderr(sh.INHERIT)
 
 
@@ -104,6 +106,11 @@ def count_cmd(python_script):
 @pytest.fixture
 def error_cmd(python_script):
     return python_script.env(SHELLOUS_CMD="error").set(alt_name="error")
+
+
+@pytest.fixture
+def cwd_cmd(python_script):
+    return python_script.env(SHELLOUS_CMD="cwd").set(alt_name="cwd")
 
 
 async def test_echo(echo_cmd):
@@ -159,6 +166,11 @@ async def test_bulk_prompt(bulk_cmd, _limit_logging):
 async def test_count(count_cmd):
     result = await count_cmd(5)
     assert result == "1\n2\n3\n4\n5\n"
+
+
+async def test_cwd(cwd_cmd):
+    result = await cwd_cmd
+    assert result == os.getcwd()
 
 
 async def test_error(error_cmd):
@@ -1801,3 +1813,47 @@ def test_cross_platform_executables_exist():
         result = sh.find_command(cmd)
         assert result is not None, cmd
         print(repr(result))
+
+
+@contextlib.contextmanager
+def _working_dir(path: Path):
+    "Context manager to set working directory."
+    saved_cwd = Path.cwd()
+    try:
+        os.chdir(path)
+        yield
+    finally:
+        os.chdir(saved_cwd)
+
+
+async def test_cwd_option(cwd_cmd):
+    "Test the `cwd` option using a temporary directory."
+    with TemporaryDirectory() as tmpdir:
+        tmp_path = Path(tmpdir).resolve() / "test_cwd_xyz"
+        tmp_path.mkdir()
+        tmp_str = str(tmp_path)
+
+        # Test using `Path` object.
+        out = await cwd_cmd.set(cwd=tmp_path)
+        assert out == tmp_str
+
+        # Test using `str` object.
+        out = await cwd_cmd.set(cwd=tmp_str)
+        assert out == tmp_str
+
+        # Test using `bytes` object (Note: Isn't typed this way.)
+        out = await cwd_cmd.set(cwd=tmp_str.encode())
+        assert out == tmp_str
+
+        # Test using a non-existant directory.
+        with pytest.raises(FileNotFoundError, match="does_not_exist"):
+            await cwd_cmd.set(cwd=tmp_path / "does_not_exist")
+
+        # Test using invalid path type.
+        with pytest.raises(TypeError, match="Path"):
+            await cwd_cmd.set(cwd=7)
+
+        # Test using relative path for `cwd`.
+        with _working_dir(tmp_path.parent):
+            out = await cwd_cmd.set(cwd="test_cwd_xyz")
+            assert out == tmp_str

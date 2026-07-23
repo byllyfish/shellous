@@ -306,6 +306,7 @@ def test_dataclasses():
         "cancel_timeout",
         "close_fds",
         "coerce_arg",
+        "cwd",
         "encoding",
         "env",
         "error",
