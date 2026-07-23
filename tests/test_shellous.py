@@ -64,7 +64,7 @@ def python_script():
     The script behaves like common versions of `echo`, `cat`, `sleep` or `env`
     depending on environment variables.
     """
-    source_file = Path("tests/python_script.py").resolve()
+    source_file = Path("tests/python_script.py").absolute()
     return sh(sys.executable, "-u", source_file).stderr(sh.INHERIT)
 
 
@@ -1857,3 +1857,31 @@ async def test_cwd_option(cwd_cmd):
         with _working_dir(tmp_path.parent):
             out = await cwd_cmd.set(cwd="test_cwd_xyz")
             assert out == tmp_str
+
+
+async def test_cwd_cat_cmd_arg(cat_cmd):
+    "Test the `cwd` option to cat a temporary file in specified directory."
+    with TemporaryDirectory() as tmpdir:
+        tmp_dir = Path(tmpdir)
+        tmp_file = tmp_dir / "test_file1"
+        tmp_file.write_bytes(b"abcdef")
+
+        out = await cat_cmd("./test_file1").set(cwd=tmp_dir)
+        assert out == "abcdef"
+
+
+async def test_cwd_executable_relative_path():
+    "Test the cwd option when the executable uses a relative path."
+    cmd = sh.find_command("echo")
+    assert cmd is not None
+
+    with _working_dir(cmd.parent):
+        out = await sh("./echo", "abc")
+        assert out.rstrip() == "abc"
+
+        with TemporaryDirectory() as tmpdir:
+            # When using `cwd`, the relative path should still be resolved using
+            # the parent Python process current working directory. It should
+            # not use the value of `cwd`.
+            out = await sh("./echo", "abc").set(cwd=tmpdir)
+            assert out.rstrip() == "abc"

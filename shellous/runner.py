@@ -291,15 +291,24 @@ class _RunOptions:
         """
         options = self.command.options
         executable = self.pos_args[0]
+        cwd = options.cwd
+
         if not os.path.dirname(executable):
+            # Resolve path to executable using PATH.
             found_executable = options.which(executable)
             if found_executable is None:
                 raise FileNotFoundError(executable)
             self.pos_args[0] = found_executable
+        elif cwd and not os.path.isabs(executable):
+            # If `cwd`is set, make sure that executable path is absolute.
+            # Without this adjustment, POSIX systems will resolve a relative
+            # executable path using `cwd`, but Windows will use the process
+            # current working directory.
+            self.pos_args[0] = os.path.abspath(executable)
 
         # Set current working directory, if specified.
-        if options.cwd is not None:
-            self.kwd_args["cwd"] = os.path.realpath(options.cwd, strict=True)
+        if cwd is not None:
+            self.kwd_args["cwd"] = os.path.abspath(cwd)
 
     def _setup_input(self, input_: Any, close: bool, encoding: str):
         "Set up process input."

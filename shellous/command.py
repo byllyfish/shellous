@@ -347,7 +347,7 @@ class CmdContext(Generic[_RT]):
         self,
         *,
         path: Unset[str | None] = _UNSET,
-        cwd: Unset[Path | None] = _UNSET,
+        cwd: Unset[Path | str | None] = _UNSET,
         env: Unset[dict[str, Any]] = _UNSET,
         inherit_env: Unset[bool] = _UNSET,
         encoding: Unset[str] = _UNSET,
@@ -501,7 +501,7 @@ class Command(Generic[_RT]):
         self,
         *,
         path: Unset[str | None] = _UNSET,
-        cwd: Unset[Path | None] = _UNSET,
+        cwd: Unset[Path | str | None] = _UNSET,
         env: Unset[dict[str, Any]] = _UNSET,
         inherit_env: Unset[bool] = _UNSET,
         encoding: Unset[str] = _UNSET,
@@ -530,7 +530,7 @@ class Command(Generic[_RT]):
         Search path for locating command executable. By default, `path` is None
         which causes shellous to rely on the `PATH` environment variable.
 
-        **cwd** (Path | None) default=None<br>
+        **cwd** (Path | str | None) default=None<br>
         Set current working directory for running subprocess. The default of
         None causes the process to inherit the current working directory from
         the parent Python process. The `cwd` setting does not affect how
