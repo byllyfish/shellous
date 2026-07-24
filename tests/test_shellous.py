@@ -279,9 +279,9 @@ async def test_pipeline_error_only():
     assert out[0].rstrip() == "abc"
 
 
-async def test_nonexistant_cmd():
+async def test_nonexistent_cmd():
     with pytest.raises(FileNotFoundError):
-        await sh("non_existant_command").set(_return_result=True)
+        await sh("non_existent_command").set(_return_result=True)
 
 
 async def test_nonexecutable_cmd():
@@ -1142,7 +1142,7 @@ async def test_pathlike_args_and_which():
     found = cmd.options.which(Path("echo"))
     assert found and isinstance(found, str)
 
-    assert cmd.options.which(Path("12345_non_existant")) is None
+    assert cmd.options.which(Path("12345_non_existent")) is None
 
 
 async def test_command_context_manager_default():
@@ -1845,10 +1845,6 @@ async def test_cwd_option(cwd_cmd):
         out = await cwd_cmd.set(cwd=tmp_str.encode())
         assert out == tmp_str
 
-        # Test using a non-existant directory.
-        with pytest.raises(FileNotFoundError, match="does_not_exist"):
-            await cwd_cmd.set(cwd=tmp_path / "does_not_exist")
-
         # Test using invalid path type.
         with pytest.raises(TypeError, match="Path"):
             await cwd_cmd.set(cwd=7)
@@ -1857,6 +1853,17 @@ async def test_cwd_option(cwd_cmd):
         with _working_dir(tmp_path.parent):
             out = await cwd_cmd.set(cwd="test_cwd_xyz")
             assert out == tmp_str
+
+
+async def test_cwd_non_existent(cwd_cmd):
+    "Test the `cwd` option with a non-existent directory."
+    with TemporaryDirectory() as tmpdir:
+        tmp_path = Path(tmpdir)
+
+        # On Windows, the error is "NotADirectoryError".
+        exc = NotADirectoryError if sys.platform == "win32" else FileNotFoundError
+        with pytest.raises(exc):
+            await cwd_cmd.set(cwd=tmp_path / "does_not_exist")
 
 
 async def test_cwd_cat_cmd_arg(cat_cmd):

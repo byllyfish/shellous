@@ -189,7 +189,7 @@ async def test_custom_echo_shorthand():
 
 
 async def test_missing_executable():
-    "Test invoking a non-existant command raises a FileNotFoundError."
+    "Test invoking a non-existent command raises a FileNotFoundError."
     with pytest.raises(FileNotFoundError):
         await sh("/bin/does_not_exist")
 
@@ -559,14 +559,14 @@ async def test_pipeline_single_cmd():
 
 
 async def test_pipeline_invalid_cmd1():
-    pipe = sh(" non_existant ", "xyz") | sh("tr", "[:lower:]", "[:upper:]")
+    pipe = sh(" non_existent ", "xyz") | sh("tr", "[:lower:]", "[:upper:]")
     # uvloop's error message does not include filename.
     with pytest.raises(FileNotFoundError):
         await pipe
 
 
 async def test_pipeline_invalid_cmd2():
-    pipe = sh("echo", "abc") | sh(" non_existant ", "xyz")
+    pipe = sh("echo", "abc") | sh(" non_existent ", "xyz")
     # uvloop's error message does not include filename.
     with pytest.raises(FileNotFoundError):
         await pipe

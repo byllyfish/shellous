@@ -92,7 +92,7 @@ def test_repr():
     assert "SECRET" not in result
 
 
-def test_non_existant():
+def test_non_existent():
     "Commands can be created with a bogus program name."
     cmd = sh("/bogus/zzz")
     assert cmd.args == ("/bogus/zzz",)
