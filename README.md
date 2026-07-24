@@ -544,6 +544,7 @@ You can retrieve an option from `cmd` with `cmd.options.<option>`. For example, 
 | Option | Description |
 | --- | --- |
 | path | Search path to use instead of the `PATH` environment variable. (Default=None) |
+| cwd | Override current working directory for the process. By default, the process inherits the current working directory of its parent process. (Default=None)
 | env | Additional environment variables to pass to the command. (Default={}) |
 | inherit_env | True if command should inherit the environment variables from the current process. (Default=True) |
 | encoding | Text encoding of input/output streams. You can specify an error handling scheme by including it after a space, e.g. "ascii backslashreplace". (Default="utf-8 strict") |
