@@ -1883,6 +1883,7 @@ async def test_cwd_executable_relative_path():
     assert cmd is not None
 
     with _working_dir(cmd.parent):
+        # Python working directory is set to where `echo` is located.
         out = await sh("./echo", "abc")
         assert out.rstrip() == "abc"
 
@@ -1892,3 +1893,32 @@ async def test_cwd_executable_relative_path():
             # not use the value of `cwd`.
             out = await sh("./echo", "abc").set(cwd=tmpdir)
             assert out.rstrip() == "abc"
+
+
+async def test_cwd_does_not_affect_stdin_and_stdout():
+    "Test that the cwd option does not affect the stdin/stdout."
+    with TemporaryDirectory() as tmpdir:
+        tmp_dir = Path(tmpdir)
+        sub_dir = tmp_dir / "subdir"
+        sub_dir.mkdir()
+
+        out_file = tmp_dir / "out_file.txt"
+        in_file = tmp_dir / "in_file.txt"
+        in_file.write_bytes(b"12345")
+
+        cmd = Path("in_file.txt") | sh("cat") | Path("out_file.txt")
+
+        # Does not work because cwd doesn't affect stdin/stdout and the files
+        # aren't in sub_dir.
+        with _working_dir(sub_dir):
+            with pytest.raises(FileNotFoundError):
+                await cmd.set(cwd=tmp_dir)
+
+        # Make sure out_file.txt was never created.
+        assert not (sub_dir / "out_file.txt").exists()
+
+        # Works when we set the Python working directory itself to tmp_dir.
+        with _working_dir(tmp_dir):
+            out = await cmd.set(cwd=tmp_dir)
+            assert out == ""
+            assert out_file.read_bytes() == b"12345"
