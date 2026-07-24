@@ -142,15 +142,7 @@ class _RunOptions:
 
             self._setup_redirects()
             self._setup_pass_fds()
-
-            # If executable does not include an absolute/relative directory,
-            # resolve it using PATH.
-            executable = self.pos_args[0]
-            if not os.path.dirname(executable):
-                found_executable = _cmd.options.which(executable)
-                if found_executable is None:
-                    raise FileNotFoundError(executable)
-                self.pos_args[0] = found_executable
+            self._setup_executable()
 
         except Exception as ex:
             if LOG_DETAIL:
@@ -290,6 +282,33 @@ class _RunOptions:
         elif "close_fds" not in self.kwd_args:
             # Only set close_fds if it is not already set.
             self.kwd_args["close_fds"] = options.close_fds
+
+    def _setup_executable(self):
+        """Set executable's correct path and current working directory.
+
+        If executable does not include an absolute/relative directory,
+        resolve it using PATH.
+        """
+        options = self.command.options
+        executable = self.pos_args[0]
+        cwd = options.cwd
+
+        if not os.path.dirname(executable):
+            # Resolve path to executable using PATH.
+            found_executable = options.which(executable)
+            if found_executable is None:
+                raise FileNotFoundError(executable)
+            self.pos_args[0] = found_executable
+        elif cwd and not os.path.isabs(executable):
+            # If `cwd`is set, make sure that executable path is absolute.
+            # Without this adjustment, POSIX systems will resolve a relative
+            # executable path using `cwd`, but Windows will use the process
+            # current working directory.
+            self.pos_args[0] = os.path.abspath(executable)
+
+        # Set current working directory, if specified.
+        if cwd is not None:
+            self.kwd_args["cwd"] = os.path.abspath(cwd)
 
     def _setup_input(self, input_: Any, close: bool, encoding: str):
         "Set up process input."

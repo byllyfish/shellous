@@ -3,12 +3,14 @@
 # pylint: disable=redefined-outer-name,invalid-name
 
 import asyncio
+import contextlib
 import hashlib
 import io
 import logging
 import os
 import sys
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 import asyncstdlib as asl
 import pytest
@@ -62,7 +64,7 @@ def python_script():
     The script behaves like common versions of `echo`, `cat`, `sleep` or `env`
     depending on environment variables.
     """
-    source_file = Path("tests/python_script.py")
+    source_file = Path("tests/python_script.py").absolute()
     return sh(sys.executable, "-u", source_file).stderr(sh.INHERIT)
 
 
@@ -104,6 +106,11 @@ def count_cmd(python_script):
 @pytest.fixture
 def error_cmd(python_script):
     return python_script.env(SHELLOUS_CMD="error").set(alt_name="error")
+
+
+@pytest.fixture
+def cwd_cmd(python_script):
+    return python_script.env(SHELLOUS_CMD="cwd").set(alt_name="cwd")
 
 
 async def test_echo(echo_cmd):
@@ -159,6 +166,11 @@ async def test_bulk_prompt(bulk_cmd, _limit_logging):
 async def test_count(count_cmd):
     result = await count_cmd(5)
     assert result == "1\n2\n3\n4\n5\n"
+
+
+async def test_cwd(cwd_cmd):
+    result = await cwd_cmd
+    assert result == os.getcwd()
 
 
 async def test_error(error_cmd):
@@ -267,9 +279,9 @@ async def test_pipeline_error_only():
     assert out[0].rstrip() == "abc"
 
 
-async def test_nonexistant_cmd():
+async def test_nonexistent_cmd():
     with pytest.raises(FileNotFoundError):
-        await sh("non_existant_command").set(_return_result=True)
+        await sh("non_existent_command").set(_return_result=True)
 
 
 async def test_nonexecutable_cmd():
@@ -1130,7 +1142,7 @@ async def test_pathlike_args_and_which():
     found = cmd.options.which(Path("echo"))
     assert found and isinstance(found, str)
 
-    assert cmd.options.which(Path("12345_non_existant")) is None
+    assert cmd.options.which(Path("12345_non_existent")) is None
 
 
 async def test_command_context_manager_default():
@@ -1801,3 +1813,112 @@ def test_cross_platform_executables_exist():
         result = sh.find_command(cmd)
         assert result is not None, cmd
         print(repr(result))
+
+
+@contextlib.contextmanager
+def _working_dir(path: Path):
+    "Context manager to set working directory."
+    saved_cwd = Path.cwd()
+    try:
+        os.chdir(path)
+        yield
+    finally:
+        os.chdir(saved_cwd)
+
+
+async def test_cwd_option(cwd_cmd):
+    "Test the `cwd` option using a temporary directory."
+    with TemporaryDirectory() as tmpdir:
+        tmp_path = Path(tmpdir).resolve() / "test_cwd_xyz"
+        tmp_path.mkdir()
+        tmp_str = str(tmp_path)
+
+        # Test using `Path` object.
+        out = await cwd_cmd.set(cwd=tmp_path)
+        assert out == tmp_str
+
+        # Test using `str` object.
+        out = await cwd_cmd.set(cwd=tmp_str)
+        assert out == tmp_str
+
+        # Test using `bytes` object (Note: Isn't typed this way.)
+        out = await cwd_cmd.set(cwd=tmp_str.encode())
+        assert out == tmp_str
+
+        # Test using invalid path type.
+        with pytest.raises(TypeError, match="Path"):
+            await cwd_cmd.set(cwd=7)
+
+        # Test using relative path for `cwd`.
+        with _working_dir(tmp_path.parent):
+            out = await cwd_cmd.set(cwd="test_cwd_xyz")
+            assert out == tmp_str
+
+
+async def test_cwd_non_existent(cwd_cmd):
+    "Test the `cwd` option with a non-existent directory."
+    with TemporaryDirectory() as tmpdir:
+        tmp_path = Path(tmpdir)
+
+        # On Windows, the error is "NotADirectoryError".
+        exc = NotADirectoryError if sys.platform == "win32" else FileNotFoundError
+        with pytest.raises(exc):
+            await cwd_cmd.set(cwd=tmp_path / "does_not_exist")
+
+
+async def test_cwd_cat_cmd_arg(cat_cmd):
+    "Test the `cwd` option to cat a temporary file in specified directory."
+    with TemporaryDirectory() as tmpdir:
+        tmp_dir = Path(tmpdir)
+        tmp_file = tmp_dir / "test_file1"
+        tmp_file.write_bytes(b"abcdef")
+
+        out = await cat_cmd("./test_file1").set(cwd=tmp_dir)
+        assert out == "abcdef"
+
+
+async def test_cwd_executable_relative_path():
+    "Test the cwd option when the executable uses a relative path."
+    cmd = sh.find_command("echo")
+    assert cmd is not None
+
+    with _working_dir(cmd.parent):
+        # Python working directory is set to where `echo` is located.
+        out = await sh("./echo", "abc")
+        assert out.rstrip() == "abc"
+
+        with TemporaryDirectory() as tmpdir:
+            # When using `cwd`, the relative path should still be resolved using
+            # the parent Python process current working directory. It should
+            # not use the value of `cwd`.
+            out = await sh("./echo", "abc").set(cwd=tmpdir)
+            assert out.rstrip() == "abc"
+
+
+async def test_cwd_does_not_affect_stdin_and_stdout():
+    "Test that the cwd option does not affect the stdin/stdout."
+    with TemporaryDirectory() as tmpdir:
+        tmp_dir = Path(tmpdir)
+        sub_dir = tmp_dir / "subdir"
+        sub_dir.mkdir()
+
+        out_file = tmp_dir / "out_file.txt"
+        in_file = tmp_dir / "in_file.txt"
+        in_file.write_bytes(b"12345")
+
+        cmd = Path("in_file.txt") | sh("cat") | Path("out_file.txt")
+
+        # Does not work because cwd doesn't affect stdin/stdout and the files
+        # aren't in sub_dir.
+        with _working_dir(sub_dir):
+            with pytest.raises(FileNotFoundError):
+                await cmd.set(cwd=tmp_dir)
+
+        # Make sure out_file.txt was never created.
+        assert not (sub_dir / "out_file.txt").exists()
+
+        # Works when we set the Python working directory itself to tmp_dir.
+        with _working_dir(tmp_dir):
+            out = await cmd.set(cwd=tmp_dir)
+            assert out == ""
+            assert out_file.read_bytes() == b"12345"

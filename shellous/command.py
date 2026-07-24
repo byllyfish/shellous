@@ -98,6 +98,9 @@ class Options:  # pylint: disable=too-many-instance-attributes
     path: str | None = None
     "Optional search path to use instead of PATH environment variable."
 
+    cwd: Path | str | None = None
+    "Current working directory for running process."
+
     env: EnvironmentDict | None = field(default=None, repr=False)
     "Additional environment variables for command."
 
@@ -344,6 +347,7 @@ class CmdContext(Generic[_RT]):
         self,
         *,
         path: Unset[str | None] = _UNSET,
+        cwd: Unset[Path | str | None] = _UNSET,
         env: Unset[dict[str, Any]] = _UNSET,
         inherit_env: Unset[bool] = _UNSET,
         encoding: Unset[str] = _UNSET,
@@ -497,6 +501,7 @@ class Command(Generic[_RT]):
         self,
         *,
         path: Unset[str | None] = _UNSET,
+        cwd: Unset[Path | str | None] = _UNSET,
         env: Unset[dict[str, Any]] = _UNSET,
         inherit_env: Unset[bool] = _UNSET,
         encoding: Unset[str] = _UNSET,
@@ -524,6 +529,13 @@ class Command(Generic[_RT]):
         **path** (str | None) default=None<br>
         Search path for locating command executable. By default, `path` is None
         which causes shellous to rely on the `PATH` environment variable.
+
+        **cwd** (Path | str | None) default=None<br>
+        Set current working directory for running subprocess. The default of
+        None causes the process to inherit the current working directory from
+        the parent Python process. The `cwd` setting does not affect how
+        relative paths to the executable or stdin/stdout/stderr are resolved by
+        the parent Python process.
 
         **env** (dict[str, str]) default={}<br>
         Set the environment variables for the subprocess. If `inherit_env` is
