@@ -19,21 +19,39 @@ asyncio.run(main())
 ## Benefits
 
 - Run programs asynchronously in a single line.
+
 - Redirect stdin, stdout and stderr to files, memory buffers, async streams or loggers.
+
 - Iterate asynchronously over subprocess output.
+
 - Set timeouts and reliably cancel running processes.
+
 - Run a program with a pseudo-terminal (pty).
+
 - Use send() and expect() to manually control a subprocess.
+
 - Construct [pipelines](https://en.wikipedia.org/wiki/Pipeline_(Unix)) and use [process substitution](https://en.wikipedia.org/wiki/Process_substitution) directly from Python (no shell required).
+
 - Runs on Linux, MacOS, FreeBSD and Windows.
+
 - Monitor processes being started and stopped with `audit_callback` API.
 
 ## Requirements
 
 - Requires Python 3.10 or later.
+
 - Requires an asyncio event loop.
-- Pseudo-terminals require a Unix system.
+
+- Pseudo-terminals require a Unix system. Currently not compatible with `uvloop`.
+
 - Process substitution requires a Unix system with /dev/fd support.
+
+  | Feature | Linux/macOS | Windows | FreeBSD | [uvloop] |
+  | ------- | ----------- | ------- | ------- | ------ |
+  | Execution and Redirection | ✅ | ✅ | ✅ | ✅ |
+  | Pipelines (`\|`) | ✅ | ✅ | ✅ | ✅ |
+  | Pseudo-Terminal (pty) | ✅ | ❌ | ✅ | ❌ |
+  | Process Substitution | ✅ | ❌ | ✅ with /dev/fd | ✅ |
 
 ## Running a Command
 
@@ -407,7 +425,7 @@ A pipeline returns a `Result` if the last command in the pipeline has the `.resu
 options like `encoding` for a Pipeline, set them on the last command.
 
 ```pycon
->>> pipe = sh("ls") | sh("grep", "README").result
+>>> pipe = sh("ls") | sh.result("grep", "README")
 >>> await pipe
 Result(exit_code=0, output_bytes=b'README.md\n', error_bytes=b'', cancelled=False, encoding='utf-8')
 ```
@@ -433,11 +451,11 @@ command: `grep README <(ls)`.
 'README.md\n'
 ```
 
-Use `.writable` to write to a command instead.
+Use the `.writable` modifier to write to a command instead.
 
 ```pycon
 >>> buf = bytearray()
->>> cmd = sh("ls") | sh("tee", sh("grep", "README").writable | buf) | sh.DEVNULL
+>>> cmd = sh("ls") | sh("tee", sh.writable("grep", "README") | buf) | sh.DEVNULL
 >>> await cmd
 ''
 >>> buf
@@ -588,6 +606,33 @@ are also stored in the `Options` object. To change these, use the `.stdin()`, `.
 | error_append | True if standard error should be open for append. |
 | error_close | True if standard error should be closed after the process is launched. |
 
+## Error Handling
+
+This table summarizes the exceptions that Shellous can raise and where they occur:
+
+| Exception | When it occurs... |
+| --------- | ----------------- |
+| shellous.ResultError | Non-zero exit code when not using the `.result` modifier.<br />Use the `exit_codes` option to ignore specific non-zero exit codes. |
+| TimeoutError | Triggered when process execution exceeds `timeout`. |
+| CancelledError | Raised when parent task is cancelled. |
+| FileNotFoundError, PermissionError | Raised if binary path resolution fails, or input path doesn't exist. |
+
+### Result Properties
+
+The `Result` object records the following properties of a completed command:
+
+| Attribute | Description |
+| --------- | ----------- |
+| exit_code | Exit code of the command. Negative value indicates process was terminated by a Unix signal. |
+| exit_signal | Signal that caused the command to exit, or None if not a Unix signal. | 
+| output | Standard output of the command (as interpreted by `encoding`). Will be "" if the command's stdout was redirected. |
+| output_bytes | Standard output of the command as bytes. Will be b"" if the command's stdout was redirected. |
+| error | Standard error of the command (as interpreted by `encoding`). Will be "" if the command's stderr was redirected. The `error_limit` option may limit the amount of standard error stored. |
+| error_bytes | Standard error of the command as bytes. Will be b"" if hte command's stderr was redirected. The `error_limit` option may limit the amount of standard error stored. |
+| encoding | The command's encoding. Used to convert `output_bytes/error_bytes` to strings. |
+| cancelled | True if command was cancelled. |
+
+
 ## Type Checking
 
 Shellous fully supports PEP 484 type hints.
@@ -639,3 +684,15 @@ Shellous uses the built-in Python `logging` module. After enabling these options
 the `shellous` logger will display log messages at the `INFO` level.
 
 Without these options enabled, Shellous generates almost no log messages.
+
+## Potential Pitfalls
+
+This section summarizes the things you have to watch out for when using shellous.
+
+- **Operator Precedence**: Wrap `|` expressions in parentheses when awaiting: `await ("foo" | sh("grep", "foo"))`. The `await` operator has a higher precedence than `|`.
+
+- **Command Reuse vs Async Generators**: Command definitions are immutable and reuseable, but async generator arguments passed into commands cannot be reused.
+
+- **Stream Deadlocks**: When using `async with` in "raw" mode, your script might deadlock if you don't simultaneously read and write. Use `Runner.create_task()` to schedule a concurrent task to assist with these asynchronous reads/writes. Or, use the `Prompt` API which will do this for you.
+
+
