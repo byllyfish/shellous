@@ -89,8 +89,7 @@ You can wrap your commands in a function to improve type safety:
 
 The type hint `Command[str]` indicates that the command returns a `str`.
 
-[^immutable]: If you use an async generator object for `stdin` or `stdout`, the command cannot run more than once. In Python, async 
-generator objects cannot be reused. Shellous will detect this case and raise an error.
+[^immutable]: If you use an async generator object for `stdin` or `stdout`, the command cannot run more than once. Shellous will raise an error if you attempt to reuse an async generator object.
 
 ### Arguments
 
@@ -197,8 +196,7 @@ streams `run.stdin` and `run.stdout` would be
 The return value of `run.result()` is a `Result` object. Depending on the command settings, this 
 function may raise a `ResultError` on a non-zero exit code.
 
-> :warning: When reading or writing individual streams, you are responsible for managing reads and writes so they don't
-deadlock. You may use `run.create_task` to schedule a concurrent task.
+> [!WARNING] When reading or writing individual streams, you are responsible for managing reads and writes so they don't deadlock. You may use `run.create_task` to schedule a concurrent task.
 
 You can also use `async with` to run a server. When you do so, you must tell the server
 to stop using `run.cancel()`. Otherwise, the context manager will wait forever for the process to exit.
@@ -217,7 +215,7 @@ method returns an asynchronous context manager (the `Prompt` class) that facilit
 writing strings and matching regular expressions.
 
 ```python
-cmd = sh("cat").set(pty=True)
+cmd = sh.pty("cat")
 
 async with cmd.prompt() as client:
   await client.send("abc")
@@ -233,9 +231,9 @@ Here is another example of controlling a bash co-process running in a docker con
 async def list_packages():
     "Run bash in an ubuntu docker container and list packages."
     bash_prompt = re.compile("root@[0-9a-f]+:/[^#]*# ")
-    cmd = sh("docker", "run", "-it", "--rm", "-e", "TERM=dumb", "ubuntu")
+    cmd = sh.pty("docker", "run", "-it", "--rm", "-e", "TERM=dumb", "ubuntu")
 
-    async with cmd.set(pty=True).prompt(bash_prompt, timeout=3) as cli:
+    async with cmd.prompt(bash_prompt, timeout=3) as cli:
         # Read up to first prompt.
         await cli.expect()
 
@@ -264,8 +262,7 @@ with `|`.
 To redirect to or from a file, use a `pathlib.Path` object. Alternatively, you can redirect input/output
 to a StringIO object, an open file, a Logger, or use a special redirection constant like `sh.DEVNULL`.
 
-> :warning: When combining the redirect operators with `await`, you must use parentheses; `await` has higher
-precedence than `|` and `>>`.
+> [!WARNING] When combining the redirect operators with `await`, you must use parentheses; `await` has higher precedence than `|` and `>>`.
 
 ### Redirecting Standard Input
 

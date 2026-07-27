@@ -60,6 +60,9 @@ from shellous.util import EnvironmentDict, context_aenter, context_aexit
 class _UnsetEnum(enum.Enum):
     UNSET = enum.auto()
 
+    def __repr__(self) -> str:
+        return "UNSET"
+
 
 _UNSET = _UnsetEnum.UNSET
 
