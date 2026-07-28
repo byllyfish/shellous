@@ -387,6 +387,11 @@ class CmdContext(Generic[_RT]):
         return Command(coerce(args, self.options.coerce_arg), self.options)
 
     @property
+    def writable(self) -> "CmdContext[_RT]":
+        "Set `writable` to True."
+        return self.set(_writable=True)
+
+    @property
     def pty(self) -> "CmdContext[_RT]":
         "Set `pty` to true."
         return self.set(pty=True)
