@@ -19,39 +19,28 @@ asyncio.run(main())
 ## Benefits
 
 - Run programs asynchronously in a single line.
-
 - Redirect stdin, stdout and stderr to files, memory buffers, async streams or loggers.
-
 - Iterate asynchronously over subprocess output.
-
 - Set timeouts and reliably cancel running processes.
-
 - Run a program with a pseudo-terminal (pty).
-
 - Use send() and expect() to manually control a subprocess.
-
 - Construct [pipelines](https://en.wikipedia.org/wiki/Pipeline_(Unix)) and use [process substitution](https://en.wikipedia.org/wiki/Process_substitution) directly from Python (no shell required).
-
 - Runs on Linux, MacOS, FreeBSD and Windows.
-
 - Monitor processes being started and stopped with `audit_callback` API.
 
 ## Requirements
 
 - Requires Python 3.10 or later.
-
 - Requires an asyncio event loop.
-
 - Pseudo-terminals require a Unix system. Currently not compatible with `uvloop`.
-
 - Process substitution requires a Unix system with /dev/fd support.
 
-  | Feature | Linux/macOS | Windows | FreeBSD | [uvloop] |
-  | ------- | ----------- | ------- | ------- | ------ |
-  | Execution and Redirection | ✅ | ✅ | ✅ | ✅ |
-  | Pipelines (`\|`) | ✅ | ✅ | ✅ | ✅ |
-  | Pseudo-Terminal (pty) | ✅ | ❌ | ✅ | ❌ |
-  | Process Substitution | ✅ | ❌ | ✅ with /dev/fd | ✅ |
+| Feature | Linux/macOS | Windows | FreeBSD | [uvloop] |
+| ------- | ----------- | ------- | ------- | ------ |
+| Execution and Redirection | ✅ | ✅ | ✅ | ✅ |
+| Pipelines (`\|`) | ✅ | ✅ | ✅ | ✅ |
+| Pseudo-Terminal (pty) | ✅ | ❌ | ✅ | ❌ |
+| Process Substitution | ✅ | ❌ | ✅ with /dev/fd | ✅ |
 
 ## Running a Command
 

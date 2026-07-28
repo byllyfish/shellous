@@ -15,6 +15,10 @@ fi
 pdoc --footer-text "Version $version" -t ci/custom-template -o html/ shellous
 
 # Clean up the set() `shellous.command._UnsetEnum` declarations in the documentation to make them more readable.
-sed -i '' 's#<span class="n">shellous</span><span class="o">\.</span><span class="n">command</span><span class="o">\.</span><span class="n">_UnsetEnum</span>#<span class="n">Unset</span>#g' html/shellous.html
+# Remove the line of badges/shields at the top of the readme.
+sed -i '' \
+  -e 's#<span class="n">shellous</span><span class="o">\.</span><span class="n">command</span><span class="o">\.</span><span class="n">_UnsetEnum</span>#<span class="n">Unset</span>#g' \
+  -e '\#https://img.shields.io/#d' \
+    html/shellous.html
 
 exit 0
