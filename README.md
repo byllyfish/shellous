@@ -140,7 +140,18 @@ else:
 You can retrieve the string value of the standard error using the `.error` property. (By default, only the 
 first 1024 bytes of standard error is stored.)
 
-If a command was terminated by a signal, the `exit_code` will be the negative *signal* number.
+A `Result` object has the following properties:
+
+| Property | Description |
+| --------- | ----------- |
+| exit_code | Exit code of the command. A negative `exit_code` indicates the command was terminated by a Unix signal, and the exit_code is the negative signal number. |
+| exit_signal | Signal that caused the command to exit, or None if not a Unix signal. | 
+| output | Standard output of the command (as interpreted by `encoding`). Will be "" if the command's stdout was redirected. |
+| output_bytes | Standard output of the command as bytes. Will be b"" if the command's stdout was redirected. |
+| error | Standard error of the command (as interpreted by `encoding`). Will be "" if the command's stderr was redirected. The `error_limit` option may limit the amount of standard error stored. |
+| error_bytes | Standard error of the command as bytes. Will be b"" if the command's stderr was redirected. The `error_limit` option may limit the amount of standard error stored. |
+| encoding | The command's encoding. Used to convert `output_bytes/error_bytes` to strings. |
+| cancelled | True if command was cancelled. |
 
 The return value of `sh.result("cmd", ...)` uses the type hint `Command[Result]`.
 
@@ -214,7 +225,8 @@ streams `run.stdin` and `run.stdout` would be
 The return value of `run.result()` is a `Result` object. Depending on the command settings, this 
 function may raise a `ResultError` on a non-zero exit code.
 
-> [!WARNING] When reading or writing individual streams, you are responsible for managing reads and writes so they don't deadlock. You may use `run.create_task` to schedule a concurrent task.
+> [!WARNING]
+> When reading or writing individual streams, you are responsible for managing reads and writes so they don't deadlock. You may use `run.create_task` to schedule a concurrent task.
 
 You can also use `async with` to run a server. When you do so, you must tell the server
 to stop using `run.cancel()`. Otherwise, the context manager will wait forever for the process to exit.
@@ -280,7 +292,8 @@ with `|`.
 To redirect to or from a file, use a `pathlib.Path` object. Alternatively, you can redirect input/output
 to a StringIO object, an open file, a Logger, or use a special redirection constant like `sh.DEVNULL`.
 
-> [!WARNING] When combining the redirect operators with `await`, you must use parentheses; `await` has higher precedence than `|` and `>>`.
+> [!WARNING]
+> When combining the redirect operators with `await`, you must use parentheses; `await` has higher precedence than `|` and `>>`.
 
 ### Redirecting Standard Input
 
@@ -616,22 +629,6 @@ This table summarizes the exceptions that Shellous can raise and where they occu
 | TimeoutError | Triggered when process execution exceeds `timeout`. |
 | CancelledError | Raised when parent task is cancelled. |
 | FileNotFoundError, PermissionError | Raised if binary path resolution fails, or input path doesn't exist. |
-
-### Result Properties
-
-The `Result` object records the following properties of a completed command:
-
-| Attribute | Description |
-| --------- | ----------- |
-| exit_code | Exit code of the command. Negative value indicates process was terminated by a Unix signal. |
-| exit_signal | Signal that caused the command to exit, or None if not a Unix signal. | 
-| output | Standard output of the command (as interpreted by `encoding`). Will be "" if the command's stdout was redirected. |
-| output_bytes | Standard output of the command as bytes. Will be b"" if the command's stdout was redirected. |
-| error | Standard error of the command (as interpreted by `encoding`). Will be "" if the command's stderr was redirected. The `error_limit` option may limit the amount of standard error stored. |
-| error_bytes | Standard error of the command as bytes. Will be b"" if hte command's stderr was redirected. The `error_limit` option may limit the amount of standard error stored. |
-| encoding | The command's encoding. Used to convert `output_bytes/error_bytes` to strings. |
-| cancelled | True if command was cancelled. |
-
 
 ## Type Checking
 
