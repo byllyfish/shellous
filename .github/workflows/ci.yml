@@ -212,3 +212,23 @@ jobs:
         run: |
           . venv/bin/activate
           pytest -vv -s --durations=20 --log-cli-level=DEBUG
+
+  build-docs:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+    - name: Set up Python
+      uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      with:
+        python-version: "3.14"
+    - name: Install dependencies
+      run: |
+        pip3 install pdoc
+    - name: Build Docs
+      run: |
+        ./ci/make_docs.sh
+    - name: Check Docs
+      run: |
+        test -f html/shellous.html
