@@ -156,7 +156,7 @@ class Prompt:
         The `text` parameter is the string that you want to write. Use a `bytes`
         object to send some raw bytes (e.g. to the terminal driver).
 
-        The default line ending is "\n". Use the `end` parameter to change the
+        The default line ending is "\\n". Use the `end` parameter to change the
         line ending. To omit the line ending entirely, specify `end=None`.
 
         Set `no_echo` to True when you are writing a password. When you set
@@ -229,8 +229,7 @@ class Prompt:
         object if one is set. You can use the `timeout` parameter to specify
         a custom timeout in seconds.
 
-        Prompt Patterns
-        ~~~~~~~~~~~~~~~
+        ### Prompt Patterns
 
         The `expect()` method supports matching fixed strings and regular
         expressions. The type of the `prompt` parameter determines the type of
@@ -265,8 +264,7 @@ class Prompt:
         search for the pattern `[a-z]+[^a-z]` which ends with a non-letter
         character.
 
-        Examples
-        ~~~~~~~~
+        ### Examples
 
         Expect an exact string:
 

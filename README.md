@@ -32,8 +32,15 @@ asyncio.run(main())
 
 - Requires Python 3.10 or later.
 - Requires an asyncio event loop.
-- Pseudo-terminals require a Unix system.
+- Pseudo-terminals require a Unix system. Currently not compatible with `uvloop`.
 - Process substitution requires a Unix system with /dev/fd support.
+
+| Feature | Linux/macOS | Windows | FreeBSD | [uvloop] |
+| ------- | ----------- | ------- | ------- | ------ |
+| Execution and Redirection | ✅ | ✅ | ✅ | ✅ |
+| Pipelines (`\|`) | ✅ | ✅ | ✅ | ✅ |
+| Pseudo-Terminal (pty) | ✅ | ❌ | ✅ | ❌ |
+| Process Substitution | ✅ | ❌ | ✅ with /dev/fd | ✅ |
 
 ## Running a Command
 
@@ -89,8 +96,7 @@ You can wrap your commands in a function to improve type safety:
 
 The type hint `Command[str]` indicates that the command returns a `str`.
 
-[^immutable]: If you use an async generator object for `stdin` or `stdout`, the command cannot run more than once. In Python, async 
-generator objects cannot be reused. Shellous will detect this case and raise an error.
+[^immutable]: If you use an async generator object for `stdin` or `stdout`, the command cannot run more than once. Shellous will raise an error if you attempt to reuse an async generator object.
 
 ### Arguments
 
@@ -123,7 +129,18 @@ else:
 You can retrieve the string value of the standard error using the `.error` property. (By default, only the 
 first 1024 bytes of standard error is stored.)
 
-If a command was terminated by a signal, the `exit_code` will be the negative *signal* number.
+A `Result` object has the following properties:
+
+| Property | Description |
+| --------- | ----------- |
+| exit_code | Exit code of the command. A negative `exit_code` indicates the command was terminated by a Unix signal, and the exit_code is the negative signal number. |
+| exit_signal | Signal that caused the command to exit, or None if not a Unix signal. | 
+| output | Standard output of the command (as interpreted by `encoding`). Will be "" if the command's stdout was redirected. |
+| output_bytes | Standard output of the command as bytes. Will be b"" if the command's stdout was redirected. |
+| error | Standard error of the command (as interpreted by `encoding`). Will be "" if the command's stderr was redirected. The `error_limit` option may limit the amount of standard error stored. |
+| error_bytes | Standard error of the command as bytes. Will be b"" if the command's stderr was redirected. The `error_limit` option may limit the amount of standard error stored. |
+| encoding | The command's encoding. Used to convert `output_bytes/error_bytes` to strings. |
+| cancelled | True if command was cancelled. |
 
 The return value of `sh.result("cmd", ...)` uses the type hint `Command[Result]`.
 
@@ -197,8 +214,8 @@ streams `run.stdin` and `run.stdout` would be
 The return value of `run.result()` is a `Result` object. Depending on the command settings, this 
 function may raise a `ResultError` on a non-zero exit code.
 
-> :warning: When reading or writing individual streams, you are responsible for managing reads and writes so they don't
-deadlock. You may use `run.create_task` to schedule a concurrent task.
+> [!WARNING]
+> When reading or writing individual streams, you are responsible for managing reads and writes so they don't deadlock. You may use `run.create_task` to schedule a concurrent task.
 
 You can also use `async with` to run a server. When you do so, you must tell the server
 to stop using `run.cancel()`. Otherwise, the context manager will wait forever for the process to exit.
@@ -217,7 +234,7 @@ method returns an asynchronous context manager (the `Prompt` class) that facilit
 writing strings and matching regular expressions.
 
 ```python
-cmd = sh("cat").set(pty=True)
+cmd = sh.pty("cat")
 
 async with cmd.prompt() as client:
   await client.send("abc")
@@ -233,9 +250,9 @@ Here is another example of controlling a bash co-process running in a docker con
 async def list_packages():
     "Run bash in an ubuntu docker container and list packages."
     bash_prompt = re.compile("root@[0-9a-f]+:/[^#]*# ")
-    cmd = sh("docker", "run", "-it", "--rm", "-e", "TERM=dumb", "ubuntu")
+    cmd = sh.pty("docker", "run", "-it", "--rm", "-e", "TERM=dumb", "ubuntu")
 
-    async with cmd.set(pty=True).prompt(bash_prompt, timeout=3) as cli:
+    async with cmd.prompt(bash_prompt, timeout=3) as cli:
         # Read up to first prompt.
         await cli.expect()
 
@@ -264,8 +281,8 @@ with `|`.
 To redirect to or from a file, use a `pathlib.Path` object. Alternatively, you can redirect input/output
 to a StringIO object, an open file, a Logger, or use a special redirection constant like `sh.DEVNULL`.
 
-> :warning: When combining the redirect operators with `await`, you must use parentheses; `await` has higher
-precedence than `|` and `>>`.
+> [!WARNING]
+> When combining the redirect operators with `await`, you must use parentheses; `await` has higher precedence than `|` and `>>`.
 
 ### Redirecting Standard Input
 
@@ -410,7 +427,7 @@ A pipeline returns a `Result` if the last command in the pipeline has the `.resu
 options like `encoding` for a Pipeline, set them on the last command.
 
 ```pycon
->>> pipe = sh("ls") | sh("grep", "README").result
+>>> pipe = sh("ls") | sh.result("grep", "README")
 >>> await pipe
 Result(exit_code=0, output_bytes=b'README.md\n', error_bytes=b'', cancelled=False, encoding='utf-8')
 ```
@@ -436,11 +453,11 @@ command: `grep README <(ls)`.
 'README.md\n'
 ```
 
-Use `.writable` to write to a command instead.
+Use the `.writable` modifier to write to a command instead.
 
 ```pycon
 >>> buf = bytearray()
->>> cmd = sh("ls") | sh("tee", sh("grep", "README").writable | buf) | sh.DEVNULL
+>>> cmd = sh("ls") | sh("tee", sh.writable("grep", "README") | buf) | sh.DEVNULL
 >>> await cmd
 ''
 >>> buf
@@ -591,6 +608,17 @@ are also stored in the `Options` object. To change these, use the `.stdin()`, `.
 | error_append | True if standard error should be open for append. |
 | error_close | True if standard error should be closed after the process is launched. |
 
+## Error Handling
+
+This table summarizes the exceptions that Shellous can raise and where they occur:
+
+| Exception | When it occurs... |
+| --------- | ----------------- |
+| shellous.ResultError | Non-zero exit code when not using the `.result` modifier.<br />Use the `exit_codes` option to ignore specific non-zero exit codes. |
+| TimeoutError | Triggered when process execution exceeds `timeout`. |
+| CancelledError | Raised when parent task is cancelled. |
+| FileNotFoundError, PermissionError | Raised if binary path resolution fails, or input path doesn't exist. |
+
 ## Type Checking
 
 Shellous fully supports PEP 484 type hints.
@@ -642,3 +670,15 @@ Shellous uses the built-in Python `logging` module. After enabling these options
 the `shellous` logger will display log messages at the `INFO` level.
 
 Without these options enabled, Shellous generates almost no log messages.
+
+## Potential Pitfalls
+
+This section summarizes the things you have to watch out for when using shellous.
+
+- **Operator Precedence**: Wrap `|` expressions in parentheses when awaiting: `await ("foo" | sh("grep", "foo"))`. The `await` operator has a higher precedence than `|`.
+
+- **Command Reuse vs Async Generators**: Command definitions are immutable and reuseable, but async generator arguments passed into commands cannot be reused.
+
+- **Stream Deadlocks**: When using `async with` in "raw" mode, your script might deadlock if you don't simultaneously read and write. Use `Runner.create_task()` to schedule a concurrent task to assist with these asynchronous reads/writes. Or, use the `Prompt` API which will do this for you.
+
+

@@ -344,6 +344,13 @@ def test_context_result():
     assert ctxt.options.exit_codes == range(-255, 2**32)
 
 
+def test_context_writable():
+    "Test that `sh` supports the .writable modifier."
+    ctxt = sh.writable
+    assert ctxt.options._writable
+    assert not sh.options._writable
+
+
 def test_command_invalid_encoding():
     "Test the empty encoding is invalid."
     with pytest.raises(TypeError, match="invalid encoding"):

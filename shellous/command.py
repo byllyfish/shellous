@@ -60,6 +60,9 @@ from shellous.util import EnvironmentDict, context_aenter, context_aexit
 class _UnsetEnum(enum.Enum):
     UNSET = enum.auto()
 
+    def __repr__(self) -> str:
+        return "UNSET"
+
 
 _UNSET = _UnsetEnum.UNSET
 
@@ -382,6 +385,11 @@ class CmdContext(Generic[_RT]):
     def __call__(self, *args: Any) -> "Command[_RT]":
         "Construct a new command."
         return Command(coerce(args, self.options.coerce_arg), self.options)
+
+    @property
+    def writable(self) -> "CmdContext[_RT]":
+        "Set `writable` to True."
+        return self.set(_writable=True)
 
     @property
     def pty(self) -> "CmdContext[_RT]":

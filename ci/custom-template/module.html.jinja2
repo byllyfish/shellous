@@ -1,5 +1,10 @@
 {% extends "default/module.html.jinja2" %}
 
+{% block module_contents %}
+    <h1>API Documentation</h1>
+    {{ super() }}
+{% endblock %}
+
 {#
     Document certain dunder methods by overriding the is_public macro.
     Returning no text is interpreted as false, returning any other text is iterpreted as true.
