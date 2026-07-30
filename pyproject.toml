@@ -39,7 +39,7 @@ dev = [
     "pytest-dotenv>=0.5.2,<0.6",
     "pytest-randomly>=4.0.1,<5",
     "pytest-timeout>=2.4.0,<3",
-    "ruff>=0.15.11,<0.16 ; sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'",
+    "ruff>=0.16.0,<0.17 ; sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'",
     "typing-extensions>=4.15.0,<5",
 ]
 uvloop = ["uvloop>=0.22.1,<0.23"]
