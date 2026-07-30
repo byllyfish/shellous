@@ -1,6 +1,6 @@
 [project]
 name = "shellous"
-version = "0.41.0"
+version = "0.42.0"
 description = "Async Processes and Pipelines"
 authors = [{ name = "Bill Fisher", email = "william.w.fisher@gmail.com" }]
 requires-python = ">=3.10,<4"

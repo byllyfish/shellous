@@ -1,6 +1,19 @@
 Shellous Change Log
 ===================
 
+0.42.0
+------
+
+- [FEATURE] Add support for a `cwd` option to set the current working directory. (#1083)
+- [BUGFIX] Fix a long-standing bug on Windows in the `sh.result` modifier. (Exit status can be > 255 on Windows.)
+- [BUGFIX] Fix a bug in handling an output async generator. The running process is supposed to be interrupted when there is an early return.
+- [BUGFIX] Add `.writable` modifier to `CmdContext` for consistency with the other modifiers.
+- [LATERAL] Upgrade source code to Python 3.10 supported typing syntax.
+- [LATERAL] Improve documentation formatting and content.
+- [LATERAL] Improve security of github action pipeline. 
+- [LATERAL] Update development dependencies and github actions.
+- [LATERAL] Add a cool-down period for dev. dependencies (supply-chain).
+
 0.41.0
 ------
 
