@@ -34,7 +34,7 @@ jobs:
       BUILD_NAME: build (${{ matrix.os }},${{ matrix.python-version }})
     steps:
     - name: Harden Runner
-      uses: step-security/harden-runner@bf7454d06d71f1098171f2acdf0cd4708d7b5920 # v2.20.0
+      uses: step-security/harden-runner@b09bb98e06d4d774595224525879c09bc6e98c40 # v2.20.1
       with:
         egress-policy: audit
     - name: Checkout
@@ -116,7 +116,7 @@ jobs:
       BUILD_NAME: build (${{ matrix.image-tag }})
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@bf7454d06d71f1098171f2acdf0cd4708d7b5920 # v2.20.0
+        uses: step-security/harden-runner@b09bb98e06d4d774595224525879c09bc6e98c40 # v2.20.1
         with:
           egress-policy: audit
       - name: Checkout
@@ -147,7 +147,7 @@ jobs:
       SHELLOUS_TRACE: all
     steps:
     - name: Harden Runner
-      uses: step-security/harden-runner@bf7454d06d71f1098171f2acdf0cd4708d7b5920 # v2.20.0
+      uses: step-security/harden-runner@b09bb98e06d4d774595224525879c09bc6e98c40 # v2.20.1
       with:
         egress-policy: audit
     - name: Checkout
@@ -207,7 +207,7 @@ jobs:
       with:
         persist-credentials: false
     - name: Run Tests
-      uses: vmactions/freebsd-vm@77ed28d336d03fe19a3f4f7266c1d2c4714dd79d # v1.5.2
+      uses: vmactions/freebsd-vm@83b151f58c6047089f4c80eb5ba2039d158ce093 # v1.5.3
       with:
         release: "${{matrix.release}}"
         usesh: true
