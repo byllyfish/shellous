@@ -63,6 +63,8 @@ async def test_prompt_python_pty():
     )
 
     async with cmd.prompt(_PS1, timeout=3.0) as repl:
+        # 9/12/26: Following line failed once on macos-26, Python 3.10. (race condition?)
+        # https://github.com/byllyfish/shellous/actions/runs/34700479274/job/103571229459
         assert not repl.echo
 
         greeting, _ = await repl.expect()
