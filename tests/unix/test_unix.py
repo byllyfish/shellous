@@ -1801,7 +1801,7 @@ $4 ~ /^[0-9]+/ { sub(/[0-9]+/, "N", $9); print $4, $5, $9 }
 @pytest.mark.skipif(_is_lsof_unsupported(), reason="uvloop,codecov,alpine")
 async def test_open_file_descriptors():
     "Test what file descriptors are open in the subprocess."
-    cmd = sh("cat").stdin(sh.CAPTURE).stderr(sh.DEVNULL)
+    cmd = sh("grep", "foo").stdin(sh.CAPTURE).stderr(sh.DEVNULL)
     lsof = sh("lsof", "-n", "-P", "-p").stderr(sh.STDOUT)
     awk = sh("awk", _AWK_SCRIPT).stderr(sh.STDOUT)
 
@@ -1815,7 +1815,7 @@ async def test_open_file_descriptors():
             "0u unix type=STREAM\n1w FIFO pipe\n2u CHR /dev/null\n",
             "0r FIFO pipe\n1w FIFO pipe\n2u CHR /dev/null\n",  # py3.11/18.04
             # ubuntu 26.04 - weird: why 2 extra FIFO's? (2026-10-07)
-            "0r FIFO pipe\n1w FIFO pipe\n2u CHR /dev/null\n3r FIFO pipe\n4w FIFO pipe\n",  # (?) py3.14.4/26.04
+            # "0r FIFO pipe\n1w FIFO pipe\n2u CHR /dev/null\n3r FIFO pipe\n4w FIFO pipe\n",  # (?) py3.14.4/26.04
         )
     elif sys.platform.startswith("freebsd"):
         assert result == "0u PIPE \n1u PIPE \n2u VCHR /dev/null\n"
@@ -1829,7 +1829,7 @@ async def test_open_file_descriptors():
 @pytest.mark.skipif(_is_lsof_unsupported(), reason="uvloop,codecov,alpine")
 async def test_open_file_descriptors_unclosed_fds():
     "Test what file descriptors are open in the subprocess (close_fds=False)."
-    cmd = sh("cat").stdin(sh.CAPTURE).stderr(sh.DEVNULL)
+    cmd = sh("grep", "foo").stdin(sh.CAPTURE).stderr(sh.DEVNULL)
     lsof = sh("lsof", "-n", "-P", "-p").stderr(sh.STDOUT)
     awk = sh("awk", _AWK_SCRIPT).stderr(sh.STDOUT)
 
@@ -1843,7 +1843,7 @@ async def test_open_file_descriptors_unclosed_fds():
             "0u unix type=STREAM\n1w FIFO pipe\n2u CHR /dev/null\n",
             "0r FIFO pipe\n1w FIFO pipe\n2u CHR /dev/null\n",  # py3.11/18.04
             # ubuntu 26.04 - weird: why 2 extra FIFO's? (2026-10-07)
-            "0r FIFO pipe\n1w FIFO pipe\n2u CHR /dev/null\n3r FIFO pipe\n4w FIFO pipe\n",  # (?) py3.14.4/26.04
+            # "0r FIFO pipe\n1w FIFO pipe\n2u CHR /dev/null\n3r FIFO pipe\n4w FIFO pipe\n",  # (?) py3.14.4/26.04
         )
     elif sys.platform.startswith("freebsd"):
         assert result == "0u PIPE \n1u PIPE \n2u VCHR /dev/null\n"
@@ -1857,7 +1857,7 @@ async def test_open_file_descriptors_unclosed_fds():
 @pytest.mark.skipif(_is_lsof_unsupported(), reason="uvloop,codecov,alpine")
 async def test_open_file_descriptors_pty():
     "Test what file descriptors are open in the pty subprocess."
-    cmd = sh("cat").stdin(sh.CAPTURE)
+    cmd = sh("grep", "foo").stdin(sh.CAPTURE)
     lsof = sh("lsof", "-n", "-P", "-p").stderr(sh.STDOUT)
     awk = sh("awk", _AWK_SCRIPT).stderr(sh.STDOUT)
 
@@ -1870,7 +1870,7 @@ async def test_open_file_descriptors_pty():
         assert result in (
             "0u CHR /dev/pts/N\n1u CHR /dev/pts/N\n2u CHR /dev/pts/N\n",
             # ubuntu 26.04 - weird: why 2 extra FIFO's? (2026-05-11)
-            "0u CHR /dev/pts/N\n1u CHR /dev/pts/N\n2u CHR /dev/pts/N\n3r FIFO pipe\n4w FIFO pipe\n",
+            # "0u CHR /dev/pts/N\n1u CHR /dev/pts/N\n2u CHR /dev/pts/N\n3r FIFO pipe\n4w FIFO pipe\n",
         )
     elif sys.platform.startswith("freebsd"):
         assert result in (
@@ -1884,7 +1884,7 @@ async def test_open_file_descriptors_pty():
 @pytest.mark.skipif(_is_lsof_unsupported(), reason="uvloop,codecov,alpine")
 async def test_open_file_descriptors_pty_unclosed_fds():
     "Test what file descriptors are open in the pty (close_fds=False)."
-    cmd = sh("cat").stdin(sh.CAPTURE)
+    cmd = sh("grep", "foo").stdin(sh.CAPTURE)
     lsof = sh("lsof", "-n", "-P", "-p").stderr(sh.STDOUT)
     awk = sh("awk", _AWK_SCRIPT).stderr(sh.STDOUT)
 
@@ -1897,7 +1897,7 @@ async def test_open_file_descriptors_pty_unclosed_fds():
         assert result in (
             "0u CHR /dev/pts/N\n1u CHR /dev/pts/N\n2u CHR /dev/pts/N\n",
             # ubuntu 26.04 - weird: why 2 extra FIFO's? (2026-05-11)
-            "0u CHR /dev/pts/N\n1u CHR /dev/pts/N\n2u CHR /dev/pts/N\n3r FIFO pipe\n4w FIFO pipe\n",
+            # "0u CHR /dev/pts/N\n1u CHR /dev/pts/N\n2u CHR /dev/pts/N\n3r FIFO pipe\n4w FIFO pipe\n",
         )
     elif sys.platform.startswith("freebsd"):
         assert result in (
