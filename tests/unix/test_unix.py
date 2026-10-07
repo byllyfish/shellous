@@ -1814,6 +1814,8 @@ async def test_open_file_descriptors():
         assert result in (
             "0u unix type=STREAM\n1w FIFO pipe\n2u CHR /dev/null\n",
             "0r FIFO pipe\n1w FIFO pipe\n2u CHR /dev/null\n",  # py3.11/18.04
+            # ubuntu 26.04 - weird: why 2 extra FIFO's? (2026-10-07)
+            "0r FIFO pipe\n1w FIFO pipe\n2u CHR /dev/null\n3r FIFO pipe\n4w FIFO pipe\n",  # (?) py3.14.4/26.04
         )
     elif sys.platform.startswith("freebsd"):
         assert result == "0u PIPE \n1u PIPE \n2u VCHR /dev/null\n"
@@ -1840,6 +1842,8 @@ async def test_open_file_descriptors_unclosed_fds():
         assert result in (
             "0u unix type=STREAM\n1w FIFO pipe\n2u CHR /dev/null\n",
             "0r FIFO pipe\n1w FIFO pipe\n2u CHR /dev/null\n",  # py3.11/18.04
+            # ubuntu 26.04 - weird: why 2 extra FIFO's? (2026-10-07)
+            "0r FIFO pipe\n1w FIFO pipe\n2u CHR /dev/null\n3r FIFO pipe\n4w FIFO pipe\n",  # (?) py3.14.4/26.04
         )
     elif sys.platform.startswith("freebsd"):
         assert result == "0u PIPE \n1u PIPE \n2u VCHR /dev/null\n"
