@@ -34,7 +34,7 @@ jobs:
       BUILD_NAME: build (${{ matrix.os }},${{ matrix.python-version }})
     steps:
     - name: Harden Runner
-      uses: step-security/harden-runner@b09bb98e06d4d774595224525879c09bc6e98c40 # v2.20.1
+      uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
       with:
         egress-policy: audit
     - name: Checkout
@@ -69,7 +69,7 @@ jobs:
         coverage run --source shellous -m pytest --log-cli-level=DEBUG
     - name: Upload Code Coverage (Linux and MacOS)
       if: (matrix.os == 'ubuntu-24.04' || matrix.os == 'macos-26')
-      uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+      uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
       with:
         token: ${{ secrets.SHELLOUS_CODECOV_TOKEN }}
         verbose: true
@@ -116,7 +116,7 @@ jobs:
       BUILD_NAME: build (${{ matrix.image-tag }})
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@b09bb98e06d4d774595224525879c09bc6e98c40 # v2.20.1
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
           egress-policy: audit
       - name: Checkout
@@ -147,7 +147,7 @@ jobs:
       SHELLOUS_TRACE: all
     steps:
     - name: Harden Runner
-      uses: step-security/harden-runner@b09bb98e06d4d774595224525879c09bc6e98c40 # v2.20.1
+      uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
       with:
         egress-policy: audit
     - name: Checkout
