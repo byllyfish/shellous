@@ -63,16 +63,22 @@ async def test_prompt_python_pty():
     )
 
     async with cmd.prompt(_PS1, timeout=3.0) as repl:
-        # 9/12/26: Following line failed once on macos-26, Python 3.10. (race condition?)
+        # 9/12/26: `assert not repl.echo` failed on macos-26, Python 3.10.
         # https://github.com/byllyfish/shellous/actions/runs/34700479274/job/103571229459
-        assert not repl.echo
+        # 10/10/26: Saw another failure on macos-26, Python 3.14 (with code coverage).
+        # https://github.com/byllyfish/shellous/actions/runs/38037655316/job/114171360872
+        # I think there is a race condition on macos where echo is *actually* re-enabled.
+        # I am changing this assert to be ignored on macos. See below where we test
+        # that echo is re-enabled... -wwf
+        if not _IS_MACOS:
+            assert not repl.echo
 
         greeting, _ = await repl.expect()
         assert "Python" in greeting
         assert repl.pending == ""
 
         if _IS_MACOS and repl.echo:
-            print("** echo re-enabled?")
+            print("\n** WARNING ** test_prompt_python_pty: echo re-enabled")
             repl.echo = False  # make sure echo is actually disabled (??)
 
         result = await repl.command("print('abc')")
