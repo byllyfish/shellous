@@ -29,7 +29,7 @@ Homepage = "https://github.com/byllyfish/shellous"
 [dependency-groups]
 dev = [
     "asyncstdlib>=3.14.0,<4",
-    "black==26.5.1",
+    "black==26.10.0",
     "coverage>=7.16.1,<8",
     "pdoc>=16.0.0,<17",
     "pylint>=4.0.8,<5",
