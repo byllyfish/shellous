@@ -27,8 +27,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-24.04, macos-26, macos-15, windows-2025 ]
-        python-version: [ '3.10', '3.11', '3.12', '3.13', '3.14', '3.15-dev' ]
+        os: [ ubuntu-26.04, macos-26, windows-2025 ]
+        python-version: [ '3.10', '3.11', '3.12', '3.13', '3.14', '3.15', '3.16-dev' ]
     env:
       SHELLOUS_TRACE: all
       BUILD_NAME: build (${{ matrix.os }},${{ matrix.python-version }})
@@ -164,35 +164,6 @@ jobs:
     - name: Run Tests
       run: |
         pytest -vv -s --durations=20 --log-cli-level=DEBUG -W ignore::pytest.PytestUnraisableExceptionWarning
-
-  build-ubuntu-26-04:
-    needs: build  # only run if build succeeds
-    runs-on: ubuntu-latest
-    timeout-minutes: 20  # stop runaway job after 20 minutes
-    container:
-      image: ubuntu:26.04
-    env:
-      SHELLOUS_TRACE: all
-      BUILD_NAME: build (ubuntu:26.04)
-    steps:
-    - name: Checkout
-      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      with:
-        persist-credentials: false
-    - name: Install dependencies
-      run: |
-        export DEBIAN_FRONTEND=noninteractive
-        apt-get update && apt-get install -y python3-pip python3-venv lsof
-        python3 -m venv venv
-        . venv/bin/activate
-        pip3 install --require-hashes -r ./ci/requirements-dev.txt
-    - name: Run Tests
-      run: |
-        . venv/bin/activate
-        if ! pytest -vv -s --durations=20 --log-cli-level=DEBUG; then
-          echo "::warning title=Run Tests Warning::Re-running failed tests in $BUILD_NAME"
-          pytest -vv -s --durations=20 --log-cli-level=DEBUG --last-failed
-        fi
 
   build-freebsd:
     needs: build  # only run if build succeeds
