@@ -29,7 +29,7 @@ Homepage = "https://github.com/byllyfish/shellous"
 [dependency-groups]
 dev = [
     "asyncstdlib>=3.14.0,<4",
-    "black==26.5.1",
+    "black==26.10.1",
     "coverage>=7.16.1,<8",
     "pdoc>=16.0.0,<17",
     "pylint>=4.0.8,<5",
@@ -39,10 +39,10 @@ dev = [
     "pytest-dotenv>=0.5.2,<0.6",
     "pytest-randomly>=5.0.0,<6",
     "pytest-timeout>=2.4.0,<3",
-    "ruff>=0.16.8,<0.17 ; sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'",
+    "ruff>=0.17.1,<0.18 ; sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'",
     "typing-extensions>=4.16.0,<5",
 ]
-uvloop = ["uvloop>=0.22.1,<0.23"]
+uvloop = ["uvloop>=0.23.0,<0.24"]
 
 [tool.uv]
 default-groups = ["dev"]
@@ -97,7 +97,7 @@ reportUninitializedInstanceVariable = true
 reportUnnecessaryTypeIgnoreComment = true
 
 [tool.black]
-required-version = "26.5.1"
+required-version = "26.10.1"
 
 [tool.isort]
 profile = "black"
