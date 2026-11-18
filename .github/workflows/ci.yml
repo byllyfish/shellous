@@ -184,8 +184,7 @@ jobs:
         usesh: true
         copyback: false
         prepare: |
-          pkg -d install -y python314 lsof bash
-          echo "Set up venv..."
+          pkg install -y python314 py314-pip lsof bash
           python3.14 -m venv venv
           . venv/bin/activate
           pip install -r ./ci/requirements-dev.txt
