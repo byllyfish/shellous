@@ -184,6 +184,7 @@ jobs:
         usesh: true
         copyback: false
         prepare: |
+          pkg update && pkg upgrade expat
           pkg install -y python314 lsof bash
           python3.14 -m venv --without-pip venv
           . venv/bin/activate
