@@ -350,7 +350,8 @@ async def copy_asyncgen(
 ):
     "Copy bytes from source stream to async generator."
     try:
-        await dest.asend(None)  # prime the async generator
+        # Prime the async generator.
+        await dest.asend(None)  # pyright: ignore[reportArgumentType]
 
         while True:
             data = await source.read(_CHUNK_SIZE)
